@@ -1,0 +1,89 @@
+==========================================================
+URGENT
+----------------------------------------------------------
+
+
+==========================================================
+CORE:		Add region list to allow for custom region definitions, merely as a string list
+CORE:		Add zonal list to maps, each zone covers a rectangular section of the map, tied to a specific index in the region list
+
+BUG:		Combat fails to "start" if multi_hit fails to make a successful hit.
+IFCHECK:	Object 'inauction' to see if the object is currently being auctioned
+IFCHECK:	Object 'inlocker' to see if the object is currently in a locker
+TRIGGER:	BURY trigger to be fired on a "bury" command.
+TRIGGER:	DIG trigger to be fired when an object is dug up
+SCRIPT:		Allow empty strings on PROMPT to remove prompt strings
+TEDIT:		Show proper value name information for skill and spell tokens
+TEDIT:		Value setting on skill tokens to handle the first two values.
+SCRIPT:		Add command PLACEROOM to relocate a cloned room to <w,x,y,z> location
+CORE:		Allow cloned rooms to have no environments.
+SCRIPT:		Allow a cloned room to destroy itself safely.
+SCRIPT:		Add command VLINK for creating an exit to a wilderness map
+SCRIPT:		Add command ATSOUND to do an ASOUND at a specific location, akin to ECHOROOM vs ECHO.
+CORE:		Install light levels to the world, utilizing vision stats to control visibility.
+CORE:		Add a type-data pointer to objects for type specific data.
+CORE:		Create a book item type, with aspects for cover descriptions, spine descriptions,
+			page descriptions, special functionalities like spellbook enchantments.
+CORE:		Rework/Create a general projectile system that can be used in-code and in-scripts
+CORE:		Add a search routine to scan all static and clone rooms that matches a specific coordinate.
+CORE:		Add read/write functions for persistance
+CORE:		Add UID resolving functions for post-persistance loading.
+TRIGGER:	ENCHANT trigger for objects to replace the standard enchanting mechanism
+CORE:		Killing a mob should search for any mob in the room that is currently in combat with your group.
+BUG:		Idling out in a wildereness room needs to save your map location due to the volatility of the room.
+BUG??:		Movement costs are not deducted.
+BUG/CORE:	Change swimming lag to be nullified if you are flying and increased if you are weighted down.
+BUG:		ALL_REMORT on objects needs to allow MORTAL objects only.
+TRIGGER:	QUIT trigger for tokens for doing things just prior to leaving the world, such as dismissing a guardian
+TRIGGER:	WEAROFF trigger when affects wear off.
+TRIGGER:	WEAROFFNAME trigger when affects with a custom name wears off.
+SCRIPT:		VISIT command to utilize the visit room functionality.
+TRIGGER:	LEVEL triggered when player levels.
+SCRIPT:		Add the INDEX type to variables for mobiles, objects and tokens, as well as being able to reference
+			indicies within $( ) expansions.   Add code to varsets to be able to reference indicies.
+IFCHECK:	Add ifchecks for checking the pkness in a direction.
+SCRIPT:		Add CHARGEBANK and WIRETRANSFER for using a player's bank account.
+IFCHECK:	Add group ifchecks for vitals (hp, mana, move)
+TRIGGER:	PREPUT trigger for objects
+TRIGGER:	PUT trigger for objects
+SCRIPT		PATH command for npcs
+			path $NPC <path string> <success vnum> <failure vnum>
+			7 8 9  5	O# - open door
+			 \|/   |	C# - close door
+			4-O-6  O	L# - unlock doora
+			 /|\   |	U# - lock door
+			1 2 3  0	W# - wait # speedwalk pulses
+
+
+-------------------------------
+DONE
+
+rework room clone IDs to be UIDs instead
+add "land" and "takeoff" triggers
+add death timer manipulation :D
+fix how the vmap decides who to show on the map (for showing other players on the vmap :D)
+create a search function for finding a static/wilderness room at a given X-Y coordinate whose Z-level is the highest Z-level below the specified Z-level, but not below the wilderness Z-level.
+fix objects so they increment container nest_clones to indicate that the object has a clone_room and the container should be locked against various actions
+fix extraction for mobs and objs dealing with cloned rooms
+fix exits so they have from_room assigned
+fixed the moonphase ifcheck
+
+added rudimentary checks for security read and write access for an area:
+	area_has_read_access
+	area_has_write_access
+
+
+
+SCRIPT:		Apply checks to all script commands to prevent recursive environments
+SCRIPT:		Add a script flag that designates any script command as being done via an AT command, to prevent
+			certain groups of commands, such as goto or transfer.
+
+
+SECURITY:	Apply checks for read access for the script stat and dump commands
+
+
+
+
+
+
+

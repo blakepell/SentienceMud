@@ -1,0 +1,154 @@
+#include <sys/types.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include "merc.h"
+#include "interp.h"
+#include "magic.h"
+#include "recycle.h"
+#include "tables.h"
+#include "wilds.h"
+
+SPELL_FUNC(spell_air_pocket)
+{
+	return FALSE;
+}
+
+SPELL_FUNC(spell_faerie_fog)
+{
+	CHAR_DATA *ich;
+
+	act("$n conjures a cloud of purple smoke.", ch, NULL, NULL, TO_ROOM);
+	send_to_char("You conjure a cloud of purple smoke.\n\r", ch);
+
+	for (ich = ch->in_room->people; ich; ich = ich->next_in_room) {
+		if (ich->invis_level > 0)
+			continue;
+
+		if (ich == ch || saves_spell(level, ich,DAM_OTHER))
+			continue;
+
+		// Umm, O.o  Wouldn't this expose something that's hidden?
+		if (!check_spell_deflection(ch, ich, sn))
+			continue;
+
+		affect_strip(ich, gsn_invis);
+		affect_strip(ich, gsn_mass_invis);
+		affect_strip(ich, gsn_sneak);
+
+		REMOVE_BIT(ich->affected_by, AFF_HIDE);
+		REMOVE_BIT(ich->affected_by, AFF_INVISIBLE);
+		REMOVE_BIT(ich->affected_by, AFF_SNEAK);
+
+		act("$n is revealed!", ich, NULL, NULL, TO_ROOM);
+		send_to_char("You are revealed!\n\r", ich);
+	}
+	return TRUE;
+}
+
+SPELL_FUNC(spell_fly)
+{
+	CHAR_DATA *victim = (CHAR_DATA *) vo;
+	AFFECT_DATA af;
+	bool perm = FALSE;
+	memset(&af,0,sizeof(af));
+
+	if (level > MAGIC_WEAR_SPELL) {
+		level -= MAGIC_WEAR_SPELL;
+		perm = TRUE;
+	}
+
+	if (perm && is_affected(victim, sn)) {
+		affect_strip(victim, sn);
+	} else if (IS_AFFECTED(victim, AFF_FLYING)) {
+		if (victim == ch)
+			send_to_char("You are already airborne.\n\r",ch);
+		else
+			act("$N doesn't need your help to fly.",ch,NULL,victim,TO_CHAR);
+		return FALSE;
+	}
+
+	af.where = TO_AFFECTS;
+	af.group = AFFGROUP_MAGICAL;
+	af.type = sn;
+	af.level = level;
+	af.duration = perm ? -1 : (level + 3);
+	af.location = 0;
+	af.modifier = 0;
+	af.bitvector = AFF_FLYING;
+	af.bitvector2 = 0;
+	affect_to_char(victim, &af);
+
+	send_to_char("Your feet rise off the ground.\n\r", victim);
+	act("$n's feet rise off the ground.", victim, NULL, NULL, TO_ROOM);
+
+	return TRUE;
+}
+
+
+SPELL_FUNC(spell_underwater_breathing)
+{
+	CHAR_DATA *victim = (CHAR_DATA *) vo;
+	AFFECT_DATA af;
+	bool perm = FALSE;
+
+	memset(&af,0,sizeof(af));
+
+	if(level > MAGIC_SCRIPT_SPELL)
+		level -= MAGIC_SCRIPT_SPELL;
+	else if (level > MAGIC_WEAR_SPELL) {
+		level -= MAGIC_WEAR_SPELL;
+		perm = TRUE;
+	}
+
+	if (perm && is_affected(victim, sn))
+		affect_strip(victim, sn);
+	else if (is_affected(victim, sn)) {
+		if (victim == ch)
+			send_to_char("You can already breath underwater.\n\r",ch);
+		else
+			act("$N can already breath underwater.",ch,NULL,victim,TO_CHAR);
+		return FALSE;
+	}
+
+	af.where = TO_AFFECTS;
+	af.group = AFFGROUP_MAGICAL;
+	af.type = sn;
+	af.level = level;
+	af.duration = 35;
+	af.modifier = 0;
+	af.location = 0;
+	af.bitvector = AFF_SWIM;
+	af.bitvector2 = 0;
+	affect_to_char(victim, &af);
+	send_to_char("You feel a strange sensation as gills sprout behind your ears.\n\r", victim);
+	if (ch != victim) act("Gills sprout from behind $N's ears.",ch,NULL,victim,TO_CHAR);
+	return TRUE;
+}
+
+SPELL_FUNC(spell_wind_of_confusion)
+{
+	CHAR_DATA *vch;
+
+	send_to_char("{MYou summon forth a howling wind!{x\n\r", ch);
+	act("{RA howling chaotic wind of confusion whips around you!{x", ch, NULL, NULL, TO_ROOM);
+
+	for (vch = ch->in_room->people; vch; vch = vch->next_in_room) {
+		if (!is_same_group(ch, vch) && ch->fighting && is_same_group(ch->fighting, vch)) {
+			if (!check_spell_deflection(ch, vch, sn))
+				continue;
+
+			if (saves_spell(level, vch, DAM_NONE)) {
+				send_to_char("You are unaffected by the spell.\n\r", vch);
+				continue;
+			}
+
+			if (vch->master) {
+				stop_follower(vch,TRUE);
+				die_follower(vch);
+			}
+		}
+	}
+	return TRUE;
+}

@@ -1,0 +1,359 @@
+K 25
+svn:wc:ra_dav:version-url
+V 34
+/mishkal/!svn/ver/29/trunk/src/lua
+END
+lauxlib.c
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/mishkal/!svn/ver/29/trunk/src/lua/lauxlib.c
+END
+ldebug.c
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/mishkal/!svn/ver/29/trunk/src/lua/ldebug.c
+END
+test.out
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/mishkal/!svn/ver/29/trunk/src/lua/test.out
+END
+lauxlib.h
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/mishkal/!svn/ver/29/trunk/src/lua/lauxlib.h
+END
+ldebug.h
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/mishkal/!svn/ver/29/trunk/src/lua/ldebug.h
+END
+ltablib.c
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/mishkal/!svn/ver/29/trunk/src/lua/ltablib.c
+END
+liolib.c
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/mishkal/!svn/ver/29/trunk/src/lua/liolib.c
+END
+lstrlib.c
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/mishkal/!svn/ver/29/trunk/src/lua/lstrlib.c
+END
+lualib.h
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/mishkal/!svn/ver/29/trunk/src/lua/lualib.h
+END
+ldo.c
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/mishkal/!svn/ver/29/trunk/src/lua/ldo.c
+END
+ldump.c
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/mishkal/!svn/ver/29/trunk/src/lua/ldump.c
+END
+ldo.h
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/mishkal/!svn/ver/29/trunk/src/lua/ldo.h
+END
+loslib.c
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/mishkal/!svn/ver/29/trunk/src/lua/loslib.c
+END
+luac.c
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/mishkal/!svn/ver/29/trunk/src/lua/luac.c
+END
+lundump.c
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/mishkal/!svn/ver/29/trunk/src/lua/lundump.c
+END
+ldblib.c
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/mishkal/!svn/ver/29/trunk/src/lua/ldblib.c
+END
+lundump.h
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/mishkal/!svn/ver/29/trunk/src/lua/lundump.h
+END
+lmem.c
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/mishkal/!svn/ver/29/trunk/src/lua/lmem.c
+END
+lmathlib.c
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/mishkal/!svn/ver/29/trunk/src/lua/lmathlib.c
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/mishkal/!svn/ver/29/trunk/src/lua/Makefile
+END
+lstate.c
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/mishkal/!svn/ver/29/trunk/src/lua/lstate.c
+END
+ltm.c
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/mishkal/!svn/ver/29/trunk/src/lua/ltm.c
+END
+lvm.c
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/mishkal/!svn/ver/29/trunk/src/lua/lvm.c
+END
+lmem.h
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/mishkal/!svn/ver/29/trunk/src/lua/lmem.h
+END
+lstate.h
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/mishkal/!svn/ver/29/trunk/src/lua/lstate.h
+END
+ltm.h
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/mishkal/!svn/ver/29/trunk/src/lua/ltm.h
+END
+ltable.c
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/mishkal/!svn/ver/29/trunk/src/lua/ltable.c
+END
+lvm.h
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/mishkal/!svn/ver/29/trunk/src/lua/lvm.h
+END
+llex.c
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/mishkal/!svn/ver/29/trunk/src/lua/llex.c
+END
+lgc.c
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/mishkal/!svn/ver/29/trunk/src/lua/lgc.c
+END
+loadlib.c
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/mishkal/!svn/ver/29/trunk/src/lua/loadlib.c
+END
+lfunc.c
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/mishkal/!svn/ver/29/trunk/src/lua/lfunc.c
+END
+lopcodes.c
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/mishkal/!svn/ver/29/trunk/src/lua/lopcodes.c
+END
+lparser.c
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/mishkal/!svn/ver/29/trunk/src/lua/lparser.c
+END
+ltable.h
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/mishkal/!svn/ver/29/trunk/src/lua/ltable.h
+END
+llex.h
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/mishkal/!svn/ver/29/trunk/src/lua/llex.h
+END
+luac.out
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/mishkal/!svn/ver/29/trunk/src/lua/luac.out
+END
+lgc.h
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/mishkal/!svn/ver/29/trunk/src/lua/lgc.h
+END
+lfunc.h
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/mishkal/!svn/ver/29/trunk/src/lua/lfunc.h
+END
+lopcodes.h
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/mishkal/!svn/ver/29/trunk/src/lua/lopcodes.h
+END
+lbaselib.c
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/mishkal/!svn/ver/29/trunk/src/lua/lbaselib.c
+END
+lparser.h
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/mishkal/!svn/ver/29/trunk/src/lua/lparser.h
+END
+lzio.c
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/mishkal/!svn/ver/29/trunk/src/lua/lzio.c
+END
+test.lua
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/mishkal/!svn/ver/29/trunk/src/lua/test.lua
+END
+linit.c
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/mishkal/!svn/ver/29/trunk/src/lua/linit.c
+END
+lua.c
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/mishkal/!svn/ver/29/trunk/src/lua/lua.c
+END
+lobject.c
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/mishkal/!svn/ver/29/trunk/src/lua/lobject.c
+END
+llimits.h
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/mishkal/!svn/ver/29/trunk/src/lua/llimits.h
+END
+lstring.c
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/mishkal/!svn/ver/29/trunk/src/lua/lstring.c
+END
+lzio.h
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/mishkal/!svn/ver/29/trunk/src/lua/lzio.h
+END
+lapi.c
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/mishkal/!svn/ver/29/trunk/src/lua/lapi.c
+END
+lcode.c
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/mishkal/!svn/ver/29/trunk/src/lua/lcode.c
+END
+lua.h
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/mishkal/!svn/ver/29/trunk/src/lua/lua.h
+END
+lobject.h
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/mishkal/!svn/ver/29/trunk/src/lua/lobject.h
+END
+lstring.h
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/mishkal/!svn/ver/29/trunk/src/lua/lstring.h
+END
+lapi.h
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/mishkal/!svn/ver/29/trunk/src/lua/lapi.h
+END
+lcode.h
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/mishkal/!svn/ver/29/trunk/src/lua/lcode.h
+END
+luaconf.h
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/mishkal/!svn/ver/29/trunk/src/lua/luaconf.h
+END
+print.c
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/mishkal/!svn/ver/29/trunk/src/lua/print.c
+END

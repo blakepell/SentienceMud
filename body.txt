@@ -1,0 +1,635 @@
+
+The first part is called the anchor
+
+
+
+Ordering:
+none		Just use the name
+front		Prefix the body part with FRONT/REAR
+side		Prefix the body part with LEFT/RIGHT
+order		Prefix the body part with FIRST/SECOND/...
+
+
+
+
+part flags:
+upperbody	serves as the main body part
+lowerbody	serves as the lower body part
+limb		is a limb
+grasp		can hold onto things
+stance		is used to stand on
+circulation
+airbreath	needed to breathe in air naturally
+waterbreath	needed to breathe underwater naturally
+digit		a finger/toe, can wear rings
+hear		enables hearing
+sight		enables sight
+smell		enables smell
+vital		a vital body part, if damaged can lead to death
+skeleton	forms the skeleton of the body
+
+ APERTURE 		 Unknown effect. An opening in the body, apparently, but no known purpose.
+BP 	
+
+    * id 
+
+	The internal object ID of the body part. Unlike many other tokens in the game, the id of the BP does not need to be unique throughout all of the raw object files, though it does need to be unique within the BODY it is in.
+BREATHE 		The body part is necessary to breathe. If the body part is destroyed, the creature can suffocate unless it has the NOBREATHE token.
+CIRCULATION 		If this body part is destroyed, the creature will bleed to death?
+CON 	
+
+    * id 
+
+	The specific body part object ID to which this body part attaches.
+CONTYPE 	
+
+    * type 
+
+	The body part token type to which this body part attaches. Note that if the creature has more than one body part with that token type each of them will get its own additional body part attached.
+DIGIT 		Is a finger/toe. Unknown effect.
+EMBEDDED 		The body part is embedded into the body -- it is external, but is not shown until injured. Compare INTERNAL. Can be gouged out?
+FLIER 		The body part is necessary for the creature to fly, and damage to the body part will ground the creature.
+GRASP 		The body part can be used to hold items (if the creature has the EQUIPS token) or wrestle.
+GUTS 		Can be disembowelled?
+HEAD 		Vital bodypart. If severed, creature dies.
+HEAR 		Unknown effect. Presumably allows the creature to listen.
+INTERNAL 		The body part is an internal organ and is not visible until injured.
+JOINT 		Can be broken by wrestling (possibly falling damage in a future version).
+LEFT 		The body part is on the left side of the creature and is thus vulnerable to attacks from the left side.
+LIMB 		The body part is usable for wrestling (i.e. can grab, lock, choke, etc).
+LOWERBODY 		The body part is another part of the "core" of the creature. When the lowerbody body part is destroyed, the creature is bisected.
+MOUTH 		Allows the creature to eat?
+NERVOUS 		Causes pain when destroyed. Other effects?
+RIGHT 		The body part is on the right side of the creature and is thus vulnerable to attacks from the right side.
+SIGHT 		Allows creatures to see; creatures without this tag on any part of their bodies cannot see for the purposes of aiming missile weapons (though apparently can find and kill mad adventurers fairly well with melee attacks). May need more testing.
+SKELETON 		Prevents game code from removing this bodypart when the creature is converted to skeletal undead.
+SMALL 		Unknown effect. Reduces chance to hit?
+SMELL 		Unknown effect. Presumably allows creature to smell.
+STANCE 		The body part is used to keep the creature standing; injury to the body part will cause the creature to collapse. It also makes the body part act like a foot, and adds toes to the body part. This can be problematic as the body part can be armored by a boot.
+THOUGHT 		Necessary for the creature to think. Without a working brain, the creature dies unless it has the NOTHOUGHT Creature Token.
+THROAT 		Can be strangled with wrestling to cause winding, unconsciousness, and eventual death. Strangely, even creatures with the NOBREATHE token can be rendered unconscious (but not dead) by strangulation.
+UPPERBODY 		The body part is the "core" of the creature; when the upperbody body part is destroyed, the creature is blown apart.
+
+#BODYPART 1
+	Name One Part Body~
+	#PART
+		Keyword ub~
+		Name body~
+		Flags upperbody lowerbody~
+	#-PART
+#-BODYPART
+
+#BODYPART 2
+	Name Two Part Body~
+	#PART
+		Keyword ub~
+		Name upper body~
+		Flags upperbody~
+	#-PART
+	#PART
+		Keyword lb~
+		Name lower body~
+		Flags lowerbody~
+		Connect ub~
+	#-PART
+#-BODYPART
+
+#BODYPART 3
+	Name Arm~
+	Prefix order side front
+	#PART
+		Keyword uarm~
+		Name upper arm~
+		Flags limb joint~
+		Attach upperbody~
+	#-PART
+	#PART
+		Keyword larm~
+		Name lower arm~
+		Flags limb joint~
+		Connect uarm~
+	#-PART
+	#PART
+		Keyword hand~
+		Name hand~
+		Flags grasp~
+		Connect larm~
+	#-PART
+#-BODYPART
+
+#BODYPART 4
+	Name Leg~
+	Prefix order side front
+	#PART
+		Keyword uleg~
+		Name upper leg~
+		Flags limb joint~
+		Attach lowerbody~
+	#-PART
+	#PART
+		Keyword lleg~
+		Name lower leg~
+		Flags limb joint~
+		Connect uleg~
+	#-PART
+	#PART
+		Keyword foot~
+		Name foot~
+		Flags stance~
+		Connect lleg~
+	#-PART
+#-BODYPART
+
+#BODYPART 7
+	Name Arm Stance~
+	Prefix order side front
+	#PART
+		Keyword uarm~
+		Name upper arm~
+		Flags limb stance joint~
+		Attach upperbody~
+	#-PART
+	#PART
+		Keyword larm~
+		Name lower arm~
+		Flags limb joint~
+		Connect uarm~
+	#-PART
+	#PART
+		Keyword hand~
+		Name hand~
+		Flags grasp~
+		Connect larm~
+	#-PART
+#-BODYPART
+
+#BODYPART 8
+	Name Multiple Heads~
+	Prefix order
+	#PART
+		Keyword neck~
+		Name neck~
+		Flags limb breathe joint internal~
+		Attach upperbody~
+	#-PART
+	#PART
+		Keyword head~
+		Name head~
+		Flags head~
+		Connect neck~
+	#-PART
+#-BODYPART
+
+#BODYPART 9
+	Name Head~
+	Prefix side
+	#PART
+		Keyword neck~
+		Name neck~
+		Flags limb breathe joint internal~
+		Attach upperbody~
+	#-PART
+	#PART
+		Keyword head~
+		Name head~
+		Flags head~
+		Connect neck~
+	#-PART
+#-BODYPART
+
+#BODYPART 10
+	Name Wing~
+	Prefix side
+	#PART
+		Keyword wing~
+		Name wing~
+		Flags limb flier joint~
+		Attach upperbody~
+	#-PART
+#-BODYPART
+
+#BODYPART 10
+	Name Armed Wing~
+	Prefix side
+	#PART
+		Keyword uarm~
+		Name upper wing arm~
+		Flags limb joint~
+		Attach upperbody~
+	#-PART
+	#PART
+		Keyword wing~
+		Name wing~
+		Flags limb flier~
+		Connect uarm~
+	#-PART
+	#PART
+		Keyword larm~
+		Name lower wing arm~
+		Flags limb joint~
+		Connect uarm~
+	#-PART
+	#PART
+		Keyword hand~
+		Name hand~
+		Flags grasp~
+		Connect larm~
+	#-PART
+#-BODYPART
+
+#BODYPART 10
+	Name Grasping Wing~
+	Prefix side
+	#PART
+		Keyword wing~
+		Name wing~
+		Flags limb flier~
+		Attach upperbody~
+	#-PART
+	#PART
+		Keyword hand~
+		Name hand~
+		Flags grasp~
+		Connect wing~
+	#-PART
+#-BODYPART
+
+#COMMENT
+BodyGloss is used to rename body parts to match the creature
+#-COMMENT
+#BODYGLOSS
+Type paw~ foot~ paw~
+Type maw~ mouth~ maw~
+Type claw_hand~ hand~ claw~
+Type claw_foot~ foot~ claw~
+Type talon_foot~ foot~ talon~
+Type hoof~ foot~ hoof~
+Type trunk~ body~ trunk~
+Type branch_arm~ arm~ branch~
+Type leg_stump~ leg~ stump~
+Type roots_foot~ foot~ roots~
+Type insect_upperbody~ upper body~ thorax~
+Type insect_lowerbody~ lower body~ abdomen~
+#-BODYGLOSS
+
+#FORM 1
+	Name Humanoid
+
+[BODY:HUMANOID]
+[BP:UB:upper body][UPPERBODY]
+[BP:LB:lower body][CON:UB][LOWERBODY]
+[BP:HD:head][CON:UB][HEAD]
+[BP:RUA:right upper arm][CON:UB][LIMB][RIGHT]
+[BP:LUA:left upper arm][CON:UB][LIMB][LEFT]
+[BP:RLA:right lower arm][CON:RUA][LIMB][RIGHT]
+[BP:LLA:left lower arm][CON:LUA][LIMB][LEFT]
+[BP:RH:right hand][CON:RLA][GRASP][RIGHT]
+[BP:LH:left hand][CON:LLA][GRASP][LEFT]
+[BP:RUL:right upper leg][CON:LB][LIMB][RIGHT]
+[BP:LUL:left upper leg][CON:LB][LIMB][LEFT]
+[BP:RLL:right lower leg][CON:RUL][LIMB][RIGHT]
+[BP:LLL:left lower leg][CON:LUL][LIMB][LEFT]
+[BP:RF:right foot][CON:RLL][STANCE][RIGHT]
+[BP:LF:left foot][CON:LLL][STANCE][LEFT]
+
+[BODY:HUMANOID_FLIER]
+[BP:UB:upper body][UPPERBODY]
+[BP:LB:lower body][CON:UB][LOWERBODY]
+[BP:HD:head][CON:UB][HEAD]
+[BP:RUA:right upper arm][CON:UB][LIMB][RIGHT][FLIER]
+[BP:LUA:left upper arm][CON:UB][LIMB][LEFT][FLIER]
+[BP:RLA:right lower arm][CON:RUA][LIMB][RIGHT]
+[BP:LLA:left lower arm][CON:LUA][LIMB][LEFT]
+[BP:RH:right hand][CON:RLA][GRASP][RIGHT]
+[BP:LH:left hand][CON:LLA][GRASP][LEFT]
+[BP:RUL:right upper leg][CON:LB][LIMB][RIGHT]
+[BP:LUL:left upper leg][CON:LB][LIMB][LEFT]
+[BP:RLL:right lower leg][CON:RUL][LIMB][RIGHT]
+[BP:LLL:left lower leg][CON:LUL][LIMB][LEFT]
+[BP:RF:right foot][CON:RLL][STANCE][RIGHT]
+[BP:LF:left foot][CON:LLL][STANCE][LEFT]
+
+[BODY:2WINGS]
+[BP:RWING:right wing][CONTYPE:UPPERBODY][LIMB][RIGHT][FLIER]
+[BP:LWING:left wing][CONTYPE:UPPERBODY][LIMB][LEFT][FLIER]
+
+[BODY:HUMANOID_ARMLESS]
+[BP:UB:upper body][UPPERBODY]
+[BP:LB:lower body][CON:UB][LOWERBODY]
+[BP:HD:head][CON:UB][HEAD]
+[BP:RUL:right upper leg][CON:LB][LIMB][RIGHT]
+[BP:LUL:left upper leg][CON:LB][LIMB][LEFT]
+[BP:RLL:right lower leg][CON:RUL][LIMB][RIGHT]
+[BP:LLL:left lower leg][CON:LUL][LIMB][LEFT]
+[BP:RF:right foot][CON:RLL][STANCE][RIGHT]
+[BP:LF:left foot][CON:LLL][STANCE][LEFT]
+
+[BODY:HUMANOID_LEGLESS]
+[BP:UB:upper body][UPPERBODY]
+[BP:LB:lower body][CON:UB][LOWERBODY]
+[BP:HD:head][CON:UB][HEAD]
+[BP:RUA:right upper arm][CON:UB][LIMB][RIGHT]
+[BP:LUA:left upper arm][CON:UB][LIMB][LEFT]
+[BP:RLA:right lower arm][CON:RUA][LIMB][RIGHT]
+[BP:LLA:left lower arm][CON:LUA][LIMB][LEFT]
+[BP:RH:right hand][CON:RLA][GRASP][RIGHT]
+[BP:LH:left hand][CON:LLA][GRASP][LEFT]
+
+[BODY:HUMANOID_4ARMS]
+[BP:UB:upper body][UPPERBODY]
+[BP:LB:lower body][CON:UB][LOWERBODY]
+[BP:HD:head][CON:UB][HEAD]
+[BP:RUA1:first right upper arm][CON:UB][LIMB][RIGHT]
+[BP:LUA1:first left upper arm][CON:UB][LIMB][LEFT]
+[BP:RLA1:first right lower arm][CON:RUA1][LIMB][RIGHT]
+[BP:LLA1:first left lower arm][CON:LUA1][LIMB][LEFT]
+[BP:RH1:first right hand][CON:RLA1][GRASP][RIGHT]
+[BP:LH1:first left hand][CON:LLA1][GRASP][LEFT]
+[BP:RUA2:second right upper arm][CON:UB][LIMB][RIGHT]
+[BP:LUA2:second left upper arm][CON:UB][LIMB][LEFT]
+[BP:RLA2:second right lower arm][CON:RUA2][LIMB][RIGHT]
+[BP:LLA2:second left lower arm][CON:LUA2][LIMB][LEFT]
+[BP:RH2:second right hand][CON:RLA2][GRASP][RIGHT]
+[BP:LH2:second left hand][CON:LLA2][GRASP][LEFT]
+[BP:RUL:right upper leg][CON:LB][LIMB][RIGHT]
+[BP:LUL:left upper leg][CON:LB][LIMB][LEFT]
+[BP:RLL:right lower leg][CON:RUL][LIMB][RIGHT]
+[BP:LLL:left lower leg][CON:LUL][LIMB][LEFT]
+[BP:RF:right foot][CON:RLL][STANCE][RIGHT]
+[BP:LF:left foot][CON:LLL][STANCE][LEFT]
+
+[BODY:HUMANOID_2HEAD]
+[BP:UB:upper body][UPPERBODY]
+[BP:LB:lower body][CON:UB][LOWERBODY]
+[BP:RHD:right head][CON:UB][HEAD][RIGHT]
+[BP:LHD:left head][CON:UB][HEAD][LEFT]
+[BP:RUA:right upper arm][CON:UB][LIMB][RIGHT]
+[BP:LUA:left upper arm][CON:UB][LIMB][LEFT]
+[BP:RLA:right lower arm][CON:RUA][LIMB][RIGHT]
+[BP:LLA:left lower arm][CON:LUA][LIMB][LEFT]
+[BP:RH:right hand][CON:RLA][GRASP][RIGHT]
+[BP:LH:left hand][CON:LLA][GRASP][LEFT]
+[BP:RUL:right upper leg][CON:LB][LIMB][RIGHT]
+[BP:LUL:left upper leg][CON:LB][LIMB][LEFT]
+[BP:RLL:right lower leg][CON:RUL][LIMB][RIGHT]
+[BP:LLL:left lower leg][CON:LUL][LIMB][LEFT]
+[BP:RF:right foot][CON:RLL][STANCE][RIGHT]
+[BP:LF:left foot][CON:LLL][STANCE][LEFT]
+
+[BODY:HUMANOID_SIMPLE]
+[BP:UB:upper body][UPPERBODY]
+[BP:LB:lower body][CON:UB][LOWERBODY]
+[BP:HD:head][CON:UB][HEAD]
+[BP:RA:right arm][CON:UB][LIMB][RIGHT]
+[BP:LA:left arm][CON:UB][LIMB][LEFT]
+[BP:RH:right hand][CON:RA][GRASP][RIGHT]
+[BP:LH:left hand][CON:LA][GRASP][LEFT]
+[BP:RL:right leg][CON:LB][LIMB][RIGHT]
+[BP:LL:left leg][CON:LB][LIMB][LEFT]
+[BP:RF:right foot][CON:RL][STANCE][RIGHT]
+[BP:LF:left foot][CON:LL][STANCE][LEFT]
+
+[BODY:QUADRUPED]
+[BP:UB:upper body][UPPERBODY]
+[BP:LB:lower body][CON:UB][LOWERBODY]
+[BP:HD:head][CON:UB][HEAD]
+[BP:RA:right front leg][CON:UB][LIMB][RIGHT]
+[BP:LA:left front leg][CON:UB][LIMB][LEFT]
+[BP:RH:right front foot][CON:RA][STANCE][RIGHT]
+[BP:LH:left front foot][CON:LA][STANCE][LEFT]
+[BP:RL:right rear leg][CON:LB][LIMB][RIGHT]
+[BP:LL:left rear leg][CON:LB][LIMB][LEFT]
+[BP:RF:right rear foot][CON:RL][STANCE][RIGHT]
+[BP:LF:left rear foot][CON:LL][STANCE][LEFT]
+
+[BODY:SPIDER]
+[BP:UB:cephalothorax][HEAD][UPPERBODY]
+[BP:LB:abdomen][CON:UB][LOWERBODY]
+[BP:RA1:right first leg][CON:UB][LIMB][RIGHT]
+[BP:LA1:left first leg][CON:UB][LIMB][LEFT]
+[BP:RF1:right first foot][CON:RA1][STANCE][RIGHT]
+[BP:LF1:left first foot][CON:LA1][STANCE][LEFT]
+[BP:RA2:right second leg][CON:UB][LIMB][RIGHT]
+[BP:LA2:left second leg][CON:UB][LIMB][LEFT]
+[BP:RF2:right second foot][CON:RA2][STANCE][RIGHT]
+[BP:LF2:left second foot][CON:LA2][STANCE][LEFT]
+[BP:RA3:right third leg][CON:UB][LIMB][RIGHT]
+[BP:LA3:left third leg][CON:UB][LIMB][LEFT]
+[BP:RF3:right third foot][CON:RA3][STANCE][RIGHT]
+[BP:LF3:left third foot][CON:LA3][STANCE][LEFT]
+[BP:RA4:right fourth leg][CON:UB][LIMB][RIGHT]
+[BP:LA4:left fourth leg][CON:UB][LIMB][LEFT]
+[BP:RF4:right fourth foot][CON:RA4][STANCE][RIGHT]
+[BP:LF4:left fourth foot][CON:LA4][STANCE][LEFT]
+
+[BODY:SIX_TENTACLES]
+[BP:RUT:right upper tentacle][CON:UB][LIMB][RIGHT]
+[BP:LUT:left upper tentacle][CON:UB][LIMB][LEFT]
+[BP:RUTC:right upper claw][CON:RUT][RIGHT]
+[BP:LUTC:left upper claw][CON:LUT][LEFT]
+[BP:RMT:right middle tentacle][CON:UB][LIMB][RIGHT]
+[BP:LMT:left middle tentacle][CON:UB][LIMB][LEFT]
+[BP:RMTC:right middle claw][CON:RMT][RIGHT]
+[BP:LMTC:left middle claw][CON:LMT][LEFT]
+[BP:RLT:right lower tentacle][CON:UB][LIMB][RIGHT]
+[BP:LLT:left lower tentacle][CON:UB][LIMB][LEFT]
+[BP:RLTC:right lower claw][CON:RLT][RIGHT]
+[BP:LLTC:left lower claw][CON:LLT][LEFT]
+
+[BODY:WAGON]
+[BP:FRONT:front]
+[BP:BACK:back][CON:FRONT]
+[BP:RFW:right front wheel][CON:FRONT][STANCE][RIGHT]
+[BP:LFW:left front wheel][CON:FRONT][STANCE][LEFT]
+[BP:RRW:right rear wheel][CON:BACK][STANCE][RIGHT]
+[BP:LRW:left rear wheel][CON:BACK][STANCE][LEFT]
+
+[BODY:TAIL]
+[BP:TAIL:tail][CONTYPE:LOWERBODY]
+
+[BODY:TAIL_STANCE]
+[BP:TAIL:tail][CONTYPE:LOWERBODY][STANCE]
+
+[BODY:TAIL_STINGER]
+[BP:TAIL_STINGER:stinger][CON:TAIL]
+
+[BODY:UPPERBODY_PINCERS]
+[BP:R_UB_PINCER:right pincer][CONTYPE:UPPERBODY][GRASP][RIGHT]
+[BP:L_UB_PINCER:left pincer][CONTYPE:UPPERBODY][GRASP][LEFT]
+
+[BODYGLOSS:PAW:foot:paw]
+
+[BODYGLOSS:MAW:mouth:maw]
+
+[BODYGLOSS:CLAW_HAND:hand:claw]
+
+[BODYGLOSS:CLAW_FOOT:foot:claw]
+
+[BODYGLOSS:TALON_FOOT:foot:talon]
+
+[BODYGLOSS:HOOF:foot:hoof]
+
+[BODYGLOSS:TRUNK:body:trunk]
+
+[BODYGLOSS:BRANCH_ARM:arm:branch]
+
+[BODYGLOSS:LEG_STUMP:leg:stump]
+
+[BODYGLOSS:ROOTS_FOOT:foot:roots]
+
+[BODYGLOSS:INSECT_UPPERBODY:upper body:thorax]
+[BODYGLOSS:INSECT_LOWERBODY:lower body:abdomen]
+
+[BODY:2EYES]
+[BP:REYE:right eye][CONTYPE:HEAD][SIGHT][EMBEDDED][SMALL][RIGHT]
+[BP:LEYE:left eye][CONTYPE:HEAD][SIGHT][EMBEDDED][SMALL][LEFT]
+
+[BODY:4EYES]
+[BP:EYE1:first eye][CONTYPE:HEAD][SIGHT][EMBEDDED][SMALL]
+[BP:EYE2:second eye][CONTYPE:HEAD][SIGHT][EMBEDDED][SMALL]
+[BP:EYE3:third eye][CONTYPE:HEAD][SIGHT][EMBEDDED][SMALL]
+[BP:EYE4:fourth eye][CONTYPE:HEAD][SIGHT][EMBEDDED][SMALL]
+
+[BODY:2EYESTALKS]
+[BP:REYE:right eyestalk][CONTYPE:HEAD][SIGHT][SMALL][RIGHT]
+[BP:LEYE:left eyestalk][CONTYPE:HEAD][SIGHT][SMALL][LEFT]
+
+[BODY:2TUSKS]
+[BP:RTUSK:right tusk][CONTYPE:HEAD][RIGHT]
+[BP:LTUSK:left tusk][CONTYPE:HEAD][LEFT]
+
+[BODY:NOSE]
+[BP:NOSE:nose][CONTYPE:HEAD][SMELL][SMALL]
+
+[BODY:SNOUT_NOSMELL]
+[BP:SNOUT:snout][CONTYPE:HEAD][SMALL]
+
+[BODY:TRUNK]
+[BP:TRUNK:trunk][SMELL][CONTYPE:HEAD]
+
+[BODY:2EARS]
+[BP:R_EAR:right ear][CONTYPE:HEAD][HEAR][SMALL][RIGHT]
+[BP:L_EAR:left ear][CONTYPE:HEAD][HEAR][SMALL][LEFT]
+
+[BODY:2LUNGS]
+[BP:RLUNG:right lung][CONTYPE:UPPERBODY][BREATHE][INTERNAL][SMALL][RIGHT]
+[BP:LLUNG:left lung][CONTYPE:UPPERBODY][BREATHE][INTERNAL][SMALL][LEFT]
+
+[BODY:MOUTH]
+[BP:MOUTH:mouth][CONTYPE:HEAD][MOUTH][SMALL][EMBEDDED][APERTURE]
+
+[BODY:BEAK]
+[BP:BEAK:beak][CONTYPE:HEAD][MOUTH][SMALL][APERTURE]
+
+[BODY:HEART]
+[BP:HEART:heart][CONTYPE:UPPERBODY][CIRCULATION][INTERNAL][SMALL]
+
+[BODY:GUTS]
+[BP:GUTS:guts][CONTYPE:LOWERBODY][GUTS][INTERNAL][SMALL]
+
+[BODY:ORGANS]
+[BP:LIVER:liver][CONTYPE:UPPERBODY][INTERNAL][SMALL]
+[BP:STOMACH:stomach][CONTYPE:LOWERBODY][INTERNAL][SMALL]
+[BP:PANCREAS:pancreas][CONTYPE:LOWERBODY][INTERNAL][SMALL]
+[BP:SPLEEN:spleen][CONTYPE:LOWERBODY][INTERNAL][SMALL]
+[BP:RKIDNEY:right kidney][CONTYPE:LOWERBODY][INTERNAL][SMALL][RIGHT]
+[BP:LKIDNEY:left kidney][CONTYPE:LOWERBODY][INTERNAL][SMALL][LEFT]
+
+[BODY:HUMANOID_JOINTS]
+[BP:RUA_J:right shoulder][CON:RUA][JOINT][SMALL][INTERNAL][RIGHT]
+[BP:LUA_J:left shoulder][CON:LUA][JOINT][SMALL][INTERNAL][LEFT]
+[BP:RLA_J:right elbow][CON:RLA][JOINT][SMALL][INTERNAL][RIGHT]
+[BP:LLA_J:left elbow][CON:LLA][JOINT][SMALL][INTERNAL][LEFT]
+[BP:RH_J:right wrist][CON:RH][JOINT][SMALL][INTERNAL][RIGHT]
+[BP:LH_J:left wrist][CON:LH][JOINT][SMALL][INTERNAL][LEFT]
+[BP:RUL_J:right hip][CON:RUL][JOINT][SMALL][INTERNAL][RIGHT]
+[BP:LUL_J:left hip][CON:LUL][JOINT][SMALL][INTERNAL][LEFT]
+[BP:RLL_J:right knee][CON:RLL][JOINT][SMALL][INTERNAL][RIGHT]
+[BP:LLL_J:left knee][CON:LLL][JOINT][SMALL][INTERNAL][LEFT]
+[BP:RF_J:right ankle][CON:RF][JOINT][SMALL][INTERNAL][RIGHT]
+[BP:LF_J:left ankle][CON:LF][JOINT][SMALL][INTERNAL][LEFT]
+
+[BODY:THROAT]
+[BP:THROAT:throat][CONTYPE:HEAD][THROAT][EMBEDDED][SMALL]
+
+[BODY:NECK]
+[BP:NECK:neck][CONTYPE:HEAD][NERVOUS][INTERNAL][SMALL][SKELETON]
+
+[BODY:SPINE]
+[BP:UPPERSPINE:upper spine][CONTYPE:UPPERBODY][NERVOUS][INTERNAL][SMALL][SKELETON]
+[BP:LOWERSPINE:lower spine][CONTYPE:LOWERBODY][NERVOUS][INTERNAL][SMALL][SKELETON]
+
+[BODY:BRAIN]
+[BP:BRAIN:brain][CONTYPE:HEAD][THOUGHT][INTERNAL][SMALL]
+
+[BODY:HEAD_HORN]
+[BP:HEAD_HORN:horn][CONTYPE:HEAD][SMALL][SKELETON]
+
+[BODY:2HEAD_HORN]
+[BP:RHORN:right horn][CONTYPE:HEAD][SMALL][RIGHT][SKELETON]
+[BP:LHORN:left horn][CONTYPE:HEAD][SMALL][LEFT][SKELETON]
+
+[BODY:1EYE]
+[BP:EYE:eye][CONTYPE:HEAD][SIGHT][EMBEDDED][SMALL]
+
+[BODY:5FINGERS]
+[BP:FINGER1:thumb][CONTYPE:GRASP][DIGIT][SMALL]
+[BP:FINGER2:first finger][CONTYPE:GRASP][DIGIT][SMALL]
+[BP:FINGER3:second finger][CONTYPE:GRASP][DIGIT][SMALL]
+[BP:FINGER4:third finger][CONTYPE:GRASP][DIGIT][SMALL]
+[BP:FINGER5:fourth finger][CONTYPE:GRASP][DIGIT][SMALL]
+
+[BODY:4FINGERS]
+[BP:FINGER1:thumb][CONTYPE:GRASP][DIGIT][SMALL]
+[BP:FINGER2:first finger][CONTYPE:GRASP][DIGIT][SMALL]
+[BP:FINGER3:second finger][CONTYPE:GRASP][DIGIT][SMALL]
+[BP:FINGER4:third finger][CONTYPE:GRASP][DIGIT][SMALL]
+
+[BODY:3FINGERS]
+[BP:FINGER1:thumb][CONTYPE:GRASP][DIGIT][SMALL]
+[BP:FINGER2:first finger][CONTYPE:GRASP][DIGIT][SMALL]
+[BP:FINGER3:second finger][CONTYPE:GRASP][DIGIT][SMALL]
+
+[BODY:5TOES]
+[BP:TOE1:first toe][CONTYPE:STANCE][DIGIT][SMALL]
+[BP:TOE2:second toe][CONTYPE:STANCE][DIGIT][SMALL]
+[BP:TOE3:third toe][CONTYPE:STANCE][DIGIT][SMALL]
+[BP:TOE4:fourth toe][CONTYPE:STANCE][DIGIT][SMALL]
+[BP:TOE5:fifth toe][CONTYPE:STANCE][DIGIT][SMALL]
+
+[BODY:4TOES]
+[BP:TOE1:first toe][CONTYPE:STANCE][DIGIT][SMALL]
+[BP:TOE2:second toe][CONTYPE:STANCE][DIGIT][SMALL]
+[BP:TOE3:third toe][CONTYPE:STANCE][DIGIT][SMALL]
+[BP:TOE4:fourth toe][CONTYPE:STANCE][DIGIT][SMALL]
+
+[BODY:3TOES]
+[BP:TOE1:first toe][CONTYPE:STANCE][DIGIT][SMALL]
+[BP:TOE2:second toe][CONTYPE:STANCE][DIGIT][SMALL]
+[BP:TOE3:third toe][CONTYPE:STANCE][DIGIT][SMALL]
+
+[BODY:SIDE_FINS]
+[BP:R_FIN:right fin][CONTYPE:UPPERBODY][RIGHT]
+[BP:L_FIN:left fin][CONTYPE:UPPERBODY][LEFT]
+
+[BODY:DORSAL_FIN]
+[BP:DORSAL_FIN:dorsal fin][CONTYPE:UPPERBODY]
+
+[BODY:SIDE_FLIPPERS]
+[BP:R_FLIP:right flipper][CONTYPE:UPPERBODY][RIGHT]
+[BP:L_FLIP:left flipper][CONTYPE:UPPERBODY][LEFT]
+
+[BODY:FRONT_BODY_FLIPPERS]
+[BP:RFFLIP:right front flipper][CONTYPE:UPPERBODY][STANCE][RIGHT]
+[BP:LFFLIP:left front flipper][CONTYPE:UPPERBODY][STANCE][LEFT]
+
+[BODY:REAR_BODY_FLIPPERS]
+[BP:RRFLIP:right rear flipper][CONTYPE:LOWERBODY][STANCE][RIGHT]
+[BP:LRFLIP:left rear flipper][CONTYPE:LOWERBODY][STANCE][LEFT]
+
+[BODY:1HUMP]
+[BP:HUMP1:hump][CONTYPE:UPPERBODY]
+
+[BODY:2HUMPS]
+[BP:HUMP1:front hump][CONTYPE:UPPERBODY]
+[BP:HUMP2:rear hump][CONTYPE:LOWERBODY]

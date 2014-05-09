@@ -1,0 +1,6551 @@
+#include "merc.h"
+#include "scripts.h"
+#include "wilds.h"
+#include "debug.h"
+
+
+// Commands used by token scripts
+const struct script_cmd_type token_cmd_table[] = {
+	{ "addaffect",		do_tpaddaffect,		TRUE	},
+	{ "addaffectname",	do_tpaddaffectname,	TRUE	},
+	{ "adjust",		do_tpadjust,		FALSE	},
+	{ "alterexit",		do_tpalterexit,		FALSE	},
+	{ "altermob",		do_tpaltermob,		TRUE	},
+	{ "alterobj",		do_tpalterobj,		TRUE	},
+	{ "alterroom",		do_tpalterroom,		TRUE	},
+	{ "asound",		do_tpasound,		FALSE	},
+	{ "awardgold",		do_tpawardgold,		TRUE	},
+	{ "awardpneuma",	do_tpawardpneuma,	TRUE	},
+	{ "awardprac",		do_tpawardprac,		TRUE	},
+	{ "awardqp",		do_tpawardqp,		TRUE	},
+	{ "awardxp",		do_tpawardxp,		TRUE	},
+	{ "call",		do_tpcall,		FALSE	},
+	{ "chargebank",		do_tpchargebank,	FALSE	},
+	{ "cloneroom",		do_tpcloneroom,		TRUE	},
+	{ "damage",		do_tpdamage,		FALSE	},
+	{ "dequeue",		do_tpdequeue,		FALSE	},
+	{ "destroyroom",	do_tpdestroyroom,	TRUE	},
+	{ "echo",		do_tpecho,		FALSE	},
+	{ "echoaround",		do_tpechoaround,	FALSE	},
+	{ "echoat",		do_tpechoat,		FALSE	},
+	{ "echobattlespam",	do_tpechobattlespam,	FALSE	},
+	{ "echochurch",		do_tpechochurch,	FALSE	},
+	{ "echogrouparound",	do_tpechogrouparound,	FALSE	},
+	{ "echogroupat",	do_tpechogroupat,	FALSE	},
+	{ "echoleadaround",	do_tpecholeadaround,	FALSE	},
+	{ "echoleadat",		do_tpecholeadat,	FALSE	},
+	{ "echonotvict",	do_tpechonotvict,	FALSE	},
+	{ "echoroom",		do_tpechoroom,		FALSE	},
+	{ "force",		do_tpforce,		FALSE	},
+	{ "forget",		do_tpforget,		FALSE	},
+	{ "gdamage",		do_tpgdamage,		FALSE	},
+	{ "gecho",       	do_tpgecho,		FALSE	},
+	{ "gforce",		do_tpgforce,		FALSE	},
+	{ "give",		do_tpgive,		FALSE	},
+	{ "goto",		do_tpgoto,		FALSE	},
+	{ "gtransfer",		do_tpgtransfer,		FALSE	},
+	{ "input",		do_tpinput,		FALSE	},
+	{ "interrupt",		do_tpinterrupt,		FALSE	},
+	{ "junk",		do_tpjunk,		FALSE	},
+	{ "link",		do_tplink,		FALSE	},
+	{ "mload",		do_tpmload,		FALSE	},
+	{ "oload",		do_tpoload,		FALSE	},
+	{ "otransfer",		do_tpotransfer,		FALSE	},
+	{ "peace",		do_tppeace,		FALSE	},
+	{ "prompt",		do_tpprompt,		FALSE	},
+	{ "purge",		do_tppurge,		FALSE	},
+	{ "queue",		do_tpqueue,		FALSE	},
+	{ "raisedead",		do_tpraisedead,		TRUE	},
+	{ "rawkill",		do_tprawkill,		FALSE	},
+	{ "remember",		do_tpremember,		FALSE	},
+	{ "remove",		do_tpremove,		FALSE	},
+	{ "resetdice",		do_tpresetdice,		TRUE	},
+	{ "settimer",		do_tpsettimer,		FALSE	},
+	{ "showroom",		do_tpshowroom,		TRUE	},
+	{ "skimprove",		do_tpskimprove,		TRUE	},
+	{ "startcombat",	do_tpstartcombat,	FALSE	},
+	{ "stringmob",		do_tpstringmob,		TRUE	},
+	{ "stringobj",		do_tpstringobj,		TRUE	},
+	{ "stripaffect",	do_tpstripaffect,	TRUE	},
+	{ "stripaffectname",	do_tpstripaffectname,	TRUE	},
+	{ "transfer",		do_tptransfer,		FALSE	},
+	{ "usecatalyst",	do_tpusecatalyst,	FALSE	},
+	{ "varclear",		do_tpvarclear,		FALSE	},
+	{ "varclearon",		do_tpvarclearon,	FALSE	},
+	{ "varcopy",		do_tpvarcopy,		FALSE	},
+	{ "varsave",		do_tpvarsave,		FALSE	},
+	{ "varsaveon",		do_tpvarsaveon,		FALSE	},
+	{ "varset",		do_tpvarset,		FALSE	},
+	{ "varseton",		do_tpvarseton,		FALSE	},
+	{ "vforce",		do_tpvforce,		FALSE	},
+	{ "wiretransfer",	do_tpwiretransfer,	FALSE	},
+	{ "xcall",		do_tpxcall,		FALSE	},
+	{ "zecho",		do_tpzecho,		FALSE	},
+	{ "zot",		do_tpzot,		TRUE	},
+	{ NULL,			NULL,			FALSE	}
+};
+
+// Commands accessible by other scripts
+const struct script_cmd_type tokenother_cmd_table[] = {
+	{ "adjust",		do_tpadjust,		FALSE	},
+	{ "give",		do_tpgive,		FALSE	},
+	{ "junk",		do_tpjunk,		FALSE	},
+	{ NULL,			NULL,			FALSE	}
+};
+
+
+int tpcmd_lookup(char *command,bool istoken)
+{
+	int cmd;
+
+	if(istoken) {
+		for (cmd = 0; token_cmd_table[cmd].name; cmd++)
+			if (command[0] == token_cmd_table[cmd].name[0] &&
+				!str_prefix(command, token_cmd_table[cmd].name))
+				return cmd;
+	} else {
+		for (cmd = 0; tokenother_cmd_table[cmd].name; cmd++)
+			if (command[0] == tokenother_cmd_table[cmd].name[0] &&
+				!str_prefix(command, tokenother_cmd_table[cmd].name))
+				return cmd;
+	}
+
+	return -1;
+}
+
+/*
+ * Displays the source code of a given TOKENprogram
+ *
+ * Syntax: tpdump [vnum]
+ */
+void do_tpdump(CHAR_DATA *ch, char *argument)
+{
+	char buf[ MAX_INPUT_LENGTH ];
+	SCRIPT_DATA *tprg;
+
+	one_argument(argument, buf);
+	if (!(tprg = get_script_index(atoi(buf), PRG_TPROG))) {
+		send_to_char("No such TOKENprogram.\n\r", ch);
+		return;
+	}
+	if (!area_has_read_access(ch,tprg->area)) {
+		send_to_char("You do not have permission to view that script.\n\r", ch);
+		return;
+	}
+	page_to_char(tprg->edit_src, ch);
+}
+
+
+/*
+ * Displays TOKENprogram triggers of a token
+ *
+ * Syntax: tpstat [victim] [vnum]
+ */
+void do_tpstat(CHAR_DATA *ch, char *argument)
+{
+	char arg[MSL], arg2[MSL];
+	TOKEN_DATA *token = NULL;
+	CHAR_DATA *victim;
+	PROG_LIST *tprg;
+	int i, slot;
+	long vnum = 0;
+
+	argument = one_argument(argument, arg);
+	argument = one_argument(argument, arg2);
+
+	if (arg[0] == '\0') {
+		send_to_char("Syntax:  tpstat <character> [token vnum]\n\r", ch);
+		return;
+	}
+
+	if ((victim = get_char_world(NULL, arg)) == NULL) {
+		send_to_char("Character not found.\n\r", ch);
+		return;
+	}
+
+	if (arg2[0] != '\0') {
+		vnum = atol(arg2);
+
+		if (get_token_index(vnum) == NULL) {
+			send_to_char("That token vnum does not exist.\n\r", ch);
+			return;
+		}
+
+		if ((token = get_token_char(victim, vnum)) == NULL) {
+			act("$N doesn't have that token.", ch, NULL, victim, TO_CHAR);
+			return;
+		}
+	}
+
+	if(!token) {
+		send_to_char("Token not found.\n\r", ch);
+		return;
+	}
+	sprintf(arg, "Token #%-6ld [%s] ID [%08X:%08X]\n\r", token->pIndexData->vnum, token->pIndexData->name, (int)token->id[0], (int)token->id[1]);
+
+	send_to_char(arg, ch);
+
+	sprintf(arg, "Delay   %-6d [%s]\n\r",
+		token->progs->delay,
+		token->progs->target ? token->progs->target->name : "No target");
+
+	send_to_char(arg, ch);
+
+	if (!token->pIndexData->progs)
+		send_to_char("[No programs set]\n\r", ch);
+	else
+	for(i = 0, slot = 0; slot < TRIGSLOT_MAX; slot++) {
+		for(tprg = token->pIndexData->progs[slot]; tprg; tprg = tprg->next) {
+			sprintf(arg, "[%2d] Trigger [%-8s] Program [%4ld] Phrase [%s]\n\r",
+				++i, trigger_name(tprg->trig_type),
+				tprg->vnum,
+				trigger_phrase(tprg->trig_type,tprg->trig_phrase));
+			send_to_char(arg, ch);
+		}
+	}
+
+	if(token->progs->vars) {
+		pVARIABLE var;
+
+		for(var = token->progs->vars; var; var = var->next) {
+			switch(var->type) {
+			case VAR_INTEGER:
+				sprintf(arg,"Name [%-20s] Type[NUMBER] Save[%c] Value[%d]\n\r",
+					var->name,var->save?'Y':'N',var->_.i);
+				break;
+			case VAR_STRING:
+			case VAR_STRING_S:
+				sprintf(arg,"Name [%-20s] Type[STRING] Save[%c] Value[%s{x]\n\r",
+					var->name,var->save?'Y':'N',var->_.s?var->_.s:"(empty)");
+				break;
+			case VAR_ROOM:
+				if(var->_.r && var->_.r->vnum > 0)
+					sprintf(arg, "Name [%-20s] Type[ROOM  ] Save[%c] Value[%s (%d)]\n\r", var->name,var->save?'Y':'N',var->_.r->name,(int)var->_.r->vnum);
+				else
+					sprintf(arg, "Name [%-20s] Type[ROOM  ] Save[%c] Value[-no-where-]\n\r", var->name,var->save?'Y':'N');
+				break;
+			case VAR_EXIT:
+				if(var->_.e && var->_.e->from_room && var->_.e->from_room->vnum > 0)
+					sprintf(arg, "Name [%-20s] Type[EXIT  ] Save[%c] Value[%s in %s (%d)]\n\r", var->name,var->save?'Y':'N',dir_name[var->_.e->orig_door],var->_.e->from_room->name,(int)var->_.e->from_room->vnum);
+				else
+					sprintf(arg, "Name [%-20s] Type[EXIT  ] Save[%c] Value[-no-exit-]\n\r", var->name,var->save?'Y':'N');
+				break;
+			case VAR_MOBILE:
+				if(var->_.m) {
+					if(IS_NPC(var->_.m))
+					sprintf(arg, "Name [%-20s] Type[MOBILE] Save[%c] Value[%s (%d)] ID[%08X:%08X]\n\r", var->name,var->save?'Y':'N',var->_.m->short_descr,(int)var->_.m->pIndexData->vnum,(int)var->_.m->id[0],(int)var->_.m->id[1]);
+					else
+						sprintf(arg, "Name [%-20s] Type[PLAYER] Save[%c] Value[%s] ID[%08X:%08X]\n\r", var->name,var->save?'Y':'N',var->_.m->name,(int)var->_.m->id[0],(int)var->_.m->id[1]);
+				} else
+					sprintf(arg, "Name [%-20s] Type[MOBILE] Save[%c] Value[-no-mobile-]\n\r", var->name,var->save?'Y':'N');
+				break;
+			case VAR_OBJECT:
+				if(var->_.o)
+					sprintf(arg, "Name [%-20s] Type[OBJECT] Save[%c] Value[%s (%d)] ID[%08X:%08X]\n\r", var->name,var->save?'Y':'N',var->_.o->short_descr,(int)var->_.o->pIndexData->vnum,(int)var->_.o->id[0],(int)var->_.o->id[1]);
+				else
+					sprintf(arg, "Name [%-20s] Type[OBJECT] Save[%c] Value[-no-object-]\n\r", var->name,var->save?'Y':'N');
+				break;
+			case VAR_TOKEN:
+				if(var->_.t)
+					sprintf(arg, "Name [%-20s] Type[TOKEN ] Save[%c] Value[%s (%d)] ID[%08X:%08X]\n\r", var->name,var->save?'Y':'N',var->_.t->name,(int)var->_.t->pIndexData->vnum,(int)var->_.t->id[0],(int)var->_.t->id[1]);
+				else
+					sprintf(arg, "Name [%-20s] Type[TOKEN ] Save[%c] Value[-no-token-]\n\r", var->name,var->save?'Y':'N');
+				break;
+			}
+
+			send_to_char(arg, ch);
+		}
+	}
+}
+
+char *tp_getlocation(SCRIPT_VARINFO *info, char *argument, ROOM_INDEX_DATA **room)
+{
+	char *rest, *rest2;
+	long vnum;
+	CHAR_DATA *victim;
+	OBJ_DATA *obj;
+	AREA_DATA *area;
+	ROOM_INDEX_DATA *loc;
+	WILDS_DATA *pWilds;
+	SCRIPT_PARAM arg;
+
+	*room = NULL;
+	if((rest = expand_argument(info,argument,&arg))) {
+		switch(arg.type) {
+		case ENT_NONE:	*room = token_room(info->token); break;
+		case ENT_NUMBER:
+			*room = get_room_index(arg.d.num);
+			break;
+		case ENT_STRING:
+			if(arg.d.str[0] == '@')
+				*room = get_exit_dest(token_room(info->token), arg.d.str+1);
+			else if(!str_cmp(arg.d.str,"here"))
+				*room = token_room(info->token);
+			else if(!str_cmp(arg.d.str,"vroom")) {
+				int vnum,id1, id2;
+				if((rest2 = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
+					rest = rest2;
+					vnum = arg.d.num;
+					if((rest2 = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
+						rest = rest2;
+
+						id1 = arg.d.num;
+						if((rest2 = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
+							rest = rest2;
+
+							id2 = arg.d.num;
+							*room = get_clone_room(get_room_index(vnum),id1,id2);
+						}
+					}
+				}
+			} else if(!str_cmp(arg.d.str,"wilds")) {
+				int x, y;
+
+				x = arg.d.num;
+				if((rest2 = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
+					rest = rest2;
+					y = arg.d.num;
+					if((rest2 = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
+						rest = rest2;
+						if(!(pWilds = get_wilds_from_uid(NULL, arg.d.num))) break;
+
+						if (x > (pWilds->map_size_x - 1) || y > (pWilds->map_size_y - 1)) break;
+
+						// if safe is used, it will not go to bad rooms
+						if((rest2 = expand_argument(info,rest,&arg)) && arg.type == ENT_STRING &&
+							!str_cmp(arg.d.str,"safe") && !check_for_bad_room(pWilds, x, y))
+							break;
+
+						rest = rest2;
+						room_used_for_wilderness.wilds = pWilds;
+						room_used_for_wilderness.x = x;
+						room_used_for_wilderness.y = y;
+						*room = &room_used_for_wilderness;
+					} else {
+					}
+				}
+			} else {
+				loc = NULL;
+				for (area = area_first; area; area = area->next) {
+					if (!str_infix(arg.d.str, area->name)) {
+						if(!(loc = location_to_room(&area->recall))) {
+							for (vnum = area->min_vnum; vnum <= area->max_vnum; vnum++)
+								if ((loc = get_room_index(vnum)))
+									break;
+						}
+
+						break;
+					}
+				}
+
+				if(!loc) {
+					if((victim = get_char_world(NULL, arg.d.str)))
+						loc = victim->in_room;
+					else if ((obj = get_obj_world(NULL, arg.d.str)))
+						loc = obj_room(obj);
+				}
+				*room = loc;
+			}
+			break;
+		case ENT_MOBILE:
+			*room = arg.d.mob ? arg.d.mob->in_room : NULL; break;
+		case ENT_OBJECT:
+			*room = arg.d.obj ? obj_room(arg.d.obj) : NULL; break;
+		case ENT_ROOM:
+			*room = arg.d.room; break;
+		case ENT_EXIT:
+			*room = arg.d.exit ? exit_destination(arg.d.exit) : NULL; break;
+		case ENT_TOKEN:
+			*room = token_room(arg.d.token); break;
+		}
+	}
+	return rest;
+}
+
+
+char *tp_getolocation(SCRIPT_VARINFO *info, char *argument, ROOM_INDEX_DATA **room, OBJ_DATA **container, CHAR_DATA **carrier, int *wear_loc)
+{
+	char *rest, *rest2;
+	long vnum;
+	CHAR_DATA *victim;
+	OBJ_DATA *obj;
+	AREA_DATA *area;
+	ROOM_INDEX_DATA *loc;
+	WILDS_DATA *pWilds;
+	SCRIPT_PARAM arg;
+
+	*room = NULL;
+	*container = NULL;
+	*carrier = NULL;
+	*wear_loc = WEAR_NONE;
+	if((rest = expand_argument(info,argument,&arg))) {
+		switch(arg.type) {
+		case ENT_NONE:	*room = token_room(info->token); break;
+		case ENT_NUMBER:
+			*room = get_room_index(arg.d.num);
+			break;
+		case ENT_STRING:
+			if(arg.d.str[0] == '@')
+				*room = get_exit_dest(token_room(info->token), arg.d.str+1);
+			else if(!str_cmp(arg.d.str,"here"))
+				*room = token_room(info->token);
+			else if(!str_cmp(arg.d.str,"vroom")) {
+				int vnum,id1, id2;
+				if((rest2 = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
+					rest = rest2;
+					vnum = arg.d.num;
+					if((rest2 = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
+						rest = rest2;
+
+						id1 = arg.d.num;
+						if((rest2 = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
+							rest = rest2;
+
+							id2 = arg.d.num;
+							*room = get_clone_room(get_room_index(vnum),id1,id2);
+						}
+					}
+				}
+			} else if(!str_cmp(arg.d.str,"wilds")) {
+				int x, y;
+
+				x = arg.d.num;
+				if((rest2 = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
+					rest = rest2;
+					y = arg.d.num;
+					if((rest2 = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
+						rest = rest2;
+						if(!(pWilds = get_wilds_from_uid(NULL, arg.d.num))) break;
+
+						if (x > (pWilds->map_size_x - 1) || y > (pWilds->map_size_y - 1)) break;
+
+						// if safe is used, it will not go to bad rooms
+						if((rest2 = expand_argument(info,rest,&arg)) && arg.type == ENT_STRING &&
+							!str_cmp(arg.d.str,"safe") && !check_for_bad_room(pWilds, x, y))
+							break;
+
+						rest = rest2;
+						room_used_for_wilderness.wilds = pWilds;
+						room_used_for_wilderness.x = x;
+						room_used_for_wilderness.y = y;
+						*room = &room_used_for_wilderness;
+					} else {
+					}
+				}
+			} else {
+				loc = NULL;
+				for (area = area_first; area; area = area->next) {
+					if (!str_infix(arg.d.str, area->name)) {
+						if(!(loc = location_to_room(&area->recall))) {
+							for (vnum = area->min_vnum; vnum <= area->max_vnum; vnum++)
+								if ((loc = get_room_index(vnum)))
+									break;
+						}
+
+						break;
+					}
+				}
+
+				if(!loc) {
+					if((victim = get_char_world(NULL, arg.d.str)))
+						loc = victim->in_room;
+					else if ((obj = get_obj_world(NULL, arg.d.str)))
+						loc = obj_room(obj);
+				}
+				*room = loc;
+			}
+			break;
+		case ENT_MOBILE:
+			*carrier = arg.d.mob;
+			if((rest2 = expand_argument(info,rest,&arg)) && arg.type == ENT_STRING) {
+				*wear_loc = flag_value(wear_loc_flags, arg.d.str);
+				if(*wear_loc == NO_FLAG) *wear_loc = WEAR_NONE;
+			} else {
+				*room = *carrier ? (*carrier)->in_room : NULL;
+				*carrier = NULL;
+			}
+			break;
+		case ENT_OBJECT:
+			*container = arg.d.obj;
+			if(!(rest2 = expand_argument(info,rest,&arg)) || arg.type != ENT_STRING || str_cmp(arg.d.str,"inside")) {
+				*room = *container ? obj_room(*container) : NULL;
+				*container = NULL;
+			}
+			break;
+		case ENT_ROOM:
+			*room = arg.d.room; break;
+		case ENT_EXIT:
+			*room = arg.d.exit ? exit_destination(arg.d.exit) : NULL; break;
+		case ENT_TOKEN:
+			*room = token_room(arg.d.token); break;
+		}
+	}
+	return rest;
+}
+
+
+
+void token_interpret(SCRIPT_VARINFO *info, char *argument)
+{
+	char buf[MAX_STRING_LENGTH], command[MAX_INPUT_LENGTH];
+	int cmd;
+
+	if(!info->token) return;
+
+	if (!str_prefix("token ", argument))
+		argument = skip_whitespace(argument+5);
+
+	argument = one_argument(argument, command);
+
+	cmd = tpcmd_lookup(command,TRUE);
+
+	if(cmd < 0) {
+		sprintf(buf, "Token_interpret: invalid cmd from token %ld: '%s'", info->token->pIndexData->vnum, command);
+		bug(buf, 0);
+		return;
+	}
+
+	(*token_cmd_table[cmd].func) (info, argument);
+	tail_chain();
+}
+
+void tokenother_interpret(SCRIPT_VARINFO *info, char *argument)
+{
+	char buf[MAX_STRING_LENGTH], command[MAX_INPUT_LENGTH];
+	int cmd;
+
+	if(info->token) return;
+	if(!info->mob && !info->obj && !info->room) return;
+
+	if (!str_prefix("token ", argument))
+		argument = skip_whitespace(argument+5);
+
+	argument = one_argument(argument, command);
+
+	cmd = tpcmd_lookup(command,FALSE);
+
+	if(cmd < 0) {
+		sprintf(buf, "Tokenother_interpret: invalid cmd: '%s'", command);
+		bug(buf, 0);
+		return;
+	}
+
+	(*tokenother_cmd_table[cmd].func) (info, argument);
+	tail_chain();
+}
+
+SCRIPT_CMD(do_tpadjust)
+{
+	char buf[MSL],*rest;
+	int vnum = 0, num = -1, value = 0;
+	bool timer = FALSE;
+	CHAR_DATA *victim = NULL;
+	TOKEN_DATA *token = NULL;
+	SCRIPT_PARAM arg;
+
+	if(!info) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpAdjust - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING:
+		if (info->mob && !str_cmp(arg.d.str, "self"))
+			victim = info->mob;
+		else
+			victim = get_char_world(info->mob, arg.d.str);
+		break;
+	case ENT_MOBILE:
+		victim = arg.d.mob;
+		break;
+	case ENT_TOKEN:
+		token = arg.d.token;
+		break;
+	default: break;
+	}
+
+	if(!token) {
+		if(!victim) {
+			bug("TpAdjust - NULL victim.", 0);
+			return;
+		}
+
+		argument = rest;
+		if(!(rest = expand_argument(info,argument,&arg))) {
+			bug("TpAdjust - Error in parsing.",0);
+			return;
+		}
+
+		switch(arg.type) {
+		case ENT_STRING: vnum = is_number(arg.d.str) ? atoi(arg.d.str) : 0; break;
+		case ENT_NUMBER: vnum = arg.d.num; break;
+		default: break;
+		}
+
+		if (vnum < 1 || !get_token_index(vnum)) {
+			bug("TpAdjust - invalid token vnum.", 0);
+			return;
+		}
+
+		if (!(token = get_token_char(victim, vnum)))
+			return;
+	}
+
+	argument = rest;
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpAdjust - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING:
+		if(is_number(arg.d.str))
+			num = atoi(arg.d.str);
+		else if(!str_cmp(arg.d.str,"timer"))
+			timer = TRUE;
+		break;
+	case ENT_NUMBER: num = arg.d.num; break;
+	default: break;
+	}
+
+	if ((num < 0 || num >= MAX_TOKEN_VALUES) && !timer) {
+		sprintf(buf, "TpAdjust: bad v#");
+		bug(buf, 0);
+		return;
+	}
+
+
+	argument = one_argument(rest,buf);
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpAdjust - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING:
+		if(is_number(arg.d.str))
+			value = atoi(arg.d.str);
+		else {
+			bug("TpAdjust - Invalid value.",0);
+			return;
+		}
+		break;
+	case ENT_NUMBER: value = arg.d.num; break;
+	default:
+		bug("TpAdjust - Invalid value.",0);
+		return;
+	}
+
+	if(timer) {
+		switch (buf[0]) {
+		case '+': token->timer += value; break;
+		case '-': token->timer -= value; break;
+		case '*': token->timer *= value; break;
+		case '/':
+			if (!value) {
+				bug("TpAdjust - adjust called with operator / and value 0", 0);
+				return;
+			}
+			token->timer /= value;
+			break;
+		case '%':
+			if (!value) {
+				bug("TpAdjust - adjust called with operator % and value 0", 0);
+				return;
+			}
+			token->timer %= value;
+			break;
+
+		case '=': token->timer = value; break;
+		case '&': token->timer &= value; break;
+		case '|': token->timer |= value; break;
+		case '!': token->timer &= ~value; break;
+		case '^': token->timer ^= value; break;
+		default:
+			return;
+		}
+	} else {
+		switch (buf[0]) {
+		case '+': token->value[num] += value; break;
+		case '-': token->value[num] -= value; break;
+		case '*': token->value[num] *= value; break;
+		case '/':
+			if (!value) {
+				bug("TpAdjust - adjust called with operator / and value 0", 0);
+				return;
+			}
+			token->value[num] /= value;
+			break;
+		case '%':
+			if (!value) {
+				bug("TpAdjust - adjust called with operator % and value 0", 0);
+				return;
+			}
+			token->value[num] %= value;
+			break;
+
+		case '=': token->value[num] = value; break;
+		case '&': token->value[num] &= value; break;
+		case '|': token->value[num] |= value; break;
+		case '!': token->value[num] &= ~value; break;
+		case '^': token->value[num] ^= value; break;
+		default:
+			return;
+		}
+	}
+}
+
+// do_tpcall
+SCRIPT_CMD(do_tpcall)
+{
+	char *rest;
+	CHAR_DATA *vch, *ch;
+	OBJ_DATA *obj1, *obj2;
+	SCRIPT_DATA *script;
+	int depth, vnum;
+	SCRIPT_PARAM arg;
+	int ret;
+
+	DBG2ENTRY2(PTR,info,PTR,argument);
+	if(info->token) {
+		DBG3MSG2("info->token = %s(%d)\n",info->token->name,VNUM(info->token));
+	}
+
+	if(!info || !info->token) return;
+
+	if (!argument[0]) {
+		bug("TpCall: missing arguments from vnum %d.", VNUM(info->token));
+		return;
+	}
+
+	// Call depth checking
+	depth = script_call_depth;
+	if(script_call_depth == 1) {
+		bug("TpCall: maximum call depth exceeded for mob vnum %d.", VNUM(info->token));
+		return;
+	} else if(script_call_depth > 1)
+		--script_call_depth;
+
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpCall: Error in parsing from vnum %ld.", VNUM(info->token));
+		// Restore the call depth to the previous value
+		script_call_depth = depth;
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: vnum = atoi(arg.d.str); break;
+	case ENT_NUMBER: vnum = arg.d.num; break;
+	default: vnum = 0; break;
+	}
+
+	if (vnum < 1 || !(script = get_script_index(vnum, PRG_TPROG))) {
+		bug("TpCall: invalid prog from vnum %d.", VNUM(info->token));
+		return;
+	}
+
+	ch = vch = NULL;
+	obj1 = obj2 = NULL;
+
+	if(*rest) {	// Enactor
+		argument = rest;
+		if(!(rest = expand_argument(info,argument,&arg))) {
+			bug("TpCall: Error in parsing from vnum %ld.", VNUM(info->token));
+			// Restore the call depth to the previous value
+			script_call_depth = depth;
+			return;
+		}
+
+		switch(arg.type) {
+		case ENT_STRING: ch = get_char_room(NULL, token_room(info->token), arg.d.str); break;
+		case ENT_MOBILE: ch = arg.d.mob; break;
+		default: ch = NULL; break;
+		}
+	}
+
+	if(ch && *rest) {	// Victim
+		argument = rest;
+		if(!(rest = expand_argument(info,argument,&arg))) {
+			bug("TpCall: Error in parsing from vnum %ld.", VNUM(info->token));
+			// Restore the call depth to the previous value
+			script_call_depth = depth;
+			return;
+		}
+
+		argument = rest;
+		if(!(rest = expand_argument(info,argument,&arg))) {
+			bug("TpCall: Error in parsing from vnum %ld.", VNUM(info->token));
+			// Restore the call depth to the previous value
+			script_call_depth = depth;
+			return;
+		}
+
+		switch(arg.type) {
+		case ENT_STRING: vch = get_char_room(NULL, token_room(info->token),arg.d.str); break;
+		case ENT_MOBILE: vch = arg.d.mob; break;
+		default: vch = NULL; break;
+		}
+	}
+
+	if(*rest) {	// Obj 1
+		argument = rest;
+		if(!(rest = expand_argument(info,argument,&arg))) {
+			bug("TpCall: Error in parsing from vnum %ld.", VNUM(info->token));
+			// Restore the call depth to the previous value
+			script_call_depth = depth;
+			return;
+		}
+
+		switch(arg.type) {
+		case ENT_STRING:
+			obj1 = get_obj_here(NULL, token_room(info->token), arg.d.str);
+			break;
+		case ENT_OBJECT: obj1 = arg.d.obj; break;
+		default: obj1 = NULL; break;
+		}
+	}
+
+	if(obj1 && *rest) {	// Obj 2
+		argument = rest;
+		if(!(rest = expand_argument(info,argument,&arg))) {
+			bug("TpCall: Error in parsing from vnum %ld.", VNUM(info->token));
+			// Restore the call depth to the previous value
+			script_call_depth = depth;
+			return;
+		}
+
+		switch(arg.type) {
+		case ENT_STRING:
+			obj2 = get_obj_here(NULL, token_room(info->token), arg.d.str);
+			break;
+		case ENT_OBJECT: obj2 = arg.d.obj; break;
+		default: obj2 = NULL; break;
+		}
+	}
+
+	ret = execute_script(script->vnum, script, NULL, NULL, NULL, info->token, ch, obj1, obj2, vch, NULL,info->phrase,info->trigger);
+	if(info->token) {
+		info->token->progs->lastreturn = ret;
+		DBG3MSG1("lastreturn = %d\n", info->token->progs->lastreturn);
+	} else
+		info->block->ret_val = ret;
+
+	// restore the call depth to the previous value
+	script_call_depth = depth;
+}
+
+// do_tpecho
+SCRIPT_CMD(do_tpecho)
+{
+	char buf[MSL];
+
+	if(!info || !info->token) return;
+
+	expand_string(info,argument,buf);
+
+	if(!buf[0]) return;
+
+	strcat(buf,"\n\r");
+	room_echo(token_room(info->token), buf);
+}
+
+// do_tpechoroom
+// Syntax: token echoroom <location> <string>
+SCRIPT_CMD(do_tpechoroom)
+{
+	char buf[MSL], *rest;
+	ROOM_INDEX_DATA *room;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_MOBILE: room = arg.d.mob->in_room; break;
+	case ENT_OBJECT: room = obj_room(arg.d.obj); break;
+	case ENT_ROOM: room = arg.d.room; break;
+	case ENT_EXIT: room = exit_destination(arg.d.exit); break;
+	default: room = NULL; break;
+	}
+
+	if (!room || !room->people) return;
+
+	// Expand the message
+	expand_string(info,rest,buf);
+
+	if(!buf[0]) return;
+
+	room_echo(room, buf);
+}
+
+// do_tpechoaround
+SCRIPT_CMD(do_tpechoaround)
+{
+	char buf[MSL], *rest;
+	CHAR_DATA *victim;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING: victim = get_char_room(NULL, token_room(info->token),arg.d.str); break;
+	case ENT_MOBILE: victim = arg.d.mob; break;
+	default: victim = NULL; break;
+	}
+
+	if (!victim || !victim->in_room)
+		return;
+
+	// Expand the message
+	expand_string(info,rest,buf);
+
+	if(!buf[0]) return;
+
+	act(buf, victim, NULL, NULL, TO_ROOM);
+}
+
+// do_tpechonotvict
+SCRIPT_CMD(do_tpechonotvict)
+{
+	char buf[MSL], *rest;
+	CHAR_DATA *victim, *attacker;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING: attacker = get_char_room(NULL, token_room(info->token),arg.d.str); break;
+	case ENT_MOBILE: attacker = arg.d.mob; break;
+	default: attacker = NULL; break;
+	}
+
+	if (!attacker || !attacker->in_room)
+		return;
+
+	if(!(rest = expand_argument(info,rest,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING: victim = get_char_room(NULL, token_room(info->token),arg.d.str); break;
+	case ENT_MOBILE: victim = arg.d.mob; break;
+	default: victim = NULL; break;
+	}
+
+	if (!victim || victim->in_room != attacker->in_room)
+		return;
+
+	// Expand the message
+	expand_string(info,rest,buf);
+
+	if(!buf[0]) return;
+
+	act(buf, victim, NULL, attacker, TO_NOTVICT);
+}
+
+SCRIPT_CMD(do_tpechobattlespam)
+{
+	char buf[MSL], *rest;
+	CHAR_DATA *victim, *attacker, *ch;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING: attacker = get_char_room(NULL, token_room(info->token),arg.d.str); break;
+	case ENT_MOBILE: attacker = arg.d.mob; break;
+	default: attacker = NULL; break;
+	}
+
+	if (!attacker || !attacker->in_room)
+		return;
+
+	if(!(rest = expand_argument(info,rest,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING: victim = get_char_room(NULL, token_room(info->token),arg.d.str); break;
+	case ENT_MOBILE: victim = arg.d.mob; break;
+	default: victim = NULL; break;
+	}
+
+	if (!victim || victim->in_room != attacker->in_room)
+		return;
+
+	// Expand the message
+	expand_string(info,rest,buf);
+
+	if(!buf[0]) return;
+
+	for (ch = attacker->in_room->people; ch; ch = ch->next_in_room) {
+		if (!IS_NPC(ch) && (ch != attacker && ch != victim) && (is_same_group(ch, attacker) || is_same_group(ch, victim) || !IS_SET(ch->comm, COMM_NOBATTLESPAM))) {
+			act(buf, ch, NULL, NULL, TO_CHAR);
+		}
+	}
+}
+
+// do_tpechoat
+SCRIPT_CMD(do_tpechoat)
+{
+	char buf[MSL], *rest;
+	CHAR_DATA *victim;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING: victim = get_char_room(NULL, token_room(info->token),arg.d.str); break;
+	case ENT_MOBILE: victim = arg.d.mob; break;
+	default: victim = NULL; break;
+	}
+
+	if (!victim || !victim->in_room)
+		return;
+
+	// Expand the message
+	expand_string(info,rest,buf);
+
+	if(!buf[0]) return;
+
+	act(buf, victim, NULL, NULL, TO_CHAR);
+}
+
+// do_tpechochurch
+SCRIPT_CMD(do_tpechochurch)
+{
+	char buf[MSL], *rest;
+	CHAR_DATA *victim;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING: victim = get_char_room(NULL, token_room(info->token),arg.d.str); break;
+	case ENT_MOBILE: victim = arg.d.mob; break;
+	default: victim = NULL; break;
+	}
+
+	if (!victim || IS_NPC(victim) || !victim->church)
+		return;
+
+	// Expand the message
+	expand_string(info,rest,buf);
+
+	if(!buf[0]) return;
+
+	msg_church_members(victim->church, buf);
+}
+
+// do_tpechogrouparound
+SCRIPT_CMD(do_tpechogrouparound)
+{
+	char buf[MSL], *rest;
+	CHAR_DATA *victim;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING: victim = get_char_room(NULL, token_room(info->token),arg.d.str); break;
+	case ENT_MOBILE: victim = arg.d.mob; break;
+	default: victim = NULL; break;
+	}
+
+	if (!victim || !victim->in_room)
+		return;
+
+	// Expand the message
+	expand_string(info,rest,buf);
+
+	if(!buf[0]) return;
+
+	act_new(buf,victim,NULL,NULL,TO_NOTFUNC,POS_RESTING,rop_same_group);
+}
+
+// do_tpechogroupat
+SCRIPT_CMD(do_tpechogroupat)
+{
+	char buf[MSL], *rest;
+	CHAR_DATA *victim;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING: victim = get_char_room(NULL, token_room(info->token),arg.d.str); break;
+	case ENT_MOBILE: victim = arg.d.mob; break;
+	default: victim = NULL; break;
+	}
+
+	if (!victim || !victim->in_room)
+		return;
+
+	// Expand the message
+	expand_string(info,rest,buf);
+
+	if(!buf[0]) return;
+
+	act_new(buf,victim,NULL,NULL,TO_FUNC,POS_RESTING,rop_same_group);
+}
+
+// do_tpecholeadaround
+SCRIPT_CMD(do_tpecholeadaround)
+{
+	char buf[MSL], *rest;
+	CHAR_DATA *victim;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING: victim = get_char_room(NULL, token_room(info->token),arg.d.str); break;
+	case ENT_MOBILE: victim = arg.d.mob; break;
+	default: victim = NULL; break;
+	}
+
+	if (!victim || !victim->leader || !victim->leader->in_room)
+		return;
+
+	// Expand the message
+	expand_string(info,rest,buf);
+
+	if(!buf[0]) return;
+
+	act(buf, victim->leader, NULL, NULL, TO_ROOM);
+}
+
+// do_tpecholeadat
+SCRIPT_CMD(do_tpecholeadat)
+{
+	char buf[MSL], *rest;
+	CHAR_DATA *victim;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING: victim = get_char_room(NULL, token_room(info->token),arg.d.str); break;
+	case ENT_MOBILE: victim = arg.d.mob; break;
+	default: victim = NULL; break;
+	}
+
+	if (!victim || !victim->leader || !victim->leader->in_room)
+		return;
+
+	// Expand the message
+	expand_string(info,rest,buf);
+
+	if(!buf[0]) return;
+
+	act(buf, victim->leader, NULL, NULL, TO_CHAR);
+}
+
+
+SCRIPT_CMD(do_tpgive)
+{
+	char buf[MSL],*rest;
+	int vnum = 0;
+	CHAR_DATA *victim;
+	TOKEN_INDEX_DATA *token_index;
+	SCRIPT_PARAM arg;
+
+	if(!info) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpGive - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING:
+		if (info->mob && !str_cmp(arg.d.str, "self"))
+			victim = info->mob;
+		else
+			victim = get_char_world(info->mob, arg.d.str);
+		break;
+	case ENT_MOBILE:
+		victim = arg.d.mob;
+		break;
+	default: victim = NULL; break;
+	}
+
+	if(!victim) {
+		bug("TpGive - NULL victim.", 0);
+		return;
+	}
+
+	argument = rest;
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpGive - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: vnum = is_number(arg.d.str) ? atoi(arg.d.str) : 0; break;
+	case ENT_NUMBER: vnum = arg.d.num; break;
+	default: break;
+	}
+
+	if (vnum < 1 || !(token_index = get_token_index(vnum))) {
+		bug("TpGive - invalid token vnum.", 0);
+		return;
+	}
+
+	if (get_token_char(victim, vnum)) {
+		sprintf(buf, "TpGive - trying to give a second copy of token %s (%ld) to char %s",
+			token_index->name, token_index->vnum, HANDLE(victim));
+		bug(buf, 0);
+		return;
+	}
+
+	give_token(token_index, victim);
+}
+
+// token junk <token reference>[ <exit code>]
+//  exit code is only used on self-junk
+SCRIPT_CMD(do_tpjunk)
+{
+	char *rest;
+	int vnum = 0/*, ret = 1*/;
+	CHAR_DATA *victim = NULL;
+	TOKEN_DATA *token = NULL;
+	SCRIPT_PARAM arg;
+
+	if(!info) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpJunk - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING:
+		if (info->mob && !str_cmp(arg.d.str, "self"))
+			victim = info->mob;
+		else
+			victim = get_char_world(info->mob, arg.d.str);
+		break;
+	case ENT_MOBILE:
+		victim = arg.d.mob;
+		break;
+	case ENT_TOKEN:
+		token = arg.d.token;
+		break;
+	default: break;
+	}
+
+
+	if(!token) {
+		if(!victim) {
+			bug("TpJunk - NULL victim.", 0);
+			return;
+		}
+
+		argument = rest;
+		if(!(rest = expand_argument(info,argument,&arg))) {
+			bug("TpJunk - Error in parsing.",0);
+			return;
+		}
+
+		switch(arg.type) {
+		case ENT_STRING: vnum = is_number(arg.d.str) ? atoi(arg.d.str) : 0; break;
+		case ENT_NUMBER: vnum = arg.d.num; break;
+		default: break;
+		}
+
+		for (token = victim->tokens; token; token = token->next) {
+			if (token->pIndexData->vnum == vnum)
+				break;
+		}
+
+		if (!token) return;
+	}
+
+	p_percent_trigger(NULL, NULL, NULL, token, NULL, NULL, NULL, TRIG_EXPIRE);
+
+	if(info->token && token == info->token) {
+		arg.type = ENT_NONE;
+		expand_argument(info,rest,&arg);
+		switch(arg.type) {
+		case ENT_STRING: info->block->ret_val = is_number(arg.d.str) ? atoi(arg.d.str) : 0; break;
+		case ENT_NUMBER: info->block->ret_val = arg.d.num; break;
+		default: break;
+		}
+	}
+
+	token_from_char(token);
+	free_token(token);
+}
+
+SCRIPT_CMD(do_tpvarset)
+{
+	char buf[MIL], name[MIL], *rest, *str = NULL;
+	CHAR_DATA *vch = NULL, *mobs = NULL;
+	OBJ_DATA *obj = NULL, *objs = NULL;
+	TOKEN_DATA *token = NULL, *tokens = NULL;
+	ROOM_INDEX_DATA *here;
+	EXIT_DATA *ex = NULL;
+	int vnum = 0,i;
+	unsigned long id1/*, id2*/;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token || !info->var) return;
+
+	here = token_room(info->token);
+
+	// Get name
+	argument = one_argument(argument,name);
+	if(!name[0]) return;
+
+	// Get type
+	argument = one_argument(argument,buf);
+	if(!buf[0]) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(!str_cmp(buf,"integer") || !str_cmp(buf,"number")) {
+		switch(arg.type) {
+		case ENT_NUMBER: variables_set_integer(info->var,name,arg.d.num); break;
+		case ENT_STRING:
+			if(is_number(arg.d.str))
+				variables_set_integer(info->var,name,atoi(arg.d.str)); break;
+		}
+	} else if(!str_cmp(buf,"string")) {
+		char tmp[MSL], *p;
+
+		switch(arg.type) {
+		case ENT_NUMBER:
+			sprintf(tmp,"%d",arg.d.num);
+			break;
+		case ENT_STRING:
+			strcpy(tmp,arg.d.str);
+			break;
+		default:return;
+		}
+
+		if(!(rest = expand_argument(info,rest,&arg)))
+			return;
+
+		switch(arg.type) {
+		case ENT_NONE:
+			variables_set_string(info->var,name,tmp,FALSE);
+			break;
+
+		case ENT_NUMBER:
+			p = tmp;
+			for(i=0;i<arg.d.num && p && *p;i++)
+				p = one_argument(p,buf);
+			if(i == arg.d.num)
+				variables_set_string(info->var,name,buf,FALSE);
+			break;
+		}
+	} else if(!str_cmp(buf,"append")) {
+		char tmp[MSL], *p;
+
+		switch(arg.type) {
+		case ENT_NUMBER:
+			sprintf(tmp,"%d",arg.d.num);
+			break;
+		case ENT_STRING:
+			strcpy(tmp,arg.d.str);
+			break;
+		default:return;
+		}
+
+		if(!(rest = expand_argument(info,rest,&arg)))
+			return;
+
+		switch(arg.type) {
+		case ENT_NONE:
+			variables_append_string(info->var,name,tmp);
+			break;
+
+		case ENT_NUMBER:
+			p = tmp;
+			for(i=0;i<arg.d.num && p && *p;i++)
+				p = one_argument(p,buf);
+			if(arg.d.num > 0 && i == arg.d.num)
+				variables_append_string(info->var,name,buf);
+			break;
+		}
+	} else if(!str_cmp(buf,"strformat")) {
+		variables_format_string(info->var,name);
+	} else if(!str_cmp(buf,"ed")) {
+		// ed $<object|room> <keyword>
+		char tmp[MSL],*p;
+		EXTRA_DESCR_DATA *desc;
+
+		switch(arg.type) {
+		case ENT_OBJECT: desc = arg.d.obj->extra_descr; break;
+		case ENT_ROOM: desc = arg.d.room->extra_descr; break;
+		default:return;
+		}
+
+		expand_string(info,rest,tmp);
+
+		p = get_extra_descr(tmp, desc);
+
+		variables_set_string(info->var,name,(p ? p : ""),FALSE);
+	} else if(!str_cmp(buf,"room")) {
+		switch(arg.type) {
+		case ENT_NUMBER:
+			variables_set_room(info->var,name,get_room_index(arg.d.num));
+			break;
+		case ENT_ROOM:
+			variables_set_room(info->var,name,arg.d.room);
+			break;
+		case ENT_EXIT:
+			here = arg.d.exit ? exit_destination(arg.d.exit) : NULL;
+			variables_set_room(info->var,name,here);
+			break;
+		case ENT_NONE:
+			variables_set_room(info->var,name,here);
+			break;
+		}
+	} else if(!str_cmp(buf,"highroom")) {
+
+		// Format: highroom <wilds-uid> <x> <y> <z> <ground>
+		WILDS_DATA *wilds;
+		int x, y, z;
+		bool ground;
+
+		if(arg.type == ENT_NUMBER) {
+			wilds = get_wilds_from_uid(NULL,arg.d.num);
+			if(wilds) {
+				if(!(rest = expand_argument(info,rest,&arg)) && arg.type != ENT_NUMBER) return;
+				x = arg.d.num;
+				if(x < 0 || x >= wilds->map_size_x) return;
+
+				if(!(rest = expand_argument(info,rest,&arg)) && arg.type != ENT_NUMBER) return;
+				y = arg.d.num;
+				if(y < 0 || x >= wilds->map_size_y) return;
+
+				if(!(rest = expand_argument(info,rest,&arg)) && arg.type != ENT_NUMBER) return;
+				z = arg.d.num;
+
+				if(!(rest = expand_argument(info,rest,&arg)) && arg.type != ENT_STRING) return;
+				ground = !str_cmp(arg.d.str,"ground") || !str_cmp(arg.d.str,"true");
+
+				variables_set_room(info->var,name,wilds_seek_down(wilds, x, y, z, ground));
+			}
+		}
+	} else if(!str_cmp(buf,"exit")) {
+		switch(arg.type) {
+		case ENT_ROOM:
+			here = arg.d.room;
+			if(!here || !expand_argument(info,rest,&arg))
+				return;
+			if(arg.type != ENT_STRING) return;
+		case ENT_STRING:
+			vnum = get_num_dir(arg.d.str);
+			if(vnum < 0) {
+				if(!str_cmp(arg.d.str,"random"))
+					vnum = number_range(0,MAX_DIR-1);
+				else if(!str_cmp(arg.d.str,"exists")) {
+					for(vnum = number_range(0,MAX_DIR-1), i = 0; i < MAX_DIR && !here->exit[vnum]; i++, vnum = (vnum+1)%MAX_DIR);
+
+					if(!here->exit[vnum]) vnum = -1;
+				} else if(!str_cmp(arg.d.str,"open")) {
+					for(vnum = number_range(0,MAX_DIR-1), i = 0; i < MAX_DIR && !here->exit[vnum]; i++, vnum = (vnum+1)%MAX_DIR);
+
+					if(!here->exit[vnum] || IS_SET(here->exit[vnum]->exit_info,EX_CLOSED)) vnum = -1;
+				}
+
+				if(vnum < 0)
+					return;
+			}
+			ex = here->exit[vnum];
+			break;
+		case ENT_EXIT:
+			ex = arg.d.exit;
+			break;
+		}
+		variables_set_exit(info->var,name,ex);
+	} else if(!str_cmp(buf,"mobile")) {
+		switch(arg.type) {
+		case ENT_STRING:
+			if(is_number(arg.d.str)) {
+				here = get_room_index(atoi(arg.d.str));
+				if(here && (mobs = here->people)) {
+					if(!expand_argument(info,rest,&arg))
+						return;
+					if(arg.type == ENT_NUMBER)
+						vnum = arg.d.num;
+					else if(arg.type == ENT_STRING) {
+						if(is_number(arg.d.str))
+							vnum = atoi(arg.d.str);
+						else
+							str = arg.d.str;
+					}
+				}
+			} else
+				vch = get_char_world(NULL,arg.d.str);
+			break;
+		case ENT_MOBILE:
+			vch = arg.d.mob;
+			break;
+		case ENT_LIST_MOB:
+			mobs = arg.d.list.ptr.mob ? *arg.d.list.ptr.mob : NULL;
+			if(mobs) {
+				if(!expand_argument(info,rest,&arg))
+					return;
+				if(arg.type == ENT_NUMBER)
+					vnum = arg.d.num;
+				else if(arg.type == ENT_STRING) {
+					if(is_number(arg.d.str))
+						vnum = atoi(arg.d.str);
+					else
+						str = arg.d.str;
+				} else
+					return;
+			}
+			break;
+		case ENT_NUMBER:
+			here = get_room_index(arg.d.num);
+			if(here && (mobs = here->people)) {
+				if(!expand_argument(info,rest,&arg))
+					return;
+				if(arg.type == ENT_NUMBER)
+					vnum = arg.d.num;
+				else if(arg.type == ENT_STRING) {
+					if(is_number(arg.d.str))
+						vnum = atoi(arg.d.str);
+					else
+						str = arg.d.str;
+				}
+			}
+			break;
+		case ENT_ROOM:
+			if(arg.d.room && (mobs = arg.d.room->people)) {
+				if(!expand_argument(info,rest,&arg))
+					return;
+				if(arg.type == ENT_NUMBER)
+					vnum = arg.d.num;
+				else if(arg.type == ENT_STRING) {
+					if(is_number(arg.d.str))
+						vnum = atoi(arg.d.str);
+					else
+						str = arg.d.str;
+				}
+			}
+			break;
+		default: return;
+		}
+
+		if(mobs) vch = script_get_char_list(mobs, NULL, FALSE, vnum, str);
+		variables_set_mobile(info->var,name,vch);
+	} else if(!str_cmp(buf,"player")) {
+		switch(arg.type) {
+		case ENT_STRING:
+			vch = get_player(arg.d.str);
+			break;
+		case ENT_MOBILE:
+			vch = arg.d.mob && !IS_NPC(arg.d.mob) ? arg.d.mob : NULL;
+			break;
+		case ENT_LIST_MOB:
+			mobs = arg.d.list.ptr.mob ? *arg.d.list.ptr.mob : NULL;
+			if(mobs) {
+				if(!expand_argument(info,rest,&arg))
+					return;
+				if(arg.type == ENT_STRING && !is_number(arg.d.str))
+					str = arg.d.str;
+				else
+					mobs = NULL;
+			}
+			break;
+		default: return;
+		}
+		if(mobs) vch = script_get_char_list(mobs, NULL, TRUE, 0, str);
+		variables_set_mobile(info->var,name,vch);
+	} else if(!str_cmp(buf,"object")) {
+		switch(arg.type) {
+		case ENT_STRING:
+			obj = get_obj_here(NULL,here,arg.d.str);
+			break;
+		case ENT_OBJECT:
+			obj = arg.d.obj;
+			break;
+		case ENT_MOBILE:
+			objs = arg.d.mob ? arg.d.mob->carrying : NULL;
+			break;
+		case ENT_LIST_OBJ:
+			objs = arg.d.list.ptr.obj ? *arg.d.list.ptr.obj : NULL;
+			break;
+		case ENT_ROOM:
+			objs = arg.d.room ? arg.d.room->contents : NULL;
+			break;
+		default: return;
+		}
+
+		if(objs) {
+			if(!expand_argument(info,rest,&arg))
+				return;
+			if(arg.type == ENT_NUMBER)
+				vnum = arg.d.num;
+			else if(arg.type == ENT_STRING) {
+				if(is_number(arg.d.str))
+					vnum = atoi(arg.d.str);
+				else
+					str = arg.d.str;
+			} else
+				return;
+			obj = script_get_obj_list(objs, NULL, 0, vnum, str);
+		}
+		variables_set_object(info->var,name,obj);
+	} else if(!str_cmp(buf,"carry")) {
+		switch(arg.type) {
+		case ENT_MOBILE:
+			objs = arg.d.mob ? arg.d.mob->carrying : NULL;
+			break;
+		case ENT_LIST_OBJ:
+			objs = arg.d.list.ptr.obj ? *arg.d.list.ptr.obj : NULL;
+			break;
+		default: return;
+		}
+
+		if(objs) {
+			if(!expand_argument(info,rest,&arg))
+				return;
+			if(arg.type == ENT_NUMBER)
+				vnum = arg.d.num;
+			else if(arg.type == ENT_STRING) {
+				if(is_number(arg.d.str))
+					vnum = atoi(arg.d.str);
+				else
+					str = arg.d.str;
+			} else
+				return;
+			obj = script_get_obj_list(objs, NULL, 2, vnum, str);
+		}
+		variables_set_object(info->var,name,obj);
+	} else if(!str_cmp(buf,"worn")) {
+		switch(arg.type) {
+		case ENT_MOBILE:
+			objs = arg.d.mob ? arg.d.mob->carrying : NULL;
+			break;
+		case ENT_LIST_OBJ:
+			objs = arg.d.list.ptr.obj ? *arg.d.list.ptr.obj : NULL;
+			break;
+		default: return;
+		}
+
+		if(objs) {
+			if(!expand_argument(info,rest,&arg))
+				return;
+			if(arg.type == ENT_NUMBER)
+				vnum = arg.d.num;
+			else if(arg.type == ENT_STRING) {
+				if(is_number(arg.d.str))
+					vnum = atoi(arg.d.str);
+				else
+					str = arg.d.str;
+			} else
+				return;
+			obj = script_get_obj_list(objs, NULL, 1, vnum, str);
+		}
+		variables_set_object(info->var,name,obj);
+	} else if(!str_cmp(buf,"content")) {
+		switch(arg.type) {
+		case ENT_LIST_OBJ:
+			objs = arg.d.list.ptr.obj ? *arg.d.list.ptr.obj : NULL;
+			break;
+		case ENT_OBJECT:
+			objs = arg.d.obj ? arg.d.obj->contains : NULL;
+			break;
+		default: return;
+		}
+
+		if(objs && arg.type != ENT_NUMBER && arg.type != ENT_STRING) {
+			if(!expand_argument(info,rest,&arg))
+				return;
+			if(arg.type == ENT_NUMBER)
+				vnum = arg.d.num;
+			else if(arg.type == ENT_STRING) {
+				if(is_number(arg.d.str))
+					vnum = atoi(arg.d.str);
+				else
+					str = arg.d.str;
+			} else
+				return;
+		}
+		obj = script_get_obj_list(objs, NULL, 0, vnum, str);
+		variables_set_object(info->var,name,obj);
+	} else if(!str_cmp(buf,"token")) {
+		switch(arg.type) {
+		case ENT_MOBILE:   tokens = arg.d.mob ? arg.d.mob->tokens : NULL; break;
+//		case ENT_OBJECT:   tokens = arg.d.obj ? arg.d.obj->tokens : NULL; break;
+//		case ENT_ROOM:     tokens = arg.d.room ? arg.d.room->tokens : NULL; break;
+		case ENT_TOKEN:    token = arg.d.token; break;
+		case ENT_LIST_TOK: tokens = arg.d.list.ptr.tok ? *arg.d.list.ptr.tok : NULL; break;
+		case ENT_NONE:     token = info->token; break;
+		default: return;
+		}
+
+		if(tokens) token = token_find_match(info, tokens, rest);
+		variables_set_token(info->var,name,token);
+	} else if(!str_cmp(buf,"idmobile")) {
+		switch(arg.type) {
+		case ENT_NUMBER:
+			id1 = arg.d.num;
+			if(!expand_argument(info,rest,&arg) || arg.type != ENT_NUMBER)
+				return;
+			vch = idfind_mobile(id1,arg.d.num);
+			break;
+		default: return;
+		}
+		variables_set_mobile(info->var,name,vch);
+	} else if(!str_cmp(buf,"idobject")) {
+		switch(arg.type) {
+		case ENT_NUMBER:
+			id1 = arg.d.num;
+			if(!expand_argument(info,rest,&arg) || arg.type != ENT_NUMBER)
+				return;
+			obj = idfind_object(id1,arg.d.num);
+			break;
+		default: return;
+		}
+		variables_set_object(info->var,name,obj);
+	} else if(!str_cmp(buf,"idplayer")) {
+		switch(arg.type) {
+		case ENT_NUMBER:
+			id1 = arg.d.num;
+			if(!expand_argument(info,rest,&arg) || arg.type != ENT_NUMBER)
+				return;
+			vch = idfind_player(id1,arg.d.num);
+			break;
+		default: return;
+		}
+		variables_set_mobile(info->var,name,vch);
+	} else if(!str_cmp(buf,"vroom")) {
+		switch(arg.type) {
+		case ENT_NUMBER:
+			here = get_room_index(arg.d.num);
+			if(!(rest = expand_argument(info,rest,&arg)) || arg.type != ENT_NUMBER)
+				return;
+			id1 = arg.d.num;
+			if(!expand_argument(info,rest,&arg) || arg.type != ENT_NUMBER)
+				return;
+			variables_set_room(info->var,name,get_clone_room(here,id1,arg.d.num));
+			break;
+		default: return;
+		}
+	} else if(!str_cmp(buf,"skill")) {
+		switch(arg.type) {
+		case ENT_STRING:
+			variables_set_skill(info->var,name,skill_lookup(arg.d.str));
+			break;
+		default: return;
+		}
+	} else if(!str_cmp(buf,"skillinfo")) {
+		switch(arg.type) {
+		case ENT_MOBILE:
+			vch = arg.d.mob;
+			if(!expand_argument(info,rest,&arg) || arg.type != ENT_STRING)
+				return;
+
+			variables_set_skillinfo(info->var,name,vch,skill_lookup(arg.d.str));
+			break;
+		default: return;
+		}
+	} else
+		return;
+}
+
+SCRIPT_CMD(do_tpvarclear)
+{
+	char name[MIL];
+
+	if(!info || !info->token || !info->var) return;
+
+	// Get name
+	argument = one_argument(argument,name);
+	if(!name[0]) return;
+
+	variable_remove(info->var,name);
+}
+
+SCRIPT_CMD(do_tpvarcopy)
+{
+	char oldname[MIL],newname[MIL];
+
+	if(!info || !info->token || !info->var) return;
+
+	// Get name
+	argument = one_argument(argument,oldname);
+	if(!oldname[0]) return;
+	argument = one_argument(argument,newname);
+	if(!newname[0]) return;
+
+	if(!str_cmp(oldname,newname)) return;
+
+	variable_copy(info->var,oldname,newname);
+}
+
+SCRIPT_CMD(do_tpvarsave)
+{
+	char name[MIL],arg[MIL];
+	bool on;
+
+	if(!info || !info->token || !info->var) return;
+
+	// Get name
+	argument = one_argument(argument,name);
+	if(!name[0]) return;
+	argument = one_argument(argument,arg);
+	if(!arg[0]) return;
+
+	on = !str_cmp(arg,"on") || !str_cmp(arg,"true") || !str_cmp(arg,"yes");
+
+	variable_setsave(*info->var,name,on);
+}
+
+SCRIPT_CMD(do_tpsettimer)
+{
+	char buf[MIL],*rest;
+	int amt;
+	CHAR_DATA *victim = NULL;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpSetTimer - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING:
+		victim = get_char_world(NULL, arg.d.str);
+		break;
+	case ENT_MOBILE:
+		victim = arg.d.mob;
+		break;
+	default: break;
+	}
+
+	if(!victim) {
+		bug("TpSetTimer - NULL victim.", 0);
+		return;
+	}
+
+	if(!*rest) {
+		bug("TpSetTimer - Missing timer type.",0);
+		return;
+	}
+
+	buf[0] = 0;
+	argument = rest;
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpSetTimer - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING:
+		strncpy(buf,arg.d.str,MIL);
+		break;
+	default: break;
+	}
+
+	if(!*rest) {
+		bug("TpSetTimer - Missing timer amount.",0);
+		return;
+	}
+
+	argument = rest;
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpSetTimer - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: amt = is_number(arg.d.str) ? atoi(arg.d.str) : 0; break;
+	case ENT_NUMBER: amt = arg.d.num; break;
+	default: amt = 0; break;
+	}
+
+	if(amt > 0) {
+		if(!str_cmp(buf,"wait")) WAIT_STATE(victim, amt);
+		else if(!str_cmp(buf,"norecall")) NO_RECALL_STATE(victim, amt);
+		else if(!str_cmp(buf,"daze")) DAZE_STATE(victim, amt);
+		else if(!str_cmp(buf,"panic")) PANIC_STATE(victim, amt);
+		else if(!str_cmp(buf,"paroxysm")) PAROXYSM_STATE(victim, amt);
+		else if(!str_cmp(buf,"paralyze")) victim->paralyzed = UMAX(victim->paralyzed,amt);
+	}
+}
+
+SCRIPT_CMD(do_tpinterrupt)
+{
+	char buf[MSL],*rest;
+	CHAR_DATA *victim = NULL;
+	ROOM_INDEX_DATA *here;
+	SCRIPT_PARAM arg;
+	int stop, ret = 0;
+	bool silent = FALSE;
+
+	if(!info || !info->token) return;
+
+	here = token_room(info->token);
+
+	info->token->progs->lastreturn = 0;	// Nothing was interrupted
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpInterrupt - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING:
+		victim = get_char_world(NULL, arg.d.str);
+		break;
+	case ENT_MOBILE:
+		victim = arg.d.mob;
+		break;
+	default: break;
+	}
+
+	if(!victim) {
+		bug("TpInterrupt - NULL victim.", 0);
+		return;
+	}
+
+	expand_string(info,rest,buf);
+	if(buf[0]) {
+		stop = flag_value(interrupt_action_types,buf);
+		if(stop == NO_FLAG) {
+			bug("TpInterrupt - invalid interrupt type.", 0);
+			return;
+		}
+	} else
+		stop = ~INTERRUPT_SILENT;	// stop anything
+
+	ret = 0;
+
+	if (IS_SET(stop,INTERRUPT_SILENT))
+		silent = TRUE;
+
+	if (IS_SET(stop,INTERRUPT_CAST) && victim->cast > 0) {
+		stop_casting(victim, !silent);
+		SET_BIT(ret,INTERRUPT_CAST);
+	}
+
+	if (IS_SET(stop,INTERRUPT_MUSIC) && victim->music > 0) {
+		victim->music = 0;
+		SET_BIT(ret,INTERRUPT_MUSIC);
+	}
+
+	if (IS_SET(stop,INTERRUPT_BREW) && victim->brew > 0) {
+		victim->brew = 0;
+		victim->brew_sn = 0;
+		SET_BIT(ret,INTERRUPT_BREW);
+	}
+
+	if (IS_SET(stop,INTERRUPT_REPAIR) && victim->repair > 0) {
+		variables_set_object(info->var,"stoprepair",victim->repair_obj);
+		victim->repair_obj = NULL;
+		victim->repair_amt = 0;
+		victim->repair = 0;
+		SET_BIT(ret,INTERRUPT_REPAIR);
+	}
+
+	if (IS_SET(stop,INTERRUPT_HIDE) && victim->hide > 0) {
+		victim->hide = 0;
+		SET_BIT(ret,INTERRUPT_HIDE);
+	}
+
+	if (IS_SET(stop,INTERRUPT_BIND) && victim->bind > 0) {
+		variables_set_mobile(info->var,"stopbind",victim->bind_victim);
+		victim->bind = 0;
+		victim->bind_victim = NULL;
+		SET_BIT(ret,INTERRUPT_BIND);
+	}
+
+	if (IS_SET(stop,INTERRUPT_BOMB) && victim->bomb > 0) {
+		victim->bomb = 0;
+		SET_BIT(ret,INTERRUPT_BOMB);
+	}
+
+	if (IS_SET(stop,INTERRUPT_RECITE) && victim->recite > 0) {
+		if(victim->cast_target_name)
+			variables_set_string(info->var,"stoprecitetarget",victim->cast_target_name,FALSE);
+		else
+			variables_set_string(info->var,"stoprecitetarget","",FALSE);
+		variables_set_object(info->var,"stopreciteobj",victim->recite_scroll);
+		victim->recite = 0;
+		victim->cast_target_name = NULL;
+		victim->recite_scroll = NULL;
+		SET_BIT(ret,INTERRUPT_RECITE);
+	}
+
+
+	if (IS_SET(stop,INTERRUPT_REVERIE) && victim->reverie > 0) {
+		variables_set_integer(info->var,"stopreverie",victim->reverie_amount);
+		// 0:hit->mana,1:mana->hit
+		variables_set_integer(info->var,"stopreverietype",(victim->reverie_type == MANA_TO_HIT));
+		victim->reverie = 0;
+		victim->reverie_amount = 0;
+		SET_BIT(ret,INTERRUPT_REVERIE);
+	}
+
+	if (IS_SET(stop,INTERRUPT_TRANCE) && victim->trance > 0) {
+		victim->trance = 0;
+		SET_BIT(ret,INTERRUPT_TRANCE);
+	}
+
+	if (IS_SET(stop,INTERRUPT_SCRIBE) && victim->scribe > 0) {
+		victim->scribe = 0;
+		victim->scribe_sn = 0;
+		victim->scribe_sn2 = 0;
+		victim->scribe_sn3 = 0;
+		SET_BIT(ret,INTERRUPT_SCRIBE);
+	}
+
+	if (IS_SET(stop,INTERRUPT_RANGED) && victim->ranged > 0) {
+		if(victim->projectile_victim)
+			variables_set_string(info->var,"stoprangedtarget",victim->projectile_victim,FALSE);
+		else
+			variables_set_string(info->var,"stoprangedtarget","",FALSE);
+		variables_set_object(info->var,"stoprangedweapon",victim->projectile_weapon);
+		variables_set_object(info->var,"stoprangedammo",victim->projectile);
+		variables_set_integer(info->var,"stoprangedist",victim->projectile_range);
+		if(victim->projectile_dir == -1)
+			variables_set_exit(info->var,"stoprangeexit",NULL);
+		else
+			variables_set_exit(info->var,"stoprangeexit",here->exit[victim->projectile_dir]);
+		victim->ranged = 0;
+		victim->projectile_weapon = NULL;
+		free_string( victim->projectile_victim );
+		victim->projectile_victim = NULL;
+		victim->projectile_dir = -1;
+		victim->projectile_range = 0;
+		victim->projectile = NULL;
+		SET_BIT(ret,INTERRUPT_RANGED);
+	}
+
+	if (IS_SET(stop,INTERRUPT_RESURRECT) && victim->resurrect > 0) {
+		variables_set_object(info->var,"stopresurrectcorpse",victim->resurrect_target);
+		if(victim->resurrect_target)
+			variables_set_mobile(info->var,"stopresurrect",get_char_world(NULL, victim->resurrect_target->owner));
+		else
+			variables_set_mobile(info->var,"stopresurrect",NULL);
+		victim->resurrect = 0;
+		victim->resurrect_target = NULL;
+		SET_BIT(ret,INTERRUPT_RESURRECT);
+	}
+
+	if (IS_SET(stop,INTERRUPT_FADE) && victim->fade > 0) {
+		if(victim->fade_dir == -1)
+			variables_set_exit(info->var,"stopfade",NULL);
+		else
+			variables_set_exit(info->var,"stopfade",here->exit[victim->fade_dir]);
+		victim->fade = 0;
+		victim->fade_dir = -1;
+		SET_BIT(ret,INTERRUPT_FADE);
+	}
+
+	if (IS_SET(stop,INTERRUPT_SCRIPT)) {
+		if(interrupt_script(victim, silent))
+			SET_BIT(ret,INTERRUPT_SCRIPT);
+	}
+
+	// Indicate what was stopped, zero being nothing
+	info->token->progs->lastreturn = ret;
+}
+
+
+SCRIPT_CMD(do_tpalterobj)
+{
+	char buf[MIL],field[MIL],*rest;
+	int value, num, min_sec = MIN_SCRIPT_SECURITY;
+	OBJ_DATA *obj = NULL;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpAlterObj - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING:
+		obj = get_obj_here(NULL,token_room(info->token),arg.d.str);
+		break;
+	case ENT_OBJECT:
+		obj = arg.d.obj;
+		break;
+	default: break;
+	}
+
+	if(!obj) {
+		bug("TpAlterObj - NULL object.", 0);
+		return;
+	}
+
+	if(!*rest) {
+		bug("TpAlterObj - Missing field type.",0);
+		return;
+	}
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpAlterObj - Error in parsing.",0);
+		return;
+	}
+
+	field[0] = 0;
+	num = -1;
+
+	switch(arg.type) {
+	case ENT_STRING:
+		if(is_number(arg.d.str)) {
+			num = atoi(arg.d.str);
+			if(num < 0 || num >= 8) return;
+		} else
+			strncpy(field,arg.d.str,MIL-1);
+		break;
+	case ENT_NUMBER:
+		num = arg.d.num;
+		if(num < 0 || num >= 8) return;
+		break;
+	default: return;
+	}
+
+	if(num < 0 && !field[0]) return;
+
+	argument = one_argument(rest,buf);
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpAlterObj - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: value = is_number(arg.d.str) ? atoi(arg.d.str) : 0; break;
+	case ENT_NUMBER: value = arg.d.num; break;
+	default: return;
+	}
+
+	if(num >= 0) {
+		if(obj->item_type == ITEM_CONTAINER) {
+			if(num == 3 || num == 4) min_sec = 5;
+		}
+
+		if(script_security < min_sec) {
+			sprintf(buf,"TpAlterObj - Attempting to alter value%d with security %d.\n\r", num, script_security);
+			bug(buf, 0);
+			return;
+		}
+
+		switch (buf[0]) {
+		case '+': obj->value[num] += value; break;
+		case '-': obj->value[num] -= value; break;
+		case '*': obj->value[num] *= value; break;
+		case '/':
+			if (!value) {
+				bug("TpAlterObj - adjust called with operator / and value 0", 0);
+				return;
+			}
+			obj->value[num] /= value;
+			break;
+		case '%':
+			if (!value) {
+				bug("TpAlterObj - adjust called with operator % and value 0", 0);
+				return;
+			}
+			obj->value[num] %= value;
+			break;
+
+		case '=': obj->value[num] = value; break;
+		case '&': obj->value[num] &= value; break;
+		case '|': obj->value[num] |= value; break;
+		case '!': obj->value[num] &= ~value; break;
+		case '^': obj->value[num] ^= value; break;
+		default:
+			return;
+		}
+	} else {
+		int *ptr = NULL;
+
+		if(!str_cmp(field,"extra"))		ptr = (int*)&obj->extra_flags;
+		else if(!str_cmp(field,"extra2"))	{ ptr = (int*)&obj->extra2_flags; min_sec = 7; }
+		else if(!str_cmp(field,"extra3"))	{ ptr = (int*)&obj->extra3_flags; min_sec = 7; }
+		else if(!str_cmp(field,"extra4"))	{ ptr = (int*)&obj->extra4_flags; min_sec = 7; }
+		else if(!str_cmp(field,"wear"))		ptr = (int*)&obj->wear_flags;
+		else if(!str_cmp(field,"wearloc"))	ptr = (int*)&obj->wear_loc;
+		else if(!str_cmp(field,"weight"))	ptr = (int*)&obj->weight;
+		else if(!str_cmp(field,"cond"))		ptr = (int*)&obj->condition;
+		else if(!str_cmp(field,"timer"))	ptr = (int*)&obj->timer;
+		else if(!str_cmp(field,"level"))	{ ptr = (int*)&obj->level; min_sec = 5; }
+		else if(!str_cmp(field,"repairs"))	ptr = (int*)&obj->times_fixed;
+		else if(!str_cmp(field,"fixes"))	{ ptr = (int*)&obj->times_allowed_fixed; min_sec = 5; }
+		else if(!str_cmp(field,"type"))		{ ptr = (int*)&obj->item_type; min_sec = 7; }
+		else if(!str_cmp(field,"cost"))		{ ptr = (int*)&obj->cost; min_sec = 5; }
+//		else if(!str_cmp(field,"material"))	{ ptr = (int*)&obj->material; }
+
+		if(!ptr) return;
+
+		if(script_security < min_sec) {
+			sprintf(buf,"TpAlterObj - Attempting to alter '%s' with security %d.\n\r", field, script_security);
+			bug(buf, 0);
+			return;
+		}
+
+		switch (buf[0]) {
+		case '+': *ptr += value; break;
+		case '-': *ptr -= value; break;
+		case '*': *ptr *= value; break;
+		case '/':
+			if (!value) {
+				bug("TpAlterObj - adjust called with operator / and value 0", 0);
+				return;
+			}
+			*ptr /= value;
+			break;
+		case '%':
+			if (!value) {
+				bug("TpAlterObj - adjust called with operator % and value 0", 0);
+				return;
+			}
+			*ptr %= value;
+			break;
+
+		case '=': *ptr = value; break;
+		case '&': *ptr &= value; break;
+		case '|': *ptr |= value; break;
+		case '!': *ptr &= ~value; break;
+		case '^': *ptr ^= value; break;
+		default:
+			return;
+		}
+	}
+}
+
+
+
+SCRIPT_CMD(do_tpresetdice)
+{
+	char *rest;
+	OBJ_DATA *obj = NULL;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpAlterObj - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING:
+		obj = get_obj_here(NULL,token_room(info->token),arg.d.str);
+		break;
+	case ENT_OBJECT:
+		obj = arg.d.obj;
+		break;
+	default: break;
+	}
+
+	if(!obj) {
+		bug("TpAlterObj - NULL object.", 0);
+		return;
+	}
+
+	if(obj->item_type == ITEM_WEAPON)
+		set_weapon_dice_obj(obj);
+}
+
+
+
+// do_tpdamage
+SCRIPT_CMD(do_tpdamage)
+{
+	char buf[MSL],*rest;
+	CHAR_DATA *victim = NULL, *victim_next;
+	int low, high, level, value, dc;
+	bool fAll = FALSE, fKill = FALSE, fLevel = FALSE, fRemort = FALSE, fTwo = FALSE;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token || !token_room(info->token)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpDamage - Error in parsing from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING:
+		if(!str_cmp(arg.d.str,"all")) fAll = TRUE;
+		else victim = get_char_room(NULL, token_room(info->token), arg.d.str);
+		break;
+	case ENT_MOBILE: victim = arg.d.mob; break;
+	default: victim = NULL; break;
+	}
+
+	if (!victim && !fAll) {
+		bug("TpDamage - Null victim from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	if(!*rest) {
+		bug("TpDamage - missing argument from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	argument = rest;
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpDamage - Error in parsing from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_NUMBER: low = arg.d.num; break;
+	case ENT_STRING:
+		if(!str_cmp(arg.d.str,"level")) { fLevel = TRUE; break; }
+		if(!str_cmp(arg.d.str,"remort")) { fLevel = fRemort = TRUE; break; }
+		if(!str_cmp(arg.d.str,"dual")) { fLevel = fTwo = TRUE; break; }
+		if(!str_cmp(arg.d.str,"dualremort")) { fLevel = fTwo = fRemort = TRUE; break; }
+		if(is_number(arg.d.str)) { low = atoi(arg.d.str); break; }
+	default:
+		bug("TpDamage - invalid argument from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	if(!*rest) {
+		bug("TpDamage - missing argument from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	argument = rest;
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpDamage - Error in parsing from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	if(fLevel && !victim) {
+		bug("TpDamage - Level aspect used with null victim from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	level = victim ? victim->tot_level : 1;
+
+	switch(arg.type) {
+	case ENT_NUMBER:
+		if(fLevel) level = arg.d.num;
+		else high = arg.d.num;
+		break;
+	case ENT_STRING:
+		if(is_number(arg.d.str)) {
+			if(fLevel) level = atoi(arg.d.str);
+			else high = atoi(arg.d.str);
+		} else {
+			bug("TpDamage - invalid argument from vnum %ld.", VNUM(info->token));
+			return;
+		}
+		break;
+	case ENT_MOBILE:
+		if(fLevel) {
+			if(arg.d.mob) level = arg.d.mob->tot_level;
+			else {
+				bug("TpDamage - Null reference mob from vnum %ld.", VNUM(info->token));
+				return;
+			}
+			break;
+		} else {
+			bug("TpDamage - invalid argument from vnum %ld.", VNUM(info->token));
+			return;
+		}
+		break;
+	default:
+		bug("TpDamage - invalid argument from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	// No expansion!
+	argument = one_argument(rest, buf);
+	if (!str_cmp(buf,"kill") || !str_cmp(buf,"lethal")) fKill = TRUE;
+
+	one_argument(argument, buf);
+	dc = damage_class_lookup(buf);
+
+	if(fLevel) get_level_damage(level,&low,&high,fRemort,fTwo);
+
+	if (fAll) {
+		for(victim = token_room(info->token)->people; victim; victim = victim_next) {
+			victim_next = victim->next_in_room;
+			value = fLevel ? dice(low,high) : number_range(low,high);
+			damage(victim, victim, fKill ? value : UMIN(victim->hit,value), TYPE_UNDEFINED, dc, FALSE);
+		}
+	} else {
+		value = fLevel ? dice(low,high) : number_range(low,high);
+		damage(victim, victim, fKill ? value : UMIN(victim->hit,value), TYPE_UNDEFINED, dc, FALSE);
+	}
+}
+
+
+// do_tpraisedead
+SCRIPT_CMD(do_tpraisedead)
+{
+	char buf[MIL], *rest;
+	CHAR_DATA *victim;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token || !token_room(info->token)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING: victim = get_char_room(NULL, token_room(info->token),arg.d.str); break;
+	case ENT_MOBILE: victim = arg.d.mob; break;
+	default: victim = NULL; break;
+	}
+
+	if(!victim) return;
+
+	if (!IS_DEAD(victim)) {
+		sprintf(buf, "TpRaisedead: for token %s(%ld), victim %s wasn't dead!",
+			info->token->name,VNUM(info->token),
+			victim->name);
+		bug(buf, 0);
+
+		info->token->progs->lastreturn = 0;
+
+//		send_to_char("{WAn intense warmth washes over you momentarily.{x\n\r", victim);
+		return;
+	}
+
+	resurrect_pc(victim);
+	info->token->progs->lastreturn = 1;
+}
+
+SCRIPT_CMD(do_tpdequeue)
+{
+	if(!info || !info->token || !info->token->events)
+		return;
+
+	wipe_owned_events(info->token->events);
+}
+
+SCRIPT_CMD(do_tpqueue)
+{
+	char *rest;
+	int delay;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_NUMBER: delay = arg.d.num; break;
+	case ENT_STRING: delay = atoi(arg.d.str); break;
+	default:
+		bug("TpQueue:  missing arguments from vnum %d.", VNUM(info->token));
+		return;
+	}
+
+	if (delay < 0 || delay > 1000) {
+		bug("TpQueue:  unreasonable delay recieved from vnum %d.", VNUM(info->token));
+		return;
+	}
+
+	wait_function(info->token, info, EVENT_TOKENQUEUE, delay, script_interpret, rest);
+}
+
+SCRIPT_CMD(do_tpgdamage)
+{
+	char buf[MSL],*rest;
+	CHAR_DATA *victim = NULL, *rch, *rch_next;
+	int low, high, level, value, dc;
+	bool fKill = FALSE, fLevel = FALSE, fRemort = FALSE, fTwo = FALSE;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpGdamage - Error in parsing from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: victim = get_char_room(NULL, token_room(info->token), arg.d.str); break;
+	case ENT_MOBILE: victim = arg.d.mob; break;
+	default: victim = NULL; break;
+	}
+
+	if (!victim) {
+		bug("TpGdamage - Null victim from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	if(!*rest) {
+		bug("TpGdamage - missing argument from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	argument = rest;
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpGdamage - Error in parsing from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_NUMBER: low = arg.d.num; break;
+	case ENT_STRING:
+		if(!str_cmp(arg.d.str,"level")) { fLevel = TRUE; break; }
+		if(!str_cmp(arg.d.str,"remort")) { fLevel = fRemort = TRUE; break; }
+		if(!str_cmp(arg.d.str,"dual")) { fLevel = fTwo = TRUE; break; }
+		if(!str_cmp(arg.d.str,"dualremort")) { fLevel = fTwo = fRemort = TRUE; break; }
+		if(is_number(arg.d.str)) { low = atoi(arg.d.str); break; }
+	default:
+		bug("TpGdamage - invalid argument from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	if(!*rest) {
+		bug("TpGdamage - missing argument from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	argument = rest;
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpGdamage - Error in parsing from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	level = victim->tot_level;
+
+	switch(arg.type) {
+	case ENT_NUMBER:
+		if(fLevel) level = arg.d.num;
+		else high = arg.d.num;
+		break;
+	case ENT_STRING:
+		if(is_number(arg.d.str)) {
+			if(fLevel) level = atoi(arg.d.str);
+			else high = atoi(arg.d.str);
+		} else {
+			bug("TpGdamage - invalid argument from vnum %ld.", VNUM(info->token));
+			return;
+		}
+		break;
+	case ENT_MOBILE:
+		if(fLevel) {
+			if(arg.d.mob) level = arg.d.mob->tot_level;
+			else {
+				bug("TpGdamage - Null reference mob from vnum %ld.", VNUM(info->token));
+				return;
+			}
+			break;
+		} else {
+			bug("TpGdamage - invalid argument from vnum %ld.", VNUM(info->token));
+			return;
+		}
+		break;
+	default:
+		bug("TpGdamage - invalid argument from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	// No expansion!
+	argument = one_argument(rest, buf);
+	if (!str_cmp(buf,"kill") || !str_cmp(buf,"lethal")) fKill = TRUE;
+
+	one_argument(argument, buf);
+	dc = damage_class_lookup(buf);
+
+	if(fLevel) get_level_damage(level,&low,&high,fRemort,fTwo);
+
+	for(rch = token_room(info->token)->people; rch; rch = rch_next) {
+		rch_next = rch->next_in_room;
+		if (rch != victim && is_same_group(victim,rch)) {
+			value = fLevel ? dice(low,high) : number_range(low,high);
+			damage(rch, rch, fKill ? value : UMIN(rch->hit,value), TYPE_UNDEFINED, dc, FALSE);
+		}
+	}
+}
+
+SCRIPT_CMD(do_tpasound)
+{
+	char buf[MSL];
+	ROOM_INDEX_DATA *here, *room;
+	ROOM_INDEX_DATA *rooms[MAX_DIR];
+	int door, i, j;
+	EXIT_DATA *pexit;
+
+	if(!info || !info->token || !token_room(info->token)) return;
+	if (!argument[0]) return;
+
+	here = token_room(info->token);
+
+	// Verify there are any exits!
+	for (door = 0; door < MAX_DIR; door++)
+		if ((pexit = here->exit[door]) && (room = exit_destination(pexit)) && room != here)
+			break;
+
+	if (door < MAX_DIR) {
+		// Expand the message
+		expand_string(info,argument,buf);
+		if(!buf[0]) return;
+
+		for (i = 0; door < MAX_DIR; door++)
+			if ((pexit = here->exit[door]) && (room = exit_destination(pexit)) && room != here) {
+				// Have we been to this room already?
+				for(j=0;j < i && rooms[j] != room; j++);
+
+				if(i <= j) {
+					// No, so do the message
+					MOBtrigger  = FALSE;
+					act(buf, room->people, NULL, NULL, TO_ALL);
+					MOBtrigger  = TRUE;
+					rooms[i++] = room;
+				}
+			}
+
+	}
+}
+
+SCRIPT_CMD(do_tpforget)
+{
+	if(!info || !info->token) return;
+
+	info->token->progs->target = NULL;
+}
+
+SCRIPT_CMD(do_tpremember)
+{
+	CHAR_DATA *victim;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!expand_argument(info,argument,&arg)) {
+		bug("TpRemember: Bad syntax from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: victim = get_char_world(NULL, arg.d.str); break;
+	case ENT_MOBILE: victim = arg.d.mob; break;
+	default: victim = NULL; break;
+	}
+
+	if (!victim) {
+		bug("TpRemember: Null victim from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	info->token->progs->target = victim;
+}
+
+SCRIPT_CMD(do_tppurge)
+{
+	char *rest;
+	CHAR_DATA **mobs = NULL, *victim = NULL,*vnext;
+	OBJ_DATA **objs = NULL, *obj = NULL,*obj_next;
+	ROOM_INDEX_DATA *here = NULL;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token || !token_room(info->token)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_NONE: here = token_room(info->token); break;
+	case ENT_STRING:
+		if (!(victim = get_char_room(NULL, token_room(info->token), arg.d.str)))
+			obj = get_obj_here(NULL, token_room(info->token), arg.d.str);
+		break;
+	case ENT_MOBILE: victim = arg.d.mob; break;
+	case ENT_OBJECT: obj = arg.d.obj; break;
+	case ENT_ROOM: here = arg.d.room; break;
+	case ENT_EXIT: here = arg.d.exit ? exit_destination(arg.d.exit) : NULL; break;
+	case ENT_LIST_MOB: mobs = arg.d.list.ptr.mob; break;
+	case ENT_LIST_OBJ: objs = arg.d.list.ptr.obj; break;
+	default: break;
+	}
+
+	if(victim) {
+		if (!IS_NPC(victim)) {
+			bug("Oppurge - Attempting to purge a PC from vnum %d.", VNUM(info->token));
+			return;
+		}
+		extract_char(victim, TRUE);
+	} else if(obj)
+		extract_obj(obj);
+	else if(here) {
+		for (victim = here->people; victim; victim = vnext) {
+			vnext = victim->next_in_room;
+			if (IS_NPC(victim) && !IS_SET(victim->act, ACT_NOPURGE))
+				extract_char(victim, TRUE);
+		}
+
+		for (obj = here->contents; obj; obj = obj_next) {
+			obj_next = obj->next_content;
+			if (!IS_SET(obj->extra_flags, ITEM_NOPURGE))
+				extract_obj(obj);
+		}
+	} else if(mobs) {
+		for (victim = *mobs; victim; victim = vnext) {
+			vnext = victim->next_in_room;
+			if (IS_NPC(victim) && !IS_SET(victim->act, ACT_NOPURGE))
+				extract_char(victim, TRUE);
+		}
+	} else if(objs) {
+		for (obj = *objs; obj; obj = obj_next) {
+			obj_next = obj->next_content;
+			if (!IS_SET(obj->extra_flags, ITEM_NOPURGE))
+				extract_obj(obj);
+		}
+	} else
+		bug("Oppurge - Bad argument from vnum %d.", VNUM(info->token));
+
+}
+
+
+SCRIPT_CMD(do_tpzot)
+{
+	CHAR_DATA *victim;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!expand_argument(info,argument,&arg))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING: victim = get_char_room(NULL,token_room(info->token), arg.d.str); break;
+	case ENT_MOBILE: victim = arg.d.mob; break;
+	default: victim = NULL; break;
+	}
+
+
+	if (!victim) {
+		bug("TpZot - Null victim from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	send_to_char("{Y***{R****** {WZOT {R******{Y***{x\n\r\n\r", victim);
+	send_to_char("{YYou are struck by a bolt of lightning!\n\r{x", victim);
+	act("{Y$n is struck by a bolt of lightning!{x", victim, NULL, NULL, TO_ROOM);
+	send_to_char("{ROUCH! That really did hurt!{x\n\r", victim);
+
+	victim->hit = 1;
+	victim->mana = 1;
+	victim->move = 1;
+}
+
+SCRIPT_CMD(do_tpgecho)
+{
+	char buf[MSL];
+	DESCRIPTOR_DATA *d;
+
+	if(!info || !info->token) return;
+
+	if (!argument[0]) {
+		bug("TpZEcho: missing argument from vnum %d", VNUM(info->token));
+		return;
+	}
+
+	// Expand the message
+	expand_string(info,argument,buf);
+
+	for (d = descriptor_list; d; d = d->next)
+		if (d->connected == CON_PLAYING) {
+			if (IS_IMMORTAL(d->character))
+				send_to_char("Token echo> ", d->character);
+			send_to_char(buf, d->character);
+			send_to_char("\n\r", d->character);
+		}
+}
+
+SCRIPT_CMD(do_tpzecho)
+{
+	char buf[MSL];
+	AREA_DATA *area;
+	DESCRIPTOR_DATA *d;
+
+	if(!info || !info->token || !token_room(info->token)) return;
+
+	// Expand the message
+	expand_string(info,argument,buf);
+
+	if (!buf[0]) {
+		bug("TpZEcho: missing argument from vnum %d", VNUM(info->token));
+		return;
+	}
+
+	area = token_room(info->token)->area;
+
+	for (d = descriptor_list; d; d = d->next)
+		if (d->connected == CON_PLAYING &&
+			d->character->in_room &&
+			d->character->in_room->area == area) {
+			if (IS_IMMORTAL(d->character))
+				send_to_char("Token echo> ", d->character);
+			send_to_char(buf, d->character);
+			send_to_char("\n\r", d->character);
+		}
+}
+
+SCRIPT_CMD(do_tpvforce)
+{
+	char buf[MSL],*rest;
+	int vnum = 0;
+	CHAR_DATA *vch, *next;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token || !token_room(info->token)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpVforce - Error in parsing from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: vnum = atoi(arg.d.str); break;
+	case ENT_NUMBER: vnum = arg.d.num; break;
+	default: break;
+	}
+
+	if (vnum < 1) {
+		bug("TpVforce - Invalid vnum from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	expand_string(info,rest,buf);
+	if(!buf[0]) {
+		bug("TpGforce - Error in parsing from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	for (vch = token_room(info->token)->people; vch; vch = next) {
+		next = vch->next_in_room;
+		if (IS_NPC(vch) &&  vch->pIndexData->vnum == vnum && !vch->fighting)
+			interpret(vch, buf);
+	}
+}
+
+SCRIPT_CMD(do_tpotransfer)
+{
+	char *rest;
+	OBJ_DATA *obj;
+	ROOM_INDEX_DATA *dest;
+	OBJ_DATA *container;
+	CHAR_DATA *carrier;
+	int wear_loc = WEAR_NONE;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpOtransfer - Bad syntax from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: obj = get_obj_here(NULL,token_room(info->token), arg.d.str); break;
+	case ENT_OBJECT: obj = arg.d.obj; break;
+	default: obj = NULL; break;
+	}
+
+
+	if (!obj) {
+		bug("TpOtransfer - Null object from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	if (PROG_FLAG(obj,PROG_AT)) return;
+
+	argument = tp_getolocation(info, rest, &dest, &container, &carrier, &wear_loc);
+
+	if(!dest && !container && !carrier) {
+		bug("TpOTransfer - Bad location from vnum %d.", VNUM(info->token));
+		return;
+	}
+
+	// Prevent a recursive loop with cloned rooms
+	if (dest && recursive_environment(dest, NULL, obj, NULL)) {
+		bug("TpOtransfer - Selected location would cause an infinite environment loop for vnum %d.", obj->pIndexData->vnum);
+		return;
+	}
+
+
+	if (obj->carried_by) {
+		if (obj->wear_loc != WEAR_NONE)
+			unequip_char(obj->carried_by, obj, TRUE);
+		obj_from_char(obj);
+	} else if(obj->in_obj)
+		obj_from_obj(obj);
+	else
+		obj_from_room(obj);
+
+	if(dest) {
+		if(dest->wilds)
+			obj_to_vroom(obj, dest->wilds, dest->x, dest->y);
+		else
+			obj_to_room(obj, dest);
+	} else if(container)
+		obj_to_obj(obj, container);
+	else if(carrier) {
+		obj_to_char(obj, carrier);
+		if(wear_loc != WEAR_NONE)
+			equip_char(carrier, obj, wear_loc);
+	}
+}
+
+// do_oppeace
+SCRIPT_CMD(do_tppeace)
+{
+	CHAR_DATA *rch;
+	if(!info || !info->token || !token_room(info->token)) return;
+
+	for (rch = token_room(info->token)->people; rch; rch = rch->next_in_room) {
+		if (rch->fighting)
+			stop_fighting(rch, TRUE);
+		if (IS_NPC(rch) && IS_SET(rch->act,ACT_AGGRESSIVE))
+			REMOVE_BIT(rch->act,ACT_AGGRESSIVE);
+	}
+}
+
+
+SCRIPT_CMD(do_tptransfer)
+{
+	char buf[MIL], *rest;
+	CHAR_DATA *victim = NULL,*vnext;
+	ROOM_INDEX_DATA *dest;
+	bool all = FALSE, force = FALSE, quiet = FALSE;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token || !token_room(info->token)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpTransfer - Bad syntax from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING:
+		if(!str_cmp(arg.d.str,"all")) all = TRUE;
+		else victim = get_char_world(NULL, arg.d.str);
+		break;
+	case ENT_MOBILE: victim = arg.d.mob; break;
+	default: victim = NULL; break;
+	}
+
+
+	if (!victim && !all) {
+		bug("TpTransfer - Null victim from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	if (!victim->in_room) return;
+
+	argument = tp_getlocation(info, rest, &dest);
+
+	if(!dest) {
+		bug("TpTransfer - Bad location from vnum %d.", VNUM(info->token));
+		return;
+	}
+
+	argument = one_argument(argument,buf);
+	force = !str_cmp(buf,"force") || !str_cmp(argument,"force");
+	quiet = !str_cmp(buf,"quiet") || !str_cmp(argument,"quiet");
+
+	if (all) {
+		for (victim = token_room(info->token)->people; victim; victim = vnext) {
+			vnext = victim->next_in_room;
+			if (!IS_NPC(victim)) {
+				if (!force && room_is_private(dest, NULL)) break;
+				do_mob_transfer(victim,dest,quiet);
+			}
+		}
+		return;
+	}
+
+	if (!force && room_is_private(dest, NULL))
+		return;
+
+	do_mob_transfer(victim,dest,quiet);
+}
+
+SCRIPT_CMD(do_tpremove)
+{
+	CHAR_DATA *victim;
+	OBJ_DATA *obj = NULL, *obj_next;
+	int vnum = 0, count = 0;
+	bool fAll = FALSE;
+	SCRIPT_PARAM arg;
+	char name[MIL], *rest;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpRemove: Bad syntax from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: victim = get_char_room(NULL, token_room(info->token), arg.d.str);
+	case ENT_MOBILE: victim = arg.d.mob; break;
+	default: victim = NULL; break;
+	}
+
+	if (!victim) {
+		bug("TpRemove: Null victim from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	if(!*rest) return;
+
+	argument = rest;
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpRemove: Bad syntax from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	name[0] = '\0';
+	switch(arg.type) {
+	case ENT_NUMBER: vnum = arg.d.num; break;
+	case ENT_STRING:
+		if(is_number(arg.d.str))
+			vnum = atoi(arg.d.str);
+		else if(!str_cmp(arg.d.str,"all"))
+			fAll = TRUE;
+		else
+			strncpy(name,arg.d.str,MIL-1);
+		break;
+	case ENT_OBJECT: obj = arg.d.obj; break;
+	default: break;
+	}
+
+	if(!fAll && vnum < 1 && !name[0] && !obj) {
+		bug ("TpRemove: Invalid object from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	if(!fAll && !obj && *rest) {
+		argument = rest;
+		if(!(rest = expand_argument(info,argument,&arg))) {
+			bug("TpRemove: Bad syntax from vnum %ld.", VNUM(info->token));
+			return;
+		}
+
+		switch(arg.type) {
+		case ENT_NUMBER: count = arg.d.num; break;
+		case ENT_STRING: count = atoi(arg.d.str); break;
+		default: count = 0; break;
+		}
+
+		if(count < 0) {
+			bug ("TpRemove: Invalid count from vnum %d.", VNUM(info->token));
+			count = 0;
+		}
+	}
+
+	if(obj) {
+		if(obj->carried_by == victim || (obj->in_obj && obj->in_obj->carried_by == victim))
+			extract_obj(obj);
+	} else {
+		for (obj = victim->carrying; obj; obj = obj_next) {
+			obj_next = obj->next_content;
+			if (fAll || (vnum > 0 && obj->pIndexData->vnum == vnum) ||
+				(*name && is_name(name, obj->pIndexData->skeywds))) {
+				extract_obj(obj);
+
+				if(count > 0 && !--count) break;
+			}
+		}
+	}
+}
+
+SCRIPT_CMD(do_tpgtransfer)
+{
+	char buf[MIL], buf2[MIL], *rest;
+	CHAR_DATA *victim, *vch,*next;
+	ROOM_INDEX_DATA *dest;
+	bool all = FALSE, force = FALSE, quiet = FALSE;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpGtransfer - Bad syntax from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: victim = get_char_world(NULL, arg.d.str); break;
+	case ENT_MOBILE: victim = arg.d.mob; break;
+	default: victim = NULL; break;
+	}
+
+
+	if (!victim) {
+		bug("TpGtransfer - Null victim from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	if (!victim->in_room) return;
+
+	if(!(argument = tp_getlocation(info, rest, &dest))) {
+		bug("TpGtransfer - Bad syntax from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	if(!dest) {
+		bug("TpGtransfer - Bad location from vnum %d.", VNUM(info->token));
+		return;
+	}
+
+	argument = one_argument(argument,buf);
+	argument = one_argument(argument,buf2);
+	all = !str_cmp(buf,"all") || !str_cmp(buf2,"all") || !str_cmp(argument,"all");
+	force = !str_cmp(buf,"force") || !str_cmp(buf2,"force") || !str_cmp(argument,"force");
+	quiet = !str_cmp(buf,"quiet") || !str_cmp(buf2,"quiet") || !str_cmp(argument,"quiet");
+
+	for (vch = victim->in_room->people; vch; vch = next) {
+		next = vch->next_in_room;
+		if (!IS_NPC(vch) && is_same_group(victim,vch)) {
+			if (!all && vch->position != POS_STANDING) continue;
+			if (!force && room_is_private(dest, NULL)) break;
+			do_mob_transfer(vch,dest,quiet);
+		}
+	}
+}
+
+
+
+SCRIPT_CMD(do_tplink)
+{
+	char *rest;
+	ROOM_INDEX_DATA *room, *dest;
+	int door, vnum;
+	unsigned long id1, id2;
+	SCRIPT_PARAM arg;
+	bool del = FALSE;
+	bool environ = FALSE;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING:
+		room = token_room(info->token);
+		door = get_num_dir(arg.d.str);
+		break;
+	case ENT_EXIT:
+		if(arg.d.exit) {
+			room = arg.d.exit->from_room;
+			door = arg.d.exit->orig_door;
+			break;
+		}
+	default:
+		room = NULL;
+		door = -1;
+	}
+
+	if (!room) return;
+
+	if (door < 0) {
+		bug("TPlink used without an argument from room vnum %d.", room->vnum);
+		return;
+	}
+
+	argument = rest;
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	vnum = -1;
+	id1 = id2 = 0;
+	switch(arg.type) {
+	case ENT_STRING:
+		if(is_number(arg.d.str))
+			vnum = atoi(arg.d.str);
+		else if(!str_cmp(arg.d.str,"delete") ||
+			!str_cmp(arg.d.str,"remove") ||
+			!str_cmp(arg.d.str,"unlink")) {
+			vnum = 0;
+			del = TRUE;
+		} else if(!str_cmp(arg.d.str,"environment") ||
+			!str_cmp(arg.d.str,"environ") ||
+			!str_cmp(arg.d.str,"extern") ||
+			!str_cmp(arg.d.str,"outside")) {
+			vnum = 0;
+			environ = TRUE;
+		} else if(!str_cmp(arg.d.str,"vroom")) {
+			argument = rest;
+			if(!(rest = expand_argument(info,argument,&arg)) || arg.type != ENT_NUMBER)
+				return;
+			vnum = arg.d.num;
+
+			argument = rest;
+			if(!(rest = expand_argument(info,argument,&arg)) || arg.type != ENT_NUMBER)
+				return;
+			id1 = arg.d.num;
+
+			argument = rest;
+			if(!(rest = expand_argument(info,argument,&arg)) || arg.type != ENT_NUMBER)
+				return;
+			id2 = arg.d.num;
+		}
+		break;
+	case ENT_NUMBER:
+		vnum = arg.d.num;
+		break;
+	case ENT_ROOM:
+		vnum = arg.d.room ? arg.d.room->vnum : -1;
+		break;
+	case ENT_EXIT:
+		// Only allow STATIC links
+		vnum = (arg.d.exit && arg.d.exit->u1.to_room) ? arg.d.exit->u1.to_room->vnum : -1;
+		break;
+	case ENT_MOBILE:
+		vnum = (arg.d.mob && arg.d.mob->in_room) ? arg.d.mob->in_room->vnum : -1;
+		break;
+	case ENT_OBJECT:
+		vnum = (arg.d.obj && obj_room(arg.d.obj)) ? obj_room(arg.d.obj)->vnum : -1;
+		break;
+	}
+
+	if(vnum < 0) {
+		bug("TPlink - invalid argument in room %d.", room->vnum);
+		return;
+	}
+
+	if(id1 > 0 || id2 > 0)
+		dest = get_clone_room(get_room_index(vnum),id1,id2);
+	else if(vnum > 0)
+		dest = get_room_index(vnum);
+	else if(environ)
+		dest = &room_pointer_environment;
+	else
+		dest = NULL;
+
+	if(!dest && !del) {
+		bug("TPlink - invalid destination in room %d.", room->vnum);
+		return;
+	}
+
+	script_change_exit(room, dest, door);
+}
+
+// do_opmload
+SCRIPT_CMD(do_tpmload)
+{
+	char buf[MIL], *rest;
+	long vnum;
+	MOB_INDEX_DATA *pMobIndex;
+	CHAR_DATA *victim;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token || !token_room(info->token)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_NUMBER: vnum = arg.d.num; break;
+	case ENT_STRING: vnum = arg.d.str ? atoi(arg.d.str) : 0; break;
+	case ENT_MOBILE: vnum = arg.d.mob ? arg.d.mob->pIndexData->vnum : 0; break;
+	default: vnum = 0; break;
+	}
+
+	if (vnum < 1 || !(pMobIndex = get_mob_index(vnum))) {
+		sprintf(buf, "Tpmload: bad mob index (%ld) from token %ld", vnum, VNUM(info->token));
+		bug(buf, 0);
+		return;
+	}
+
+	victim = create_mobile(pMobIndex);
+	char_to_room(victim, token_room(info->token));
+	if(rest && *rest) variables_set_mobile(info->var,rest,victim);
+	p_percent_trigger(victim, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_REPOP);
+}
+
+SCRIPT_CMD(do_tpoload)
+{
+	char buf[MIL], *rest;
+	long vnum, level;
+	bool fCarry = FALSE;
+	OBJ_INDEX_DATA *pObjIndex;
+	OBJ_DATA *obj;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token || !token_room(info->token)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_NUMBER: vnum = arg.d.num; break;
+	case ENT_STRING: vnum = arg.d.str ? atoi(arg.d.str) : 0; break;
+	case ENT_OBJECT: vnum = arg.d.obj ? arg.d.obj->pIndexData->vnum : 0; break;
+	default: vnum = 0; break;
+	}
+
+	if (!vnum || !(pObjIndex = get_obj_index(vnum))) {
+		bug("Tpoload - Bad vnum arg from vnum %d.", VNUM(info->token));
+		return;
+	}
+
+	if(rest && *rest) {
+		argument = rest;
+		if(!(rest = expand_argument(info,argument,&arg)))
+			return;
+
+		switch(arg.type) {
+		case ENT_NUMBER: level = arg.d.num; break;
+		case ENT_STRING: level = arg.d.str ? atoi(arg.d.str) : 0; break;
+		case ENT_MOBILE: level = arg.d.mob ? get_trust(arg.d.mob) : 0; break;
+		case ENT_OBJECT: level = arg.d.obj ? arg.d.obj->pIndexData->level : 0; break;
+		default: level = 0; break;
+		}
+
+		if(level <= 0) level = pObjIndex->level;
+
+		if((rest = one_argument(rest,buf))) {
+			if (!str_cmp(buf,"carry"))
+				fCarry = TRUE;
+		}
+	} else
+		level = pObjIndex->level;
+
+	obj = create_object(pObjIndex, level, TRUE);
+
+	if (fCarry && CAN_WEAR(obj, ITEM_TAKE) &&
+		info->token->player &&
+		(info->token->player->carry_number < can_carry_n (info->token->player)) &&
+		(get_carry_weight (info->token->player) + get_obj_weight (obj) <= can_carry_w (info->token->player)))
+		obj_to_char(obj,info->token->player);
+	else
+		obj_to_room(obj, token_room(info->token));
+
+	if(rest && *rest) variables_set_object(info->var,rest,obj);
+	p_percent_trigger(NULL, obj, NULL, NULL, NULL, NULL, NULL, TRIG_REPOP);
+}
+
+SCRIPT_CMD(do_tpforce)
+{
+	char buf[MSL],*rest;
+	CHAR_DATA *victim = NULL, *next;
+	bool fAll = FALSE, forced;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpForce - Error in parsing from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING:
+		if(!str_cmp(arg.d.str,"all")) fAll = TRUE;
+		else victim = get_char_room(NULL,token_room(info->token), arg.d.str);
+		break;
+	case ENT_MOBILE: victim = arg.d.mob; break;
+	default: break;
+	}
+
+	if (!fAll && !victim) {
+		bug("TpForce - Null victim from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	expand_string(info,rest,buf);
+	if(!buf[0]) {
+		bug("TpForce - Error in parsing from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	forced = forced_command;
+
+	if (fAll) {
+		for (victim = token_room(info->token)->people; victim; victim = next) {
+			next = victim->next_in_room;
+			forced_command = TRUE;
+			interpret(victim, buf);
+		}
+	} else {
+		forced_command = TRUE;
+		interpret(victim, buf);
+	}
+
+	forced_command = forced;
+}
+
+SCRIPT_CMD(do_tpgforce)
+{
+	char buf[MSL],*rest;
+	CHAR_DATA *victim = NULL, *vch, *next;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token || !token_room(info->token)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpGforce - Error in parsing from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: victim = get_char_room(NULL, token_room(info->token), arg.d.str); break;
+	case ENT_MOBILE: victim = arg.d.mob; break;
+	default: break;
+	}
+
+	if (!victim) {
+		bug("TpGforce - Null victim from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	expand_string(info,rest,buf);
+	if(!buf[0]) {
+		bug("TpGforce - Error in parsing from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	for (vch = token_room(info->token)->people; vch; vch = next) {
+		next = vch->next_in_room;
+		if (is_same_group(victim,vch))
+			interpret(vch, buf);
+	}
+}
+
+SCRIPT_CMD(do_tpgoto)
+{
+	ROOM_INDEX_DATA *dest;
+
+	if(!info || !info->token || !info->token->player || !info->token->player->in_room) return;
+
+	if(!argument[0]) {
+		bug("Tpgoto - No argument from vnum %d.", VNUM(info->token));
+		return;
+	}
+
+	tp_getlocation(info, argument, &dest);
+
+	if(!dest) {
+		bug("Tpgoto - Bad location from vnum %d.", VNUM(info->token));
+		return;
+	}
+
+	if (info->token->player->fighting) stop_fighting(info->token->player, TRUE);
+
+	char_from_room(info->token->player);
+	char_to_room(info->token->player, dest);
+}
+
+
+SCRIPT_CMD(do_tpstringobj)
+{
+	char buf[MSL],field[MIL],*rest, **str;
+	int min_sec = MIN_SCRIPT_SECURITY;
+	OBJ_DATA *obj = NULL;
+	SCRIPT_PARAM arg;
+	bool newlines = FALSE;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpStringObj - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING:
+		obj = get_obj_here(NULL,token_room(info->token),arg.d.str);
+		break;
+	case ENT_OBJECT:
+		obj = arg.d.obj;
+		break;
+	default: break;
+	}
+
+	if(!obj) {
+		bug("TpStringObj - NULL object.", 0);
+		return;
+	}
+
+	if(!*rest) {
+		bug("TpStringObj - Missing field type.",0);
+		return;
+	}
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpStringObj - Error in parsing.",0);
+		return;
+	}
+
+	field[0] = 0;
+
+	switch(arg.type) {
+	case ENT_STRING:
+		strncpy(field,arg.d.str,MIL-1);
+		break;
+	default: return;
+	}
+
+	if(!field[0]) return;
+
+	expand_string(info,rest,buf);
+
+	if(!buf[0]) {
+		bug("TpStringObj - Empty string used.",0);
+		return;
+	}
+
+	if(!str_cmp(field,"name")) {
+		if(obj->old_short_descr) return;	// Can't change restrings, sorry!
+		str = (char**)&obj->name;
+	} else if(!str_cmp(field,"owner")) {
+		str = (char**)&obj->owner;
+		min_sec = 5;
+	} else if(!str_cmp(field,"short")) {
+		if(obj->old_short_descr) return;	// Can't change restrings, sorry!
+		str = (char**)&obj->short_descr;
+	} else if(!str_cmp(field,"long")) {
+		if(obj->old_description) return;	// Can't change restrings, sorry!
+		str = (char**)&obj->description;
+	} else if(!str_cmp(field,"full")) {
+		if(obj->old_full_description) return;	// Can't change restrings, sorry!
+		str = (char**)&obj->full_description;
+		newlines = TRUE;
+	} else if(!str_cmp(field,"material")) {
+		int mat = material_lookup(buf);
+
+		if(mat < 0) {
+			sprintf(buf,"TpStringObj - Invalid material '%s'.\n\r", buf);
+			bug(buf, 0);
+			return;
+		}
+
+		// Force material to the full name
+		strcpy(buf,material_table[mat].name);
+
+		str = (char**)&obj->material;
+	} else return;
+
+	if(script_security < min_sec) {
+		sprintf(buf,"TpStringObj - Attempting to restring '%s' with security %d.\n\r", field, script_security);
+		bug(buf, 0);
+		return;
+	}
+
+	strip_newline(buf, newlines);
+
+	free_string(*str);
+	*str = str_dup(buf);
+}
+
+SCRIPT_CMD(do_tpaltermob)
+{
+	char buf[MSL],field[MIL],*rest;
+	int value, min_sec = MIN_SCRIPT_SECURITY, min, max;
+	CHAR_DATA *mob = NULL;
+	SCRIPT_PARAM arg;
+	int *ptr = NULL;
+	bool allowpc = FALSE;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpAlterMob - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING:
+		mob = get_char_room(NULL,token_room(info->token),arg.d.str);
+		break;
+	case ENT_MOBILE:
+		mob = arg.d.mob;
+		break;
+	default: break;
+	}
+
+	if(!mob) {
+		bug("TpAlterMob - NULL mobile.", 0);
+		return;
+	}
+
+	if(!*rest) {
+		bug("TpAlterMob - Missing field type.",0);
+		return;
+	}
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpAlterMob - Error in parsing.",0);
+		return;
+	}
+
+	field[0] = 0;
+
+	switch(arg.type) {
+	case ENT_STRING: strncpy(field,arg.d.str,MIL-1); break;
+	default: return;
+	}
+
+	if(!field[0]) return;
+
+	argument = one_argument(rest,buf);
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpAlterMob - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: value = is_number(arg.d.str) ? atoi(arg.d.str) : 0; break;
+	case ENT_NUMBER: value = arg.d.num; break;
+	default: return;
+	}
+
+	if(!str_cmp(field,"acbash"))		ptr = (int*)&mob->armor[AC_BASH];
+	else if(!str_cmp(field,"acexotic"))	ptr = (int*)&mob->armor[AC_EXOTIC];
+	else if(!str_cmp(field,"acpierce"))	ptr = (int*)&mob->armor[AC_PIERCE];
+	else if(!str_cmp(field,"acslash"))	ptr = (int*)&mob->armor[AC_SLASH];
+	else if(!str_cmp(field,"act"))		ptr = (int*)&mob->act;
+	else if(!str_cmp(field,"act2"))		ptr = (int*)&mob->act2;
+	else if(!str_cmp(field,"alignment"))	ptr = (int*)&mob->alignment;
+	else if(!str_cmp(field,"bashed"))	ptr = (int*)&mob->bashed;
+	else if(!str_cmp(field,"bind"))		ptr = (int*)&mob->bind;
+	else if(!str_cmp(field,"bomb"))		ptr = (int*)&mob->bomb;
+	else if(!str_cmp(field,"brew"))		ptr = (int*)&mob->brew;
+	else if(!str_cmp(field,"cast"))		ptr = (int*)&mob->cast;
+	else if(!str_cmp(field,"damroll"))	ptr = (int*)&mob->damroll;
+	else if(!str_cmp(field,"danger"))	{ ptr = IS_NPC(mob)?NULL:(int*)&mob->pcdata->danger_range; allowpc = TRUE; }
+	else if(!str_cmp(field,"daze"))		ptr = (int*)&mob->daze;
+	else if(!str_cmp(field,"death"))	{ ptr = (IS_NPC(mob) || !IS_DEAD(mob))?NULL:(int*)&mob->time_left_death; allowpc = TRUE; }
+	else if(!str_cmp(field,"drunk"))	{ ptr = IS_NPC(mob)?NULL:(int*)&mob->pcdata->condition[COND_DRUNK]; allowpc = TRUE; }
+//	else if(!str_cmp(field,"exitdir"))	{ ptr = (int*)&mob->exit_dir; allowpc = TRUE; }
+	else if(!str_cmp(field,"exp"))		{ ptr = (int*)&mob->exp; allowpc = TRUE; }
+	else if(!str_cmp(field,"fade"))		ptr = (int*)&mob->fade;
+	else if(!str_cmp(field,"fullness"))	{ ptr = IS_NPC(mob)?NULL:(int*)&mob->pcdata->condition[COND_FULL]; allowpc = TRUE; }
+	else if(!str_cmp(field,"gold"))		ptr = (int*)&mob->gold;
+	else if(!str_cmp(field,"hide"))		ptr = (int*)&mob->hide;
+	else if(!str_cmp(field,"hit"))		ptr = (int*)&mob->hit;
+	else if(!str_cmp(field,"hitdamage"))	ptr = (int*)&mob->hit_damage;
+	else if(!str_cmp(field,"hitroll"))	ptr = (int*)&mob->hitroll;
+	else if(!str_cmp(field,"hunger"))	{ ptr = IS_NPC(mob)?NULL:(int*)&mob->pcdata->condition[COND_HUNGER]; allowpc = TRUE; }
+	else if(!str_cmp(field,"imm"))		ptr = (int*)&mob->imm_flags;
+	else if(!str_cmp(field,"level"))	ptr = (int*)&mob->tot_level;
+	else if(!str_cmp(field,"mana"))		ptr = (int*)&mob->mana;
+	else if(!str_cmp(field,"manastore"))	{ ptr = (int*)&mob->manastore; allowpc = TRUE; }
+//	else if(!str_cmp(field,"material"))	ptr = (int*)&mob->material;
+	else if(!str_cmp(field,"maxexp"))	ptr = (int*)&mob->maxexp;
+	else if(!str_cmp(field,"maxhit"))	ptr = (int*)&mob->max_hit;
+	else if(!str_cmp(field,"maxmana"))	ptr = (int*)&mob->max_mana;
+	else if(!str_cmp(field,"maxmove"))	ptr = (int*)&mob->max_move;
+	else if(!str_cmp(field,"mazed"))	{ ptr = (IS_NPC(mob))?NULL:(int*)&mob->maze_time_left; allowpc = TRUE; }
+	else if(!str_cmp(field,"modcon"))	{ ptr = (int*)&mob->mod_stat[STAT_CON]; allowpc = TRUE; min_sec = IS_NPC(mob)?0:3; }
+	else if(!str_cmp(field,"moddex"))	{ ptr = (int*)&mob->mod_stat[STAT_DEX]; allowpc = TRUE; min_sec = IS_NPC(mob)?0:3; }
+	else if(!str_cmp(field,"modint"))	{ ptr = (int*)&mob->mod_stat[STAT_INT]; allowpc = TRUE; min_sec = IS_NPC(mob)?0:3; }
+	else if(!str_cmp(field,"modstr"))	{ ptr = (int*)&mob->mod_stat[STAT_STR]; allowpc = TRUE; min_sec = IS_NPC(mob)?0:3; }
+	else if(!str_cmp(field,"modwis"))	{ ptr = (int*)&mob->mod_stat[STAT_WIS]; allowpc = TRUE; min_sec = IS_NPC(mob)?0:3; }
+	else if(!str_cmp(field,"move"))		ptr = (int*)&mob->move;
+	else if(!str_cmp(field,"music"))	ptr = (int*)&mob->music;
+	else if(!str_cmp(field,"norecall"))	ptr = (int*)&mob->no_recall;
+	else if(!str_cmp(field,"panic"))	ptr = (int*)&mob->panic;
+	else if(!str_cmp(field,"paralyzed"))	ptr = (int*)&mob->paralyzed;
+	else if(!str_cmp(field,"paroxysm"))	ptr = (int*)&mob->paroxysm;
+	else if(!str_cmp(field,"pktimer"))	ptr = (int*)&mob->pk_timer;
+	else if(!str_cmp(field,"pneuma"))	ptr = (int*)&mob->pneuma;
+	else if(!str_cmp(field,"practice"))	ptr = (int*)&mob->practice;
+	else if(!str_cmp(field,"race"))		{ ptr = (int*)&mob->race; min_sec = 7; }
+	else if(!str_cmp(field,"ranged"))	ptr = (int*)&mob->ranged;
+	else if(!str_cmp(field,"recite"))	ptr = (int*)&mob->recite;
+	else if(!str_cmp(field,"res"))		ptr = (int*)&mob->res_flags;
+	else if(!str_cmp(field,"resurrect"))	ptr = (int*)&mob->resurrect;
+	else if(!str_cmp(field,"reverie"))	ptr = (int*)&mob->reverie;
+	else if(!str_cmp(field,"scribe"))	ptr = (int*)&mob->scribe;
+	else if(!str_cmp(field,"sex"))		{ ptr = (int*)&mob->sex; min = 0; max = 2; }
+	else if(!str_cmp(field,"silver"))	ptr = (int*)&mob->silver;
+	else if(!str_cmp(field,"skillchance"))	ptr = (int*)&mob->skill_chance;
+	else if(!str_cmp(field,"sublevel"))	ptr = (int*)&mob->level;
+	else if(!str_cmp(field,"tempstore1"))	ptr = (int*)&mob->tempstore[0];
+	else if(!str_cmp(field,"tempstore2"))	ptr = (int*)&mob->tempstore[1];
+	else if(!str_cmp(field,"tempstore3"))	ptr = (int*)&mob->tempstore[2];
+	else if(!str_cmp(field,"tempstore4"))	ptr = (int*)&mob->tempstore[3];
+	else if(!str_cmp(field,"thirst"))	{ ptr = IS_NPC(mob)?NULL:(int*)&mob->pcdata->condition[COND_THIRST]; allowpc = TRUE; }
+	else if(!str_cmp(field,"toxinneuro"))	ptr = (int*)&mob->toxin[TOXIN_NEURO];
+	else if(!str_cmp(field,"toxinpara"))	ptr = (int*)&mob->toxin[TOXIN_PARALYZE];
+	else if(!str_cmp(field,"toxinvenom"))	ptr = (int*)&mob->toxin[TOXIN_VENOM];
+	else if(!str_cmp(field,"toxinweak"))	ptr = (int*)&mob->toxin[TOXIN_WEAKNESS];
+	else if(!str_cmp(field,"train"))	ptr = (int*)&mob->train;
+	else if(!str_cmp(field,"trance"))	ptr = (int*)&mob->trance;
+	else if(!str_cmp(field,"vuln"))		ptr = (int*)&mob->vuln_flags;
+	else if(!str_cmp(field,"wait"))		ptr = (int*)&mob->wait;
+	else if(!str_cmp(field,"wildviewx"))	ptr = (int*)&mob->wildview_bonus_x;
+	else if(!str_cmp(field,"wildviewy"))	ptr = (int*)&mob->wildview_bonus_y;
+	else if(!str_cmp(field,"wimpy"))	ptr = (int*)&mob->wimpy;
+
+
+	if(!ptr) return;
+
+	// MINIMUM to alter ANYTHING not allowed on players on a player
+	if(!allowpc && !IS_NPC(mob)) min_sec = 9;
+
+	if(script_security < min_sec) {
+		sprintf(buf,"TpAlterMob - Attempting to alter '%s' with security %d.\n\r", field, script_security);
+		bug(buf, 0);
+		return;
+	}
+
+	switch (buf[0]) {
+	case '+': *ptr += value; break;
+	case '-': *ptr -= value; break;
+	case '*': *ptr *= value; break;
+	case '/':
+		if (!value) {
+			bug("TpAlterMob - adjust called with operator / and value 0", 0);
+			return;
+		}
+		*ptr /= value;
+		break;
+	case '%':
+		if (!value) {
+			bug("TpAlterMob - adjust called with operator % and value 0", 0);
+			return;
+		}
+		*ptr %= value;
+		break;
+
+	case '=': *ptr = value; break;
+	case '&': *ptr &= value; break;
+	case '|': *ptr |= value; break;
+	case '!': *ptr &= ~value; break;
+	case '^': *ptr ^= value; break;
+	default:
+		return;
+	}
+}
+
+
+SCRIPT_CMD(do_tpstringmob)
+{
+	char buf[MSL+2],field[MIL],*rest, **str;
+	int min_sec = MIN_SCRIPT_SECURITY;
+	CHAR_DATA *mob = NULL;
+	SCRIPT_PARAM arg;
+	bool newlines = FALSE;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpStringMob - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING:
+		mob = get_char_room(NULL,token_room(info->token),arg.d.str);
+		break;
+	case ENT_MOBILE:
+		mob = arg.d.mob;
+		break;
+	default: break;
+	}
+
+	if(!mob) {
+		bug("TpStringMob - NULL mobile.", 0);
+		return;
+	}
+
+	if(!IS_NPC(mob)) {
+		bug("TpStringMob - can't change strings on PCs.", 0);
+		return;
+	}
+
+	if(!*rest) {
+		bug("TpStringMob - Missing field type.",0);
+		return;
+	}
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpStringMob - Error in parsing.",0);
+		return;
+	}
+
+	field[0] = 0;
+
+	switch(arg.type) {
+	case ENT_STRING: strncpy(field,arg.d.str,MIL-1); break;
+	default: return;
+	}
+
+	if(!field[0]) return;
+
+	expand_string(info,rest,buf);
+
+	if(!buf[0]) {
+		bug("TpStringMob - Empty string used.",0);
+		return;
+	}
+
+
+	if(!str_cmp(field,"name"))		str = (char**)&mob->name;
+	else if(!str_cmp(field,"owner"))	{ str = (char**)&mob->owner; min_sec = 5; }
+	else if(!str_cmp(field,"short"))	str = (char**)&mob->short_descr;
+	else if(!str_cmp(field,"long"))		{ str = (char**)&mob->long_descr; strcat(buf,"\n\r"); newlines = TRUE; }
+	else if(!str_cmp(field,"full"))		{ str = (char**)&mob->description; newlines = TRUE; }
+	else return;
+
+	if(script_security < min_sec) {
+		sprintf(buf,"TpStringMob - Attempting to restring '%s' with security %d.\n\r", field, script_security);
+		bug(buf, 0);
+		return;
+	}
+
+	strip_newline(buf, newlines);
+
+	free_string(*str);
+	*str = str_dup(buf);
+}
+
+SCRIPT_CMD(do_tpskimprove)
+{
+	char skill[MIL],*rest;
+	int min_diff, diff, sn=-1;
+	CHAR_DATA *mob = NULL;
+	SCRIPT_PARAM arg;
+	TOKEN_DATA *token = NULL;
+	bool success = FALSE;
+
+	if(script_security < MIN_SCRIPT_SECURITY) {
+		bug("TpSkImprove - Insufficient security.",0);
+		return;
+	}
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpSkImprove - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING:
+		mob = get_char_room(NULL,token_room(info->token),arg.d.str);
+		break;
+	case ENT_MOBILE:
+		mob = arg.d.mob;
+		break;
+	case ENT_TOKEN:
+		token = arg.d.token;
+	default: break;
+	}
+
+	if(!mob && !token) {
+		bug("TpSkImprove - NULL target.", 0);
+		return;
+	}
+
+	if(mob) {
+		if(IS_NPC(mob)) {
+			bug("TpSkImprove - NPCs don't have skills to improve yet...", 0);
+			return;
+		}
+
+
+		if(!(rest = expand_argument(info,rest,&arg))) {
+			bug("TpSkImprove - Error in parsing.",0);
+			return;
+		}
+
+		skill[0] = 0;
+
+		switch(arg.type) {
+		case ENT_STRING: strncpy(skill,arg.d.str,MIL-1); break;
+		default: return;
+		}
+
+		if(!skill[0]) return;
+
+		sn = skill_lookup(skill);
+
+		if(sn < 1) return;
+	} else {
+		if(token->pIndexData->type != TOKEN_SKILL && token->pIndexData->type != TOKEN_SPELL) {
+			bug("TpSkImprove - Token is not a spell token...", 0);
+			return;
+		}
+	}
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpSkImprove - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: diff = is_number(arg.d.str) ? atoi(arg.d.str) : 0; break;
+	case ENT_NUMBER: diff = arg.d.num; break;
+	default: return;
+	}
+
+	min_diff = 10 - script_security;	// min=10, max=1
+
+	if(diff < min_diff) {
+		bug("TpSkImprove - Attempting to use a difficulty multiplier lower than allowed.",0);
+		diff = min_diff;
+	}
+
+	switch(arg.type) {
+	case ENT_NONE: success = TRUE; break;
+	case ENT_STRING:
+		if(is_number(arg.d.str))
+
+			success = (bool)(atoi(arg.d.str) != 0);
+		else
+			success = !str_cmp(arg.d.str,"yes") || !str_cmp(arg.d.str,"true") ||
+				!str_cmp(arg.d.str,"success") || !str_cmp(arg.d.str,"pass");
+		break;
+	case ENT_NUMBER:
+		success = (bool)(arg.d.num != 0);
+		break;
+	default: success = FALSE;
+	}
+
+	if(token)
+		token_skill_improve(token->player,token,success,diff);
+	else
+		check_improve( mob, sn, success, diff );
+}
+
+SCRIPT_CMD(do_tprawkill)
+{
+	char *rest;
+	int type;
+	bool has_head, show_msg;
+	CHAR_DATA *mob = NULL;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpRawkill - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING:
+		mob = get_char_room(NULL,token_room(info->token),arg.d.str);
+		break;
+	case ENT_MOBILE:
+		mob = arg.d.mob;
+		break;
+	default: break;
+	}
+
+	if(!mob) {
+		bug("TpRawkill - NULL mobile.", 0);
+		return;
+	}
+
+	if(IS_IMMORTAL(mob)) return;
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpRawkill - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: type = flag_lookup(arg.d.str,corpse_types); break;
+	default: return;
+	}
+
+	if(type < 0 || type == NO_FLAG) return;
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpRawkill - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_NONE:	has_head = TRUE; break;
+	case ENT_STRING:
+		has_head = !str_cmp(arg.d.str,"true") ||
+			!str_cmp(arg.d.str,"yes") ||
+			!str_cmp(arg.d.str,"head");
+		break;
+	default: return;
+	}
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpRawkill - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_NONE:	show_msg = TRUE; break;
+	case ENT_STRING:
+		show_msg = !str_cmp(arg.d.str,"true") ||
+			!str_cmp(arg.d.str,"yes");
+		break;
+	default: return;
+	}
+
+	{
+		ROOM_INDEX_DATA *here = mob->in_room;
+		mob->position = POS_STANDING;
+		if(!p_percent_trigger(mob, NULL, NULL, NULL, mob, NULL, mob, TRIG_DEATH))
+			p_percent_trigger(NULL, NULL, here, NULL, mob, NULL, mob, TRIG_DEATH);
+	}
+
+	raw_kill(mob, has_head, show_msg, type);
+}
+
+SCRIPT_CMD(do_tpaddaffect)
+{
+	char *rest;
+	int where, group, level, loc, mod, hours;
+	int skill;
+	long bv, bv2;
+	CHAR_DATA *mob = NULL;
+	OBJ_DATA *obj = NULL;
+	SCRIPT_PARAM arg;
+	AFFECT_DATA af;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpAddAffect - Error in parsing.",0);
+		return;
+	}
+
+	// addaffect <target> <where> <skill> <level> <location> <modifier> <duration> <bitvector> <bitvector2>
+
+	switch(arg.type) {
+	case ENT_STRING:
+		if (!(mob = get_char_room(NULL, token_room(info->token), arg.d.str)))
+			obj = get_obj_here(NULL, token_room(info->token), arg.d.str);
+		break;
+	case ENT_MOBILE: mob = arg.d.mob; break;
+	case ENT_OBJECT: obj = arg.d.obj; break;
+	default: break;
+	}
+
+	if(!mob && !obj) {
+		bug("TpAddaffect - NULL target.", 0);
+		return;
+	}
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpAddaffect - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: where = flag_lookup(arg.d.str,apply_types); break;
+	default: return;
+	}
+
+	if(where == NO_FLAG) return;
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpAddaffect - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING:
+		if(where == TO_OBJECT || where == TO_WEAPON)
+			group = flag_lookup(arg.d.str,affgroup_object_flags);
+		else
+			group = flag_lookup(arg.d.str,affgroup_mobile_flags);
+		break;
+	default: return;
+	}
+
+	if(group == NO_FLAG) return;
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("MpAddaffect - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: skill = skill_lookup(arg.d.str); break;
+	default: return;
+	}
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpAddaffect - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_NUMBER: level = arg.d.num; break;
+	case ENT_STRING: level = atoi(arg.d.str); break;
+	case ENT_MOBILE: level = arg.d.mob->tot_level; break;
+	case ENT_OBJECT: level = arg.d.obj->level; break;
+	default: return;
+	}
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpAddaffect - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: loc = flag_lookup(arg.d.str,apply_flags_full); break;
+	default: return;
+	}
+
+	if(loc == NO_FLAG) return;
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpAddaffect - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_NUMBER: mod = arg.d.num; break;
+	default: return;
+	}
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpAddaffect - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_NUMBER: hours = arg.d.num; break;
+	default: return;
+	}
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpAddaffect - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: bv = flag_value(affect_flags,arg.d.str); break;
+	default: return;
+	}
+
+	if(bv == NO_FLAG) bv = 0;
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpAddaffect - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: bv2 = flag_value(affect2_flags,arg.d.str); break;
+	default: return;
+	}
+
+	if(bv2 == NO_FLAG) bv2 = 0;
+
+	memset(&af,0,sizeof(af));
+	af.group	= group;
+	af.where     = where;
+	af.type      = skill;
+	af.location  = loc;
+	af.modifier  = mod;
+	af.level     = level;
+	af.duration  = (hours < 0) ? -1 : hours;
+	af.bitvector = bv;
+	af.bitvector2 = bv2;
+	if(mob) affect_join(mob, &af);
+	else affect_join_obj(obj,&af);
+}
+
+SCRIPT_CMD(do_tpaddaffectname)
+{
+	char *rest, *name = NULL;
+	int where, group, level, loc, mod, hours;
+	long bv, bv2;
+	CHAR_DATA *mob = NULL;
+	OBJ_DATA *obj = NULL;
+	SCRIPT_PARAM arg;
+	AFFECT_DATA af;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("MpAddAffect - Error in parsing.",0);
+		return;
+	}
+
+	// addaffectname <target> <where> <name> <level> <location> <modifier> <duration> <bitvector> <bitvector2>
+
+	// <target>
+	switch(arg.type) {
+	case ENT_STRING:
+		if (!(mob = get_char_room(NULL,token_room(info->token), arg.d.str)))
+			obj = get_obj_here(NULL,token_room(info->token), arg.d.str);
+		break;
+	case ENT_MOBILE: mob = arg.d.mob; break;
+	case ENT_OBJECT: obj = arg.d.obj; break;
+	default: break;
+	}
+
+	if(!mob && !obj) {
+		bug("MpAddaffect - NULL target.", 0);
+		return;
+	}
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("MpAddaffect - Error in parsing.",0);
+		return;
+	}
+
+	// <where>
+	switch(arg.type) {
+	case ENT_STRING: where = flag_lookup(arg.d.str,apply_types); break;
+	default: return;
+	}
+
+	if(where == NO_FLAG) return;
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("MpAddaffect - Error in parsing.",0);
+		return;
+	}
+
+	// <group>
+	switch(arg.type) {
+	case ENT_STRING:
+		if(where == TO_OBJECT || where == TO_WEAPON)
+			group = flag_lookup(arg.d.str,affgroup_object_flags);
+		else
+			group = flag_lookup(arg.d.str,affgroup_mobile_flags);
+		break;
+	default: return;
+	}
+
+	if(group == NO_FLAG) return;
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("MpAddaffect - Error in parsing.",0);
+		return;
+	}
+
+
+	// <name>
+	switch(arg.type) {
+	case ENT_STRING: name = create_affect_cname(arg.d.str); break;
+	default: return;
+	}
+
+	if(!name) {
+		bug("MpAddaffect - Error allocating affect name.",0);
+		return;
+	}
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("MpAddaffect - Error in parsing.",0);
+		return;
+	}
+
+	// <level>
+	switch(arg.type) {
+	case ENT_NUMBER: level = arg.d.num; break;
+	case ENT_STRING: level = atoi(arg.d.str); break;
+	case ENT_MOBILE: level = arg.d.mob->tot_level; break;
+	case ENT_OBJECT: level = arg.d.obj->level; break;
+	default: return;
+	}
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("MpAddaffect - Error in parsing.",0);
+		return;
+	}
+
+	// <location>
+	switch(arg.type) {
+	case ENT_STRING: loc = flag_lookup(arg.d.str,apply_flags_full); break;
+	default: return;
+	}
+
+	if(loc == NO_FLAG) return;
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("MpAddaffect - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_NUMBER: mod = arg.d.num; break;
+	default: return;
+	}
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("MpAddaffect - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_NUMBER: hours = arg.d.num; break;
+	default: return;
+	}
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("MpAddaffect - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: bv = flag_value(affect_flags,arg.d.str); break;
+	default: return;
+	}
+
+	if(bv == NO_FLAG) bv = 0;
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("MpAddaffect - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: bv2 = flag_value(affect2_flags,arg.d.str); break;
+	default: return;
+	}
+
+	if(bv2 == NO_FLAG) bv2 = 0;
+
+	af.group	= group;
+	af.where     = where;
+	af.type      = -1;
+	af.location  = loc;
+	af.modifier  = mod;
+	af.level     = level;
+	af.duration  = (hours < 0) ? -1 : hours;
+	af.bitvector = bv;
+	af.bitvector2 = bv2;
+	af.custom_name = name;
+	if(mob) affect_join_full(mob, &af);
+	else affect_join_full_obj(obj,&af);
+}
+
+
+SCRIPT_CMD(do_tpstripaffect)
+{
+	char *rest;
+	int skill;
+	CHAR_DATA *mob = NULL;
+	OBJ_DATA *obj = NULL;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpStripaffect - Error in parsing.",0);
+		return;
+	}
+
+	// stripaffect <target> <skill>
+
+	switch(arg.type) {
+	case ENT_STRING:
+		if (!(mob = get_char_room(NULL, token_room(info->token), arg.d.str)))
+			obj = get_obj_here(NULL, token_room(info->token), arg.d.str);
+		break;
+	case ENT_MOBILE: mob = arg.d.mob; break;
+	case ENT_OBJECT: obj = arg.d.obj; break;
+	default: break;
+	}
+
+	if(!mob && !obj) {
+		bug("TpStripaffect - NULL target.", 0);
+		return;
+	}
+
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpStripaffect - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: skill = skill_lookup(arg.d.str); break;
+	default: return;
+	}
+
+	if(skill < 0) return;
+
+	if(mob) affect_strip(mob, skill);
+	else affect_strip_obj(obj,skill);
+}
+
+SCRIPT_CMD(do_tpstripaffectname)
+{
+	char *rest, *name;
+	CHAR_DATA *mob = NULL;
+	OBJ_DATA *obj = NULL;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("MpStripaffect - Error in parsing.",0);
+		return;
+	}
+
+	// stripaffectname <target> <name>
+
+	switch(arg.type) {
+	case ENT_STRING:
+		if (!(mob = get_char_room(NULL,token_room(info->token), arg.d.str)))
+			obj = get_obj_here(NULL,token_room(info->token), arg.d.str);
+		break;
+	case ENT_MOBILE: mob = arg.d.mob; break;
+	case ENT_OBJECT: obj = arg.d.obj; break;
+	default: break;
+	}
+
+	if(!mob && !obj) {
+		bug("MpStripaffect - NULL target.", 0);
+		return;
+	}
+
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("MpStripaffect - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: name = get_affect_cname(arg.d.str); break;
+	default: return;
+	}
+
+	if(!name) return;
+
+	if(mob) affect_strip_name(mob, name);
+	else affect_strip_name_obj(obj, name);
+}
+
+
+SCRIPT_CMD(do_tpinput)
+{
+	char buf[MSL];
+	char *rest, *p;
+	int vnum;
+	CHAR_DATA *mob = NULL;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	info->token->progs->lastreturn = 0;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpInput - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING:
+		mob = get_char_room(NULL,token_room(info->token),arg.d.str);
+		break;
+	case ENT_MOBILE:
+		mob = arg.d.mob;
+		break;
+	default: break;
+	}
+
+	if(!mob) {
+		bug("TpInput - NULL mobile.", 0);
+		return;
+	}
+
+	if(IS_NPC(mob) || !mob->desc || mob->desc->input) return;
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpInput - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_NUMBER: vnum = arg.d.num; break;
+	default: return;
+	}
+
+	if(vnum < 1 || !get_script_index(vnum, PRG_TPROG)) return;
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpInput - Error in parsing.",0);
+		return;
+	}
+
+
+	switch(arg.type) {
+	case ENT_NONE:		p = NULL; break;
+	case ENT_STRING:	p = arg.d.str; break;
+	default: return;
+	}
+
+	expand_string(info,rest,buf);
+
+	mob->desc->input = TRUE;
+	mob->desc->input_var = p ? str_dup(p) : NULL;
+	mob->desc->input_prompt = str_dup(buf[0] ? buf : " >");
+	mob->desc->input_script = vnum;
+	mob->desc->input_mob = NULL;
+	mob->desc->input_obj = NULL;
+	mob->desc->input_room = NULL;
+	mob->desc->input_tok = info->token;
+
+	info->token->progs->lastreturn = 1;
+}
+
+SCRIPT_CMD(do_tpusecatalyst)
+{
+	char *rest;
+	int type, method, amount, min, max, show;
+	CHAR_DATA *mob = NULL;
+	ROOM_INDEX_DATA *room = NULL;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	info->token->progs->lastreturn = 0;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpUseCatalyst - Error in parsing.",0);
+		return;
+	}
+
+	// usecatalyst <target> <type> <method> <amount> <min> <max> <show>
+
+	switch(arg.type) {
+	case ENT_STRING: mob = get_char_room(NULL,token_room(info->token), arg.d.str); break;
+	case ENT_MOBILE: mob = arg.d.mob; break;
+	case ENT_ROOM: room = arg.d.room; break;
+	default: break;
+	}
+
+	if(!mob && !room) {
+		bug("TpUseCatalyst - NULL target.", 0);
+		return;
+	}
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpUseCatalyst - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: type = flag_value(catalyst_types,arg.d.str); break;
+	default: return;
+	}
+
+	if(type == NO_FLAG) return;
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpUseCatalyst - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: method = flag_value(catalyst_method_types,arg.d.str); break;
+	default: return;
+	}
+
+	if(method == NO_FLAG) return;
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpUseCatalyst - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_NUMBER: amount = arg.d.num; break;
+	case ENT_STRING: amount = atoi(arg.d.str); break;
+	default: return;
+	}
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpUseCatalyst - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_NUMBER: min = arg.d.num; break;
+	case ENT_STRING: min = atoi(arg.d.str); break;
+	default: return;
+	}
+
+	if(min < 1 || min > CATALYST_MAXSTRENGTH) return;
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpUseCatalyst - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_NUMBER: max = arg.d.num; break;
+	case ENT_STRING: max = atoi(arg.d.str); break;
+	default: return;
+	}
+
+	if(max < min || max > CATALYST_MAXSTRENGTH) return;
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpUseCatalyst - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: show = flag_value(boolean_types,arg.d.str); break;
+	default: return;
+	}
+
+	if(show == NO_FLAG) return;
+
+	info->token->progs->lastreturn = use_catalyst(mob,room,type,method,amount,min,max,(bool)show);
+}
+
+SCRIPT_CMD(do_tpalterexit)
+{
+	char buf[MSL+2],field[MIL],*rest;
+	int value, min_sec = MIN_SCRIPT_SECURITY, door;
+	ROOM_INDEX_DATA *room;
+	EXIT_DATA *ex = NULL;
+	SCRIPT_PARAM arg;
+	int *ptr = NULL;
+	sh_int *sptr = NULL;
+	char **str;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpAlterExit - Error in parsing.",0);
+		return;
+	}
+
+	room = token_room(info->token);
+
+	switch(arg.type) {
+	case ENT_ROOM:
+		room = arg.d.room;
+		if(!(rest = expand_argument(info,rest,&arg)) || arg.type != ENT_STRING) {
+			bug("TpAlterExit - Error in parsing.",0);
+			return;
+		}
+	case ENT_STRING:
+		door = get_num_dir(arg.d.str);
+		ex = (door < 0) ? NULL : room->exit[door];
+		break;
+	case ENT_EXIT:
+		ex = arg.d.exit;
+		break;
+	default: ex = NULL; break;
+	}
+
+	if(!ex) return;
+
+	if(!*rest) {
+		bug("TpAlterExit - Missing field type.",0);
+		return;
+	}
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpAlterExit - Error in parsing.",0);
+		return;
+	}
+
+	field[0] = 0;
+
+	switch(arg.type) {
+	case ENT_STRING: strncpy(field,arg.d.str,MIL-1); break;
+	default: return;
+	}
+
+	if(!field[0]) return;
+
+	if(!str_cmp(field,"room") || !str_prefix(field,"destination")) {
+		if(!(rest = expand_argument(info,rest,&arg))) {
+			bug("TpAlterExit - Error in parsing.",0);
+			return;
+		}
+
+		switch(arg.type) {
+		case ENT_NUMBER:	room = get_room_index(arg.d.num); break;
+		case ENT_ROOM:		room = arg.d.room; break;
+		case ENT_MOBILE:	room = arg.d.mob->in_room; break;
+		case ENT_OBJECT:	room = obj_room(arg.d.obj); break;
+		case ENT_EXIT:		room = arg.d.exit->u1.to_room; break;
+		default: return;
+		}
+
+		if(!room) return;
+
+		ex->u1.to_room = room;
+		return;
+	}
+
+	str = NULL;
+	if(!str_cmp(field,"keyword"))		str = &ex->keyword;
+	else if(!str_cmp(field,"long"))		str = &ex->long_desc;
+	else if(!str_cmp(field,"material"))	str = &ex->door.material;
+	else if(!str_cmp(field,"short"))	str = &ex->short_desc;
+
+	if(str) {
+		expand_string(info,rest,buf);
+
+		if(!buf[0]) {
+			bug("TpAlterExit - Empty string used.",0);
+			return;
+		}
+
+		free_string(*str);
+		*str = str_dup(buf);
+		return;
+	}
+
+	argument = one_argument(rest,buf);
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpAlterExit - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: value = is_number(arg.d.str) ? atoi(arg.d.str) : 0; break;
+	case ENT_NUMBER: value = arg.d.num; break;
+	default: return;
+	}
+
+	if(!str_cmp(field,"flags"))		ptr = (int*)&ex->exit_info;
+	else if(!str_cmp(field,"resets"))	ptr = (int*)&ex->rs_flags;
+	else if(!str_cmp(field,"strength"))	sptr = (sh_int*)&ex->door.strength;
+	else if(!str_cmp(field,"key"))		ptr = (int*)&ex->door.key_vnum;
+
+	if(!ptr && !sptr) return;
+
+	if(script_security < min_sec) {
+		sprintf(buf,"TpAlterExit - Attempting to alter '%s' with security %d.\n\r", field, script_security);
+		wiznet(buf,NULL,NULL,WIZ_SCRIPTS,0,0);
+		bug(buf, 0);
+		return;
+	}
+
+	if(ptr) {
+		switch (buf[0]) {
+		case '+': *ptr += value; break;
+		case '-': *ptr -= value; break;
+		case '*': *ptr *= value; break;
+		case '/':
+			if (!value) {
+				bug("TpAlterExit - adjust called with operator / and value 0", 0);
+				return;
+			}
+			*ptr /= value;
+			break;
+		case '%':
+			if (!value) {
+				bug("TpAlterExit - adjust called with operator % and value 0", 0);
+				return;
+			}
+			*ptr %= value;
+			break;
+
+		case '=': *ptr = value; break;
+		case '&': *ptr &= value; break;
+		case '|': *ptr |= value; break;
+		case '!': *ptr &= ~value; break;
+		case '^': *ptr ^= value; break;
+		default:
+			return;
+		}
+	} else {
+		switch (buf[0]) {
+		case '+': *sptr += value; break;
+		case '-': *sptr -= value; break;
+		case '*': *sptr *= value; break;
+		case '/':
+			if (!value) {
+				bug("TpAlterExit - adjust called with operator / and value 0", 0);
+				return;
+			}
+			*sptr /= value;
+			break;
+		case '%':
+			if (!value) {
+				bug("TpAlterExit - adjust called with operator % and value 0", 0);
+				return;
+			}
+			*sptr %= value;
+			break;
+
+		case '=': *sptr = value; break;
+		case '&': *sptr &= value; break;
+		case '|': *sptr |= value; break;
+		case '!': *sptr &= ~value; break;
+		case '^': *sptr ^= value; break;
+		default:
+			return;
+		}
+	}
+}
+
+// SYNTAX: token prompt <player> <name>[ <string>]
+SCRIPT_CMD(do_tpprompt)
+{
+	char buf[MSL+2],name[MIL],*rest;
+	CHAR_DATA *mob = NULL;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpPrompt - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING:
+		mob = get_char_room(NULL,token_room(info->token), arg.d.str);
+		break;
+	case ENT_MOBILE:
+		mob = arg.d.mob;
+		break;
+	default: break;
+	}
+
+	if(!mob) {
+		bug("TpPrompt - NULL mobile.", 0);
+		return;
+	}
+
+	if(IS_NPC(mob)) {
+		bug("TpPrompt - cannot set prompt strings on NPCs.", 0);
+		return;
+	}
+
+	if(!*rest) {
+		bug("TpPrompt - Missing name type.",0);
+		return;
+	}
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpPrompt - Error in parsing.",0);
+		return;
+	}
+
+	name[0] = 0;
+
+	switch(arg.type) {
+	case ENT_STRING: strncpy(name,arg.d.str,MIL-1); break;
+	default: return;
+	}
+
+	if(!name[0]) return;
+
+	expand_string(info,rest,buf);
+
+	if(!buf[0]) {
+		bug("TpPrompt - Empty string used.",0);
+		return;
+	}
+
+	string_vector_set(&mob->pcdata->script_prompts,name,buf);
+}
+
+
+SCRIPT_CMD(do_tpvarseton)
+{
+	char buf[MIL], name[MIL], *rest, *str = NULL;
+	CHAR_DATA *vch = NULL, *mobs = NULL;
+	OBJ_DATA *obj = NULL, *objs = NULL;
+	TOKEN_DATA *token = NULL, *tokens = NULL;
+	ROOM_INDEX_DATA *here;
+	EXIT_DATA *ex = NULL;
+	int vnum = 0,i;
+	unsigned long id1/*, id2*/;
+	SCRIPT_PARAM arg;
+	VARIABLE **vars;
+
+	if(!info || !info->token) return;
+
+	here = token_room(info->token);
+
+	// Get the target
+	if(!(argument = expand_argument(info,argument,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_MOBILE: vars = (arg.d.mob && IS_NPC(arg.d.mob) && arg.d.mob->progs) ? &arg.d.mob->progs->vars : NULL; break;
+	case ENT_OBJECT: vars = (arg.d.obj && arg.d.obj->progs) ? &arg.d.obj->progs->vars : NULL; break;
+	case ENT_ROOM: vars = (arg.d.room && arg.d.room->progs) ? &arg.d.room->progs->vars : NULL; break;
+	case ENT_TOKEN: vars = (arg.d.token && arg.d.token->progs) ? &arg.d.token->progs->vars : NULL; break;
+	default: vars = NULL; break;
+	}
+
+	if(!vars) return;
+
+	// Get name
+	argument = one_argument(argument,name);
+	if(!name[0]) return;
+
+	// Get type
+	argument = one_argument(argument,buf);
+	if(!buf[0]) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(!str_cmp(buf,"integer") || !str_cmp(buf,"number")) {
+		switch(arg.type) {
+		case ENT_NUMBER: variables_set_integer(vars,name,arg.d.num); break;
+		case ENT_STRING:
+			if(is_number(arg.d.str))
+				variables_set_integer(vars,name,atoi(arg.d.str)); break;
+		}
+	} else if(!str_cmp(buf,"string")) {
+		char tmp[MSL], *p;
+
+		switch(arg.type) {
+		case ENT_NUMBER:
+			sprintf(tmp,"%d",arg.d.num);
+			break;
+		case ENT_STRING:
+			strcpy(tmp,arg.d.str);
+			break;
+		default:return;
+		}
+
+		if(!(rest = expand_argument(info,rest,&arg)))
+			return;
+
+		switch(arg.type) {
+		case ENT_NONE:
+			variables_set_string(vars,name,tmp,FALSE);
+			break;
+
+		case ENT_NUMBER:
+			p = tmp;
+			for(i=0;i<arg.d.num && p && *p;i++)
+				p = one_argument(p,buf);
+			if(i == arg.d.num)
+				variables_set_string(vars,name,buf,FALSE);
+			break;
+		}
+	} else if(!str_cmp(buf,"append")) {
+		char tmp[MSL], *p;
+
+		switch(arg.type) {
+		case ENT_NUMBER:
+			sprintf(tmp,"%d",arg.d.num);
+			break;
+		case ENT_STRING:
+			strcpy(tmp,arg.d.str);
+			break;
+		default:return;
+		}
+
+		if(!(rest = expand_argument(info,rest,&arg)))
+			return;
+
+		switch(arg.type) {
+		case ENT_NONE:
+			variables_append_string(vars,name,tmp);
+			break;
+
+		case ENT_NUMBER:
+			p = tmp;
+			for(i=0;i<arg.d.num && p && *p;i++)
+				p = one_argument(p,buf);
+			if(arg.d.num > 0 && i == arg.d.num)
+				variables_append_string(vars,name,buf);
+			break;
+		}
+	} else if(!str_cmp(buf,"strformat")) {
+		variables_format_string(vars,name);
+	} else if(!str_cmp(buf,"ed")) {
+		// ed $<object|room> <keyword>
+		char tmp[MSL],*p;
+		EXTRA_DESCR_DATA *desc;
+
+		switch(arg.type) {
+		case ENT_OBJECT: desc = arg.d.obj->extra_descr; break;
+		case ENT_ROOM: desc = arg.d.room->extra_descr; break;
+		default:return;
+		}
+
+		expand_string(info,rest,tmp);
+
+		p = get_extra_descr(tmp, desc);
+
+		variables_set_string(info->var,name,(p ? p : ""),FALSE);
+	} else if(!str_cmp(buf,"room")) {
+		switch(arg.type) {
+		case ENT_NUMBER:
+			variables_set_room(vars,name,get_room_index(arg.d.num));
+			break;
+		case ENT_ROOM:
+			variables_set_room(vars,name,arg.d.room);
+			break;
+		case ENT_EXIT:
+			here = arg.d.exit ? exit_destination(arg.d.exit) : NULL;
+			variables_set_room(vars,name,here);
+			break;
+		case ENT_NONE:
+			variables_set_room(vars,name,here);
+			break;
+		}
+	} else if(!str_cmp(buf,"highroom")) {
+
+		// Format: highroom <wilds-uid> <x> <y> <z> <ground>
+		WILDS_DATA *wilds;
+		int x, y, z;
+		bool ground;
+
+		if(arg.type == ENT_NUMBER) {
+			wilds = get_wilds_from_uid(NULL,arg.d.num);
+			if(wilds) {
+				if(!(rest = expand_argument(info,rest,&arg)) && arg.type != ENT_NUMBER) return;
+				x = arg.d.num;
+				if(x < 0 || x >= wilds->map_size_x) return;
+
+				if(!(rest = expand_argument(info,rest,&arg)) && arg.type != ENT_NUMBER) return;
+				y = arg.d.num;
+				if(y < 0 || x >= wilds->map_size_y) return;
+
+				if(!(rest = expand_argument(info,rest,&arg)) && arg.type != ENT_NUMBER) return;
+				z = arg.d.num;
+
+				if(!(rest = expand_argument(info,rest,&arg)) && arg.type != ENT_STRING) return;
+				ground = !str_cmp(arg.d.str,"ground") || !str_cmp(arg.d.str,"true");
+
+				variables_set_room(info->var,name,wilds_seek_down(wilds, x, y, z, ground));
+			}
+		}
+	} else if(!str_cmp(buf,"exit")) {
+		switch(arg.type) {
+		case ENT_ROOM:
+			here = arg.d.room;
+			if(!here || !expand_argument(info,rest,&arg))
+				return;
+			if(arg.type != ENT_STRING) return;
+		case ENT_STRING:
+			vnum = get_num_dir(arg.d.str);
+			if(vnum < 0) {
+				if(!str_cmp(arg.d.str,"random"))
+					vnum = number_range(0,MAX_DIR-1);
+				else if(!str_cmp(arg.d.str,"exists")) {
+					for(vnum = number_range(0,MAX_DIR-1), i = 0; i < MAX_DIR && !here->exit[vnum]; i++, vnum = (vnum+1)%MAX_DIR);
+
+					if(!here->exit[vnum]) vnum = -1;
+				} else if(!str_cmp(arg.d.str,"open")) {
+					for(vnum = number_range(0,MAX_DIR-1), i = 0; i < MAX_DIR && !here->exit[vnum]; i++, vnum = (vnum+1)%MAX_DIR);
+
+					if(!here->exit[vnum] || IS_SET(here->exit[vnum]->exit_info,EX_CLOSED)) vnum = -1;
+				}
+
+				if(vnum < 0)
+					return;
+			}
+			ex = here->exit[vnum];
+			break;
+		case ENT_EXIT:
+			ex = arg.d.exit;
+			break;
+		}
+		variables_set_exit(vars,name,ex);
+	} else if(!str_cmp(buf,"mobile")) {
+		switch(arg.type) {
+		case ENT_STRING:
+			if(is_number(arg.d.str)) {
+				here = get_room_index(atoi(arg.d.str));
+				if(here && (mobs = here->people)) {
+					if(!expand_argument(info,rest,&arg))
+						return;
+					if(arg.type == ENT_NUMBER)
+						vnum = arg.d.num;
+					else if(arg.type == ENT_STRING) {
+						if(is_number(arg.d.str))
+							vnum = atoi(arg.d.str);
+						else
+							str = arg.d.str;
+					}
+				}
+			} else
+				vch = get_char_world(NULL,arg.d.str);
+			break;
+		case ENT_MOBILE:
+			vch = arg.d.mob;
+			break;
+		case ENT_LIST_MOB:
+			mobs = arg.d.list.ptr.mob ? *arg.d.list.ptr.mob : NULL;
+			if(mobs) {
+				if(!expand_argument(info,rest,&arg))
+					return;
+				if(arg.type == ENT_NUMBER)
+					vnum = arg.d.num;
+				else if(arg.type == ENT_STRING) {
+					if(is_number(arg.d.str))
+						vnum = atoi(arg.d.str);
+					else
+						str = arg.d.str;
+				} else
+					return;
+			}
+			break;
+		case ENT_NUMBER:
+			here = get_room_index(arg.d.num);
+			if(here && (mobs = here->people)) {
+				if(!expand_argument(info,rest,&arg))
+					return;
+				if(arg.type == ENT_NUMBER)
+					vnum = arg.d.num;
+				else if(arg.type == ENT_STRING) {
+					if(is_number(arg.d.str))
+						vnum = atoi(arg.d.str);
+					else
+						str = arg.d.str;
+				}
+			}
+			break;
+		case ENT_ROOM:
+			if(arg.d.room && (mobs = arg.d.room->people)) {
+				if(!expand_argument(info,rest,&arg))
+					return;
+				if(arg.type == ENT_NUMBER)
+					vnum = arg.d.num;
+				else if(arg.type == ENT_STRING) {
+					if(is_number(arg.d.str))
+						vnum = atoi(arg.d.str);
+					else
+						str = arg.d.str;
+				}
+			}
+			break;
+		default: return;
+		}
+
+		if(mobs) vch = script_get_char_list(mobs, NULL, FALSE, vnum, str);
+		variables_set_mobile(vars,name,vch);
+	} else if(!str_cmp(buf,"player")) {
+		switch(arg.type) {
+		case ENT_STRING:
+			vch = get_player(arg.d.str);
+			break;
+		case ENT_MOBILE:
+			vch = arg.d.mob && !IS_NPC(arg.d.mob) ? arg.d.mob : NULL;
+			break;
+		case ENT_LIST_MOB:
+			mobs = arg.d.list.ptr.mob ? *arg.d.list.ptr.mob : NULL;
+			if(mobs) {
+				if(!expand_argument(info,rest,&arg))
+					return;
+				if(arg.type == ENT_STRING && !is_number(arg.d.str))
+					str = arg.d.str;
+				else
+					mobs = NULL;
+			}
+			break;
+		default: return;
+		}
+		if(mobs) vch = script_get_char_list(mobs, NULL, TRUE, 0, str);
+		variables_set_mobile(vars,name,vch);
+	} else if(!str_cmp(buf,"object")) {
+		switch(arg.type) {
+		case ENT_STRING:
+			obj = get_obj_here(NULL,here,arg.d.str);
+			break;
+		case ENT_OBJECT:
+			obj = arg.d.obj;
+			break;
+		case ENT_MOBILE:
+			objs = arg.d.mob ? arg.d.mob->carrying : NULL;
+			break;
+		case ENT_LIST_OBJ:
+			objs = arg.d.list.ptr.obj ? *arg.d.list.ptr.obj : NULL;
+			break;
+		case ENT_ROOM:
+			objs = arg.d.room ? arg.d.room->contents : NULL;
+			break;
+		default: return;
+		}
+
+		if(objs) {
+			if(!expand_argument(info,rest,&arg))
+				return;
+			if(arg.type == ENT_NUMBER)
+				vnum = arg.d.num;
+			else if(arg.type == ENT_STRING) {
+				if(is_number(arg.d.str))
+					vnum = atoi(arg.d.str);
+				else
+					str = arg.d.str;
+			} else
+				return;
+			obj = script_get_obj_list(objs, NULL, 0, vnum, str);
+		}
+		variables_set_object(vars,name,obj);
+	} else if(!str_cmp(buf,"carry")) {
+		switch(arg.type) {
+		case ENT_MOBILE:
+			objs = arg.d.mob ? arg.d.mob->carrying : NULL;
+			break;
+		case ENT_LIST_OBJ:
+			objs = arg.d.list.ptr.obj ? *arg.d.list.ptr.obj : NULL;
+			break;
+		default: return;
+		}
+
+		if(objs) {
+			if(!expand_argument(info,rest,&arg))
+				return;
+			if(arg.type == ENT_NUMBER)
+				vnum = arg.d.num;
+			else if(arg.type == ENT_STRING) {
+				if(is_number(arg.d.str))
+					vnum = atoi(arg.d.str);
+				else
+					str = arg.d.str;
+			} else
+				return;
+			obj = script_get_obj_list(objs, NULL, 2, vnum, str);
+		}
+		variables_set_object(vars,name,obj);
+	} else if(!str_cmp(buf,"worn")) {
+		switch(arg.type) {
+		case ENT_MOBILE:
+			objs = arg.d.mob ? arg.d.mob->carrying : NULL;
+			break;
+		case ENT_LIST_OBJ:
+			objs = arg.d.list.ptr.obj ? *arg.d.list.ptr.obj : NULL;
+			break;
+		default: return;
+		}
+
+		if(objs) {
+			if(!expand_argument(info,rest,&arg))
+				return;
+			if(arg.type == ENT_NUMBER)
+				vnum = arg.d.num;
+			else if(arg.type == ENT_STRING) {
+				if(is_number(arg.d.str))
+					vnum = atoi(arg.d.str);
+				else
+					str = arg.d.str;
+			} else
+				return;
+			obj = script_get_obj_list(objs, NULL, 1, vnum, str);
+		}
+		variables_set_object(vars,name,obj);
+	} else if(!str_cmp(buf,"content")) {
+		switch(arg.type) {
+		case ENT_LIST_OBJ:
+			objs = arg.d.list.ptr.obj ? *arg.d.list.ptr.obj : NULL;
+			break;
+		case ENT_OBJECT:
+			objs = arg.d.obj ? arg.d.obj->contains : NULL;
+			break;
+		default: return;
+		}
+
+		if(objs && arg.type != ENT_NUMBER && arg.type != ENT_STRING) {
+			if(!expand_argument(info,rest,&arg))
+				return;
+			if(arg.type == ENT_NUMBER)
+				vnum = arg.d.num;
+			else if(arg.type == ENT_STRING) {
+				if(is_number(arg.d.str))
+					vnum = atoi(arg.d.str);
+				else
+					str = arg.d.str;
+			} else
+				return;
+		}
+		obj = script_get_obj_list(objs, NULL, 0, vnum, str);
+		variables_set_object(vars,name,obj);
+	} else if(!str_cmp(buf,"token")) {
+		switch(arg.type) {
+		case ENT_MOBILE:   tokens = arg.d.mob ? arg.d.mob->tokens : NULL; break;
+//		case ENT_OBJECT:   tokens = arg.d.obj ? arg.d.obj->tokens : NULL; break;
+//		case ENT_ROOM:     tokens = arg.d.room ? arg.d.room->tokens : NULL; break;
+		case ENT_TOKEN:    token = arg.d.token; break;
+		case ENT_LIST_TOK: tokens = arg.d.list.ptr.tok ? *arg.d.list.ptr.tok : NULL; break;
+		case ENT_NONE:     token = info->token; break;
+		default: return;
+		}
+
+		if(tokens) token = token_find_match(info, tokens, rest);
+		variables_set_token(vars,name,token);
+	} else if(!str_cmp(buf,"idmobile")) {
+		switch(arg.type) {
+		case ENT_NUMBER:
+			id1 = arg.d.num;
+			if(!expand_argument(info,rest,&arg) || arg.type != ENT_NUMBER)
+				return;
+			vch = idfind_mobile(id1,arg.d.num);
+			break;
+		default: return;
+		}
+		variables_set_mobile(vars,name,vch);
+	} else if(!str_cmp(buf,"idobject")) {
+		switch(arg.type) {
+		case ENT_NUMBER:
+			id1 = arg.d.num;
+			if(!expand_argument(info,rest,&arg) || arg.type != ENT_NUMBER)
+				return;
+			obj = idfind_object(id1,arg.d.num);
+			break;
+		default: return;
+		}
+		variables_set_object(vars,name,obj);
+	} else if(!str_cmp(buf,"idplayer")) {
+		switch(arg.type) {
+		case ENT_NUMBER:
+			id1 = arg.d.num;
+			if(!expand_argument(info,rest,&arg) || arg.type != ENT_NUMBER)
+				return;
+			vch = idfind_player(id1,arg.d.num);
+			break;
+		default: return;
+		}
+		variables_set_mobile(vars,name,vch);
+	} else if(!str_cmp(buf,"vroom")) {
+		switch(arg.type) {
+		case ENT_NUMBER:
+			here = get_room_index(arg.d.num);
+			if(!(rest = expand_argument(info,rest,&arg)) || arg.type != ENT_NUMBER)
+				return;
+			id1 = arg.d.num;
+			if(!expand_argument(info,rest,&arg) || arg.type != ENT_NUMBER)
+				return;
+			variables_set_room(vars,name,get_clone_room(here,id1,arg.d.num));
+			break;
+		default: return;
+		}
+	} else if(!str_cmp(buf,"skill")) {
+		switch(arg.type) {
+		case ENT_STRING:
+			variables_set_skill(vars,name,skill_lookup(arg.d.str));
+			break;
+		default: return;
+		}
+	} else if(!str_cmp(buf,"skillinfo")) {
+		switch(arg.type) {
+		case ENT_MOBILE:
+			vch = arg.d.mob;
+			if(!expand_argument(info,rest,&arg) || arg.type != ENT_STRING)
+				return;
+
+			variables_set_skillinfo(vars,name,vch,skill_lookup(arg.d.str));
+			break;
+		default: return;
+		}
+	} else
+		return;
+}
+
+SCRIPT_CMD(do_tpvarclearon)
+{
+	char name[MIL];
+	SCRIPT_PARAM arg;
+	VARIABLE **vars;
+
+	if(!info || !info->token) return;
+
+	// Get the target
+	if(!(argument = expand_argument(info,argument,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_MOBILE: vars = (arg.d.mob && IS_NPC(arg.d.mob) && arg.d.mob->progs) ? &arg.d.mob->progs->vars : NULL; break;
+	case ENT_OBJECT: vars = (arg.d.obj && arg.d.obj->progs) ? &arg.d.obj->progs->vars : NULL; break;
+	case ENT_ROOM: vars = (arg.d.room && arg.d.room->progs) ? &arg.d.room->progs->vars : NULL; break;
+	case ENT_TOKEN: vars = (arg.d.token && arg.d.token->progs) ? &arg.d.token->progs->vars : NULL; break;
+	default: vars = NULL; break;
+	}
+
+	if(!vars) return;
+
+
+	// Get name
+	argument = one_argument(argument,name);
+	if(!name[0]) return;
+
+	variable_remove(vars,name);
+}
+
+SCRIPT_CMD(do_tpvarsaveon)
+{
+	char name[MIL],buf[MIL];
+	bool on;
+	SCRIPT_PARAM arg;
+	VARIABLE *vars;
+
+	if(!info || !info->token) return;
+
+	// Get the target
+	if(!(argument = expand_argument(info,argument,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_MOBILE: vars = (arg.d.mob && IS_NPC(arg.d.mob) && arg.d.mob->progs) ? arg.d.mob->progs->vars : NULL; break;
+	case ENT_OBJECT: vars = (arg.d.obj && arg.d.obj->progs) ? arg.d.obj->progs->vars : NULL; break;
+	case ENT_ROOM: vars = (arg.d.room && arg.d.room->progs) ? arg.d.room->progs->vars : NULL; break;
+	case ENT_TOKEN: vars = (arg.d.token && arg.d.token->progs) ? arg.d.token->progs->vars : NULL; break;
+	default: vars = NULL; break;
+	}
+
+	if(!vars) return;
+
+	// Get name
+	argument = one_argument(argument,name);
+	if(!name[0]) return;
+	argument = one_argument(argument,buf);
+	if(!buf[0]) return;
+
+	on = !str_cmp(buf,"on") || !str_cmp(buf,"true") || !str_cmp(buf,"yes");
+
+	variable_setsave(vars,name,on);
+}
+
+// cloneroom <vnum> <environment> <var>
+SCRIPT_CMD(do_tpcloneroom)
+{
+	char name[MIL];
+	long vnum;
+	CHAR_DATA *mob;
+	OBJ_DATA *obj;
+	ROOM_INDEX_DATA *source, *room, *clone;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	// Get vnum
+	if(!(argument = expand_argument(info,argument,&arg)) || arg.type != ENT_NUMBER)
+		return;
+
+	vnum = arg.d.num;
+
+	source = get_room_index(vnum);
+	if(!source) return;
+
+	if(!(argument = expand_argument(info,argument,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_MOBILE:	mob = arg.d.mob; obj = NULL; room = NULL; break;
+	case ENT_OBJECT:	mob = NULL; obj = arg.d.obj; room = NULL; break;
+	case ENT_ROOM:		mob = NULL; obj = NULL; room = arg.d.room; break;
+	default: return;
+	}
+
+	if(!mob && !obj && !room) return;
+
+	if(!(argument = expand_argument(info,argument,&arg)) || arg.type != ENT_STRING || !arg.d.str || !arg.d.str[0])
+		return;
+
+	strncpy(name,arg.d.str,MIL); name[MIL] = 0;
+
+	clone = create_virtual_room(source,false);
+	if(!clone) return;
+
+	room_to_environment(clone,mob,obj,room);
+
+	variables_set_room(info->var,name,clone);
+}
+
+// alterroom <room> <field> <parameters>
+SCRIPT_CMD(do_tpalterroom)
+{
+	char buf[MSL+2],field[MIL],*rest;
+	int value, min_sec = MIN_SCRIPT_SECURITY;
+	ROOM_INDEX_DATA *room;
+	SCRIPT_PARAM arg;
+	int *ptr = NULL;
+	sh_int *sptr = NULL;
+	char **str;
+	bool allow_empty = FALSE;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpAlterRoom - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_ROOM:
+		room = arg.d.room;
+		break;
+	case ENT_NUMBER:
+		room = get_room_index(arg.d.num);
+		break;
+	default: room = NULL; break;
+	}
+
+	if(!room || !room_is_clone(room)) return;
+
+	if(!*rest) {
+		bug("TpAlterRoom - Missing field type.",0);
+		return;
+	}
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpAlterRoom - Error in parsing.",0);
+		return;
+	}
+
+	field[0] = 0;
+
+	switch(arg.type) {
+	case ENT_STRING: strncpy(field,arg.d.str,MIL-1); break;
+	default: return;
+	}
+
+	if(!field[0]) return;
+
+	// Setting the environment of a clone room
+	if(!str_cmp(field,"environment") || !str_cmp(field,"environ") ||
+		!str_cmp(field,"extern") || !str_cmp(field,"outside")) {
+
+		if(!(rest = expand_argument(info,rest,&arg))) {
+			bug("TpAlterRoom - Error in parsing.",0);
+			return;
+		}
+
+		switch(arg.type) {
+		case ENT_ROOM:
+			room_from_environment(room);
+			room_to_environment(room,NULL,NULL,arg.d.room);
+			break;
+		case ENT_MOBILE:
+			room_from_environment(room);
+			room_to_environment(room,arg.d.mob,NULL,NULL);
+			break;
+		case ENT_OBJECT:
+			room_from_environment(room);
+			room_to_environment(room,NULL,arg.d.obj,NULL);
+			break;
+		default: return;
+		}
+	}
+
+	str = NULL;
+	if(!str_cmp(field,"name"))		str = &room->name;
+	else if(!str_cmp(field,"desc"))		{ str = &room->description; allow_empty = TRUE; }
+	else if(!str_cmp(field,"owner"))	{ str = &room->owner; allow_empty = TRUE; min_sec = 9; }
+
+	if(str) {
+		if(script_security < min_sec) {
+			sprintf(buf,"TpAlterRoom - Attempting to alter '%s' with security %d.\n\r", field, script_security);
+			wiznet(buf,NULL,NULL,WIZ_SCRIPTS,0,0);
+			bug(buf, 0);
+			return;
+		}
+
+		expand_string(info,rest,buf);
+
+		if(!allow_empty && !buf[0]) {
+			bug("TpAlterRoom - Empty string used.",0);
+			return;
+		}
+
+		free_string(*str);
+		*str = str_dup(buf);
+		return;
+	}
+
+	argument = one_argument(rest,buf);
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpAlterRoom - Error in parsing.",0);
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: value = is_number(arg.d.str) ? atoi(arg.d.str) : 0; break;
+	case ENT_NUMBER: value = arg.d.num; break;
+	default: return;
+	}
+
+	if(!str_cmp(field,"room"))		ptr = (int*)&room->room_flags;
+	else if(!str_cmp(field,"room2"))	ptr = (int*)&room->room2_flags;
+	else if(!str_cmp(field,"light"))	ptr = (int*)&room->light;
+	else if(!str_cmp(field,"sector"))	ptr = (int*)&room->sector_type;
+	else if(!str_cmp(field,"heal"))		{ ptr = (int*)&room->heal_rate; min_sec = 9; }
+	else if(!str_cmp(field,"mana"))		{ ptr = (int*)&room->mana_rate; min_sec = 9; }
+	else if(!str_cmp(field,"move"))		{ ptr = (int*)&room->move_rate; min_sec = 1; }
+
+	if(!ptr && !sptr) return;
+
+	if(script_security < min_sec) {
+		sprintf(buf,"TpAlterRoom - Attempting to alter '%s' with security %d.\n\r", field, script_security);
+		wiznet(buf,NULL,NULL,WIZ_SCRIPTS,0,0);
+		bug(buf, 0);
+		return;
+	}
+
+	if(ptr) {
+		switch (buf[0]) {
+		case '+': *ptr += value; break;
+		case '-': *ptr -= value; break;
+		case '*': *ptr *= value; break;
+		case '/':
+			if (!value) {
+				bug("TpAlterRoom - adjust called with operator / and value 0", 0);
+				return;
+			}
+			*ptr /= value;
+			break;
+		case '%':
+			if (!value) {
+				bug("TpAlterRoom - adjust called with operator % and value 0", 0);
+				return;
+			}
+			*ptr %= value;
+			break;
+
+		case '=': *ptr = value; break;
+		case '&': *ptr &= value; break;
+		case '|': *ptr |= value; break;
+		case '!': *ptr &= ~value; break;
+		case '^': *ptr ^= value; break;
+		default:
+			return;
+		}
+	} else {
+		switch (buf[0]) {
+		case '+': *sptr += value; break;
+		case '-': *sptr -= value; break;
+		case '*': *sptr *= value; break;
+		case '/':
+			if (!value) {
+				bug("TpAlterRoom - adjust called with operator / and value 0", 0);
+				return;
+			}
+			*sptr /= value;
+			break;
+		case '%':
+			if (!value) {
+				bug("TpAlterRoom - adjust called with operator % and value 0", 0);
+				return;
+			}
+			*sptr %= value;
+			break;
+
+		case '=': *sptr = value; break;
+		case '&': *sptr &= value; break;
+		case '|': *sptr |= value; break;
+		case '!': *sptr &= ~value; break;
+		case '^': *sptr ^= value; break;
+		default:
+			return;
+		}
+	}
+}
+
+// destroyroom <vnum> <id1> <id2>
+// destroyroom <room>
+SCRIPT_CMD(do_tpdestroyroom)
+{
+	long vnum;
+	unsigned long id1, id2;
+	ROOM_INDEX_DATA *room;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	info->token->progs->lastreturn = 0;
+
+	if(!(argument = expand_argument(info,argument,&arg)))
+		return;
+
+	// It's a room, extract it directly
+	if(arg.type == ENT_ROOM) {
+		// Need to block this when done by room to itself
+		if(extract_clone_room(arg.d.room->source,arg.d.room->id[0],arg.d.room->id[1]))
+			info->token->progs->lastreturn = 1;
+
+		return;
+	}
+
+	if(arg.type != ENT_NUMBER) return;
+
+	vnum = arg.d.num;
+
+	room = get_room_index(vnum);
+	if(!room) return;
+
+	// Get id
+	if(!(argument = expand_argument(info,argument,&arg)) || arg.type != ENT_NUMBER)
+		return;
+
+	id1 = arg.d.num;
+
+	if(!(argument = expand_argument(info,argument,&arg)) || arg.type != ENT_NUMBER)
+		return;
+
+	id2 = arg.d.num;
+
+	if(extract_clone_room(room, id1, id2))
+		info->token->progs->lastreturn = 1;
+}
+
+// showroom <viewer> map <mapid> <x> <y> <z> <scale> <width> <height>[ force]
+// showroom <viewer> room <room>[ force]
+// showroom <viewer> vroom <room> <id>[ force]
+SCRIPT_CMD(do_tpshowroom)
+{
+	CHAR_DATA *viewer = NULL, *next;
+	ROOM_INDEX_DATA *room = NULL, *dest, *save_room;
+	WILDS_DATA *wilds = NULL;
+	SCRIPT_PARAM arg;
+	long mapid;
+	long x,y,z;
+	long scale;
+	long width, height;
+	bool force;
+
+	if(!info || !info->token) return;
+
+	if(!(argument = expand_argument(info,argument,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_MOBILE:	viewer = arg.d.mob; break;
+	case ENT_ROOM:		room = arg.d.room; break;
+	}
+
+	if(!viewer && !room) {
+		bug("TpShowMap - bad target for showing the map", 0);
+		return;
+	}
+
+	if(!(argument = expand_argument(info,argument,&arg)) || arg.type != ENT_STRING)
+		return;
+
+	if(!str_cmp(arg.d.str,"map")) {
+		if(!(argument = expand_argument(info,argument,&arg)) || arg.type != ENT_NUMBER)
+			return;
+
+		mapid = arg.d.num;
+
+		wilds = get_wilds_from_uid(NULL,mapid);
+		if(!wilds) return;
+
+		if(!(argument = expand_argument(info,argument,&arg)) || arg.type != ENT_NUMBER)
+			return;
+
+		x = arg.d.num;
+
+		if(!(argument = expand_argument(info,argument,&arg)) || arg.type != ENT_NUMBER)
+			return;
+
+		y = arg.d.num;
+
+		if(!(argument = expand_argument(info,argument,&arg)) || arg.type != ENT_NUMBER)
+			return;
+
+		z = arg.d.num;
+
+		if(!(argument = expand_argument(info,argument,&arg)) || arg.type != ENT_NUMBER)
+			return;
+
+		scale = arg.d.num;
+
+		if(!(argument = expand_argument(info,argument,&arg)) || arg.type != ENT_NUMBER)
+			return;
+
+		width = arg.d.num;
+
+		if(!(argument = expand_argument(info,argument,&arg)) || arg.type != ENT_NUMBER)
+			return;
+
+		height = arg.d.num;
+
+		if(!(argument = expand_argument(info,argument,&arg)))
+			return;
+
+		if(arg.type == ENT_STRING)
+			force = !str_cmp(arg.d.str,"force");
+		else
+			force = false;
+
+		dest = get_wilds_vroom(wilds,x,y);
+		if(!dest)
+			dest = create_wilds_vroom(wilds,x,y);
+
+		// Force limitations please?
+		if(width < 5) width = 5;
+		if(height < 5) height = 5;
+
+		if(room) {
+			for(viewer = room->people; viewer; viewer = next) {
+				next = viewer->next_in_room;
+				if(!IS_NPC(viewer) && (force || (IS_AWAKE(viewer) && check_vision(viewer,dest,false,false)))) {
+					save_room = viewer->in_room;
+					char_from_room(viewer);
+					char_to_vroom(viewer,wilds,x,y);
+					show_map_to_char(viewer, viewer, width + viewer->wildview_bonus_x, height + viewer->wildview_bonus_y, FALSE);
+					char_from_room(viewer);
+					char_to_room(viewer,save_room);
+				}
+			}
+		} else if(!IS_NPC(viewer)) {
+			// There is no awake check here since it is to one mob.
+			//  This can be used in things like DREAMS, seeing yourself at a certain location!
+
+			save_room = viewer->in_room;
+			char_from_room(viewer);
+			char_to_vroom(viewer,wilds,x,y);
+			show_map_to_char(viewer, viewer, width + viewer->wildview_bonus_x, height + viewer->wildview_bonus_y, FALSE);
+			char_from_room(viewer);
+			char_to_room(viewer,save_room);
+		}
+		return;
+	}
+
+	// Both room and vroom have the same end mechanism, just different fetching mechanisms
+
+	if(!str_cmp(arg.d.str,"room")) {
+		if(!(argument = expand_argument(info,argument,&arg)) || arg.type != ENT_ROOM)
+			return;
+
+		dest = arg.d.room;
+	} else if(!str_cmp(arg.d.str,"vroom")) {
+		unsigned long id1, id2;
+		if(!(argument = expand_argument(info,argument,&arg)) || arg.type != ENT_ROOM)
+			return;
+
+		dest = arg.d.room;
+
+		if(!(argument = expand_argument(info,argument,&arg)) || arg.type != ENT_NUMBER)
+			return;
+
+		id1 = arg.d.num;
+
+		if(!(argument = expand_argument(info,argument,&arg)) || arg.type != ENT_NUMBER)
+			return;
+
+		id2 = arg.d.num;
+
+		dest = get_clone_room(dest,id1,id2);
+	} else
+		return;
+
+	if(!dest) return;
+
+	if(!(argument = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type == ENT_STRING)
+		force = !str_cmp(arg.d.str,"force");
+	else
+		force = false;
+
+	if(room) {
+		for(viewer = room->people; viewer; viewer = next) {
+			next = viewer->next_in_room;
+			if(!IS_NPC(viewer) && (force || (IS_AWAKE(viewer) && check_vision(viewer,dest,false,false))))
+				show_room(viewer,dest,true,true);
+		}
+	} else if(!IS_NPC(viewer)) {
+		// There is no awake check or vision check here since it is to one mob.
+		//  This can be used in things like DREAMS, seeing yourself at a certain location!
+		show_room(viewer,dest,true,true);
+	}
+}
+
+
+// do_tpxcall
+// xcall <entity> <vnum> <enactor> <victim> <obj1> <obj2>
+//
+// Requires a level 5 security to do this.
+// This will perform the script call on that entity
+SCRIPT_CMD(do_tpxcall)
+{
+	char *rest;
+	CHAR_DATA *mob = NULL;
+	OBJ_DATA *obj = NULL;
+	ROOM_INDEX_DATA *room = NULL;
+	TOKEN_DATA *token = NULL;
+	CHAR_DATA *vch, *ch;
+	OBJ_DATA *obj1, *obj2;
+	SCRIPT_DATA *script;
+	int depth, vnum, space = PRG_MPROG;
+	SCRIPT_PARAM arg;
+	int ret;
+
+	if(!info || !info->token) return;
+
+	if (!argument[0]) {
+		bug("TpCall: missing arguments from vnum %d.", VNUM(info->token));
+		return;
+	}
+
+	if(script_security < 5) {
+		bug("TpCall: Minimum security needed is 5.", VNUM(info->token));
+		return;
+	}
+
+	// Call depth checking
+	depth = script_call_depth;
+	if(script_call_depth == 1) {
+		bug("TpCall: maximum call depth exceeded for mob vnum %d.", VNUM(info->token));
+		return;
+	} else if(script_call_depth > 1)
+		--script_call_depth;
+
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpCall: Error in parsing from vnum %ld.", VNUM(info->token));
+		// Restore the call depth to the previous value
+		script_call_depth = depth;
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_MOBILE: mob = arg.d.mob; space = PRG_MPROG; break;
+	case ENT_OBJECT: obj = arg.d.obj; space = PRG_OPROG; break;
+	case ENT_ROOM: room = arg.d.room; space = PRG_RPROG; break;
+	case ENT_TOKEN: token = arg.d.token; space = PRG_TPROG; break;
+	}
+
+	if(!mob && !obj && !room && !token) {
+		bug("TpCall: No entity target from vnum %ld.", VNUM(info->token));
+		// Restore the call depth to the previous value
+		script_call_depth = depth;
+		return;
+	}
+
+	if(mob && !IS_NPC(mob)) {
+		bug("TpCall: Invalid target for xcall.  Players cannot do scripts.", 0);
+		// Restore the call depth to the previous value
+		script_call_depth = depth;
+		return;
+	}
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpCall: Error in parsing from vnum %ld.", VNUM(info->token));
+		// Restore the call depth to the previous value
+		script_call_depth = depth;
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: vnum = atoi(arg.d.str); break;
+	case ENT_NUMBER: vnum = arg.d.num; break;
+	default: vnum = 0; break;
+	}
+
+	if (vnum < 1 || !(script = get_script_index(vnum, space))) {
+		bug("TpCall: invalid prog from vnum %d.", VNUM(info->token));
+		return;
+	}
+
+	ch = vch = NULL;
+	obj1 = obj2 = NULL;
+
+	if(*rest) {	// Enactor
+		argument = rest;
+		if(!(rest = expand_argument(info,argument,&arg))) {
+			bug("TpCall: Error in parsing from vnum %ld.", VNUM(info->token));
+			// Restore the call depth to the previous value
+			script_call_depth = depth;
+			return;
+		}
+
+		switch(arg.type) {
+		case ENT_STRING: ch = get_char_room(NULL, token_room(info->token), arg.d.str); break;
+		case ENT_MOBILE: ch = arg.d.mob; break;
+		default: ch = NULL; break;
+		}
+	}
+
+	if(ch && *rest) {	// Victim
+		argument = rest;
+		if(!(rest = expand_argument(info,argument,&arg))) {
+			bug("TpCall: Error in parsing from vnum %ld.", VNUM(info->token));
+			// Restore the call depth to the previous value
+			script_call_depth = depth;
+			return;
+		}
+
+		argument = rest;
+		if(!(rest = expand_argument(info,argument,&arg))) {
+			bug("TpCall: Error in parsing from vnum %ld.", VNUM(info->token));
+			// Restore the call depth to the previous value
+			script_call_depth = depth;
+			return;
+		}
+
+		switch(arg.type) {
+		case ENT_STRING: vch = get_char_room(NULL, token_room(info->token),arg.d.str); break;
+		case ENT_MOBILE: vch = arg.d.mob; break;
+		default: vch = NULL; break;
+		}
+	}
+
+	if(*rest) {	// Obj 1
+		argument = rest;
+		if(!(rest = expand_argument(info,argument,&arg))) {
+			bug("TpCall: Error in parsing from vnum %ld.", VNUM(info->token));
+			// Restore the call depth to the previous value
+			script_call_depth = depth;
+			return;
+		}
+
+		switch(arg.type) {
+		case ENT_STRING:
+			obj1 = get_obj_here(NULL, token_room(info->token), arg.d.str);
+			break;
+		case ENT_OBJECT: obj1 = arg.d.obj; break;
+		default: obj1 = NULL; break;
+		}
+	}
+
+	if(obj1 && *rest) {	// Obj 2
+		argument = rest;
+		if(!(rest = expand_argument(info,argument,&arg))) {
+			bug("TpCall: Error in parsing from vnum %ld.", VNUM(info->token));
+			// Restore the call depth to the previous value
+			script_call_depth = depth;
+			return;
+		}
+
+		switch(arg.type) {
+		case ENT_STRING:
+			obj2 = get_obj_here(NULL, token_room(info->token), arg.d.str);
+			break;
+		case ENT_OBJECT: obj2 = arg.d.obj; break;
+		default: obj2 = NULL; break;
+		}
+	}
+
+	// The last return goes to THIS enactor not the one called for the script
+	ret = execute_script(script->vnum, script, mob, obj, room, token, ch, obj1, obj2, vch, NULL,info->phrase,info->trigger);
+	if(info->token)
+		info->token->progs->lastreturn = ret;
+	else
+		info->block->ret_val = ret;
+
+	// restore the call depth to the previous value
+	script_call_depth = depth;
+}
+
+// do_tpchargebank
+// obj chargebank <player> <gold>
+SCRIPT_CMD(do_tpchargebank)
+{
+	char *rest;
+	CHAR_DATA *victim;
+	int amount = 0;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpChargeBank - Error in parsing from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: victim = get_char_room(NULL,token_room(info->token), arg.d.str); break;
+	case ENT_MOBILE: victim = arg.d.mob; break;
+	default: victim = NULL; break;
+	}
+
+	if (!victim || IS_NPC(victim)) {
+		bug("TpChargeBank - Non-player victim from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	if(!expand_argument(info,rest,&arg)) {
+		bug("TpChargeBank - Error in parsing from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: amount = atoi(arg.d.str); break;
+	case ENT_NUMBER: amount = arg.d.num; break;
+	default: amount = 0; break;
+	}
+
+	if(amount < 1 || amount > victim->pcdata->bankbalance) return;
+
+	victim->pcdata->bankbalance -= amount;
+}
+
+// do_tpwiretransfer
+// obj wiretransfer <player> <gold>
+// Limited to 1000 gold for security scopes less than 7.
+SCRIPT_CMD(do_tpwiretransfer)
+{
+	char buf[MSL], *rest;
+	CHAR_DATA *victim;
+	int amount = 0;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpWireTransfer - Error in parsing from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: victim = get_char_room(NULL,token_room(info->token), arg.d.str); break;
+	case ENT_MOBILE: victim = arg.d.mob; break;
+	default: victim = NULL; break;
+	}
+
+	if (!victim || IS_NPC(victim)) {
+		bug("TpWireTransfer - Non-player victim from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	if(!expand_argument(info,rest,&arg)) {
+		bug("TpWireTransfer - Error in parsing from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: amount = atoi(arg.d.str); break;
+	case ENT_NUMBER: amount = arg.d.num; break;
+	default: amount = 0; break;
+	}
+
+	if(amount < 1) return;
+
+	// If the security on this script execution is
+	if(script_security < 7 && amount > 1000) {
+		sprintf(buf, "TpWireTransfer logged: attempted to wire %d gold to %s by token %ld", amount, victim->name, info->token->pIndexData->vnum);
+		log_string(buf);
+		amount = 1000;
+	}
+
+	victim->pcdata->bankbalance += amount;
+
+	sprintf(buf, "TpWireTransfer logged: %s was wired %d gold by token %ld", victim->name, amount, info->token->pIndexData->vnum);
+	log_string(buf);
+}
+
+// do_tpsetrecall
+// obj setrecall $MOBILE <location>
+// Sets the recall point of the target mobile to the reference of the location
+SCRIPT_CMD(do_tpsetrecall)
+{
+	char /*buf[MSL],*/ *rest;
+	CHAR_DATA *victim;
+	ROOM_INDEX_DATA *location;
+//	int amount = 0;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpSetRecall - Bad syntax from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING:
+		victim = get_char_world(NULL, arg.d.str);
+		break;
+	case ENT_MOBILE: victim = arg.d.mob; break;
+	default: victim = NULL; break;
+	}
+
+
+	if (!victim) {
+		bug("TpSetRecall - Null victim from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	argument = tp_getlocation(info, rest, &location);
+
+	if(!location) {
+		bug("TpSetRecall - Bad location from vnum %d.", VNUM(info->token));
+		return;
+	}
+
+	// Prevent a recursive loop with cloned rooms
+	if (recursive_environment(location, victim, NULL, NULL)) {
+		bug("TpSetRecall - Selected location would cause an infinite environment loop for vnum %d.", VNUM(victim));
+		return;
+	}
+
+	if(location->wilds) {
+		victim->recall.wuid = location->wilds->uid;
+		victim->recall.id[0] = location->x;
+		victim->recall.id[1] = location->y;
+		victim->recall.id[2] = location->z;
+	} else {
+		victim->recall.wuid = 0;
+		victim->recall.id[0] = location->vnum;
+		if(location->source) {
+			victim->recall.id[1] = location->id[0];
+			victim->recall.id[2] = location->id[1];
+		} else {
+			victim->recall.id[1] = 0;
+			victim->recall.id[2] = 0;
+		}
+	}
+}
+
+// do_tpclearrecall
+// obj clearrecall $MOBILE
+// Clears the special recall field on the $MOBILE
+SCRIPT_CMD(do_tpclearrecall)
+{
+	char /*buf[MSL],*/ *rest;
+	CHAR_DATA *victim;
+//	ROOM_INDEX_DATA *location;
+//	int amount = 0;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpClearRecall - Bad syntax from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING:
+		victim = get_char_world(NULL, arg.d.str);
+		break;
+	case ENT_MOBILE: victim = arg.d.mob; break;
+	default: victim = NULL; break;
+	}
+
+
+	if (!victim) {
+		bug("TpClearRecall - Null victim from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	victim->recall.wuid = 0;
+	victim->recall.id[0] = 0;
+	victim->recall.id[1] = 0;
+	victim->recall.id[2] = 0;
+}
+
+
+/* do_tpawardgold */
+SCRIPT_CMD(do_tpawardgold)
+{
+	char buf[MSL], *rest;
+	CHAR_DATA *victim;
+	int amount = 0;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpAwardGold - Error in parsing from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: victim = get_char_room(NULL, token_room(info->token), arg.d.str); break;
+	case ENT_MOBILE: victim = arg.d.mob; break;
+	default: victim = NULL; break;
+	}	
+
+	if (!victim) {
+		bug("TpAwardGold - Null victim from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	if(!expand_argument(info,rest,&arg)) {
+		bug("TpAwardGold - Error in parsing from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: amount = atoi(arg.d.str); break;
+	case ENT_NUMBER: amount = arg.d.num; break;
+	default: amount = 0; break;
+	}
+
+	if(amount < 1) return;
+
+	victim->gold += amount;
+	sprintf(buf, "TpAwardGold logged: %s was awarded %d gold in room %ld by %ld", victim->name, amount, token_room(info->token)->vnum, info->token->pIndexData->vnum);
+	log_string(buf);
+}
+
+/* do_tpawardpneuma */
+SCRIPT_CMD(do_tpawardpneuma)
+{
+char buf[MSL], *rest;
+CHAR_DATA *victim;
+int amount = 0;
+SCRIPT_PARAM arg;
+
+if(!info || !info->token) return;
+
+if(!(rest = expand_argument(info,argument,&arg))) {
+bug("TpAwardPneuma - Error in parsing from vnum %ld.", VNUM(info->token));
+return;
+}
+
+switch(arg.type) {
+case ENT_STRING: victim = get_char_room(NULL, token_room(info->token), arg.d.str); break;
+case ENT_MOBILE: victim = arg.d.mob; break;
+default: victim = NULL; break;
+}
+
+if (!victim) {
+bug("TpAwardPneuma - Null victim from vnum %ld.", VNUM(info->token));
+return;
+}
+
+if(!expand_argument(info,rest,&arg)) {
+bug("TpAwardPneuma - Error in parsing from vnum %ld.", VNUM(info->token));
+return;
+}
+
+switch(arg.type) {
+case ENT_STRING: amount = atoi(arg.d.str); break;
+case ENT_NUMBER: amount = arg.d.num; break;
+default: amount = 0; break;
+}
+
+if(amount < 1) return;
+
+victim->pneuma += amount;
+sprintf(buf, "TpAwardPneuma logged: %s was awarded %d pneuma in room %ld by %ld", victim->name, amount, token_room(info->token)->vnum, info->token->pIndexData->vnum);
+log_string(buf);
+}
+
+/* do_tpawardprac */
+SCRIPT_CMD(do_tpawardprac)
+{
+char buf[MSL], *rest;
+CHAR_DATA *victim;
+int amount = 0;
+SCRIPT_PARAM arg;
+
+if(!info || !info->token) return;
+
+if(!(rest = expand_argument(info,argument,&arg))) {
+bug("TpAwardPrac - Error in parsing from vnum %ld.", VNUM(info->token));
+return;
+}
+
+switch(arg.type) {
+case ENT_STRING: victim = get_char_room(NULL, token_room(info->token), arg.d.str); break;
+case ENT_MOBILE: victim = arg.d.mob; break;
+default: victim = NULL; break;
+}
+
+if (!victim) {
+bug("TpAwardPrac - Null victim from vnum %ld.", VNUM(info->token));
+return;
+}
+
+if(!expand_argument(info,rest,&arg)) {
+bug("TpAwardPrac - Error in parsing from vnum %ld.", VNUM(info->token));
+return;
+}
+
+switch(arg.type) {
+case ENT_STRING: amount = atoi(arg.d.str); break;
+case ENT_NUMBER: amount = arg.d.num; break;
+default: amount = 0; break;
+}
+
+if(amount < 1) return;
+
+victim->practice += amount;
+sprintf(buf, "TpAwardPrac logged: %s was awarded %d pracs in room %ld by %ld", victim->name, amount, token_room(info->token)->vnum, info->token->pIndexData->vnum);
+log_string(buf);
+}
+
+/* do_tpawardqp */
+SCRIPT_CMD(do_tpawardqp)
+{
+char buf[MSL], *rest;
+CHAR_DATA *victim;
+int amount = 0;
+SCRIPT_PARAM arg;
+
+if(!info || !info->token) return;
+
+if(!(rest = expand_argument(info,argument,&arg))) {
+bug("TpAwardQP - Error in parsing from vnum %ld.", VNUM(info->token));
+return;
+}
+
+switch(arg.type) {
+case ENT_STRING: victim = get_char_room(NULL, token_room(info->token), arg.d.str); break;
+case ENT_MOBILE: victim = arg.d.mob; break;
+default: victim = NULL; break;
+}
+
+if (!victim) {
+bug("TpAwardQP - Null victim from vnum %ld.", VNUM(info->token));
+return;
+}
+
+if(!expand_argument(info,rest,&arg)) {
+bug("TpAwardQP - Error in parsing from vnum %ld.", VNUM(info->token));
+return;
+}
+
+switch(arg.type) {
+case ENT_STRING: amount = atoi(arg.d.str); break;
+case ENT_NUMBER: amount = arg.d.num; break;
+default: amount = 0; break;
+}
+
+if(amount < 1) return;
+
+victim->questpoints += amount;
+sprintf(buf, "TpAwardQP logged: %s was awarded %d questpoints in room %ld by %ld", victim->name, amount, token_room(info->token)->vnum, info->token->pIndexData->vnum);
+log_string(buf);
+}
+
+/* do_tpawardxp */
+SCRIPT_CMD(do_tpawardxp)
+{
+char buf[MSL], *rest;
+CHAR_DATA *victim;
+int amount = 0;
+SCRIPT_PARAM arg;
+
+if(!info || !info->token) return;
+
+if(!(rest = expand_argument(info,argument,&arg))) {
+bug("TpAwardXP - Error in parsing from vnum %ld.", VNUM(info->token));
+return;
+}
+
+switch(arg.type) {
+case ENT_STRING: victim = get_char_room(NULL, token_room(info->token), arg.d.str); break;
+case ENT_MOBILE: victim = arg.d.mob; break;
+default: victim = NULL; break;
+}
+
+if (!victim) {
+bug("TpAwardXP - Null victim from vnum %ld.", VNUM(info->token));
+return;
+}
+
+if(!expand_argument(info,rest,&arg)) {
+bug("TpAwardXP - Error in parsing from vnum %ld.", VNUM(info->token));
+return;
+}
+
+switch(arg.type) {
+case ENT_STRING: amount = atoi(arg.d.str); break;
+case ENT_NUMBER: amount = arg.d.num; break;
+default: amount = 0; break;
+}
+
+if(amount < 1) return;
+
+gain_exp(victim, amount);
+sprintf(buf, "TpAwardXP logged: %s was awarded %d xp in room %ld by %ld", victim->name, amount, token_room(info->token)->vnum, info->token->pIndexData->vnum);
+log_string(buf);
+}
+
+SCRIPT_CMD(do_tpstartcombat)
+{
+	char buf[MSL], *rest;
+	CHAR_DATA *attacker = NULL;
+	CHAR_DATA *victim = NULL;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token) return;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("TpStartCombat - Error in parsing from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING: victim = get_char_room(NULL, token_room(info->token), arg.d.str); break;
+	case ENT_MOBILE: victim = arg.d.mob; break;
+	default: victim = NULL; break;
+	}
+
+	if (!victim) {
+		bug("TpStartCombat - Null victim from vnum %ld.", VNUM(info->token));
+		return;
+	}
+
+	if(*rest) {
+		if(!expand_argument(info,rest,&arg)) {
+			bug("TpStartCombat - Error in parsing from vnum %ld.", VNUM(info->token));
+			return;
+		}
+
+		attacker = victim;
+		switch(arg.type) {
+		case ENT_STRING: victim = get_char_room(NULL, token_room(info->token), arg.d.str); break;
+		case ENT_MOBILE: victim = arg.d.mob; break;
+		default: victim = NULL; break;
+		}
+
+		if (!victim) {
+		bug("TpStartCombat - Null victim from vnum %ld.", VNUM(info->token));
+		return;
+		}
+	} else if(!info->token->player) {
+		bug("TpStartCombat - Null victim from vnum %ld.", VNUM(info->token));
+		return;
+	} else
+		attacker = info->token->player;
+
+
+	// Attacker is fighting already
+	if(attacker->fighting)
+		return;
+	
+	// The victim is fighting someone else in a singleplay room
+	if(victim->fighting != attacker && !IS_SET(attacker->in_room->room2_flags, ROOM_MULTIPLAY))
+		return;
+	
+	// They are not in the same room
+	if(attacker->in_room != victim->in_room)
+		return;
+	
+	// The victim is safe
+	if(is_safe(attacker, victim, FALSE)) return;
+
+	// Set them to fighting!
+	set_fighting(attacker, victim);
+	return;
+}

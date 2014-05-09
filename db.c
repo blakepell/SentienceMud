@@ -1,0 +1,4794 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <time.h>
+#include <sys/types.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <stdarg.h>
+#include "merc.h"
+#include "db.h"
+#include "math.h"
+#include "recycle.h"
+#include "tables.h"
+#include "olc_save.h"
+#include "scripts.h"
+#include "wilds.h"
+
+#if !defined(OLD_RAND)
+#if !defined(linux)
+long random();
+#endif
+void srandom(unsigned int);
+int getpid();
+time_t time(time_t *tloc);
+#endif
+
+/* externals for counting purposes */
+extern  OBJ_DATA  *obj_free;
+extern  CHAR_DATA *char_free;
+extern  DESCRIPTOR_DATA *descriptor_free;
+extern  PC_DATA   *pcdata_free;
+extern  AFFECT_DATA *affect_free;
+extern  CHAT_ROOM_DATA  *chat_room_free;
+extern  ROOM_INDEX_DATA *room_index_free;
+extern  EXIT_DATA       *exit_free;
+extern  CHAT_OP_DATA  *chat_op_free;
+extern  CHAT_BAN_DATA   *chat_ban_free;
+extern  AREA_DATA       *area_free;
+extern  MOB_INDEX_DATA  *mob_index_free;
+extern  OBJ_INDEX_DATA  *obj_index_free;
+extern  EXTRA_DESCR_DATA * extra_descr_free;
+extern  RESET_DATA  *reset_free;
+
+void free_room_index( ROOM_INDEX_DATA *pRoom );
+
+/* Reading of keys*/
+#if defined(KEY)
+#undef KEY
+#endif
+
+#define KEY(literal, field, value)                \
+                if (!str_cmp(word, literal))    \
+                {                                   \
+                    field  = value;                 \
+                    fMatch = TRUE;                  \
+                    break;                          \
+                                }
+
+#define SKEY(string, field)                       \
+                if (!str_cmp(word, string))     \
+                {                                   \
+                    free_string(field);           \
+                    field = fread_string(fp);     \
+                    fMatch = TRUE;                  \
+                    break;                          \
+                                }
+
+
+/* externals for counting purposes */
+extern	OBJ_DATA	*obj_free;
+extern	PC_DATA		*pcdata_free;
+extern	RESET_DATA	*reset_free;
+extern  AFFECT_DATA	*affect_free;
+extern  AREA_DATA       *area_free;
+extern  CHAT_BAN_DATA   *chat_ban_free;
+extern  CHAT_OP_DATA	*chat_op_free;
+extern  CHAT_ROOM_DATA  *chat_room_free;
+extern  DESCRIPTOR_DATA *descriptor_free;
+extern  EXIT_DATA       *exit_free;
+extern  EXTRA_DESCR_DATA * extra_descr_free;
+extern  MOB_INDEX_DATA	*mob_index_free;
+extern  OBJ_INDEX_DATA	*obj_index_free;
+extern  ROOM_INDEX_DATA *room_index_free;
+
+/*
+ * Globals.
+ */
+AREA_DATA *		eden_area;
+AREA_DATA *		netherworld_area;
+AREA_DATA *		wilderness_area;
+AUCTION_DATA            auction_info;
+BOUNTY_DATA * 		bounty_list;
+CHAR_DATA *		char_list;
+CHAT_ROOM_DATA *	chat_room_list;
+CHURCH_DATA *		church_first;
+CHURCH_DATA * 		church_list;
+GQ_DATA			global_quest;
+HELP_CATEGORY *		topHelpCat;
+HELP_DATA *		help_first;
+HELP_DATA *		help_last;
+MAIL_DATA *		mail_list;
+NOTE_DATA *		note_free;
+NOTE_DATA *		note_list;
+NPC_SHIP_DATA *		plith_airship;
+OBJ_DATA *		object_list;
+SCRIPT_DATA *mprog_list;
+SCRIPT_DATA *oprog_list;
+SCRIPT_DATA *rprog_list;
+SCRIPT_DATA *tprog_list;
+PROJECT_DATA *		project_list;
+bool			projects_changed;
+SHOP_DATA *		shop_first;
+SHOP_DATA *		shop_last;
+TIME_INFO_DATA		time_info;
+TRADE_ITEM *	        trade_produce_list;
+WEATHER_DATA 		weather_info;
+bool			global;
+char			bug_buf[2*MAX_INPUT_LENGTH];
+char *			help_greeting;
+char			log_buf[2*MAX_INPUT_LENGTH];
+char			*reboot_by;
+int			down_timer;
+int			pre_reckoning;
+int			reckoning_chance = 25;
+time_t			reboot_timer;
+time_t			reckoning_timer;
+PROG_DATA *		prog_data_virtual;
+char *			room_name_virtual;
+bool			objRepop;
+/* This variable serves as a placeholder to make sure that obj repop scripts
+   are only triggered by newly created objects instead of any objects. This
+   is necesarry because I put the triggering mechanism in obj_to_char() and
+   obj_to_room(). When the object is given to a char or a room, this variable
+   is toggled off, and the object will then no longer trigger repop scripts. */
+
+sh_int	gsn_acid_blast;
+sh_int	gsn_acid_breath;
+sh_int	gsn_acro;
+sh_int	gsn_afterburn;
+sh_int	gsn_air_spells;
+sh_int	gsn_ambush;
+sh_int	gsn_animate_dead;
+sh_int	gsn_archery;
+sh_int	gsn_armor;
+sh_int	gsn_athletics;
+sh_int	gsn_avatar_shield;
+sh_int	gsn_axe;
+sh_int	gsn_backstab;
+sh_int	gsn_bar;
+sh_int	gsn_bash;
+sh_int	gsn_behead;
+sh_int	gsn_berserk;
+sh_int	gsn_bind;
+sh_int	gsn_bite;
+sh_int	gsn_blackjack;
+sh_int	gsn_bless;
+sh_int	gsn_blindness;
+sh_int	gsn_blowgun;
+sh_int	gsn_bomb;
+sh_int	gsn_bow;
+sh_int	gsn_breath;
+sh_int	gsn_brew;
+sh_int	gsn_burgle;
+sh_int	gsn_burning_hands;
+sh_int	gsn_call_familiar;
+sh_int	gsn_call_lightning;
+sh_int	gsn_calm;
+sh_int	gsn_cancellation;
+sh_int	gsn_catch;
+sh_int	gsn_cause_critical;
+sh_int	gsn_cause_light;
+sh_int	gsn_cause_serious;
+sh_int	gsn_chain_lightning;
+sh_int	gsn_channel;
+sh_int	gsn_charge;
+sh_int	gsn_charm_person;
+sh_int	gsn_chill_touch;
+sh_int	gsn_circle;
+sh_int	gsn_cloak_of_guile;
+sh_int	gsn_colour_spray;
+sh_int	gsn_combine;
+sh_int	gsn_consume;
+sh_int	gsn_continual_light;
+sh_int	gsn_control_weather;
+sh_int	gsn_cosmic_blast;
+sh_int	gsn_counterspell;
+sh_int	gsn_create_food;
+sh_int	gsn_create_rose;
+sh_int	gsn_create_spring;
+sh_int	gsn_create_water;
+sh_int	gsn_crippling_touch;
+sh_int	gsn_crossbow;
+sh_int	gsn_cure_blindness;
+sh_int	gsn_cure_critical;
+sh_int	gsn_cure_disease;
+sh_int	gsn_cure_light;
+sh_int	gsn_cure_poison;
+sh_int	gsn_cure_serious;
+sh_int	gsn_cure_toxic;
+sh_int	gsn_curse;
+sh_int	gsn_dagger;
+sh_int	gsn_death_grip;
+sh_int	gsn_deathbarbs;
+sh_int	gsn_deathsight;
+sh_int	gsn_deception;
+sh_int	gsn_deep_trance;
+sh_int	gsn_demonfire;
+sh_int	gsn_destruction;
+sh_int	gsn_detect_hidden;
+sh_int	gsn_detect_invis;
+sh_int	gsn_detect_magic;
+sh_int	gsn_detect_traps;
+sh_int	gsn_dirt;
+sh_int	gsn_dirt_kicking;
+sh_int	gsn_disarm;
+sh_int	gsn_discharge;
+sh_int	gsn_dispel_evil;
+sh_int	gsn_dispel_good;
+sh_int	gsn_dispel_magic;
+sh_int	gsn_dispel_room;
+sh_int	gsn_dodge;
+sh_int	gsn_dual;
+sh_int	gsn_eagle_eye;
+sh_int	gsn_earth_spells;
+sh_int	gsn_earthquake;
+sh_int	gsn_electrical_barrier;
+sh_int	gsn_enchant_armor;
+sh_int	gsn_enchant_weapon;
+sh_int	gsn_energy_drain;
+sh_int	gsn_energy_field;
+sh_int	gsn_enhanced_damage;
+sh_int	gsn_ensnare;
+sh_int	gsn_entrap;
+sh_int	gsn_envenom;
+sh_int	gsn_evasion;
+sh_int	gsn_exorcism;
+sh_int	gsn_exotic;
+sh_int	gsn_fade;
+sh_int	gsn_faerie_fire;
+sh_int	gsn_faerie_fog;
+sh_int	gsn_fast_healing;
+sh_int	gsn_fatigue;
+sh_int	gsn_feign;
+sh_int	gsn_fire_barrier;
+sh_int	gsn_fire_breath;
+sh_int	gsn_fire_cloud;
+sh_int	gsn_fire_spells;
+sh_int	gsn_fireball;
+sh_int	gsn_fireproof;
+sh_int	gsn_flail;
+sh_int	gsn_flamestrike;
+sh_int	gsn_flight;
+sh_int	gsn_fly;
+sh_int	gsn_fourth_attack;
+sh_int	gsn_frenzy;
+sh_int	gsn_frost_barrier;
+sh_int	gsn_frost_breath;
+sh_int	gsn_gas_breath;
+sh_int	gsn_gate;
+sh_int	gsn_giant_strength;
+sh_int	gsn_glorious_bolt;
+sh_int	gsn_haggle;
+sh_int	gsn_hand_to_hand;
+sh_int	gsn_harm;
+sh_int	gsn_harpooning;
+sh_int	gsn_haste;
+sh_int	gsn_heal;
+sh_int	gsn_healing_aura;
+sh_int	gsn_healing_hands;
+sh_int	gsn_hide;
+sh_int	gsn_holdup;
+sh_int	gsn_holy_shield;
+sh_int	gsn_holy_sword;
+sh_int	gsn_holy_word;
+sh_int	gsn_holy_wrath;
+sh_int	gsn_hunt;
+sh_int	gsn_ice_storm;
+sh_int	gsn_identify;
+sh_int	gsn_improved_invisibility;
+sh_int	gsn_inferno;
+sh_int	gsn_infravision;
+sh_int	gsn_infuse;
+sh_int	gsn_intimidate;
+sh_int	gsn_invis;
+sh_int	gsn_judge;
+sh_int	gsn_kick;
+sh_int	gsn_kill;
+sh_int	gsn_leadership;
+sh_int	gsn_light_shroud;
+sh_int	gsn_lightning_bolt;
+sh_int	gsn_lightning_breath;
+sh_int	gsn_locate_object;
+sh_int	gsn_lore;
+sh_int	gsn_mace;
+sh_int	gsn_magic_missile;
+sh_int	gsn_martial_arts;
+sh_int	gsn_mass_healing;
+sh_int	gsn_mass_invis;
+sh_int	gsn_master_weather;
+sh_int	gsn_maze;
+sh_int	gsn_meditation;
+sh_int	gsn_mob_lore;
+sh_int	gsn_momentary_darkness;
+sh_int	gsn_morphlock;
+sh_int	gsn_mount_and_weapon_style;
+sh_int	gsn_music;
+sh_int	gsn_neurotoxin;
+sh_int	gsn_nexus;
+sh_int	gsn_offhanded;
+sh_int	gsn_parry;
+sh_int	gsn_pass_door;
+sh_int	gsn_peek;
+sh_int	gsn_pick_lock;
+sh_int	gsn_plague;
+sh_int	gsn_poison;
+sh_int	gsn_polearm;
+sh_int	gsn_possess;
+sh_int	gsn_pursuit;
+sh_int	gsn_quarterstaff;
+sh_int	gsn_raise_dead;
+sh_int	gsn_recall;
+sh_int	gsn_recharge;
+sh_int	gsn_refresh;
+sh_int	gsn_regeneration;
+sh_int	gsn_remove_curse;
+sh_int	gsn_rending;
+sh_int	gsn_repair;
+sh_int	gsn_rescue;
+sh_int	gsn_resurrect;
+sh_int	gsn_reverie;
+sh_int	gsn_riding;
+sh_int	gsn_room_shield;
+sh_int	gsn_sanctuary;
+sh_int	gsn_scan;
+sh_int	gsn_scribe;
+sh_int	gsn_scrolls;
+sh_int	gsn_scry;
+sh_int	gsn_second_attack;
+sh_int	gsn_sense_danger;
+sh_int	gsn_shape;
+sh_int	gsn_shield;
+sh_int	gsn_shield_block;
+sh_int	gsn_shield_weapon_style;
+sh_int	gsn_shift;
+sh_int	gsn_shocking_grasp;
+sh_int	gsn_silence;
+sh_int	gsn_single_style;
+sh_int	gsn_skull;
+sh_int	gsn_sleep;
+sh_int	gsn_slit_throat;
+sh_int	gsn_slow;
+sh_int	gsn_smite;
+sh_int	gsn_sneak;
+sh_int	gsn_spear;
+sh_int	gsn_spell_deflection;
+sh_int	gsn_spell_shield;
+sh_int	gsn_spell_trap;
+sh_int	gsn_spirit_rack;
+sh_int	gsn_stake;
+sh_int	gsn_starflare;
+sh_int	gsn_staves;
+sh_int	gsn_steal;
+sh_int	gsn_stone_skin;
+sh_int	gsn_stone_spikes;
+sh_int	gsn_subvert;
+sh_int	gsn_summon;
+sh_int	gsn_survey;
+sh_int	gsn_swerve;
+sh_int	gsn_sword;
+sh_int	gsn_sword_and_dagger_style;
+sh_int	gsn_tail_kick;
+sh_int	gsn_tattoo;
+sh_int	gsn_temperance;
+sh_int	gsn_third_attack;
+sh_int	gsn_third_eye;
+sh_int	gsn_throw;
+sh_int	gsn_titanic_attack;
+sh_int	gsn_toxic_fumes;
+sh_int	gsn_toxins;
+sh_int	gsn_trackless_step;
+sh_int	gsn_trample;
+sh_int	gsn_trip;
+sh_int	gsn_turn_undead;
+sh_int	gsn_two_handed_style;
+sh_int	gsn_underwater_breathing;
+sh_int	gsn_vision;
+sh_int	gsn_wands;
+sh_int	gsn_warcry;
+sh_int	gsn_water_spells;
+sh_int	gsn_weaken;
+sh_int	gsn_weaving;
+sh_int	gsn_web;
+sh_int	gsn_whip;
+sh_int	gsn_wilderness_spear_style;
+sh_int	gsn_wind_of_confusion;
+sh_int	gsn_wither;
+sh_int	gsn_word_of_recall;
+
+sh_int	gsn_ice_shards;
+sh_int	gsn_stone_touch;
+sh_int	gsn_glacial_wave;
+sh_int	gsn_earth_walk;
+sh_int	gsn_flash;
+sh_int	gsn_shriek;
+sh_int	gsn_dark_shroud;
+sh_int	gsn_soul_essence;
+
+sh_int gprn_human;
+sh_int gprn_elf;
+sh_int gprn_dwarf;
+sh_int gprn_titan;
+sh_int gprn_vampire;
+sh_int gprn_drow;
+sh_int gprn_sith;
+sh_int gprn_draconian;
+sh_int gprn_slayer;
+sh_int gprn_minotaur;
+sh_int gprn_angel;
+sh_int gprn_mystic;
+sh_int gprn_demon;
+sh_int gprn_lich;
+sh_int gprn_avatar;
+sh_int gprn_seraph;
+sh_int gprn_berserker;
+sh_int gprn_colossus;
+sh_int gprn_fiend;
+sh_int gprn_specter;
+sh_int gprn_naga;
+sh_int gprn_dragon;
+sh_int gprn_changeling;
+sh_int gprn_hell_baron;
+sh_int gprn_wraith;
+sh_int gprn_shaper;
+
+
+sh_int grn_human;
+sh_int grn_elf;
+sh_int grn_dwarf;
+sh_int grn_titan;
+sh_int grn_vampire;
+sh_int grn_drow;
+sh_int grn_sith;
+sh_int grn_draconian;
+sh_int grn_slayer;
+sh_int grn_minotaur;
+sh_int grn_angel;
+sh_int grn_mystic;
+sh_int grn_demon;
+sh_int grn_lich;
+sh_int grn_avatar;
+sh_int grn_seraph;
+sh_int grn_berserker;
+sh_int grn_colossus;
+sh_int grn_fiend;
+sh_int grn_specter;
+sh_int grn_naga;
+sh_int grn_dragon;
+sh_int grn_changeling;
+sh_int grn_hell_baron;
+sh_int grn_wraith;
+sh_int grn_shaper;
+sh_int grn_were_changed;
+sh_int grn_mob_vampire;
+sh_int grn_bat;
+sh_int grn_werewolf;
+sh_int grn_bear;
+sh_int grn_bugbear;
+sh_int grn_cat;
+sh_int grn_centipede;
+sh_int grn_dog;
+sh_int grn_doll;
+sh_int grn_fido;
+sh_int grn_fox;
+sh_int grn_goblin;
+sh_int grn_hobgoblin;
+sh_int grn_kobold;
+sh_int grn_lizard;
+sh_int grn_doxian;
+sh_int grn_orc;
+sh_int grn_pig;
+sh_int grn_rabbit;
+sh_int grn_school_monster;
+sh_int grn_snake;
+sh_int grn_song_bird;
+sh_int grn_golem;
+sh_int grn_unicorn;
+sh_int grn_griffon;
+sh_int grn_troll;
+sh_int grn_water_fowl;
+sh_int grn_giant;
+sh_int grn_wolf;
+sh_int grn_wyvern;
+sh_int grn_nileshian;
+sh_int grn_skeleton;
+sh_int grn_zombie;
+sh_int grn_wisp;
+sh_int grn_insect;
+sh_int grn_gnome;
+sh_int grn_angel_mob;
+sh_int grn_demon_mob;
+sh_int grn_rodent;
+sh_int grn_treant;
+sh_int grn_horse;
+sh_int grn_bird;
+sh_int grn_fungus;
+sh_int grn_unique;
+
+
+/*
+ * Locals.
+ */
+AREA_DATA *area_first;
+AREA_DATA *area_last;
+AREA_DATA *current_area;
+CHAR_DATA *hunt_last;
+MOB_INDEX_DATA *mob_index_hash[MAX_KEY_HASH];
+NPC_SHIP_INDEX_DATA *ship_index_hash[MAX_KEY_HASH];
+OBJ_INDEX_DATA *obj_index_hash[MAX_KEY_HASH];
+ROOM_INDEX_DATA *room_index_hash[MAX_KEY_HASH];
+TOKEN_INDEX_DATA *token_index_hash[MAX_KEY_HASH];
+char str_empty[1];
+char *string_hash[MAX_KEY_HASH];
+char *string_space;
+char *top_string;
+long top_affect;
+long top_affliction;
+long top_area;
+long top_chat_ban;
+long top_chat_op;
+long top_chatroom;
+long top_ed;
+long top_exit;
+long top_extra_descr;
+long top_help;
+long top_mob_index;
+long top_mprog_index;
+long top_npc_ship;
+long top_obj_index;
+long top_reset;
+long top_room;
+long top_shop;
+long top_quest;
+long top_quest_part;
+long top_oprog_index;
+long top_rprog_index;
+long top_vnum_mob;
+long top_vnum_npc_ship;
+long top_vnum_obj;
+long top_vnum_room;
+long top_wilderness_exit;
+long top_help_index = 0;
+long mobile_count = 0;
+long newmobs = 0;
+long newobjs = 0;
+long top_auction;
+long top_church;
+long top_church_player;
+long top_descriptor;
+long top_ship;
+long top_ship_crew;
+long top_vroom;
+long top_waypoint;
+
+/*
+ * Memory management.
+ */
+#define			MAX_STRING	10000000
+#define			MAX_PERM_BLOCK  5000000
+#define			MAX_MEM_LIST	11
+
+void *			rgFreeList	[MAX_MEM_LIST];
+const int		rgSizeList	[MAX_MEM_LIST]	=
+{
+    16, 32, 64, 128, 256, 1024, 2048, 4096, 8192, 16384, 32768-64
+};
+
+long			numStrings = 0;
+long			stringSpace = 0;
+int			nAllocString;
+int			sAllocString;
+int			nAllocPerm;
+int			sAllocPerm;
+
+bool			fBootDb;
+FILE *			fpArea;
+char			strArea[MAX_INPUT_LENGTH];
+
+
+/*
+ * Local booting procedures.
+*/
+void init_mm(void);
+void load_shares(void);
+void fix_objprogs(void);
+void fix_roomprogs(void);
+void load_reboot_objs(void);
+void load_socials(FILE *fp);
+void load_notes(void);
+void load_bans(void);
+void fix_rooms(void);
+void fix_mobprogs(void);
+void reset_area(AREA_DATA * pArea);
+void chance_create_mob(ROOM_INDEX_DATA *pRoom, MOB_INDEX_DATA *pMobIndex, int chance);
+void reset_npc_sailing_boats (void);
+void fix_tokenprogs(void);
+void check_area_versions(void);
+
+/* Top-level booting function*/
+void boot_db(void)
+{
+    int i;
+    FILE *fp;
+    AREA_DATA *areaTmp;
+
+    /*
+     * Init some data space stuff.
+     */
+    {
+	if ((string_space = calloc(1, MAX_STRING)) == NULL)
+	{
+	    bug("Boot_db: can't alloc %d string space.", MAX_STRING);
+	    exit(1);
+	}
+	top_string	= string_space;
+	fBootDb		= TRUE;
+    }
+
+    /*
+     * Init random number generator.
+     */
+    init_mm();
+
+    global_quest.mobs = NULL;
+    global_quest.objects = NULL;
+
+    auction_info.item           = NULL;
+    auction_info.owner          = NULL;
+    auction_info.high_bidder    = NULL;
+    auction_info.current_bid    = 0;
+    auction_info.status         = 0;
+    auction_info.gold_held	= 0;
+    auction_info.silver_held	= 0;
+
+    logAll = TRUE; /*setting this on for now*/
+
+    /*
+     * Set time and weather.
+     */
+    {
+	long lhour, lday, lmonth;
+	int counter;
+
+	lhour		= (current_time - 650336715)
+			/ (PULSE_TICK / PULSE_PER_SECOND);
+	time_info.hour	= lhour  % 24;
+	lday		= lhour  / 24;
+	time_info.day	= lday   % 35;
+	lmonth		= lday   / 35;
+	time_info.month	= lmonth % 12;
+	time_info.year	= lmonth / 12;
+
+	for (counter = 0; counter < SECT_MAX; counter++)
+	{
+
+	if (time_info.hour <  5) weather_info.sunlight = SUN_DARK;
+	else if (time_info.hour <  6) weather_info.sunlight = SUN_RISE;
+	else if (time_info.hour < 19) weather_info.sunlight = SUN_LIGHT;
+	else if (time_info.hour < 20) weather_info.sunlight = SUN_SET;
+	else                            weather_info.sunlight = SUN_DARK;
+
+	weather_info.change	= 0;
+	weather_info.mmhg	= 960;
+	if (time_info.month >= 7 && time_info.month <=12)
+	    weather_info.mmhg += number_range(1, 50);
+	else
+	    weather_info.mmhg += number_range(1, 80);
+
+	     if (weather_info.mmhg <=  980) weather_info.sky = SKY_LIGHTNING;
+	else if (weather_info.mmhg <= 1000) weather_info.sky = SKY_RAINING;
+	else if (weather_info.mmhg <= 1020) weather_info.sky = SKY_CLOUDY;
+	else                                  weather_info.sky = SKY_CLOUDLESS;
+	}
+
+	lhour = (lhour+MOON_OFFSET) % MOON_PERIOD;
+	lhour = (lhour+MOON_PERIOD) % MOON_PERIOD;
+
+	if(lhour <= (MOON_CARDINAL_HALF)) time_info.moon = MOON_NEW;
+	else if(lhour < (MOON_CARDINAL_STEP - MOON_CARDINAL_HALF)) time_info.moon = MOON_WAXING_CRESCENT;
+	else if(lhour <= (MOON_CARDINAL_STEP + MOON_CARDINAL_HALF)) time_info.moon = MOON_FIRST_QUARTER;
+	else if(lhour < (2*MOON_CARDINAL_STEP - MOON_CARDINAL_HALF)) time_info.moon = MOON_WAXING_GIBBOUS;
+	else if(lhour <= (2*MOON_CARDINAL_STEP + MOON_CARDINAL_HALF)) time_info.moon = MOON_FULL;
+	else if(lhour < (3*MOON_CARDINAL_STEP - MOON_CARDINAL_HALF)) time_info.moon = MOON_WANING_GIBBOUS;
+	else if(lhour <= (3*MOON_CARDINAL_STEP + MOON_CARDINAL_HALF)) time_info.moon = MOON_LAST_QUARTER;
+	else if(lhour < (4*MOON_CARDINAL_STEP - MOON_CARDINAL_HALF)) time_info.moon = MOON_WANING_CRESCENT;
+	else time_info.moon = MOON_NEW;
+
+    }
+
+    /*
+     * Assign gsn's for skills which have them.
+     * Syn - while we're at it, let's set up an NPC skills table as well, to reduce
+     * processor load.
+     */
+    {
+	int sn, lev;
+
+	for (sn = 0; sn < MAX_SKILL; sn++)
+	{
+	    if (skill_table[sn].pgsn != NULL)
+		*skill_table[sn].pgsn = sn;
+	}
+
+	for (lev = 0; lev != MAX_MOB_SKILL_LEVEL; lev++)
+	    mob_skill_table[lev] = 40 + 19 * log10(lev);
+
+	for (sn = 0; race_table[sn].name; sn++)
+	{
+	    if (race_table[sn].pgrn)
+		*race_table[sn].pgrn = sn;
+	}
+	for (sn = 0; pc_race_table[sn].name; sn++)
+	{
+	    if (pc_race_table[sn].pgrn)
+		*pc_race_table[sn].pgrn = sn;
+	}
+
+    }
+
+    /*
+     * Read in all the area files.
+     */
+    {
+	FILE *fpList;
+        char log_buf[MAX_STRING_LENGTH];
+
+        log_string("db.c, boot_db: Loading areas from area.lst file...");
+
+	if ((fpList = fopen(AREA_LIST, "r")) == NULL)
+	{
+	    perror(AREA_LIST);
+	    exit(1);
+	}
+
+	for (; ;)
+	{
+	    AREA_DATA *area;
+
+	    strcpy(strArea, fread_word(fpList));
+	    if (strArea[0] == '$')
+		break;
+
+	    if (!str_cmp(strArea, "help.are") || !str_cmp(strArea, "social.are"))
+		continue;
+
+	    if (strArea[0] == '-')
+	    {
+		fpArea = stdin;
+	    }
+	    else
+	    {
+		if ((fpArea = fopen(strArea, "r")) == NULL)
+		{
+		    perror(strArea);
+		    exit(1);
+		}
+
+                sprintf(log_buf, "Loading areafile '%s'", strArea);
+                log_string(log_buf);
+
+
+		area = read_area_new(fpArea);
+		area->next = NULL;
+
+		if (area_first == NULL)
+		    area_first = area;
+		else {
+		    for (areaTmp = area_first; areaTmp->next != NULL; areaTmp = areaTmp->next)
+			;
+		    areaTmp->next = area;
+		}
+
+		area_last = area;
+	    }
+
+	    fpArea = NULL;
+	}
+
+	fclose(fpList);
+    }
+
+    /*
+     * Fix up exits.
+     * Declare db booting over.
+     * Reset all areas once.
+     * Load up the notes and ban files.
+     */
+    log_string("Doing fix_rooms");
+    fix_rooms();
+    log_string("Doing fix_vlinks");
+    fix_vlinks();
+    log_string("Doing variable_index_fix");
+    variable_index_fix();
+    log_string("Doing fix_mobprogs");
+    fix_mobprogs();
+    log_string("Doing fix_objprogs");
+    fix_objprogs();
+    log_string("Doing fix_roomprogs");
+    fix_roomprogs();
+    log_string("Doing fix_tokenprogs");
+    fix_tokenprogs();
+    fBootDb	= FALSE;
+    log_string("Doing generate_poa_resets");
+    generate_poa_resets(-1);
+    log_string("Doing area_update");
+    area_update(TRUE);
+    log_string("Doing load_notes");
+    load_notes();
+    log_string("Doing load_bans");
+    load_bans();
+    //log_string("Doing load_reboot_objs");
+    //load_reboot_objs();
+
+    log_string("Opening churches, new format");
+    read_churches_new();
+
+    log_string("Opening projects");
+    read_projects();
+
+    log_string("Opening immortal staff");
+    read_immstaff();
+
+    if ((fp = fopen("social.are", "r")) != NULL)
+    {
+	log_string("Doing load_socials...");
+	fread_word(fp);
+	load_socials(fp);
+	fclose(fp);
+    }
+
+    help_greeting = str_dup("hello");
+
+    log_string("Doing read_gq");
+    read_gq();
+
+    log_string("Doing read_chat_rooms");
+    read_chat_rooms();
+
+    log_string("Reading permanent objs");
+    read_permanent_objs();
+
+    log_string("Reading helpfiles");
+    read_helpfiles_new();
+
+    index_helpfiles(1, topHelpCat);
+
+/*    load_sailing_boats();*/
+/*    load_npc_ships();*/
+//    log_string("Doing read_mail");
+//    read_mail();
+/*  reset_npc_sailing_boats();*/
+    load_statistics();
+
+    /* set global attributes*/
+
+    /* default global boosts should start at nothing (100%)*/
+    for (i = 0; boost_table[i].name != NULL; i++)
+    {
+	boost_table[i].boost = 100;
+	boost_table[i].timer = 0;
+    }
+
+    reckoning_timer = 0;
+    pre_reckoning = 0;
+    objRepop = FALSE;
+
+    prog_data_virtual = new_prog_data();
+
+    if ((fp = fopen("church_pks.txt", "r")) != NULL) {
+	update_church_pks();
+	fclose(fp);
+
+    }
+
+    log_string("Checking area versions");
+    check_area_versions();
+
+    gconfig_write();
+}
+
+
+int get_this_class(CHAR_DATA *ch, int sn)
+{
+    int this_class;
+    int level;
+
+    if (skill_table[sn].name == NULL)
+	return 9999;
+
+    this_class = 9999;
+
+    if (ch->pcdata->class_mage != -1
+	    && (level = skill_table[sn].skill_level[ch->pcdata->class_mage]) < 31)
+    {
+	this_class = ch->pcdata->class_mage;
+    }
+    else
+	if (ch->pcdata->class_cleric != -1
+		&& (level = skill_table[sn].skill_level[ch->pcdata->class_cleric]) < 31)
+	{
+	    this_class = ch->pcdata->class_cleric;
+	}
+	else
+	    if (ch->pcdata->class_thief != -1
+		    && (level = skill_table[sn].skill_level[ch->pcdata->class_thief]) < 31)
+	    {
+		this_class = ch->pcdata->class_thief;
+	    }
+	    else
+		if (ch->pcdata->class_warrior != -1
+			&& (level = skill_table[sn].skill_level[ch->pcdata->class_warrior]) < 31)
+		{
+		    this_class = ch->pcdata->class_warrior;
+		}
+
+    if (IS_ANGEL(ch) || IS_MYSTIC(ch) || IS_DEMON(ch)) {
+	if (skill_table[sn].skill_level[0] < 31)
+	    return 0;
+	if (skill_table[sn].skill_level[1] < 31)
+	    return 1;
+	if (skill_table[sn].skill_level[2] < 31)
+	    return 2;
+	if (skill_table[sn].skill_level[3] < 31)
+	    return 3;
+
+	return 0;
+    }
+
+    return this_class;
+}
+
+
+void new_reset(ROOM_INDEX_DATA *pR, RESET_DATA *pReset)
+{
+    RESET_DATA *pr;
+
+    if (!pR)
+       return;
+
+    pr = pR->reset_last;
+
+    if (!pr)
+    {
+        pR->reset_first = pReset;
+        pR->reset_last  = pReset;
+    }
+    else
+    {
+        pR->reset_last->next = pReset;
+        pR->reset_last       = pReset;
+        pR->reset_last->next = NULL;
+    }
+
+    top_reset++;
+}
+
+
+/*
+ * Translate all room exits from virtual to real.
+ * Has to be done after all rooms are read in.
+ * Check for bad reverse exits.
+ */
+void fix_rooms(void)
+{
+    ROOM_INDEX_DATA *room;
+    EXIT_DATA *pexit;
+    int iHash;
+    int door;
+
+    for (iHash = 0; iHash < MAX_KEY_HASH; iHash++)
+    {
+	for (room = room_index_hash[iHash]; room != NULL; room = room->next)
+	{
+	    bool fexit;
+
+	    fexit = FALSE;
+	    for (door = 0; door <= 9; door++)
+	    {
+		if ((pexit = room->exit[door]) != NULL)
+		{
+		    if (pexit->u1.vnum <= 0
+		    ||   get_room_index(pexit->u1.vnum) == NULL)
+			pexit->u1.to_room = NULL;
+		    else
+		    {
+		   	fexit = TRUE;
+			pexit->u1.to_room = get_room_index(pexit->u1.vnum);
+		    }
+		}
+	    }
+
+	    /* only do this for non-wilds rooms*/
+	    if (!fexit && room->wilds == NULL)
+		SET_BIT(room->room_flags,ROOM_NO_MOB);
+
+
+		/* Fix it so that rooms that have wilderness coords will link to the proper wilderness*/
+	    if(room->w) room->viewwilds = get_wilds_from_uid(NULL,room->w);
+	}
+    }
+}
+
+
+/*
+ * Translate mobprog vnums pointers to real code
+ */
+void fix_mobprogs(void)
+{
+	MOB_INDEX_DATA *mob;
+	PROG_LIST *list;
+	int iHash, slot;
+
+	for (iHash = 0; iHash < MAX_KEY_HASH; iHash++) {
+		for (mob = mob_index_hash[iHash]; mob != NULL; mob = mob->next) if(mob->progs) {
+			for (slot = 0; slot < TRIGSLOT_MAX; slot++) {
+				for (list = mob->progs[slot]; list != NULL; list = list->next) {
+					if (!(list->script = get_script_index(list->vnum, PRG_MPROG))) {
+						bug("Fix_mobprogs: code vnum %d not found.", list->vnum);
+						bug("Fix_mobprogs: on mob %ld", mob->vnum);
+						exit(1);
+					}
+				}
+			}
+		}
+	}
+}
+
+
+void fix_objprogs(void)
+{
+	OBJ_INDEX_DATA *obj;
+	PROG_LIST *list;
+	int iHash, slot;
+
+	for (iHash = 0; iHash < MAX_KEY_HASH; iHash++) {
+		for (obj = obj_index_hash[iHash]; obj != NULL; obj = obj->next) if(obj->progs) {
+			for (slot = 0; slot < TRIGSLOT_MAX; slot++) {
+				for (list = obj->progs[slot]; list != NULL; list = list->next) {
+					if (!(list->script = get_script_index(list->vnum, PRG_OPROG))) {
+						bug("Fix_objprogs: code vnum %d not found.", list->vnum);
+						bug("Fix_objprogs: on obj %ld", obj->vnum);
+						exit(1);
+					}
+				}
+			}
+		}
+	}
+}
+
+void fix_roomprogs(void)
+{
+	ROOM_INDEX_DATA *room;
+	PROG_LIST *list;
+	int iHash, slot;
+
+	for (iHash = 0; iHash < MAX_KEY_HASH; iHash++) {
+		for (room = room_index_hash[iHash]; room != NULL; room = room->next) if(room->progs->progs) {
+			for (slot = 0; slot < TRIGSLOT_MAX; slot++) {
+				for (list = room->progs->progs[slot]; list != NULL; list = list->next) {
+					if (!(list->script = get_script_index(list->vnum, PRG_RPROG))) {
+						bug("Fix_roomprogs: code vnum %d not found.", list->vnum);
+						bug("Fix_roomprogs: on room %ld", room->vnum);
+						exit(1);
+					}
+				}
+			}
+		}
+	}
+}
+
+void fix_tokenprogs(void)
+{
+	TOKEN_INDEX_DATA *token;
+	PROG_LIST *list;
+	int iHash, slot;
+
+	for (iHash = 0; iHash < MAX_KEY_HASH; iHash++) {
+		for (token = token_index_hash[iHash]; token != NULL; token = token->next) if(token->progs) {
+			for (slot = 0; slot < TRIGSLOT_MAX; slot++) {
+				for (list = token->progs[slot]; list != NULL; list = list->next) {
+					if (!(list->script = get_script_index(list->vnum, PRG_TPROG))) {
+						bug("Fix_tokenprogs: code vnum %d not found.", list->vnum);
+						bug("Fix_tokenprogs: on token %ld", token->vnum);
+						exit(1);
+					}
+				}
+			}
+		}
+	}
+}
+
+void reset_wilds(WILDS_DATA *pWilds)
+{
+    WILDS_VLINK *pVLink;
+    OBJ_DATA *obj;
+
+    if (pWilds->pVLink)
+    {
+        for (pVLink = pWilds->pVLink;pVLink;pVLink = pVLink->next)
+        {
+            if (IS_SET(pVLink->current_linkage, VLINK_PORTAL))
+            {
+	      obj = create_object(get_obj_index(OBJ_VNUM_ABYSS_PORTAL), 0, TRUE);
+	      obj_to_vroom(obj, pWilds, pVLink->wildsorigin_x, pVLink->wildsorigin_y);
+            }
+        }
+    }
+
+    return;
+}
+
+
+void reset_area(AREA_DATA *pArea)
+{
+    ROOM_INDEX_DATA *pRoom;
+    long vnum;
+
+/*  VIZZWILDS - disabled this legacy hack - now handled by vlinks!*/
+/*
+    if (!str_cmp(pArea->name , "Netherworld"))
+    {
+	OBJ_DATA *obj;
+	ROOM_INDEX_DATA *temp_room;
+	bool found = FALSE;
+
+	temp_room = get_room_index(ROOM_VNUM_ABYSS_GATE);
+	for (obj = temp_room->contents; obj != NULL; obj = obj->next_content)
+	{
+	    if (obj->pIndexData->vnum == OBJ_VNUM_ABYSS_PORTAL)
+	    {
+		found = TRUE;
+		break;
+	    }
+	}
+
+	if (!found)
+	{
+	    obj = create_object(get_obj_index(OBJ_VNUM_ABYSS_PORTAL), 0, TRUE);
+	    obj_to_room(obj, get_room_index(ROOM_VNUM_ABYSS_GATE));
+	}
+
+  }
+*/
+    /* Global quest!! resets mobs, if GQ is on.*/
+    if (global)
+	global_reset();
+
+/*
+    if (!str_cmp(pArea->name , "Wilderness"))
+    {
+	for (vnum = pArea->min_vnum; vnum <= pArea->max_vnum; vnum++)
+	{
+	    if ((pRoom = get_room_index(vnum)))
+	    {
+		if (pRoom->parent == 5000001) // Silverfern forest*
+		{
+		    Butterfly
+		    chance_create_mob(pRoom, get_mob_index(100001), 5);
+		}
+		if (pRoom->parent == 5000002)  Wharf
+		{
+		*seagull
+		    chance_create_mob(pRoom, get_mob_index(100002), 5);
+		}
+		if (pRoom->parent == 5000003)  Paved
+		{
+		    Paved Road
+		    chance_create_mob(pRoom, get_mob_index(100007), 2);
+		    chance_create_mob(pRoom, get_mob_index(100012), 2);
+		    chance_create_mob(pRoom, get_mob_index(100013), 2);
+		    chance_create_mob(pRoom, get_mob_index(100014), 2);
+		    chance_create_mob(pRoom, get_mob_index(100015), 2);
+		    chance_create_mob(pRoom, get_mob_index(100016), 2);
+		    chance_create_mob(pRoom, get_mob_index(100017), 2);
+		}
+		if (pRoom->parent == 5000004) Sandy Beach
+		{
+		    chance_create_mob(pRoom, get_mob_index(100002), 5);
+		}
+		if (pRoom->parent == 5000007) Devil's Den Forest
+		{
+		    chance_create_mob(pRoom, get_mob_index(100003), 5);
+		    chance_create_mob(pRoom, get_mob_index(100008), 5);
+		    chance_create_mob(pRoom, get_mob_index(100009), 5);
+		}
+		if (pRoom->parent == 5000008) Grassy Field
+		{
+		    chance_create_mob(pRoom, get_mob_index(100003), 2);
+		    chance_create_mob(pRoom, get_mob_index(100007), 2);
+		    chance_create_mob(pRoom, get_mob_index(100001), 2);
+		}
+		if (pRoom->parent == 5000011)  Mountains
+		{
+		    chance_create_mob(pRoom, get_mob_index(100004), 5);
+		    chance_create_mob(pRoom, get_mob_index(100005), 5);
+		    chance_create_mob(pRoom, get_mob_index(100006), 5);
+		}
+	    }
+	}
+    }
+    else
+    */
+	for (vnum = pArea->min_vnum; vnum <= pArea->max_vnum; vnum++)
+	{
+	    if ((pRoom = get_room_index(vnum)))
+		reset_room(pRoom);
+	}
+}
+
+
+void area_update(bool fBoot)
+{
+    AREA_DATA *pArea;
+    char buf[MAX_STRING_LENGTH];
+    int hash;
+    ROOM_INDEX_DATA *room;
+    /* VIZZWILDS */
+    WILDS_DATA *pWilds;
+
+    /* Loop through every area*/
+    for (pArea = area_first; pArea != NULL; pArea = pArea->next)
+    {
+        /* Increment the area's age*/
+	pArea->age++;
+
+	/* Check area's age and reset if necessary*/
+	if (fBoot
+            || (pArea->age >= pArea->repop
+	        || (pArea->repop == 0 && pArea->age > 15)
+	        || pArea->age >= 120))
+	{
+            plogf("db.c, area_update: Resetting area %s.", pArea->name);
+	    reset_area(pArea);
+	    sprintf(buf,"%s has just been reset.",pArea->name);
+	    wiznet(buf,NULL,NULL,WIZ_RESETS,0,0);
+	    pArea->age = 0;
+
+	    if (pArea->nplayer == 0)
+		pArea->empty = TRUE;
+
+            /* If the area contains wilds sectors*/
+	    if (pArea->wilds)
+            {
+                /* Loop through all wilds in this area*/
+                for(pWilds = pArea->wilds;pWilds;pWilds = pWilds->next)
+                {
+                    if (fBoot)
+                        continue;
+
+                    pWilds->age++;
+
+                    if (pWilds->age >= pWilds->repop)
+                    {
+                        plogf("Resetting wilds uid %ld, '%s'...", pWilds->uid, pWilds->name);
+                        pWilds->age = 0;
+                    }
+                }
+            }
+	}
+    }
+
+    for (hash = 0; hash < MAX_KEY_HASH; hash++)
+    {
+	for (room = room_index_hash[hash]; room; room = room->next)
+	{
+	    if (room->area->empty)
+	    	continue;
+
+	    if (room->progs->delay > 0) {
+		if (--room->progs->delay <= 0)
+		    p_percent_trigger(NULL, NULL, room, NULL, NULL, NULL, NULL, TRIG_DELAY);
+	    } else
+		p_percent_trigger(NULL, NULL, room, NULL, NULL, NULL, NULL, TRIG_RANDOM);
+	}
+    }
+}
+
+
+void reset_room(ROOM_INDEX_DATA *pRoom)
+{
+    RESET_DATA  *pReset;
+    CHAR_DATA   *pMob;
+    CHAR_DATA	*mob;
+    OBJ_DATA    *pObj;
+    OBJ_DATA    *obj;
+    CHAR_DATA   *LastMob = NULL;
+    OBJ_DATA    *LastObj = NULL;
+    int iExit;
+    int level = 0;
+    bool last;
+    int i;
+    int c;
+
+    if (!pRoom)
+        return;
+
+    pMob = NULL;
+    last = FALSE;
+
+    for (iExit = 0;  iExit < MAX_DIR;  iExit++)
+    {
+        EXIT_DATA *pExit;
+        if ((pExit = pRoom->exit[iExit]))
+        {
+            pExit->exit_info = pExit->rs_flags;
+            if ((pExit->u1.to_room != NULL)
+            && ((pExit = pExit->u1.to_room->exit[rev_dir[iExit]])))
+            {
+                /* nail the other side */
+                pExit->exit_info = pExit->rs_flags;
+            }
+        }
+    }
+
+    for (pReset = pRoom->reset_first; pReset != NULL; pReset = pReset->next)
+    {
+        MOB_INDEX_DATA  *pMobIndex;
+        OBJ_INDEX_DATA  *pObjIndex;
+        OBJ_INDEX_DATA  *pObjToIndex;
+        ROOM_INDEX_DATA *pRoomIndex;
+	char buf[MAX_STRING_LENGTH];
+	int count,limit=0;
+
+        switch (pReset->command)
+        {
+        default:
+	    bug("Reset_room: bad command %c.", pReset->command);
+	    break;
+
+        case 'M':
+            if (!(pMobIndex = get_mob_index(pReset->arg1)))
+            {
+                bug("Reset_room: 'M': bad vnum %ld.", pReset->arg1);
+                continue;
+            }
+
+	    if ((pRoomIndex = get_room_index(pReset->arg3)) == NULL)
+	    {
+		bug("Reset_area: 'R': bad vnum %ld.", pReset->arg3);
+		continue;
+	    }
+            if (pMobIndex->count >= pReset->arg2)
+            {
+                last = FALSE;
+                break;
+            }
+
+	    count = 0;
+
+	    for (mob = pRoomIndex->people; mob != NULL; mob = mob->next_in_room)
+	    {
+		if (mob->pIndexData == pMobIndex && !IS_SET(mob->act, ACT_ANIMATED))
+		{
+		    count++;
+		    if (count >= pReset->arg4)
+		    {
+		    	last = FALSE;
+		    	break;
+		    }
+		}
+	    }
+
+	    if (count >= pReset->arg4)
+		break;
+
+	    pMob = create_mobile(pMobIndex);
+
+            /*
+             * Some more hard coding.
+             */
+            if (room_is_dark(pRoom))
+                SET_BIT(pMob->affected_by, AFF_INFRARED);
+
+            /*
+             * Pet shop mobiles get ACT_PET set.
+             */
+            {
+                ROOM_INDEX_DATA *pRoomIndexPrev;
+
+                pRoomIndexPrev = get_room_index(pRoom->vnum - 1);
+                if (pRoomIndexPrev
+		&&  IS_SET(pRoomIndexPrev->room_flags, ROOM_PET_SHOP))
+                    SET_BIT(pMob->act, ACT_PET);
+            }
+
+            char_to_room(pMob, pRoom);
+	    pMob->home_room = pRoom;
+
+	    /* Give some pneuma to POA mobs.*/
+	    if (!str_cmp(pMob->in_room->area->name, "Maze-Level1"))
+	    {
+		i = number_range(1,2);
+		for (c = 0; c < i; c++)
+		{
+		    obj = create_object(get_obj_index(OBJ_VNUM_BOTTLED_SOUL), 1, FALSE);
+		    obj_to_char(obj, pMob);
+		}
+	    }
+	    else if (!str_cmp(pMob->in_room->area->name, "Maze-Level2"))
+	    {
+		i = number_range(2,3);
+		for (c = 0; c < i; c++)
+		{
+		    obj = create_object(get_obj_index(OBJ_VNUM_BOTTLED_SOUL), 1, FALSE);
+		    obj_to_char(obj, pMob);
+		}
+	    }
+	    else if (!str_cmp(pMob->in_room->area->name, "Maze-Level3"))
+	    {
+		i = number_range(3,4);
+		for (c = 0; c < i; c++)
+		{
+		    obj = create_object(get_obj_index(OBJ_VNUM_BOTTLED_SOUL), 1, FALSE);
+		    obj_to_char(obj, pMob);
+		}
+	    }
+	    else if (!str_cmp(pMob->in_room->area->name, "Maze-Level4"))
+	    {
+		i = number_range(4,6);
+		for (c = 0; c < i; c++)
+		{
+		    obj = create_object(get_obj_index(OBJ_VNUM_BOTTLED_SOUL), 1, FALSE);
+		    obj_to_char(obj, pMob);
+		}
+	    }
+	    else if (!str_cmp(pMob->in_room->area->name, "Maze-Level5"))
+	    {
+		i = number_range(10,15);
+		for (c = 0; c < i; c++)
+		{
+		    obj = create_object(get_obj_index(OBJ_VNUM_BOTTLED_SOUL), 1, FALSE);
+		    obj_to_char(obj, pMob);
+		}
+	    }
+
+            LastMob = pMob;
+            level  = URANGE(0, pMob->level - 2, LEVEL_HERO - 1); /* -1 ROM */
+            last = TRUE;
+            objRepop = TRUE;
+	    p_percent_trigger(pMob, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_REPOP);
+            break;
+
+        case 'O':
+            if (!(pObjIndex = get_obj_index(pReset->arg1)))
+            {
+                bug("Reset_room: 'O' 1 : bad vnum %ld", pReset->arg1);
+                sprintf (buf,"%ld %ld %ld %ld",pReset->arg1, pReset->arg2, pReset->arg3,
+                pReset->arg4);
+		bug(buf,1);
+                continue;
+            }
+
+            if (!(pRoomIndex = get_room_index(pReset->arg3)))
+            {
+                bug("Reset_room: 'O' 2 : bad vnum %ld.", pReset->arg3);
+                sprintf (buf,"%ld %ld %ld %ld",pReset->arg1, pReset->arg2, pReset->arg3,
+                pReset->arg4);
+		bug(buf,1);
+                continue;
+            }
+
+            if (pRoom->area->nplayer > 0
+              || count_obj_list(pObjIndex, pRoom->contents) > 0)
+	    {
+		last = FALSE;
+		break;
+	    }
+
+            pObj = create_object(pObjIndex,
+				  UMIN(number_fuzzy(level), LEVEL_HERO -1) , TRUE);
+            pObj->cost = 0;
+            objRepop = TRUE;
+	    obj_to_room(pObj, pRoom);
+	    last = TRUE;
+            break;
+
+        case 'P':
+            if (!(pObjIndex = get_obj_index(pReset->arg1)))
+            {
+                bug("Reset_room: 'P': bad vnum %ld.", pReset->arg1);
+                continue;
+            }
+
+            if (!(pObjToIndex = get_obj_index(pReset->arg3)))
+            {
+                bug("Reset_room: 'P': bad vnum %ld.", pReset->arg3);
+                continue;
+            }
+
+            if (pReset->arg2 > 50) /* old format */
+                limit = 6;
+            else if (pReset->arg2 == -1) /* no limit */
+                limit = 999;
+            else
+                limit = pReset->arg2;
+
+            if (pRoom->area->nplayer > 0
+            || (LastObj = get_obj_type(pObjToIndex)) == NULL
+            || (LastObj->in_room == NULL && !last)
+            || (pObjIndex->count >= limit)
+            || (count = count_obj_list(pObjIndex, LastObj->contains))
+	                > pReset->arg4 )
+	    {
+		last = FALSE;
+		break;
+	    }
+				                /* lastObj->level  -  ROM */
+
+	    while (count < pReset->arg4)
+	    {
+		pObj = create_object(pObjIndex, number_fuzzy(LastObj->level), TRUE);
+		obj_to_obj(pObj, LastObj);
+		count++;
+		if (pObjIndex->count >= limit)
+		    break;
+	    }
+
+	    /* fix object lock state! */
+	    LastObj->value[1] = LastObj->pIndexData->value[1];
+	    last = TRUE;
+            break;
+
+        case 'G':
+        case 'E':
+            if (!(pObjIndex = get_obj_index(pReset->arg1)))
+            {
+                bug("Reset_room: 'E' or 'G': bad vnum %ld.", pReset->arg1);
+                continue;
+            }
+
+            if (!last)
+                break;
+
+            if (!LastMob)
+            {
+                bug("Reset_room: 'E' or 'G': null mob for vnum %ld.",
+                    pReset->arg1);
+                last = FALSE;
+                break;
+            }
+
+            if (LastMob->pIndexData->pShop)   /* Shop-keeper? */
+            {
+                pObj = create_object(pObjIndex, 0, TRUE);
+
+		if (!IS_SET(pObj->extra2_flags, ITEM_SELL_ONCE))
+		    SET_BIT(pObj->extra_flags, ITEM_INVENTORY);
+            }
+	    else
+	    {
+		int limit;
+		if (pReset->arg2 > 50)
+		    limit = 6;
+		else if (pReset->arg2 == -1 || pReset->arg2 == 0)
+		    limit = 999;
+		else
+		    limit = pReset->arg2;
+
+		if (pObjIndex->count < limit || number_range(0,4) == 0)
+		{
+		    pObj = create_object(pObjIndex,
+			   UMIN(number_fuzzy(level), LEVEL_HERO - 1), TRUE);
+		}
+		else
+		    break;
+	    }
+
+            objRepop = TRUE;
+	    obj_to_char(pObj, LastMob);
+            if (pReset->command == 'E')
+                equip_char(LastMob, pObj, pReset->arg3);
+            last = TRUE;
+            break;
+
+        case 'D':
+            break;
+
+        case 'R':
+            if (!(pRoomIndex = get_room_index(pReset->arg1)))
+            {
+                bug("Reset_room: 'R': bad vnum %ld.", pReset->arg1);
+                continue;
+            }
+
+            {
+                EXIT_DATA *pExit;
+                int d0;
+                int d1;
+
+                for (d0 = 0; d0 < pReset->arg2 - 1; d0++)
+                {
+                    d1                   = number_range(d0, pReset->arg2-1);
+                    pExit                = pRoomIndex->exit[d0];
+                    pRoomIndex->exit[d0] = pRoomIndex->exit[d1];
+                    pRoomIndex->exit[d1] = pExit;
+                }
+            }
+            break;
+        }
+    }
+}
+
+
+void chance_create_mob(ROOM_INDEX_DATA *pRoom, MOB_INDEX_DATA *pMobIndex, int chance)
+{
+    CHAR_DATA *pMobile;
+    OBJ_DATA *obj = NULL;
+
+    /* don't do for now
+    if (pMobIndex->vnum == MOB_VNUM_GATEKEEPER_ABYSS)
+    {
+       if (pMobIndex->count > 0)
+       return;
+       else
+       {
+       obj = create_object(get_obj_index(OBJ_VNUM_KEY_ABYSS), 30, TRUE);
+       }
+       }
+       else
+    */
+
+    if (number_percent() <= chance)
+    {
+	pMobile = create_mobile(pMobIndex);
+	if (obj)
+	    obj_to_char(obj, pMobile);
+	char_to_room(pMobile, pRoom);
+    }
+}
+
+
+/* Create a mobile from a mob index template.*/
+CHAR_DATA *create_mobile(MOB_INDEX_DATA *pMobIndex)
+{
+    CHAR_DATA *mob;
+    AFFECT_DATA af;
+    GQ_MOB_DATA *gq_mob;
+    const struct race_type *race;
+    int i;
+
+    mobile_count++;
+
+    if (pMobIndex == NULL)
+    {
+	bug("Create_mobile: NULL pMobIndex.", 0);
+	exit(1);
+    }
+
+    mob = new_char();
+
+    mob->pIndexData	= pMobIndex;
+
+    mob->name		= str_dup(pMobIndex->player_name);
+    mob->short_descr	= str_dup(pMobIndex->short_descr);
+    mob->long_descr	= str_dup(pMobIndex->long_descr);
+    mob->description	= str_dup(pMobIndex->description);
+
+    if (pMobIndex->owner != NULL)
+	mob->owner	= str_dup(pMobIndex->owner);
+    else
+	mob->owner	= str_dup("(no owner)");
+
+	get_mob_id(mob);
+    mob->spec_fun	= pMobIndex->spec_fun;
+    mob->prompt		= NULL;
+
+    mob->progs		= new_prog_data();
+    mob->progs->progs	= pMobIndex->progs;
+    variable_copylist(&pMobIndex->index_vars,&mob->progs->vars,FALSE);
+
+    mob->deitypoints    = 0;
+    mob->questpoints    = 0;
+    mob->pneuma         = 0;
+
+    /* give them some cash money */
+    if (pMobIndex->wealth == 0)
+    {
+	mob->silver = 0;
+	mob->gold   = 0;
+    }
+    else
+    {
+	long wealth;
+
+	/* make sure bankers always have change money */
+	if (IS_SET(pMobIndex->act, ACT_IS_BANKER))
+	{
+	    wealth = 1000000;
+	    SET_BIT(mob->act, ACT_PROTECTED);
+	}
+	else
+	    wealth = number_range(pMobIndex->wealth/2, 3 * pMobIndex->wealth/2);
+
+	/* make it easier on n00bs */
+	if (pMobIndex->area == find_area("Plith")
+	||   pMobIndex->area == find_area("Realm of Alendith"))
+	    wealth *= 2;
+
+	mob->gold = number_range(wealth/200,wealth/100);
+	mob->silver = wealth - (mob->gold * 100);
+    }
+
+    mob->act 		= pMobIndex->act;
+    mob->act2		= pMobIndex->act2;
+    mob->comm		= COMM_NOCHANNELS|COMM_NOTELL;
+    mob->affected_by	= pMobIndex->affected_by;
+    mob->affected_by2	= pMobIndex->affected_by2;
+    mob->alignment		= pMobIndex->alignment;
+    mob->level		= pMobIndex->level;
+    mob->tot_level		= pMobIndex->level;
+    mob->hitroll		= pMobIndex->hitroll;
+    mob->damroll		= pMobIndex->damage[DICE_BONUS];
+    mob->max_hit		= dice(pMobIndex->hit[DICE_NUMBER],
+	    pMobIndex->hit[DICE_TYPE])
+	+ pMobIndex->hit[DICE_BONUS];
+    mob->hit		= mob->max_hit;
+    mob->max_mana		= dice(pMobIndex->mana[DICE_NUMBER],
+	    pMobIndex->mana[DICE_TYPE])
+	+ pMobIndex->mana[DICE_BONUS];
+    mob->mana		= mob->max_mana;
+    mob->move		= pMobIndex->move;
+    mob->damage[DICE_NUMBER]= pMobIndex->damage[DICE_NUMBER];
+    mob->damage[DICE_TYPE]	= pMobIndex->damage[DICE_TYPE];
+    mob->dam_type		= pMobIndex->dam_type;
+    if (mob->dam_type == 0)
+    {
+	switch(number_range(1,3))
+	{
+	    case (1): mob->dam_type = 3;        break;  /* slash */
+	    case (2): mob->dam_type = 7;        break;  /* pound */
+	    case (3): mob->dam_type = 11;       break;  /* pierce */
+	}
+    }
+    for (i = 0; i < 4; i++)
+	mob->armor[i]	= pMobIndex->ac[i];
+
+    mob->off_flags	= pMobIndex->off_flags;
+    mob->imm_flags	= pMobIndex->imm_flags;
+    mob->res_flags	= pMobIndex->res_flags;
+    mob->vuln_flags	= pMobIndex->vuln_flags;
+    mob->start_pos	= pMobIndex->start_pos;
+    mob->default_pos	= pMobIndex->default_pos;
+    mob->sex		= pMobIndex->sex;
+
+    if (mob->sex == 3) /* random sex */
+	mob->sex = number_range(1,2);
+
+    mob->race		= pMobIndex->race;
+    race = &race_table[mob->race];
+    mob->form		= pMobIndex->form;
+    mob->parts		= pMobIndex->parts;
+    mob->size		= pMobIndex->size;
+    mob->material		= str_dup(pMobIndex->material);
+    mob->corpse_type	= pMobIndex->corpse_type;
+    mob->corpse_vnum	= pMobIndex->corpse;
+
+
+    for (i = 0; i < MAX_STATS; i ++)
+	mob->perm_stat[i] = UMIN(25,11 + mob->level/4);
+
+    if (IS_SET(mob->act,ACT_WARRIOR))
+    {
+	mob->perm_stat[STAT_STR] += 3;
+	mob->perm_stat[STAT_INT] -= 1;
+	mob->perm_stat[STAT_CON] += 2;
+    }
+
+    if (IS_SET(mob->act,ACT_THIEF))
+    {
+	mob->perm_stat[STAT_DEX] += 3;
+	mob->perm_stat[STAT_INT] += 1;
+	mob->perm_stat[STAT_WIS] -= 1;
+    }
+
+    if (IS_SET(mob->act,ACT_CLERIC))
+    {
+	mob->perm_stat[STAT_WIS] += 3;
+	mob->perm_stat[STAT_DEX] -= 1;
+	mob->perm_stat[STAT_STR] += 1;
+    }
+
+    if (IS_SET(mob->act,ACT_MAGE))
+    {
+	mob->perm_stat[STAT_INT] += 3;
+	mob->perm_stat[STAT_STR] -= 1;
+	mob->perm_stat[STAT_DEX] += 1;
+    }
+
+    mob->perm_stat[STAT_STR] += mob->size - SIZE_MEDIUM;
+    mob->perm_stat[STAT_CON] += (mob->size - SIZE_MEDIUM) / 2;
+
+    memset(&af,0,sizeof(af));
+
+    /* Put spells on here*/
+    if (IS_AFFECTED(mob,AFF_INVISIBLE))
+    {
+	af.group	= IS_SET(race->aff,AFF_INVISIBLE)?AFFGROUP_RACIAL:AFFGROUP_MAGICAL;
+	af.where	 = TO_AFFECTS;
+	af.type      = gsn_invis;
+	af.level     = mob->level;
+	af.duration  = -1;
+	af.location  = 0;
+	af.modifier  = 1 + (mob->level >= 18) + (mob->level >= 25) +
+	    (mob->level >= 32);
+	af.bitvector = AFF_INVISIBLE;
+	af.bitvector2 = 0;
+	affect_to_char(mob, &af);
+    }
+
+    if (IS_AFFECTED(mob,AFF_DETECT_INVIS))
+    {
+	af.group	= IS_SET(race->aff,AFF_DETECT_INVIS)?AFFGROUP_RACIAL:AFFGROUP_MAGICAL;
+	af.where	 = TO_AFFECTS;
+	af.type      = gsn_detect_invis;
+	af.level     = mob->level;
+	af.duration  = -1;
+	af.location  = 0;
+	af.modifier  = 0;
+	af.bitvector = AFF_DETECT_INVIS;
+	af.bitvector2 = 0;
+	affect_to_char(mob, &af);
+    }
+
+    if (IS_AFFECTED(mob,AFF_DETECT_HIDDEN))
+    {
+	af.group	= IS_SET(race->aff,AFF_DETECT_HIDDEN)?AFFGROUP_RACIAL:AFFGROUP_MAGICAL;
+	af.where	 = TO_AFFECTS;
+	af.type      = gsn_detect_hidden;
+	af.level     = mob->level;
+	af.duration  = -1;
+	af.location  = 0;
+	af.modifier  = 0;
+	af.bitvector = AFF_DETECT_HIDDEN;
+	af.bitvector2 = 0;
+	affect_to_char(mob, &af);
+    }
+
+    if (IS_AFFECTED(mob,AFF_SANCTUARY))
+    {
+	af.group	= IS_SET(race->aff,AFF_SANCTUARY)?AFFGROUP_RACIAL:AFFGROUP_MAGICAL;
+	af.where	 = TO_AFFECTS;
+	af.type      = gsn_sanctuary;
+	af.level     = mob->level;
+	af.duration  = -1;
+	af.location  = APPLY_NONE;
+	af.modifier  = 0;
+	af.bitvector = AFF_SANCTUARY;
+	af.bitvector2 = 0;
+	affect_to_char(mob, &af);
+    }
+
+    if (IS_AFFECTED(mob,AFF_INFRARED))
+    {
+	af.group	= IS_SET(race->aff,AFF_INFRARED)?AFFGROUP_RACIAL:AFFGROUP_MAGICAL;
+	af.where	 = TO_AFFECTS;
+	af.type      = gsn_infravision;
+	af.level     = mob->level;
+	af.duration  = -1;
+	af.location  = APPLY_NONE;
+	af.modifier  = 0;
+	af.bitvector = AFF_INFRARED;
+	af.bitvector2 = 0;
+	affect_to_char(mob, &af);
+    }
+
+    if (IS_AFFECTED(mob,AFF_DEATH_GRIP))
+    {
+	af.group	= IS_SET(race->aff,AFF_DEATH_GRIP)?AFFGROUP_RACIAL:AFFGROUP_MAGICAL;
+	af.where	 = TO_AFFECTS;
+	af.type      = gsn_death_grip;
+	af.level     = mob->level;
+	af.duration  = -1;
+	af.location  = APPLY_NONE;
+	af.modifier  = 0;
+	af.bitvector = AFF_DEATH_GRIP;
+	af.bitvector2 = 0;
+	affect_to_char(mob, &af);
+    }
+
+    if (IS_AFFECTED(mob,AFF_FLYING))
+    {
+	af.group	= IS_SET(race->aff,AFF_FLYING)?AFFGROUP_RACIAL:AFFGROUP_MAGICAL;
+	af.where	 = TO_AFFECTS;
+	af.type      = gsn_fly;
+	af.level     = mob->level;
+	af.duration  = -1;
+	af.location  = APPLY_NONE;
+	af.modifier  = 0;
+	af.bitvector = AFF_FLYING;
+	af.bitvector2 = 0;
+	affect_to_char(mob, &af);
+    }
+
+    if (IS_AFFECTED(mob,AFF_PASS_DOOR))
+    {
+	af.group	= IS_SET(race->aff,AFF_PASS_DOOR)?AFFGROUP_RACIAL:AFFGROUP_MAGICAL;
+	af.where	 = TO_AFFECTS;
+	af.type      = gsn_pass_door;
+	af.level     = mob->level;
+	af.duration  = -1;
+	af.location  = APPLY_NONE;
+	af.modifier  = 0;
+	af.bitvector = AFF_PASS_DOOR;
+	af.bitvector2 = 0;
+	affect_to_char(mob, &af);
+    }
+
+    if (IS_AFFECTED(mob,AFF_HASTE))
+    {
+	af.group	= IS_SET(race->aff,AFF_HASTE)?AFFGROUP_RACIAL:AFFGROUP_MAGICAL;
+	af.where	 = TO_AFFECTS;
+	af.type      = gsn_haste;
+	af.level     = mob->level;
+	af.duration  = -1;
+	af.location  = APPLY_DEX;
+	af.modifier  = 1 + (mob->level >= 18) + (mob->level >= 25) +
+	    (mob->level >= 32);
+	af.bitvector = AFF_HASTE;
+	af.bitvector2 = 0;
+	affect_to_char(mob, &af);
+    }
+
+    if (IS_AFFECTED2(mob, AFF2_WARCRY))
+    {
+	af.group	= AFFGROUP_PHYSICAL;
+	af.where	 = TO_AFFECTS;
+	af.type      = gsn_warcry;
+	af.level     = mob->level;
+	af.duration  = -1;
+	af.location  = 0;
+	af.modifier  = 0;
+	af.bitvector = 0;
+	af.bitvector2 = AFF2_WARCRY;
+	affect_to_char(mob,&af);
+    }
+
+    if (IS_AFFECTED2(mob, AFF2_LIGHT_SHROUD))
+    {
+	af.group	= IS_SET(race->aff2,AFF2_LIGHT_SHROUD)?AFFGROUP_RACIAL:AFFGROUP_MAGICAL;
+	af.where	 = TO_AFFECTS;
+	af.type      = gsn_light_shroud;
+	af.level     = mob->level;
+	af.duration  = -1;
+	af.location  = 0;
+	af.modifier  = 0;
+	af.bitvector = 0;
+	af.bitvector2 = AFF2_LIGHT_SHROUD;
+	affect_to_char(mob,&af);
+    }
+
+    if (IS_AFFECTED2(mob, AFF2_HEALING_AURA))
+    {
+	af.group	= IS_SET(race->aff2,AFF2_HEALING_AURA)?AFFGROUP_RACIAL:AFFGROUP_MAGICAL;
+	af.where	 = TO_AFFECTS;
+	af.type      = gsn_healing_aura;
+	af.level     = mob->level;
+	af.duration  = -1;
+	af.location  = 0;
+	af.modifier  = 0;
+	af.bitvector = 0;
+	af.bitvector2 = AFF2_HEALING_AURA;
+	affect_to_char(mob,&af);
+    }
+
+    if (IS_AFFECTED2(mob, AFF2_ENERGY_FIELD))
+    {
+	af.group	= IS_SET(race->aff2,AFF2_ENERGY_FIELD)?AFFGROUP_RACIAL:AFFGROUP_MAGICAL;
+	af.where	 = TO_AFFECTS;
+	af.type      = gsn_energy_field;
+	af.level     = mob->level;
+	af.duration  = -1;
+	af.location  = 0;
+	af.modifier  = 0;
+	af.bitvector = 0;
+	af.bitvector2 = AFF2_ENERGY_FIELD;
+	affect_to_char(mob,&af);
+    }
+
+    if (IS_AFFECTED2(mob, AFF2_SPELL_SHIELD))
+    {
+	af.group	= IS_SET(race->aff2,AFF2_SPELL_SHIELD)?AFFGROUP_RACIAL:AFFGROUP_MAGICAL;
+	af.where	 = TO_AFFECTS;
+	af.type      = gsn_spell_shield;
+	af.level     = mob->level;
+	af.duration  = -1;
+	af.location  = 0;
+	af.modifier  = 0;
+	af.bitvector = 0;
+	af.bitvector2 = AFF2_SPELL_SHIELD;
+	affect_to_char(mob,&af);
+    }
+
+    if (IS_AFFECTED2(mob, AFF2_SPELL_DEFLECTION))
+    {
+	af.group	= IS_SET(race->aff2,AFF2_SPELL_DEFLECTION)?AFFGROUP_RACIAL:AFFGROUP_MAGICAL;
+	af.where	 = TO_AFFECTS;
+	af.type      = gsn_spell_deflection;
+	af.level     = mob->level;
+	af.duration  = -1;
+	af.location  = 0;
+	af.modifier  = 0;
+	af.bitvector = 0;
+	af.bitvector2 = AFF2_SPELL_DEFLECTION;
+	affect_to_char(mob,&af);
+    }
+
+    if (IS_AFFECTED2(mob, AFF2_AVATAR_SHIELD))
+    {
+	af.group	= IS_SET(race->aff2,AFF2_AVATAR_SHIELD)?AFFGROUP_RACIAL:AFFGROUP_MAGICAL;
+	af.where	 = TO_AFFECTS;
+	af.type      = gsn_avatar_shield;
+	af.level     = mob->level;
+	af.duration  = -1;
+	af.location  = 0;
+	af.modifier  = 0;
+	af.bitvector = 0;
+	af.bitvector2 = AFF2_AVATAR_SHIELD;
+	affect_to_char(mob,&af);
+    }
+
+    if (IS_AFFECTED2(mob, AFF2_ELECTRICAL_BARRIER))
+    {
+	af.group	= IS_SET(race->aff2,AFF2_ELECTRICAL_BARRIER)?AFFGROUP_RACIAL:AFFGROUP_MAGICAL;
+	af.where	 = TO_AFFECTS;
+	af.type      = gsn_electrical_barrier;
+	af.level     = mob->level;
+	af.duration  = -1;
+	af.location  = 0;
+	af.modifier  = 0;
+	af.bitvector = 0;
+	af.bitvector2 = AFF2_ELECTRICAL_BARRIER;
+	affect_to_char(mob,&af);
+    }
+
+    if (IS_AFFECTED2(mob, AFF2_FIRE_BARRIER))
+    {
+	af.group	= IS_SET(race->aff2,AFF2_FIRE_BARRIER)?AFFGROUP_RACIAL:AFFGROUP_MAGICAL;
+	af.where	 = TO_AFFECTS;
+	af.type      = gsn_fire_barrier;
+	af.level     = mob->level;
+	af.duration  = -1;
+	af.location  = 0;
+	af.modifier  = 0;
+	af.bitvector = 0;
+	af.bitvector2 = AFF2_FIRE_BARRIER;
+	affect_to_char(mob,&af);
+    }
+
+    if (IS_AFFECTED2(mob, AFF2_FROST_BARRIER))
+    {
+	af.group	= IS_SET(race->aff2,AFF2_FROST_BARRIER)?AFFGROUP_RACIAL:AFFGROUP_MAGICAL;
+	af.where	 = TO_AFFECTS;
+	af.type      = gsn_frost_barrier;
+	af.level     = mob->level;
+	af.duration  = -1;
+	af.location  = 0;
+	af.modifier  = 0;
+	af.bitvector = 0;
+	af.bitvector2 = AFF2_FROST_BARRIER;
+	affect_to_char(mob,&af);
+    }
+
+    if (IS_AFFECTED2(mob, AFF2_IMPROVED_INVIS))
+    {
+	af.group	= IS_SET(race->aff2,AFF2_IMPROVED_INVIS)?AFFGROUP_RACIAL:AFFGROUP_MAGICAL;
+	af.where	 = TO_AFFECTS;
+	af.type      = gsn_improved_invisibility;
+	af.level     = mob->level;
+	af.duration  = -1;
+	af.location  = 0;
+	af.modifier  = 0;
+	af.bitvector = 0;
+	af.bitvector2 = AFF2_IMPROVED_INVIS;
+	affect_to_char(mob,&af);
+    }
+
+    if (IS_AFFECTED2(mob, AFF2_STONE_SKIN))
+    {
+	af.group	= IS_SET(race->aff2,AFF2_STONE_SKIN)?AFFGROUP_RACIAL:AFFGROUP_MAGICAL;
+	af.where     = TO_AFFECTS;
+	af.type      = gsn_stone_skin;
+	af.level     = mob->level;
+	af.duration  = -1;
+	af.location  = 0;
+	af.modifier  = 0;
+	af.bitvector = 0;
+	af.bitvector2 = AFF2_STONE_SKIN;
+	affect_to_char(mob,&af);
+    }
+    mob->position = mob->start_pos;
+
+    mob->max_move = pMobIndex->move;
+    mob->move = pMobIndex->move;
+
+    /* link the mob to the world list */
+    mob->next		= char_list;
+    char_list		= mob;
+
+    /* Animate dead mobs don't add to the list.*/
+    pMobIndex->count++;
+
+    /* Keep GQ count*/
+    for (gq_mob = global_quest.mobs; gq_mob != NULL; gq_mob = gq_mob->next)
+    {
+	if (pMobIndex->vnum == gq_mob->vnum)
+	    gq_mob->count++;
+    }
+
+    return mob;
+}
+
+
+void clone_mobile(CHAR_DATA *parent, CHAR_DATA *clone)
+{
+    int i;
+    AFFECT_DATA *paf;
+
+    if (parent == NULL || clone == NULL || !IS_NPC(parent))
+	return;
+
+    clone->name 	= str_dup(parent->name);
+    clone->version	= parent->version;
+    clone->short_descr	= str_dup(parent->short_descr);
+    clone->long_descr	= str_dup(parent->long_descr);
+    clone->description	= str_dup(parent->description);
+    /*clone->group	= parent->group;*/
+    clone->sex		= parent->sex;
+    /*clone->cclass	= parent->class;*/
+    clone->race		= parent->race;
+    clone->level	= parent->level;
+    clone->tot_level	= parent->level;
+    clone->trust	= 0;
+    clone->timer	= parent->timer;
+    clone->wait		= parent->wait;
+    clone->hit		= parent->hit;
+    clone->max_hit	= parent->max_hit;
+    clone->mana		= parent->mana;
+    clone->max_mana	= parent->max_mana;
+    clone->move		= parent->move;
+    clone->max_move	= parent->max_move;
+    clone->gold		= parent->gold;
+    clone->silver	= parent->silver;
+    clone->exp		= parent->exp;
+    clone->act		= parent->act;
+    clone->act2		= parent->act2;
+    clone->comm		= parent->comm;
+    clone->imm_flags	= parent->imm_flags;
+    clone->res_flags	= parent->res_flags;
+    clone->vuln_flags	= parent->vuln_flags;
+    clone->invis_level	= parent->invis_level;
+    clone->affected_by	= parent->affected_by;
+    clone->affected_by2	= parent->affected_by2;
+    clone->position	= parent->position;
+    clone->practice	= parent->practice;
+    clone->train	= parent->train;
+    clone->saving_throw	= parent->saving_throw;
+    clone->alignment	= parent->alignment;
+    clone->hitroll	= parent->hitroll;
+    clone->damroll	= parent->damroll;
+    clone->wimpy	= parent->wimpy;
+    clone->form		= parent->form;
+    clone->parts	= parent->parts;
+    clone->size		= parent->size;
+    clone->material	= str_dup(parent->material);
+    clone->off_flags	= parent->off_flags;
+    clone->dam_type	= parent->dam_type;
+    clone->start_pos	= parent->start_pos;
+    clone->default_pos	= parent->default_pos;
+    clone->spec_fun	= parent->spec_fun;
+
+    for (i = 0; i < 4; i++)
+    	clone->armor[i]	= parent->armor[i];
+
+    for (i = 0; i < MAX_STATS; i++)
+    {
+	clone->perm_stat[i]	= parent->perm_stat[i];
+	clone->mod_stat[i]	= parent->mod_stat[i];
+    }
+
+    for (i = 0; i < 3; i++)
+	clone->damage[i]	= parent->damage[i];
+
+    /* now add the affects */
+    for (paf = parent->affected; paf != NULL; paf = paf->next)
+        affect_to_char(clone,paf);
+
+    variable_freelist(&clone->progs->vars);
+    variable_copylist(&parent->progs->vars,&clone->progs->vars,FALSE);
+}
+
+
+OBJ_DATA *create_object_noid(OBJ_INDEX_DATA *pObjIndex, int level, bool affects)
+{
+    AFFECT_DATA *paf;
+    SPELL_DATA *spell, *spell_new;
+    OBJ_DATA *obj;
+    GQ_OBJ_DATA *gq_obj;
+
+    if (pObjIndex == NULL)
+    {
+	bug("Create_object: NULL pObjIndex.", 0);
+	return NULL;
+    }
+
+    obj = new_obj();
+
+    obj->pIndexData	= pObjIndex;
+    obj->in_room	= NULL;
+
+    obj->level = pObjIndex->level;
+    obj->wear_loc	= -1;
+    obj->last_wear_loc	= -1;
+
+    obj->progs 		= new_prog_data();
+    obj->progs->progs	= pObjIndex->progs;
+
+    obj->name		= str_dup(pObjIndex->name);
+    obj->short_descr	= str_dup(pObjIndex->short_descr);
+    obj->description	= str_dup(pObjIndex->description);
+    if (pObjIndex->full_description != NULL
+    && pObjIndex->full_description[0] != '\0')
+	obj->full_description = str_dup(pObjIndex->full_description);
+    else
+	obj->full_description = str_dup(pObjIndex->description);
+    obj->old_short_descr 	= NULL;
+    obj->old_description        = NULL;
+    obj->loaded_by      = NULL;
+    obj->material	= str_dup(pObjIndex->material);
+    obj->condition	= pObjIndex->condition;
+    obj->times_allowed_fixed	= pObjIndex->times_allowed_fixed;
+    obj->fragility	= pObjIndex->fragility;
+    obj->item_type	= pObjIndex->item_type;
+    obj->extra_flags	= pObjIndex->extra_flags;
+    obj->extra2_flags   = pObjIndex->extra2_flags;
+    obj->extra3_flags   = pObjIndex->extra3_flags;
+    obj->extra4_flags   = pObjIndex->extra4_flags;
+    obj->wear_flags	= pObjIndex->wear_flags;
+    obj->value[0]	= pObjIndex->value[0];
+    obj->value[1]	= pObjIndex->value[1];
+    obj->value[2]	= pObjIndex->value[2];
+    obj->value[3]	= pObjIndex->value[3];
+    obj->value[4]	= pObjIndex->value[4];
+    obj->value[5]	= pObjIndex->value[5];
+    obj->value[6]	= pObjIndex->value[6];
+    obj->value[7]	= pObjIndex->value[7];
+    obj->weight		= pObjIndex->weight;
+    obj->cost           = pObjIndex->cost;
+    obj->timer		= pObjIndex->timer;
+
+    /*
+     * Mess with object properties.
+     */
+    switch (obj->item_type)
+    {
+	case ITEM_LIGHT:
+	    if (obj->value[2] == 999)
+		obj->value[2] = -1;
+	    break;
+
+	case ITEM_CATALYST:
+	    if (!obj->value[1]) obj->value[1] = 1; /* Fix zero charge catalysts to single uses*/
+	    break;
+
+	case ITEM_BOOK:
+	case ITEM_HERB:
+	case ITEM_FURNITURE:
+	case ITEM_TRADE_TYPE:
+	case ITEM_SEED:
+	case ITEM_SEXTANT:
+	case ITEM_INSTRUMENT:
+	case ITEM_CART:
+	case ITEM_SHARECERT:
+	case ITEM_SMOKE_BOMB:
+	case ITEM_ROOM_ROOMSHIELD:
+	case ITEM_ROOM_DARKNESS:
+	case ITEM_STINKING_CLOUD:
+	case ITEM_WITHERING_CLOUD:
+	case ITEM_ROOM_FLAME:
+	case ITEM_ARTIFACT:
+	case ITEM_TRASH:
+	case ITEM_CONTAINER:
+	case ITEM_WEAPON_CONTAINER:
+	case ITEM_DRINK_CON:
+	case ITEM_KEY:
+	case ITEM_BOAT:
+	case ITEM_CORPSE_NPC:
+	case ITEM_CORPSE_PC:
+	case ITEM_RANGED_WEAPON:
+	case ITEM_FOUNTAIN:
+	case ITEM_MAP:
+	case ITEM_SHIP:
+	case ITEM_CLOTHING:
+	case ITEM_PORTAL:
+	case ITEM_TREASURE:
+	case ITEM_SPELL_TRAP:
+	case ITEM_ROOM_KEY:
+	case ITEM_GEM:
+	case ITEM_JEWELRY:
+	case ITEM_JUKEBOX:
+	case ITEM_SCROLL:
+	case ITEM_WAND:
+	case ITEM_STAFF:
+	case ITEM_WEAPON:
+	case ITEM_ARMOR:
+	case ITEM_BANK:
+	case ITEM_KEYRING:
+	case ITEM_POTION:
+	case ITEM_PILL:
+	case ITEM_ICE_STORM:
+	case ITEM_FLOWER:
+	case ITEM_MIST:
+	case ITEM_MONEY:
+	case ITEM_WHISTLE:
+	case ITEM_SHOVEL:
+	case ITEM_SHRINE:
+	    break;
+
+	case ITEM_FOOD:
+	    obj->timer = obj->value[4];
+            break;
+
+	default:
+	    bug("create_object: vnum %ld bad type.", pObjIndex->vnum);
+	    break;
+    }
+
+    /* Random affects on objs*/
+    if (affects)
+    {
+	for (paf = pObjIndex->affected; paf != NULL; paf = paf->next)
+	{
+	    if (number_percent() < paf->random || paf->random == 100)
+		affect_to_obj(obj,paf);
+	}
+
+	for (spell = pObjIndex->spells; spell != NULL; spell = spell->next)
+	{
+	    if (number_percent() < spell->repop || spell->repop == 100)
+	    {
+		spell_new = new_spell();
+		spell_new->sn = spell->sn;
+		spell_new->level = spell->level;
+
+		spell_new->next = obj->spells;
+		obj->spells = spell_new;
+	    }
+	}
+
+	for (paf = pObjIndex->catalyst; paf != NULL; paf = paf->next)
+	{
+	    if (number_percent() < paf->random || paf->random == 100)
+		catalyst_to_obj(obj,paf);
+	}
+    }
+
+    variable_copylist(&pObjIndex->index_vars,&obj->progs->vars,FALSE);
+
+    obj->num_enchanted = 0;
+    obj->version = NEWEST_OBJ_VERSION;
+    obj->locker = FALSE;
+
+    obj->next = object_list;
+    object_list	= obj;
+    pObjIndex->count++;
+
+    /* If loading a relic for whatever reason, update the pointers here.*/
+    if (pObjIndex->vnum == OBJ_VNUM_RELIC_EXTRA_DAMAGE)
+	damage_relic = obj;
+
+    if (pObjIndex->vnum == OBJ_VNUM_RELIC_EXTRA_XP)
+	xp_relic = obj;
+
+    if (pObjIndex->vnum == OBJ_VNUM_RELIC_EXTRA_PNEUMA)
+	pneuma_relic = obj;
+
+    if (pObjIndex->vnum == OBJ_VNUM_RELIC_HP_REGEN)
+	hp_regen_relic = obj;
+
+    if (pObjIndex->vnum == OBJ_VNUM_RELIC_MANA_REGEN)
+	mana_regen_relic = obj;
+
+    /* Keep GQ count*/
+    for (gq_obj = global_quest.objects; gq_obj != NULL; gq_obj = gq_obj->next)
+    {
+	if (pObjIndex->vnum == gq_obj->vnum)
+	    gq_obj->count++;
+    }
+
+    return obj;
+}
+
+OBJ_DATA *create_object(OBJ_INDEX_DATA *pObjIndex, int level, bool affects)
+{
+    OBJ_DATA *obj;
+
+    obj = create_object_noid(pObjIndex,level,affects);
+
+    if(obj) get_obj_id(obj);
+
+    return obj;
+}
+
+
+void clone_object(OBJ_DATA *parent, OBJ_DATA *clone)
+{
+    int i;
+    AFFECT_DATA *paf, *paf_next;
+    EXTRA_DESCR_DATA *ed,*ed_new;
+
+    if (parent == NULL || clone == NULL)
+	return;
+
+    /* remove the affects first so we don't get dual affects */
+    for (paf = clone->affected; paf != NULL; paf = paf_next) {
+        paf_next = paf->next;
+
+	affect_remove_obj(clone, paf);
+    }
+
+    for (paf = clone->catalyst; paf != NULL; paf = paf_next) {
+        paf_next = paf->next;
+
+	free_affect(paf);
+    }
+
+    clone->affected = NULL;
+    clone->catalyst = NULL;
+
+    /* start fixing the object */
+    clone->name 	= str_dup(parent->name);
+    clone->short_descr 	= str_dup(parent->short_descr);
+    clone->description	= str_dup(parent->description);
+    clone->item_type	= parent->item_type;
+    clone->extra_flags	= parent->extra_flags;
+    clone->extra2_flags	= parent->extra2_flags;
+    clone->extra3_flags	= parent->extra3_flags;
+    clone->extra4_flags	= parent->extra4_flags;
+    clone->wear_flags	= parent->wear_flags;
+    clone->weight	= parent->weight;
+    clone->cost		= parent->cost;
+    clone->level	= parent->level;
+    clone->condition	= parent->condition;
+    clone->material	= str_dup(parent->material);
+    clone->timer	= parent->timer;
+    clone->num_enchanted = parent->num_enchanted;
+
+    for (i = 0;  i < 8; i ++)
+	clone->value[i]	= parent->value[i];
+
+    /* affects */
+    for (paf = parent->affected; paf != NULL; paf = paf->next)
+	affect_to_obj(clone,paf);
+
+    /* catalyst affects */
+    for (paf = parent->catalyst; paf != NULL; paf = paf->next)
+	catalyst_to_obj(clone,paf);
+
+    /* extended desc */
+    for (ed = parent->extra_descr; ed != NULL; ed = ed->next)
+    {
+        ed_new                  = new_extra_descr();
+        ed_new->keyword    	= str_dup(ed->keyword);
+        ed_new->description     = str_dup(ed->description);
+        ed_new->next           	= clone->extra_descr;
+        clone->extra_descr  	= ed_new;
+    }
+
+    variable_freelist(&clone->progs->vars);
+    variable_copylist(&parent->progs->vars,&clone->progs->vars,FALSE);
+}
+
+
+char *get_extra_descr(const char *name, EXTRA_DESCR_DATA *ed)
+{
+    for (; ed != NULL; ed = ed->next)
+    {
+	if (is_name((char *) name, ed->keyword))
+	    return ed->description;
+    }
+    return NULL;
+}
+
+
+/*
+ * Translates mob virtual number to its mob index struct.
+ */
+MOB_INDEX_DATA *get_mob_index(long vnum)
+{
+    MOB_INDEX_DATA *mob;
+
+    for (mob = mob_index_hash[vnum % MAX_KEY_HASH]; mob != NULL; mob = mob->next)
+    {
+	if (mob->vnum == vnum)
+	    return mob;
+    }
+
+    if (fBootDb)
+    {
+	bug("Get_mob_index: bad vnum %ld.", vnum);
+	exit(1);
+    }
+
+    return NULL;
+}
+
+
+/*
+ * Translates mob virtual number to its obj index struct.
+ */
+OBJ_INDEX_DATA *get_obj_index(long vnum)
+{
+    OBJ_INDEX_DATA *obj;
+
+    for (obj = obj_index_hash[vnum % MAX_KEY_HASH]; obj != NULL; obj = obj->next)
+    {
+	if (obj->vnum == vnum)
+	    return obj;
+    }
+
+    if (fBootDb)
+    {
+	bug("Get_obj_index: bad vnum %ld.", vnum);
+	exit(1);
+    }
+
+    return NULL;
+}
+
+
+/*
+ * Translates room virtual number to its room index struct.
+ */
+ROOM_INDEX_DATA *get_room_index(long vnum)
+{
+    ROOM_INDEX_DATA *room;
+
+    for (room = room_index_hash[vnum % MAX_KEY_HASH]; room != NULL; room = room->next)
+    {
+	if (room->vnum == vnum)
+	    return room;
+    }
+
+    if (fBootDb)
+    {
+	bug("Get_room_index: bad vnum %ld.", vnum);
+        return NULL;
+    }
+
+    return NULL;
+}
+
+
+TOKEN_INDEX_DATA *get_token_index(long vnum)
+{
+    TOKEN_INDEX_DATA *token_index;
+
+    for (token_index = token_index_hash[vnum % MAX_KEY_HASH]; token_index != NULL; token_index = token_index->next)
+    {
+	if (token_index->vnum == vnum)
+	    return token_index;
+    }
+
+    return NULL;
+}
+
+
+SCRIPT_DATA *get_script_index(long  vnum, int type)
+{
+    SCRIPT_DATA *prg;
+
+    switch (type)
+    {
+	case PRG_MPROG:
+	    prg = mprog_list;
+	    break;
+	case PRG_OPROG:
+	    prg = oprog_list;
+	    break;
+	case PRG_RPROG:
+	    prg = rprog_list;
+	    break;
+	case PRG_TPROG:
+	    prg = tprog_list;
+	    break;
+	default:
+	    return NULL;
+    }
+
+    for(; prg; prg = prg->next) {
+	if (prg->vnum == vnum)
+            return(prg);
+    }
+    return NULL;
+}
+
+
+
+/*
+ * Read a letter from a file.
+ */
+char fread_letter(FILE *fp)
+{
+    char c;
+
+    do
+    {
+	c = getc(fp);
+    }
+    while (isspace(c));
+
+    return c;
+}
+
+
+char *fwrite_flag(long flags, char buf[])
+{
+    char offset;
+    char *cp;
+
+    buf[0] = '\0';
+
+    if (flags == 0)
+    {
+	strcpy(buf, "0");
+	return buf;
+    }
+
+    /* 32 -- number of bits in a long */
+
+    for (offset = 0, cp = buf; offset < 32; offset++)
+	if (flags & ((long)1 << offset))
+	{
+	    if (offset <= 'Z' - 'A')
+		*(cp++) = 'A' + offset;
+	    else
+		*(cp++) = 'a' + offset - ('Z' - 'A' + 1);
+	}
+
+    *cp = '\0';
+
+    return buf;
+}
+
+
+/*
+ * Read a number from a file.
+ */
+long fread_number(FILE *fp)
+{
+    long number;
+    bool sign;
+    char c;
+
+    do
+    {
+	c = getc(fp);
+    }
+    while (isspace(c));
+
+    number = 0;
+
+    sign   = FALSE;
+    if (c == '+')
+    {
+	c = getc(fp);
+    }
+    else if (c == '-')
+    {
+	sign = TRUE;
+	c = getc(fp);
+    }
+
+    if (!isdigit(c))
+    {
+	bug("Fread_number: bad format (%c).", c);
+	exit(1);
+    }
+
+    while (isdigit(c))
+    {
+	number = number * 10 + c - '0';
+	c      = getc(fp);
+    }
+
+    if (sign)
+	number = 0 - number;
+
+    if (c == '|')
+	number += fread_number(fp);
+    else if (c != ' ')
+	ungetc(c, fp);
+
+    return number;
+}
+
+
+long fread_flag(FILE *fp)
+{
+    long number;
+    char c;
+    bool negative = FALSE;
+
+    do
+    {
+	c = getc(fp);
+    }
+    while (isspace(c));
+
+    if (c == '-')
+    {
+	negative = TRUE;
+	c = getc(fp);
+    }
+
+    number = 0;
+
+    if (!isdigit(c))
+    {
+	while (('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z'))
+	{
+	    number += flag_convert(c);
+	    c = getc(fp);
+	}
+    }
+
+    while (isdigit(c))
+    {
+	number = number * 10 + c - '0';
+	c = getc(fp);
+    }
+
+    if (c == '|')
+	number += fread_flag(fp);
+
+    else if  (c != ' ')
+	ungetc(c,fp);
+
+    if (negative)
+	return -1 * number;
+
+    return number;
+}
+
+
+long flag_convert(char letter)
+{
+    long bitsum = 0;
+    char i;
+
+    if ('A' <= letter && letter <= 'Z')
+    {
+	bitsum = 1;
+	for (i = letter; i > 'A'; i--)
+	    bitsum *= 2;
+    }
+    else if ('a' <= letter && letter <= 'z')
+    {
+	bitsum = 67108864; /* 2^26 */
+	for (i = letter; i > 'a'; i --)
+	    bitsum *= 2;
+    }
+
+    return bitsum;
+}
+
+
+/*
+ * Read and allocate space for a string from a file.
+ * These strings are read-only and shared.
+ * Strings are hashed:
+ *   each string prepended with hash pointer to prev string,
+ *   hash code is simply the string length.
+ *   this function takes 40% to 50% of boot-up time.
+ */
+char *fread_string(FILE *fp)
+{
+    char *plast;
+    char c;
+
+    plast = top_string + sizeof(char *);
+    if (plast > &string_space[MAX_STRING - MAX_STRING_LENGTH])
+    {
+	bug("Fread_string: MAX_STRING %d exceeded.", MAX_STRING);
+	exit(1);
+    }
+
+    /*
+     * Skip blanks.
+     * Read first char.
+     */
+    do
+    {
+	c = getc(fp);
+    }
+    while (isspace(c));
+
+    if ((*plast++ = c) == '~')
+	return &str_empty[0];
+
+    for (;;)
+    {
+	/*
+	 * Back off the char type lookup,
+	 *   it was too dirty for portability.
+	 *   -- Furey
+	 */
+
+	switch (*plast = getc(fp))
+	{
+	    default:
+		plast++;
+		break;
+
+	    case EOF:
+		/* temp fix */
+		bug("Fread_string: EOF", 0);
+		return NULL;
+		/* exit(1); */
+		break;
+
+	    case '\n':
+		plast++;
+		*plast++ = '\r';
+		break;
+
+	    case '\r':
+		break;
+
+	    case '~':
+		plast++;
+		{
+		    union
+		    {
+			char *	pc;
+			char	rgc[sizeof(char *)];
+		    } u1;
+		    int ic;
+		    int iHash;
+		    char *pHash;
+		    char *pHashPrev;
+		    char *pString;
+
+		    plast[-1] = '\0';
+		    iHash     = UMIN(MAX_KEY_HASH - 1, plast - 1 - top_string);
+		    for (pHash = string_hash[iHash]; pHash; pHash = pHashPrev)
+		    {
+			for (ic = 0; ic < sizeof(char *); ic++)
+			    u1.rgc[ic] = pHash[ic];
+			pHashPrev = u1.pc;
+			pHash    += sizeof(char *);
+
+			if (top_string[sizeof(char *)] == pHash[0]
+				&&   !strcmp(top_string+sizeof(char *)+1, pHash+1))
+			    return pHash;
+		    }
+
+		    if (fBootDb)
+		    {
+			pString		= top_string;
+			top_string		= plast;
+			u1.pc		= string_hash[iHash];
+			for (ic = 0; ic < sizeof(char *); ic++)
+			    pString[ic] = u1.rgc[ic];
+			string_hash[iHash]	= pString;
+
+			nAllocString += 1;
+			sAllocString += top_string - pString;
+			return pString + sizeof(char *);
+		    }
+		    else
+		    {
+			return str_dup(top_string + sizeof(char *));
+		    }
+		}
+	}
+    }
+}
+
+
+/* Returns a string without \r and ~. */
+char *fix_string(const char *str)
+{
+    static char strfix[MAX_STRING_LENGTH * 2];
+    int i;
+    int o;
+    if (str == NULL)
+	return '\0';
+    for (o = i = 0; str[i+o] != '\0'; i++)
+    {
+	if (str[i+o] == '\r' || str[i+o] == '~')
+	    o++;
+	strfix[i] = str[i+o];
+	if (i >= MAX_STRING_LENGTH * 2 - 1) {
+	    break;
+	}
+    }
+    strfix[i] = '\0';
+    return strfix;
+}
+
+
+char *fread_string_eol(FILE *fp)
+{
+    static bool char_special[256-EOF];
+    char *plast;
+    char c;
+
+    if (char_special[EOF-EOF] != TRUE)
+    {
+	char_special[EOF -  EOF] = TRUE;
+	char_special['\n' - EOF] = TRUE;
+	char_special['\r' - EOF] = TRUE;
+    }
+
+    plast = top_string + sizeof(char *);
+    if (plast > &string_space[MAX_STRING - MAX_STRING_LENGTH])
+    {
+	bug("Fread_string: MAX_STRING %d exceeded.", MAX_STRING);
+	exit(1);
+    }
+
+    /*
+     * Skip blanks.
+     * Read first char.
+     */
+    do
+    {
+	c = getc(fp);
+    }
+    while (isspace(c));
+
+    if ((*plast++ = c) == '\n')
+	return &str_empty[0];
+
+    for (;;)
+    {
+	if (!char_special[ (*plast++ = getc(fp)) - EOF ])
+	    continue;
+
+	switch (plast[-1])
+	{
+	    default:
+		break;
+
+	    case EOF:
+		bug("Fread_string_eol  EOF", 0);
+		exit(1);
+		break;
+
+	    case '\n':  case '\r':
+		{
+		    union
+		    {
+			char *      pc;
+			char        rgc[sizeof(char *)];
+		    } u1;
+		    int ic;
+		    int iHash;
+		    char *pHash;
+		    char *pHashPrev;
+		    char *pString;
+
+		    plast[-1] = '\0';
+		    iHash     = UMIN(MAX_KEY_HASH - 1, plast - 1 - top_string);
+		    for (pHash = string_hash[iHash]; pHash; pHash = pHashPrev)
+		    {
+			for (ic = 0; ic < sizeof(char *); ic++)
+			    u1.rgc[ic] = pHash[ic];
+			pHashPrev = u1.pc;
+			pHash    += sizeof(char *);
+
+			if (top_string[sizeof(char *)] == pHash[0]
+				&&   !strcmp(top_string+sizeof(char *)+1, pHash+1))
+			    return pHash;
+		    }
+
+		    if (fBootDb)
+		    {
+			pString             = top_string;
+			top_string          = plast;
+			u1.pc               = string_hash[iHash];
+			for (ic = 0; ic < sizeof(char *); ic++)
+			    pString[ic] = u1.rgc[ic];
+			string_hash[iHash]  = pString;
+
+			nAllocString += 1;
+			sAllocString += top_string - pString;
+			return pString + sizeof(char *);
+		    }
+		    else
+		    {
+			return str_dup(top_string + sizeof(char *));
+		    }
+		}
+	}
+    }
+}
+
+
+char *fread_string_new(FILE *fp)
+{
+    char c;
+    char pLast;
+    int i = 0;
+    char newStr[MSL];
+
+    /*
+     * Skip blanks.
+     * Read first char.
+     */
+    do
+        c = getc(fp);
+    while (isspace(c));
+
+    if (c == '~')
+	return &str_empty[0];
+
+    newStr[i] = c;
+    i++;
+    for (;;)
+    {
+	pLast = getc(fp);
+
+	if (pLast == '~' || pLast == EOF)
+	    break;
+
+	switch (pLast)
+	{
+	    default:
+	    	newStr[i] = pLast;
+		i++;
+		break;
+
+
+	    case '\n':
+		newStr[i] = '\n';
+		newStr[i + 1] = '\r';
+
+		i += 2;
+		break;
+	}
+    }
+
+    newStr[i] = '\0';
+
+    return str_dup(newStr);
+}
+
+
+char *fread_string_eol_new(FILE *fp)
+{
+    char c;
+    char pLast;
+    int i = 0;
+    char newStr[MSL];
+
+    /*
+     * Skip blanks.
+     * Read first char.
+     */
+    do
+        c = getc(fp);
+    while (isspace(c));
+
+    if (c == '~')
+	return &str_empty[0];
+
+    newStr[i] = c;
+    i++;
+    for (;;)
+    {
+	pLast = getc(fp);
+
+	if (pLast == '\n' || pLast == EOF)
+	    break;
+
+	newStr[i] = pLast;
+	i++;
+    }
+
+    newStr[i] = '\0';
+
+    return str_dup(newStr);
+}
+
+
+/*
+ * Read to end of line (for comments).
+ */
+void fread_to_eol(FILE *fp)
+{
+    char c;
+
+    do
+    {
+	c = getc(fp);
+    }
+    while (c != '\n' && c != '\r');
+
+    do
+    {
+	c = getc(fp);
+    }
+    while (c == '\n' || c == '\r');
+
+    ungetc(c, fp);
+    return;
+}
+
+
+/*
+ * Read one word (into static buffer).
+ */
+char *fread_word(FILE *fp)
+{
+    static char word[MAX_INPUT_LENGTH];
+    char *pword;
+    char cEnd;
+
+    do
+    {
+	cEnd = getc(fp);
+    }
+    while (isspace(cEnd));
+
+    if (cEnd == '\'' || cEnd == '"')
+    {
+	pword   = word;
+    }
+    else
+    {
+	word[0] = cEnd;
+	pword   = word+1;
+	cEnd    = ' ';
+    }
+
+    for (; pword < word + MAX_INPUT_LENGTH; pword++)
+    {
+	*pword = getc(fp);
+	if (cEnd == ' ' ? isspace(*pword) : *pword == cEnd)
+	{
+	    if (cEnd == ' ')
+		ungetc(*pword, fp);
+	    *pword = '\0';
+	    return word;
+	}
+    }
+
+    bug("Fread_word: word too long.", 0);
+    exit(1);
+    return NULL;
+}
+
+
+/*
+ * Allocate some ordinary memory,
+ *   with the expectation of freeing it someday.
+ */
+void *alloc_mem(int sMem)
+{
+#if 0
+    void *pMem;
+    int *magic;
+    int iList;
+
+    sMem += sizeof(*magic);
+
+    for (iList = 0; iList < MAX_MEM_LIST; iList++)
+    {
+        if (sMem <= rgSizeList[iList])
+            break;
+    }
+
+    if (iList == MAX_MEM_LIST)
+    {
+        bug("Alloc_mem: size %d too large.", sMem);
+        exit(1);
+    }
+
+    if (rgFreeList[iList] == NULL)
+    {
+        pMem              = alloc_perm(rgSizeList[iList]);
+    }
+    else
+    {
+        pMem              = rgFreeList[iList];
+        rgFreeList[iList] = * ((void **) rgFreeList[iList]);
+    }
+
+    magic = (int *) pMem;
+    *magic = MAGIC_NUM;
+    pMem += sizeof(*magic);
+
+    return pMem;
+#else
+	return calloc(1,sMem);
+#endif
+}
+
+
+/*
+ * Free some memory.
+ * Recycle it back onto the free list for blocks of that size.
+ */
+void free_mem(void *pMem, int sMem)
+{
+#if 0
+    int iList;
+    int *magic;
+
+    pMem -= sizeof(*magic);
+    magic = (int *) pMem;
+
+    if (*magic != MAGIC_NUM)
+    {
+        bug("Attempt to recycle invalid memory of size %d.",sMem);
+        bug("Magic: %08X.",*magic);
+        bug("Magic NUM: %08X.",MAGIC_NUM);
+        bug((char*) pMem + sizeof(*magic),0);
+	abort();
+        return;
+    }
+
+    *magic = 0;
+    sMem += sizeof(*magic);
+
+    for (iList = 0; iList < MAX_MEM_LIST; iList++)
+    {
+        if (sMem <= rgSizeList[iList])
+            break;
+    }
+
+    if (iList == MAX_MEM_LIST)
+    {
+        bug("Free_mem: size %d too large.", sMem);
+        abort();
+    }
+
+    * ((void **) pMem) = rgFreeList[iList];
+    rgFreeList[iList]  = pMem;
+
+    return;
+#else
+	free(pMem);
+#endif
+}
+
+
+/*
+ * Allocate some permanent memory.
+ * Permanent memory is never freed,
+ * pointers into it may be copied safely.
+ */
+void *alloc_perm(long sMem)
+{
+#if 0
+    static char *pMemPerm;
+    static long iMemPerm;
+    void *pMem;
+
+    /* Scale the memory up to the next highest block size*/
+    while (sMem % sizeof(long) != 0)
+	sMem++;
+
+    /* They asked for too much memory*/
+    if (sMem > MAX_PERM_BLOCK)
+    {
+	bug("Alloc_perm: %d too large.", sMem);
+	abort();
+    }
+
+    if (pMemPerm == NULL || iMemPerm + sMem > MAX_PERM_BLOCK)
+    {
+	iMemPerm = 0;
+	if ((pMemPerm = calloc(1, MAX_PERM_BLOCK)) == NULL)
+	{
+	    perror("Alloc_perm");
+	    exit(1);
+	}
+    }
+
+    pMem        = pMemPerm + iMemPerm;
+    iMemPerm   += sMem;
+    nAllocPerm += 1;
+    sAllocPerm += sMem;
+    return pMem;
+#else
+	return calloc(1,sMem);
+#endif
+}
+
+
+/*
+ * Duplicate a string into dynamic memory.
+ * Fread_strings are read-only and shared.
+ */
+char *str_dup(const char *str)
+{
+    char *str_new;
+
+    if (str[0] == '\0')
+	return &str_empty[0];
+
+    if (str >= string_space && str < top_string)
+	return (char *) str;
+
+    str_new = alloc_mem(strlen(str) + 1);
+    strcpy(str_new, str);
+
+    nAllocString += 1;
+    return str_new;
+}
+
+
+/*
+ * Free a string.
+ * Null is legal here to simplify callers.
+ * Read-only shared strings are not touched.
+ */
+void free_string(char *pstr)
+{
+    if (pstr == NULL
+	    ||   pstr == &str_empty[0]
+	    || (pstr >= string_space && pstr < top_string))
+	return;
+
+    free_mem(pstr, strlen(pstr) + 1);
+    nAllocString -= 1;
+}
+
+
+/*
+ * Stick a little fuzz on a number.
+ */
+int number_fuzzy(int number)
+{
+    switch (number_bits(2))
+    {
+    case 0:  number -= 1; break;
+    case 3:  number += 1; break;
+    }
+
+    return UMAX(1, number);
+}
+
+
+/*
+ * Generate a random number.
+ */
+int number_range(int from, int to)
+{
+    int power;
+    int number;
+
+    if (from == 0 && to == 0)
+	return 0;
+
+    if ((to = to - from + 1) <= 1)
+	return from;
+
+    for (power = 2; power < to; power <<= 1)
+	;
+
+    while ((number = number_mm() & (power -1)) >= to)
+	;
+
+    return from + number;
+}
+
+
+/*
+ * Generate a percentile roll.
+ */
+int number_percent(void)
+{
+    int percent;
+
+    while ((percent = number_mm() & (128-1)) > 99)
+	;
+
+    return percent;
+}
+
+
+/*
+ * Generate a random door.
+ */
+int number_door(void)
+{
+    int door;
+
+    while ((door = number_mm() & (16-1)) >= MAX_DIR)
+	;
+
+    return door;
+}
+
+
+int number_bits(int width)
+{
+    return number_mm() & ((1 << width) - 1);
+}
+
+
+/*
+ * I've gotten too many bad reports on OS-supplied random number generators.
+ * This is the Mitchell-Moore algorithm from Knuth Volume II.
+ * Best to leave the constants alone unless you've read Knuth.
+ * -- Furey
+ */
+
+/* I noticed streaking with this random number generator, so I switched
+   back to the system srandom call.  If this doesn't work for you,
+   define OLD_RAND to use the old system -- Alander */
+
+#if defined (OLD_RAND)
+static  int     rgiState[2+55];
+#endif
+
+void init_mm()
+{
+#if defined (OLD_RAND)
+    int *piState;
+    int iState;
+
+    piState     = &rgiState[2];
+
+    piState[-2] = 55 - 55;
+    piState[-1] = 55 - 24;
+
+    piState[0]  = ((int) current_time) & ((1 << 30) - 1);
+    piState[1]  = 1;
+    for (iState = 2; iState < 55; iState++)
+    {
+        piState[iState] = (piState[iState-1] + piState[iState-2])
+                        & ((1 << 30) - 1);
+    }
+#else
+    srandom(time(NULL)^getpid());
+#endif
+    return;
+}
+
+
+long number_mm(void)
+{
+#if defined (OLD_RAND)
+    int *piState;
+    int iState1;
+    int iState2;
+    int iRand;
+
+    piState             = &rgiState[2];
+    iState1             = piState[-2];
+    iState2             = piState[-1];
+    iRand               = (piState[iState1] + piState[iState2])
+                        & ((1 << 30) - 1);
+    piState[iState1]    = iRand;
+    if (++iState1 == 55)
+        iState1 = 0;
+    if (++iState2 == 55)
+        iState2 = 0;
+    piState[-2]         = iState1;
+    piState[-1]         = iState2;
+    return iRand >> 6;
+#else
+    return random() >> 6;
+#endif
+}
+
+
+/*
+ * Roll some dice.
+ */
+long dice(int number, int size)
+{
+    int idice;
+    long sum;
+
+    switch (size)
+    {
+	case 0: return 0;
+	case 1: return number;
+    }
+
+    for (idice = 0, sum = 0; idice < number; idice++)
+	sum += number_range(1, size);
+
+    return sum;
+}
+
+
+/*
+ * Simple linear interpolation.
+ */
+int interpolate(int level, int value_00, int value_32)
+{
+    return value_00 + level * (value_32 - value_00) / 32;
+}
+
+
+/*
+ * Removes the tildes from a string.
+ * Used for player-entered strings that go into disk files.
+ */
+void smash_tilde(char *str)
+{
+    for (; *str != '\0'; str++)
+    {
+	if (*str == '~')
+	    *str = '-';
+    }
+}
+
+
+/* @@@NIB : 20070123 : Returns < 0 if A < B, > 0 if A > B, 0 if A = B*/
+int str_cmp(const char *astr, const char *bstr)
+{
+    char ch;
+    if (astr == NULL)
+    {
+	bug("Str_cmp: null astr.", 0);
+	return -1;
+    }
+
+    if (bstr == NULL)
+    {
+	bug("Str_cmp: null bstr.", 0);
+	return 1;
+    }
+
+    for (; *astr || *bstr; astr++, bstr++) {
+	if ((ch = (LOWER(*astr) - LOWER(*bstr))))
+	    return ch;
+    }
+
+    return 0;
+}
+
+
+/*
+ * Compare strings, case insensitive, for prefix matching.
+ * Return TRUE if astr not a prefix of bstr
+ *   (compatibility with historical functions).
+ */
+bool str_prefix(const char *astr, const char *bstr)
+{
+    if (astr == NULL)
+    {
+	bug("Strn_cmp: null astr.", 0);
+	return TRUE;
+    }
+
+    if (bstr == NULL)
+    {
+	bug("Strn_cmp: null bstr.", 0);
+	return TRUE;
+    }
+
+    for (; *astr; astr++, bstr++)
+    {
+	if (LOWER(*astr) != LOWER(*bstr))
+	    return TRUE;
+    }
+
+    return FALSE;
+}
+
+
+/*
+ * Compare strings, case insensitive, for match anywhere.
+ * Returns TRUE is astr not part of bstr.
+ *   (compatibility with historical functions).
+ */
+bool str_infix(const char *astr, const char *bstr)
+{
+    int sstr1;
+    int sstr2;
+    int ichar;
+    char c0;
+
+    if ((c0 = LOWER(astr[0])) == '\0')
+	return FALSE;
+
+    sstr1 = strlen(astr);
+    sstr2 = strlen(bstr);
+
+    for (ichar = 0; ichar <= sstr2 - sstr1; ichar++)
+    {
+	if (c0 == LOWER(bstr[ichar]) && !str_prefix(astr, bstr + ichar))
+	    return FALSE;
+    }
+
+    return TRUE;
+}
+
+
+/*
+ * Compare strings, case insensitive, for suffix matching.
+ * Return TRUE if astr not a suffix of bstr
+ *   (compatibility with historical functions).
+ */
+bool str_suffix(const char *astr, const char *bstr)
+{
+    int sstr1;
+    int sstr2;
+
+    sstr1 = strlen(astr);
+    sstr2 = strlen(bstr);
+    if (sstr1 <= sstr2 && !str_cmp(astr, bstr + sstr2 - sstr1))
+	return FALSE;
+    else
+	return TRUE;
+}
+
+void str_lower(register char *src,register char *dest)
+{
+	if(!dest) dest = src;
+	while(*src) {
+		*dest++ = LOWER(*src);
+		++src;
+	}
+	*dest = 0;
+}
+
+void str_upper(register char *src,register char *dest)
+{
+	if(!dest) dest = src;
+	while(*src) {
+		*dest++ = UPPER(*src);
+		++src;
+	}
+	*dest = 0;
+}
+
+
+
+
+
+/*
+ * Returns an initial-capped string.
+ */
+char *capitalize(const char *str)
+{
+    static char strcap[MAX_STRING_LENGTH];
+    int i;
+
+    for (i = 0; str[i] != '\0'; i++)
+	strcap[i] = LOWER(str[i]);
+    strcap[i] = '\0';
+    strcap[0] = UPPER(strcap[0]);
+    return strcap;
+}
+
+
+/*
+ * Append a string to a file.
+ */
+void append_file(CHAR_DATA *ch, char *file, char *str)
+{
+    FILE *fp;
+
+    if (IS_NPC(ch) || str[0] == '\0')
+	return;
+
+    fclose(fpReserve);
+    if ((fp = fopen(file, "a")) == NULL)
+    {
+	perror(file);
+	send_to_char("Could not open the file!\n\r", ch);
+    }
+    else
+    {
+	fprintf(fp, "[%8ld] %s: %s\n",
+	    ch->in_room ? ch->in_room->vnum : 0, ch->name, str);
+	fclose(fp);
+    }
+
+    fpReserve = fopen(NULL_FILE, "r");
+    return;
+}
+
+
+void bug(const char *str, int param)
+{
+    char buf[MAX_STRING_LENGTH];
+
+    if (fpArea != NULL)
+    {
+	int iLine;
+	int iChar;
+
+	if (fpArea == stdin)
+	{
+	    iLine = 0;
+	}
+	else
+	{
+	    iChar = ftell(fpArea);
+	    fseek(fpArea, 0, 0);
+	    for (iLine = 0; ftell(fpArea) < iChar; iLine++)
+	    {
+		while (getc(fpArea) != '\n')
+		    ;
+	    }
+	    fseek(fpArea, iChar, 0);
+	}
+
+	sprintf(buf, "[*****] FILE: %s LINE: %d", strArea, iLine);
+	log_string(buf);
+    }
+
+    strcpy(buf, "[*****] BUG: ");
+    sprintf(buf + strlen(buf), str, param);
+    log_string(buf);
+}
+
+
+/*
+ * Writes a string to the log.
+ */
+void log_string(const char *str)
+{
+    char *strtime;
+
+    strtime                    = ctime(&current_time);
+    strtime[strlen(strtime)-1] = '\0';
+    printf("%s :: %s\n", strtime, str);
+    return;
+}
+
+void log_stringf(const char *fmt,...)
+{
+	char buf[2 * MSL];
+	va_list args;
+	va_start (args, fmt);
+	vsprintf (buf, fmt, args);
+	va_end (args);
+
+	log_string (buf);
+}
+
+
+/*
+ * This function is here to aid in debugging.
+ * If the last expression in a function is another function call,
+ *   gcc likes to generate a JMP instead of a CALL.
+ * This is called "tail chaining."
+ * It hoses the debugger call stack for that call.
+ * So I make this the last call in certain critical functions,
+ *   where I really need the call stack to be right for debugging!
+ *
+ * If you don't understand this, then LEAVE IT ALONE.
+ * Don't remove any calls to tail_chain anywhere.
+ *
+ * -- Furey
+ */
+void tail_chain(void)
+{
+    return;
+}
+
+
+/* Load reboot objects such as shards*/
+void load_reboot_objs()
+{
+    int counter;
+    OBJ_DATA *obj;
+    ROOM_INDEX_DATA *pRoom;
+
+    for (counter = 0; counter < 3; counter++)
+    {
+        obj = create_object(get_obj_index(OBJ_VNUM_SHARD), 0, TRUE);
+        pRoom = get_random_room(NULL, 0);
+
+        obj_to_room(obj, pRoom);
+    }
+}
+
+
+NPC_SHIP_INDEX_DATA *get_npc_ship_index(long vnum)
+{
+    NPC_SHIP_INDEX_DATA *npc_ship;
+
+    for (npc_ship  = ship_index_hash[vnum % MAX_KEY_HASH];
+	  npc_ship != NULL;
+	  npc_ship  = npc_ship->next)
+    {
+	if (npc_ship->vnum == vnum)
+	    return npc_ship;
+    }
+
+    if (fBootDb)
+    {
+	bug("Get_npc_ship_index: bad vnum %ld.", vnum);
+        return NULL;
+	/*exit(1);*/
+    }
+
+    return NULL;
+}
+
+
+void reset_npc_sailing_boats()
+{
+#if 0
+    NPC_SHIP_DATA *npc_ship;
+    NPC_SHIP_INDEX_DATA *npc_ship_index;
+    AREA_DATA *pArea;
+    int i;
+    long index;
+
+    log_string("Resetting npc boats...");
+    if ((pArea = get_wilderness_area()) == NULL)
+	return;
+
+/*
+    if (plith_airship == NULL)
+    {
+	 Plith airship is vnum 1*/
+	npc_ship = create_npc_sailing_boat(1);
+	plith_airship = npc_ship;
+
+	/* Put in Town Square of Plith*/
+	obj_to_room(npc_ship->ship->ship, get_room_index(ROOM_VNUM_PLITH_AIRSHIP));
+    }
+*/
+
+    for(i = 2; i <= top_vnum_npc_ship; i++) {
+	npc_ship_index = ship_index_hash[ i ];
+
+	if (npc_ship_index == NULL)
+	    continue;
+
+	log_string("Resetting boat");
+	npc_ship = create_npc_sailing_boat(npc_ship_index->vnum);
+
+	index = (long)((long)npc_ship_index->original_y *
+	               (long)pArea->map_size_x +
+			   (long)npc_ship_index->original_x + (long)pArea->min_vnum + WILDERNESS_VNUM_OFFSET);
+
+	/* If the npc airship then set airship*/
+	if (npc_ship->pShipData->npc_type == NPC_SHIP_AIR_SHIP)
+	{
+	    plith_airship = npc_ship;
+	    index = ROOM_VNUM_TEMPLE;
+	}
+
+	if (get_room_index(index) == NULL)
+	{
+	    bug("While resetting npc boats, the room index was NULL.", index);
+	    continue;
+	}
+
+	obj_to_room(npc_ship->ship->ship, get_room_index(index));
+    }
+#endif
+}
+
+
+AREA_DATA *get_wilderness_area()
+{
+    AREA_DATA *temp;
+
+    for (temp = area_first; temp != NULL; temp = temp->next)
+    {
+	if (!str_cmp(temp->name, "Wilderness"))
+	    break;
+    }
+
+    if (temp == NULL)
+	log_string("Couldn't find area Wilderness.");
+
+    return temp;
+}
+
+void do_memory(CHAR_DATA *ch, char *argument)
+{
+    char buf[MAX_STRING_LENGTH];
+    int i = 0, i2 = 0, num_pcs = 0;
+    float mb, mbf;
+    CHAR_DATA *fch;
+    ROOM_INDEX_DATA *room;
+    MOB_INDEX_DATA *mob_i;
+    OBJ_INDEX_DATA *obj_i;
+    CHAT_ROOM_DATA *chat;
+    AFFECT_DATA *af;
+    EXIT_DATA *exit;
+    DESCRIPTOR_DATA *d;
+    AREA_DATA *area;
+    /*EXTRA_DESCR_DATA *ed;*/
+    /*RESET_DATA *reset;*/
+    /* VIZZWILDS*/
+    WILDS_DATA *wilds;
+    WILDS_TERRAIN *terrain;
+    WILDS_VLINK *vlink;
+
+    send_to_char("{YType      Amt        MBytes          FreeAmt    FreeMBytes{x\n\r", ch);
+    send_to_char("{Y----------------------------------------------------------{x\n\r", ch);
+    /* basics */
+
+    /* Descriptors */
+    i = 0;
+    for (d = descriptor_free; d != NULL; d = d->next) {
+      i++;
+    }
+    mb = top_descriptor * (float)(sizeof(*d))/1000000;
+    mbf = i * (float)(sizeof(*d))/1000000;
+    sprintf(buf, "Descrp    %-10ld %-15.3f %-10d %-15.3f\n\r",
+        top_descriptor,
+        mb,
+        i,
+        mbf);
+    send_to_char(buf, ch);
+
+    /* rooms */
+    i = 0;
+    for (room = room_index_free; room != NULL; room = room->next) {
+      i++;
+    }
+    mb = top_room * (float)(sizeof(*room))/1000000;
+    mbf = i * (float)(sizeof(*room))/1000000;
+    sprintf(buf, "Rooms     %-10ld %-15.3f %-10d %-15.3f\n\r",
+        top_room,
+        mb,
+        i,
+        mbf);
+    send_to_char(buf, ch);
+
+    /* Mobiles */
+    i = 0;  i2 = 0;
+    for (fch = char_list; fch != NULL; fch = fch->next)
+    {
+  if (fch->pcdata != NULL)
+      num_pcs++;
+  else
+    i++;
+    }
+    for (fch = char_free; fch != NULL; fch = fch->next)
+  i2++;
+
+    mb = i * (float)(sizeof(*fch))/1000000;
+    mbf = i2 * (float)(sizeof(*fch))/1000000;
+    sprintf(buf,  "Mobs      %-10d %-15.3f %-10d %-15.3f\n\r",
+        i,
+        mb,
+        i2,
+        mbf);
+    send_to_char(buf ,ch);
+
+    i = 0;
+    for (af = affect_free; af != NULL; af = af->next) {
+      i++;
+    }
+    mb = top_affect * (float)(sizeof(*af))/1000000;
+    mbf = i * (float)(sizeof(*af))/1000000;
+    sprintf(buf, "Affects   %-10ld %-15.3f %-10d %-15.3f\n\r",
+        top_affect,
+        mb,
+        i,
+        mbf);
+    send_to_char(buf, ch);
+
+    /* areas */
+    i = 0;
+    for (area = area_free; area != NULL; area = area->next) {
+      i++;
+    }
+    mb = top_area * (float)(sizeof(*area))/1000000;
+    mbf = i * (float)(sizeof(*area))/1000000;
+    sprintf(buf, "Areas     %-10ld %-15.3f %-10d %-15.3f\n\r",
+        top_area,
+        mb,
+        i,
+        mbf);
+    send_to_char(buf, ch);
+
+
+    /*
+     * Chat
+     */
+   /* chat rooms */
+    i = 0;
+    for (chat = chat_room_free; chat != NULL; chat = chat->next) {
+      i++;
+    }
+    mb = top_chatroom * (float)(sizeof(*chat))/1000000;
+    mb = i * (float)(sizeof(*chat))/1000000;
+    sprintf(buf, "Chats     %-10ld %-15.3f %-10d %-15.3f\n\r",
+        top_chatroom,
+        mb,
+        i,
+        mbf);
+    send_to_char(buf, ch);
+
+    /*
+     * OLC
+     */
+
+    /* mob index */
+    for (mob_i = mob_index_free; mob_i != NULL; mob_i = mob_i->next) {
+      i++;
+    }
+    mb = top_mob_index * (float)(sizeof(*mob_i))/1000000;
+    mbf = i * (float)(sizeof(*mob_i))/1000000;
+    sprintf(buf, "Mobs_indx %-10ld %-15.3f %-10d %-15.3f\n\r",
+        top_mob_index,
+        mb,
+        i,
+        mbf);
+    send_to_char(buf, ch);
+
+    /* obj index */
+    for (obj_i = obj_index_free; obj_i != NULL; obj_i = obj_i->next) {
+      i++;
+    }
+    mb = top_obj_index * (float)(sizeof(*obj_i))/1000000;
+    mbf = i * (float)(sizeof(*obj_i))/1000000;
+    sprintf(buf, "Obj_indx  %-10ld %-15.3f %-10d %-15.3f\n\r",
+        top_obj_index,
+        mb,
+        i,
+        mbf);
+    send_to_char(buf, ch);
+
+    /* Exits */
+    i = 0;
+    for (exit = exit_free; exit != NULL; exit = exit->next) {
+      i++;
+    }
+    mb = top_exit * (float)(sizeof(*exit))/1000000;
+    mbf = i * (float)(sizeof(*exit))/1000000;
+    sprintf(buf, "Exits     %-10ld %-15.3f %-10d %-15.3f\n\r",
+        top_exit,
+        mb,
+        i,
+        mbf);
+    send_to_char(buf, ch);
+
+    /* VIZZWILDS*/
+    /* wilds */
+    for (wilds = wilds_free; wilds != NULL; wilds = wilds->next) {
+      i++;
+    }
+    mb = top_wilds * (float)(sizeof(*wilds))/1000000;
+    mbf = i * (float)(sizeof(*wilds))/1000000;
+    sprintf(buf, "Wilds     %-10ld %-15.3f %-10d %-15.3f\n\r",
+        top_wilds,
+       	mb,
+        i,
+        mbf);
+    send_to_char(buf, ch);
+
+    /* wilds terrains */
+    for (terrain = wilds_terrain_free; terrain != NULL; terrain = terrain->next) {
+      i++;
+    }
+    mb = top_wilds_terrain * (float)(sizeof(*terrain))/1000000;
+    mbf = i * (float)(sizeof(*terrain))/1000000;
+    sprintf(buf, "Terrains  %-10ld %-15.3f %-10d %-15.3f\n\r",
+        top_wilds_terrain,
+       	mb,
+        i,
+        mbf);
+    send_to_char(buf, ch);
+
+    mb = top_wilds_vroom * (float)(sizeof(*room))/1000000;
+    sprintf(buf, "Vrooms    %-10ld %-15.3f\n\r",
+        top_wilds_vroom, mb);
+    send_to_char(buf, ch);
+
+    /* wilds vlinks */
+    for (vlink = wilds_vlink_free; vlink != NULL; vlink = vlink->next) {
+      i++;
+    }
+    mb = top_wilds_vlink * (float)(sizeof(*vlink))/1000000;
+    mbf = i * (float)(sizeof(*vlink))/1000000;
+    sprintf(buf, "VLinks    %-10ld %-15.3f %-10d %-15.3f\n\r",
+        top_wilds_vlink,
+        mb,
+        i,
+        mbf);
+    send_to_char(buf, ch);
+
+/*
+    sprintf(buf, "Ship_crew %ld\n\r", top_ship_crew);
+    send_to_char(buf, ch);
+
+
+    sprintf(buf, "Wayp      %ld\n\r", top_waypoint);
+    send_to_char(buf, ch);
+*/
+
+
+    sprintf(buf, "Strings   %-10d %-15.3f\n\r",
+        nAllocString,
+        (float) sAllocString/1000000);
+    send_to_char(buf, ch);
+
+    send_to_char("{Y----------------------------------------------------------{x\n\r", ch);
+
+    sprintf(buf, "Total     %-10d %-15.3f\n\r",
+        nAllocPerm,
+        (float) sAllocPerm/1000000);
+    send_to_char(buf, ch);
+}
+
+/* @@@NIB : 20070123 : does what it says...*/
+char *skip_whitespace(register char *str)
+{
+	if(str) while(isspace(*str)) ++str;
+	return str;
+}
+
+void strip_newline(char *buf, bool append)
+{
+	int len = strlen(buf);
+	while(len > 0 && isspace(buf[len-1])) --len;
+	if(append) {
+		buf[len++] = '\n';
+		buf[len++] = '\r';
+	}
+	buf[len] = 0;
+}
+
+void check_area_versions(void)
+{
+	AREA_DATA *area;
+
+	for (area = area_first; area; area = area->next) {
+		if(	area->version_area != VERSION_AREA ||
+			area->version_mobile != VERSION_MOBILE ||
+			area->version_object != VERSION_OBJECT ||
+			area->version_room != VERSION_ROOM ||
+			area->version_token != VERSION_TOKEN ||
+			area->version_script != VERSION_SCRIPT ||
+			area->version_wilds != VERSION_WILDS) {
+			save_area_new(area);
+		}
+	}
+}
+
+char *fread_string_len(FILE *fp)
+{
+    char *plast;
+    char c;
+    long i,len;
+
+    plast = top_string + sizeof(char *);
+    if (plast > &string_space[MAX_STRING - MAX_STRING_LENGTH])
+    {
+	bug("Fread_string_new: MAX_STRING %d exceeded.", MAX_STRING);
+	exit(1);
+    }
+
+	/* Taken from fread_number and reduced to just positive numbers*/
+	/* Skip whitespaces*/
+    do
+	c = getc(fp);
+    while (isspace(c));
+
+    len = 0;
+
+    if (!isdigit(c)) {
+	bug("Fread_string_new: bad format (%c).", c);
+	exit(1);
+    }
+
+    while (isdigit(c))
+    {
+	len = len * 10 + c - '0';
+	c      = getc(fp);
+    }
+
+    ungetc(c, fp);
+
+	if(len < 1 || len > MSL) {
+		bug("Fread_string_new: bad string size (%d).", len);
+		exit(1);
+	}
+
+
+    if ((*plast++ = c) == '~')
+	return &str_empty[0];
+
+    for (i = 0;i < len;i++)
+    {
+	/*
+	 * Back off the char type lookup,
+	 *   it was too dirty for portability.
+	 *   -- Furey
+	 */
+
+	switch (*plast = getc(fp)) {
+	    default:
+		plast++;
+		break;
+
+	    case EOF:
+		/* temp fix */
+		bug("Fread_string_new: EOF", 0);
+		return NULL;
+		/* exit(1); */
+		break;
+	}
+    }
+	plast++;
+	{
+	    union
+	    {
+		char *	pc;
+		char	rgc[sizeof(char *)];
+	    } u1;
+	    int ic;
+	    int iHash;
+	    char *pHash;
+	    char *pHashPrev;
+	    char *pString;
+
+	    plast[-1] = '\0';
+	    iHash     = UMIN(MAX_KEY_HASH - 1, plast - 1 - top_string);
+	    for (pHash = string_hash[iHash]; pHash; pHash = pHashPrev)
+	    {
+		for (ic = 0; ic < sizeof(char *); ic++)
+		    u1.rgc[ic] = pHash[ic];
+		pHashPrev = u1.pc;
+		pHash    += sizeof(char *);
+
+		if (top_string[sizeof(char *)] == pHash[0]
+			&&   !strcmp(top_string+sizeof(char *)+1, pHash+1))
+		    return pHash;
+	    }
+
+	    if (fBootDb)
+	    {
+		pString		= top_string;
+		top_string		= plast;
+		u1.pc		= string_hash[iHash];
+		for (ic = 0; ic < sizeof(char *); ic++)
+		    pString[ic] = u1.rgc[ic];
+		string_hash[iHash]	= pString;
+
+		nAllocString += 1;
+		sAllocString += top_string - pString;
+		return pString + sizeof(char *);
+	    }
+	    else
+	    {
+		return str_dup(top_string + sizeof(char *));
+	    }
+	}
+
+}
+
+char *fread_file(FILE *fp)
+{
+    char *plast;
+
+    plast = top_string + sizeof(char *);
+    if (plast > &string_space[MAX_STRING - MAX_STRING_LENGTH])
+    {
+	bug("Fread_string_new: MAX_STRING %d exceeded.", MAX_STRING);
+	exit(1);
+    }
+
+	while(!feof(fp) && !ferror(fp)) {
+		*plast++ = getc(fp);
+	}
+
+	plast++;
+	{
+	    union
+	    {
+		char *	pc;
+		char	rgc[sizeof(char *)];
+	    } u1;
+	    int ic;
+	    int iHash;
+	    char *pHash;
+	    char *pHashPrev;
+	    char *pString;
+
+	    plast[-1] = '\0';
+	    iHash     = UMIN(MAX_KEY_HASH - 1, plast - 1 - top_string);
+	    for (pHash = string_hash[iHash]; pHash; pHash = pHashPrev)
+	    {
+		for (ic = 0; ic < sizeof(char *); ic++)
+		    u1.rgc[ic] = pHash[ic];
+		pHashPrev = u1.pc;
+		pHash    += sizeof(char *);
+
+		if (top_string[sizeof(char *)] == pHash[0]
+			&&   !strcmp(top_string+sizeof(char *)+1, pHash+1))
+		    return pHash;
+	    }
+
+	    if (fBootDb)
+	    {
+		pString		= top_string;
+		top_string		= plast;
+		u1.pc		= string_hash[iHash];
+		for (ic = 0; ic < sizeof(char *); ic++)
+		    pString[ic] = u1.rgc[ic];
+		string_hash[iHash]	= pString;
+
+		nAllocString += 1;
+		sAllocString += top_string - pString;
+		return pString + sizeof(char *);
+	    }
+	    else
+	    {
+		return str_dup(top_string + sizeof(char *));
+	    }
+	}
+}
+
+char *fread_filename(char *filename)
+{
+	FILE *fp;
+	char *str;
+
+	if(!filename || !*filename || !(fp = fopen(filename,"r"))) return NULL;
+
+	str = fread_file(fp);
+
+	fclose(fp);
+
+	return str;
+}
+
+ROOM_INDEX_DATA *create_virtual_room_nouid(ROOM_INDEX_DATA *source, bool links)
+{
+	ROOM_INDEX_DATA *vroom;
+	EXTRA_DESCR_DATA *ed, *ed2;
+	CONDITIONAL_DESCR_DATA *cd, *cd2;
+	OBJ_DATA *obj, *obj2;
+	EXIT_DATA *ex, *ex2;
+	int door;
+
+	if(!source) return NULL;
+
+	if(source->source) source = source->source;
+
+	/* Can't clone a purely virtual room... ever*/
+	if(IS_SET(source->room2_flags,ROOM_VIRTUAL_ROOM)) return NULL;
+
+	vroom = new_room_index();
+	if(!vroom)
+		return NULL;
+
+	vroom->source = source;
+	vroom->area = source->area;
+	vroom->vnum = source->vnum;
+	vroom->id[0] = 0;
+	vroom->id[1] = 0;	/* ID will be assigned using the wrapper function or called by the persistant loader*/
+
+	vroom->name = str_dup(source->name);
+	vroom->description = str_dup(source->description);
+	vroom->room_flags = source->room_flags;
+	vroom->room2_flags = source->room2_flags | ROOM_VIRTUAL_ROOM;
+	vroom->sector_type = source->sector_type;
+	vroom->viewwilds = source->viewwilds;
+	vroom->w = source->w;
+	vroom->x = source->x;
+	vroom->y = source->y;
+	vroom->z = source->z;
+	vroom->owner = str_dup("");
+	vroom->heal_rate = source->heal_rate;
+	vroom->mana_rate = source->mana_rate;
+	vroom->move_rate = source->move_rate;
+	vroom->visited = 0;
+
+	/* Copy extra descriptions*/
+	for(ed = source->extra_descr; ed; ed = ed->next) {
+		ed2 = new_extra_descr();
+		ed2->keyword = str_dup(ed->keyword);
+		ed2->description = str_dup(ed->description);
+
+		ed2->next = vroom->extra_descr;
+		vroom->extra_descr = ed2;
+	}
+
+	/* Copy condition descriptions*/
+	for(cd = source->conditional_descr; cd; cd = cd->next) {
+		cd2 = new_conditional_descr();
+		cd2->condition = cd->condition;
+		cd2->description = str_dup(cd->description);
+		cd2->phrase = cd->phrase;
+
+		cd2->next = vroom->conditional_descr;
+		vroom->conditional_descr = cd2;
+	}
+
+	/* Copy index variables*/
+	variable_copylist(&source->index_vars,&vroom->progs->vars,false);
+
+	/* Clone non-takable objects, no contents though...*/
+	for(obj = source->contents; obj; obj = obj->next_content) if(!CAN_WEAR(obj,ITEM_TAKE)) {
+		obj2 = create_object(obj->pIndexData,0,FALSE);
+		clone_object(obj,obj2);
+
+		obj_to_room(obj2,vroom);
+	}
+
+	/* Create the exit link assignments... this will ONLY ever be used by blueprints*/
+	/*  The links will only store the room vnums, akin to the boot process*/
+	/*  All exits will be resolved after all rooms are created*/
+	/*  Vlinks are stripped as well as non-environment exits leading nowhere*/
+	if(links) {
+		for(door = 0; door < MAX_DIR; door++)
+			if((ex = source->exit[door]) &&
+			!IS_SET(ex->exit_info,EX_VLINK) &&
+			(IS_SET(ex->exit_info,EX_ENVIRONMENT) || ex->u1.to_room)) {
+
+			vroom->exit[door] = ex2 = new_exit();
+
+			ex2->u1.vnum = ex2->u1.to_room ? ex2->u1.to_room->vnum : 0;
+			ex2->exit_info = ex->exit_info;
+			ex2->keyword = str_dup(ex->keyword);
+			ex2->short_desc = str_dup(ex->short_desc);
+			ex2->long_desc = str_dup(ex->long_desc);
+			ex2->rs_flags = ex->rs_flags;
+			ex2->orig_door = ex->orig_door;
+			ex2->door.strength = ex->door.strength;
+			ex2->door.material = str_dup(ex->door.material);
+			ex2->door.key_vnum = ex->door.key_vnum;
+			ex2->from_room = vroom;
+		}
+	}
+
+	vroom->next = source->clones;
+	source->clones = vroom;
+	return vroom;
+}
+
+ROOM_INDEX_DATA *create_virtual_room(ROOM_INDEX_DATA *source,bool links)
+{
+	ROOM_INDEX_DATA *vroom = create_virtual_room_nouid(source,links);
+
+	get_vroom_id(vroom);
+
+	return vroom;
+}
+
+ROOM_INDEX_DATA *get_clone_room(register ROOM_INDEX_DATA *source, register unsigned long id1, register unsigned long id2)
+{
+	register ROOM_INDEX_DATA *room;
+	if(!source) return NULL;
+
+	if(source->source) return get_clone_room(source->source,id1,id2);
+
+	/* Can't clone a purely virtual room... ever*/
+	if(IS_SET(source->room2_flags,ROOM_VIRTUAL_ROOM)) return NULL;
+
+	for(room = source->clones; room; room = room->next) {
+		if(room->id[0] == id1 && room->id[1] == id2)
+			return room;
+	}
+
+	return NULL;
+}
+
+bool room_is_clone(ROOM_INDEX_DATA *room)
+{
+	return (room && room->source);
+}
+
+bool extract_clone_room(ROOM_INDEX_DATA *room, unsigned long id1, unsigned long id2)
+{
+	ROOM_INDEX_DATA **rlink, *clone;
+	ROOM_INDEX_DATA *dest, *environ;
+	CHAR_DATA *ch, *ch_next;
+	OBJ_DATA *obj, *obj_next;
+	int door, rev_door, pass;
+	char buf[MSL];
+
+	if(!room) return false;
+
+	if(room->source) room = room->source;
+
+	sprintf(buf,"extract_clone_room(%lu, %lu, %lu) called", room->vnum, id1, id2);
+	wiznet(buf, NULL, NULL, WIZ_TESTING, 0, 0);
+
+
+/*	if(room->vnum == 11001) return false;	  Oh, hell, no*/
+
+	/* Remove the clone from the chain*/
+	rlink = &room->clones;
+	for(clone = room->clones; clone; rlink = &clone->next, clone = clone->next) {
+		if(clone->id[0] == id1 && clone->id[1] == id2) {
+			if(PROG_FLAG(clone,PROG_AT)) return false;
+			*rlink = clone->next;
+			break;
+		}
+	}
+
+	if(!clone) {
+		sprintf(buf,"extract_clone_room(%lu, %lu, %lu) clone not found", room->vnum, id1, id2);
+		wiznet(buf, NULL, NULL, WIZ_TESTING, 0, 0);
+		return false;
+	}
+
+	/* Prevents infinite loops*/
+	if(clone->progs && PROG_FLAG(clone,PROG_NODESTRUCT)) {
+		sprintf(buf,"extract_clone_room(%lu, %lu, %lu) clone already being destructed", room->vnum, id1, id2);
+		wiznet(buf, NULL, NULL, WIZ_TESTING, 0, 0);
+		return false;
+	}
+
+	/* Do extraction stuff*/
+	if(clone->progs && room->progs && room->progs->progs) {
+		sprintf(buf,"extract_clone_room(%lu, %lu, %lu) calling EXTRACT trigger", room->vnum, id1, id2);
+		wiznet(buf, NULL, NULL, WIZ_TESTING, 0, 0);
+		SET_BIT(clone->progs->entity_flags,PROG_NODESTRUCT);
+		p_percent_trigger(NULL, NULL, clone, NULL, NULL, NULL, NULL, TRIG_EXTRACT);
+	}
+
+	/* Destroy all exits*/
+	for(door = 0; door < MAX_DIR; door++) if(clone->exit[door]) {
+		sprintf(buf,"extract_clone_room(%lu, %lu, %lu) removing door %d", room->vnum, id1, id2, door);
+		wiznet(buf, NULL, NULL, WIZ_TESTING, 0, 0);
+		if((dest = clone->exit[door]->u1.to_room)) {
+			rev_door = rev_dir[door];
+
+			if(dest->exit[rev_door] && dest->exit[rev_door]->u1.to_room &&
+				dest->exit[rev_door]->u1.to_room == clone) {
+				free_exit(dest->exit[rev_door]);
+				dest->exit[rev_door] = NULL;
+			}
+		}
+
+		free_exit(clone->exit[door]);
+		clone->exit[door] = NULL;
+	}
+
+
+	environ = get_environment_deep(clone);
+	if(!environ) environ = get_room_index(8);
+
+	if(environ)
+		sprintf(buf,"extract_clone_room(%lu, %lu, %lu) environ (%lu,%lu,%lu)", room->vnum, id1, id2, environ->vnum, environ->id[0], environ->id[1]);
+	else
+		sprintf(buf,"extract_clone_room(%lu, %lu, %lu) environ == NULL!", room->vnum, id1, id2);
+	wiznet(buf, NULL, NULL, WIZ_TESTING, 0, 0);
+
+	/* Dump objects into the environment*/
+	pass = 0;
+	while(clone->contents) {
+		for(obj = clone->contents; obj; obj = obj_next) {
+			obj_next = obj->next_content;
+
+			sprintf(buf,"extract_clone_room(%lu, %lu, %lu) removing object (%lu,%lu,%lu)", room->vnum, id1, id2, VNUM(obj), obj->id[0], obj->id[1]);
+			wiznet(buf, NULL, NULL, WIZ_TESTING, 0, 0);
+
+			if(obj->item_type == ITEM_CORPSE_NPC || obj->item_type == ITEM_CORPSE_PC || CAN_WEAR(obj, ITEM_TAKE)) {
+				obj_from_room(obj);
+				obj_to_room(obj,environ);
+			} else {
+				extract_obj(obj);
+			}
+		}
+	}
+
+	clone->contents = NULL;
+
+
+
+	/* Transfer all players in the clone to its environment or the Beginning*/
+	environ = get_environment_deep(clone);
+	if(!environ) environ = get_room_index(11001);
+
+	if(environ)
+		sprintf(buf,"extract_clone_room(%lu, %lu, %lu) environ (%lu,%lu,%lu)", room->vnum, id1, id2, environ->vnum, environ->id[0], environ->id[1]);
+	else
+		sprintf(buf,"extract_clone_room(%lu, %lu, %lu) environ == NULL!", room->vnum, id1, id2);
+	wiznet(buf, NULL, NULL, WIZ_TESTING, 0, 0);
+
+	/* Emptying the room of players will not set off the wilderness check in char_from_room*/
+	/*	since no wilderness room will EVER use this.*/
+	for(ch = clone->people; ch; ch = ch_next) {
+		ch_next = ch->next_in_room;
+
+		sprintf(buf,"extract_clone_room(%lu, %lu, %lu) removing mob %s (%lu,%lu,%lu)", room->vnum, id1, id2, ch->short_descr, VNUM(ch), ch->id[0], ch->id[1]);
+		wiznet(buf, NULL, NULL, WIZ_TESTING, 0, 0);
+
+		char_from_room(ch);
+		char_to_room(ch,environ);
+	}
+
+	clone->people = NULL;
+
+	sprintf(buf,"extract_clone_room(%lu, %lu, %lu) removing from environment", room->vnum, id1, id2);
+	wiznet(buf, NULL, NULL, WIZ_TESTING, 0, 0);
+
+	/* Remove from its environment*/
+	room_from_environment(clone);
+	free_room_index(clone);
+
+	sprintf(buf,"extract_clone_room(%lu, %lu, %lu) complete", room->vnum, id1, id2);
+	wiznet(buf, NULL, NULL, WIZ_TESTING, 0, 0);
+
+	return true;
+}
+
+
+#if 0
+void fwrite_persist_obj_new(OBJ_DATA *obj, FILE *fp, int iNest)
+{
+	EXTRA_DESCR_DATA *ed;
+	AFFECT_DATA *paf;
+	char buf[MSL];
+
+	/*
+	* Slick recursion to write lists backwards,
+	* so loading them will load in forwards order.
+	*/
+	if (obj->next_content)
+		fwrite_persist_obj_new(obj->next_content, fp, iNest);
+
+	fprintf(fp, "#OBJECT\n");
+
+	fprintf(fp, "Vnum %ld\n", obj->pIndexData->vnum);
+	fprintf(fp, "UId %ld\n", obj->id[0]);
+	fprintf(fp, "UId2 %ld\n", obj->id[1]);
+	fprintf(fp, "Version %d\n", VERSION_OBJECT);
+
+	fprintf(fp, "Nest %d\n", iNest);
+
+	/* these data are only used if they do not match the defaults */
+	fprintf(fp, "Name %s~\n",		obj->name);
+	fprintf(fp, "ShD  %s~\n",		obj->short_descr);
+	fprintf(fp, "Desc %s~\n",		obj->description);
+	fprintf(fp, "FullD %s~\n",		fix_string(obj->full_description));
+	fprintf(fp, "ExtF %ld\n",		obj->extra_flags);
+	fprintf(fp, "Ext2F %ld\n",		obj->extra2_flags);
+	fprintf(fp, "Ext3F %ld\n",		obj->extra3_flags);
+	fprintf(fp, "Ext4F %ld\n",		obj->extra4_flags);
+	fprintf(fp, "WeaF %d\n",		obj->wear_flags);
+	fprintf(fp, "Ityp %d\n",		obj->item_type);
+	fprintf(fp, "Room %ld\n",		obj->in_room->vnum);
+	fprintf(fp,"Enchanted_times %d\n",	obj->num_enchanted);
+	fprintf(fp, "Cond %d\n",		obj->condition);
+	fprintf(fp, "Fixed %d\n",		obj->times_fixed);
+	if (obj->owner)				fprintf(fp, "Owner %s~\n", obj->owner);
+	if (obj->old_short_descr)		fprintf(fp, "OldShort %s~\n", obj->old_short_descr);
+	if (obj->old_description)		fprintf(fp, "OldDescr %s~\n", obj->old_description);
+	if (obj->old_full_description)		fprintf(fp, "OldFullDescr %s~\n", obj->old_full_description);
+	if (obj->loaded_by)			fprintf(fp, "LoadedBy %s~\n", obj->loaded_by);
+	fprintf(fp, "Fragility %d\n",		obj->fragility);
+	fprintf(fp, "TimesAllowedFixed %d\n",	obj->times_allowed_fixed);
+	if (obj->locker)			fprintf(fp, "Locker %d\n", obj->locker);
+
+	/* variable data */
+	fprintf(fp, "Wear %d\n",		obj->wear_loc);
+	fprintf(fp, "LastWear %d\n",		obj->last_wear_loc);
+	fprintf(fp, "Lev  %d\n",		obj->level);
+	fprintf(fp, "Time %d\n",		obj->timer);
+	fprintf(fp, "Cost %ld\n",		obj->cost);
+
+	fprintf(fp, "Val  %d %d %d %d %d %d %d %d\n",
+		obj->value[0], obj->value[1], obj->value[2], obj->value[3],
+		obj->value[4], obj->value[5], obj->value[6], obj->value[7]);
+
+	if (obj->spells)
+		save_spell(fp, obj->spells);
+
+	/* This is for spells on the objects.*/
+	for (paf = obj->affected; paf; paf = paf->next) {
+		if (paf->type < 0 || paf->type >= MAX_SKILL || paf->custom_name)
+			continue;
+
+		if(paf->location >= APPLY_SKILL && paf->location < APPLY_SKILL_MAX) {
+			if(!skill_table[paf->location - APPLY_SKILL].name) continue;
+			fprintf(fp, "Affcg '%s' %3d %3d %3d %3d %3d %3d '%s' %10ld\n",
+				skill_table[paf->type].name,
+				paf->where,
+				paf->group,
+				paf->level,
+				paf->duration,
+				paf->modifier,
+				APPLY_SKILL,
+				skill_table[paf->location - APPLY_SKILL].name,
+				paf->bitvector);
+		} else {
+			fprintf(fp, "Affcg '%s' %3d %3d %3d %3d %3d %3d %10ld\n",
+				skill_table[paf->type].name,
+				paf->where,
+				paf->group,
+				paf->level,
+				paf->duration,
+				paf->modifier,
+				paf->location,
+				paf->bitvector);
+		}
+	}
+
+	/* Custom named affects*/
+	for (paf = obj->affected; paf; paf = paf->next) {
+		if (!paf->custom_name) continue;
+
+		if(paf->location >= APPLY_SKILL && paf->location < APPLY_SKILL_MAX) {
+			if(!skill_table[paf->location - APPLY_SKILL].name) continue;
+			fprintf(fp, "Affcgn '%s' %3d %3d %3d %3d %3d %3d '%s' %10ld\n",
+				paf->custom_name,
+				paf->where,
+				paf->group,
+				paf->level,
+				paf->duration,
+				paf->modifier,
+				APPLY_SKILL,
+				skill_table[paf->location - APPLY_SKILL].name,
+				paf->bitvector);
+		} else {
+			fprintf(fp, "Affcgn '%s' %3d %3d %3d %3d %3d %3d %10ld\n",
+				paf->custom_name,
+				paf->where,
+				paf->group,
+				paf->level,
+				paf->duration,
+				paf->modifier,
+				paf->location,
+				paf->bitvector);
+		}
+	}
+
+	/* for random affect eq*/
+	for (paf = obj->affected; paf; paf = paf->next) {
+		/* filter out "none" and "unknown" affects, as well as custom named affects */
+		if (paf->type != -1 || paf->custom_name != NULL ||
+			((paf->location < APPLY_SKILL || paf->location >= APPLY_SKILL_MAX) && !str_cmp(flag_string(apply_flags, paf->location), "none")))
+			continue;
+
+		if(paf->location >= APPLY_SKILL && paf->location < APPLY_SKILL_MAX) {
+			if(!skill_table[paf->location - APPLY_SKILL].name) continue;
+			fprintf(fp, "Affrg %3d %3d %3d %3d %3d %3d '%s' %10ld\n",
+				paf->where,
+				paf->group,
+				paf->level,
+				paf->duration,
+				paf->modifier,
+				APPLY_SKILL,
+				skill_table[paf->location - APPLY_SKILL].name,
+				paf->bitvector);
+		} else {
+			fprintf(fp, "Affrg %3d %3d %3d %3d %3d %3d %10ld\n",
+				paf->where,
+				paf->group,
+				paf->level,
+				paf->duration,
+				paf->modifier,
+				paf->location,
+				paf->bitvector);
+		}
+	}
+
+	/* for catalysts*/
+	for (paf = obj->catalyst; paf; paf = paf->next) {
+		fprintf(fp, "Cata '%s' %3d %3d %3d\n",
+			flag_string( catalyst_types, paf->type ),
+			paf->level,
+			paf->modifier,
+			paf->duration);
+	}
+
+	for (ed = obj->extra_descr; ed != NULL; ed = ed->next) {
+		fprintf(fp, "ExDe %s~ %s~\n",
+		ed->keyword, ed->description);
+	}
+
+	if(obj->progs && obj->progs->vars) {
+		pVARIABLE var;
+
+		for(var = obj->progs->vars; var; var = var->next)
+			variable_fwrite(var,fp);
+	}
+
+	fprintf(fp, "#-OBJECT\n\n");
+
+	if (obj->contains)
+		fwrite_persist_obj_new(ch, obj->contains, fp, iNest + 1);
+
+
+}
+#endif

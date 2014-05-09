@@ -1,0 +1,112 @@
+24d23
+< LIST *loaded_wilds = NULL;
+46a46
+> extern AREA_DATA *get_area_from_uid args ((long uid));
+272,273c272,274
+<     list_appendlink(pWilds->loaded_vrooms,pRoomIndex);
+<     pWilds->loaded_rooms++;
+---
+> // Check if there are already vrooms loaded - if so, simply add this one to the existing list
+>     if (pWilds->loaded_vroom != NULL)
+>         pRoomIndex->next = pWilds->loaded_vroom;
+274a276,277
+>     pWilds->loaded_vroom = pRoomIndex;
+>     pWilds->loaded_rooms++;
+299a303,305
+>     ROOM_INDEX_DATA *pRoom;
+>     ROOM_INDEX_DATA *pLast_room;
+>     bool found = FALSE;
+308,318d313
+< 	// A persistant or non-wilderness room
+< 	if( pRoomIndex->persist || !IS_SET(pRoomIndex->room2_flags, ROOM_VIRTUAL_ROOM))
+< 		return;
+< 
+<     if( pRoomIndex->progs ) {
+< 		if( pRoomIndex->progs->script_ref > 0 ) {
+< 			pRoomIndex->progs->extract_when_done = TRUE;
+< 			return;
+< 		}
+< 	}
+< 
+327,328c322,346
+< 	list_remlink(pWilds->loaded_vrooms,pRoomIndex);
+< 	pWilds->loaded_rooms--;
+---
+>     pLast_room = NULL;
+>     for (pRoom = pWilds->loaded_vroom;pRoom;pRoom = pRoom->next)
+>     {
+>         if (pRoomIndex == pRoom)
+>         {
+>             found = TRUE;
+>             break;
+>         }
+> 
+>         pLast_room = pRoom;
+>     }
+> 
+>     if (found)
+>     {
+>         if (pLast_room == NULL)
+>             pWilds->loaded_vroom = pRoom->next;
+>         else
+>             pLast_room->next = pRoom->next;
+> 
+>         --pWilds->loaded_rooms;
+>         free_room_index(pRoom);
+>     }
+>     else
+>         plogf("wilds.c, destroy_wilds_vroom(): FAILURE - Could not find vroom to destroy.");
+> 
+361c379
+< 	LIST_WILDS_DATA *data;
+---
+> 
+428d445
+< 
+446,452d462
+< 					if( (data = alloc_mem(sizeof(LIST_WILDS_DATA))) ) {
+< 						data->wilds = pWilds;
+< 						data->uid = pWilds->uid;
+< 
+< 						list_appendlink(loaded_wilds, data);
+< 					}
+< 
+511,512c521
+< 	ITERATOR it;
+<     ROOM_INDEX_DATA *pVroom = NULL;
+---
+>     ROOM_INDEX_DATA *pVroom;
+514,515c523,525
+< 	iterator_start(&it, pWilds->loaded_vrooms);
+< 	while(( pVroom = (ROOM_INDEX_DATA *)iterator_nextdata(&it)))
+---
+>     // Loop thru all loaded vrooms looking for a match
+>     for (pVroom = pWilds->loaded_vroom;pVroom!=NULL;pVroom = pVroom->next)
+>     {
+517,518c527,530
+<         	break;
+< 	iterator_stop(&it);
+---
+>         {
+>             return (pVroom);
+>         }
+>     }
+520c532
+<     return pVroom;
+---
+>     return (NULL);
+1594,1595d1605
+< 	pWilds->loaded_rooms = 0;
+< 	pWilds->loaded_vrooms = list_create(FALSE);
+1641d1650
+<     list_destroy(pWilds->loaded_vrooms);
+1687,1690d1695
+< 
+< 	list_addlink(room->lpeople, ch);
+< 	list_addlink(room->lentity, ch);
+< 
+1759c1764,1765
+<                 act ("$n shivers and looks very ill.", vch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+---
+>                 act ("$n shivers and looks very ill.", vch, NULL, NULL,
+>                      TO_ROOM);
