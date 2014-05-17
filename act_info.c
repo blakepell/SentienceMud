@@ -1297,8 +1297,12 @@ void do_prompt(CHAR_DATA * ch, char *argument)
     if (!strcmp(argument, "all"))
 	strcpy(buf, "{B<%h{Bhp %m{Bm %v{Bmv>{x ");
     else {
-	if (strlen(argument) > 50)
-	    argument[50] = '\0';
+	if (strlen_no_colors(argument) > 50)
+	{
+		send_to_char("That prompt is too long. Must be no more than 50 characters, not counting colour codes.\n\r",ch);
+		return;
+	}
+//	    argument[50] = '\0';
 	strcpy(buf, argument);
 	smash_tilde(buf);
 	if (str_suffix("%c", buf))
