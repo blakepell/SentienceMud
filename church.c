@@ -8,6 +8,7 @@
 #include "recycle.h"
 #include "db.h"
 #include "tables.h"
+#include "wilds.h"
 
 bool is_trusted(CHURCH_PLAYER_DATA *member, char *command);
 char *get_chrank(CHURCH_PLAYER_DATA *member);
@@ -43,6 +44,8 @@ void write_church(CHURCH_DATA *church, FILE *fp);
 void write_church_member(CHURCH_PLAYER_DATA *member, FILE *fp);
 void add_church_to_list(CHURCH_DATA *church, CHURCH_DATA *list);
 bool is_excommunicated(CHAR_DATA *ch);
+void get_church_id(CHURCH_DATA *church);
+void variable_dynamic_fix_church(CHURCH_DATA *church);
 
 /* Church commands */
 const struct church_command_type church_command_table[] =
@@ -84,7 +87,6 @@ const struct church_command_type church_command_table[] =
 
     { NULL, 		-1,	NULL	 		}
 };
-
 
 char *lookup_church_command (char *string)
 {
@@ -286,6 +288,9 @@ void do_chadd(CHAR_DATA *ch, char *argument)
     new_member->next = ch->church->people;
     ch->church->people = new_member;
 
+    list_addlink(ch->church->online_players, target);
+    list_addlink(ch->church->roster, target);
+
     target->church = ch->church;
     target->church_member = new_member;
     target->church_name = str_dup(ch->church->name);
@@ -450,17 +455,16 @@ void do_chrem(CHAR_DATA *ch, char *argument)
 
 	if (!str_cmp(ch->name, member->name))
 	{
-	    act("{Y[You have removed yourself.]{x", ch, NULL, NULL, TO_CHAR);
+	    act("{Y[You have removed yourself.]{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	}
 	else
 	{
 	    sprintf(buf, "{Y[You removed %s from %s]{x", member->name,
 	        church->name);
-	    act(buf, ch, NULL, NULL, TO_CHAR);
+	    act(buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
 	    if (member->ch != NULL)
-	        act("{YYou have been removed by $N.{x", member->ch, NULL,
-		    ch, TO_CHAR);
+	        act("{YYou have been removed by $N.{x", member->ch, ch, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	}
 
 	remove_member(member);
@@ -499,7 +503,7 @@ void do_chrem(CHAR_DATA *ch, char *argument)
 	&& str_cmp(arg, ch->name) && str_cmp(arg, "self")
 	&& str_cmp(arg, "me"))
 	{
-	    act("Only a leader may remove members.", ch, NULL, NULL, TO_CHAR);
+	    act("Only a leader may remove members.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	    return;
 	}
 
@@ -535,7 +539,7 @@ void do_chrem(CHAR_DATA *ch, char *argument)
 	else
 	{
 	    sprintf(buf, "{YYou have removed %s.{x", member->name);
-	    act(buf, ch, NULL, NULL, TO_CHAR);
+	    act(buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	    sprintf(buf, "{Y[%s has been removed from %s]{x\n\r", member->name,
 		    ch->church->name);
 	    gecho(buf);
@@ -544,8 +548,7 @@ void do_chrem(CHAR_DATA *ch, char *argument)
 	    append_church_log(ch->church, buf);
 
 	    if (member->ch != NULL)
-		act("{YYou have been removed by $N.{x", member->ch, NULL,
-		    ch, TO_CHAR);
+		act("{YYou have been removed by $N.{x", member->ch, ch, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	    remove_member(member);
 	}
     }
@@ -596,6 +599,9 @@ void remove_member(CHURCH_PLAYER_DATA * member)
 
 	member->ch->church_member = NULL;
     }
+
+   	list_remlink(member->church->online_players, member->ch);
+   	list_remlink(member->church->roster, member->ch->name);
 
     free_church_player(member);
 }
@@ -955,10 +961,10 @@ void do_chgohall(CHAR_DATA *ch, char *argument)
 	}
     }
 
-    act("{R$n disappears, leaving a resounding echo of discord.{X", ch, NULL, NULL, TO_ROOM);
+    act("{R$n disappears, leaving a resounding echo of discord.{X", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
     char_from_room(ch);
     char_to_room(ch, location_to_room(&ch->church->recall_point));
-    act("$n appears in the room.", ch, NULL, NULL, TO_ROOM);
+    act("$n appears in the room.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
     do_function(ch, &do_look, "auto");
 }
 
@@ -1009,9 +1015,9 @@ void do_chflag(CHAR_DATA *ch, char *argument)
     }
 
     act("$n scribbles something down on a piece of parchment.",
-	temp_char, NULL, ch, TO_ROOM);
+	temp_char, ch, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
     act("{C$n says 'Very well $N, your flag has now been changed.'{x",
-	temp_char, NULL, ch, TO_ROOM);
+	temp_char, ch, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
     if (ch->church->flag != NULL)
 	free_string(ch->church->flag);
@@ -1176,8 +1182,8 @@ void do_chbalance(CHAR_DATA * ch, char *argument)
     sprintf(buf,
     "{CErrol says 'You have %ld pneuma, %ld karma, and %ld gold in your account.'{x\n\r",
         ch->church->pneuma, ch->church->dp, ch->church->gold);
-    act(buf, ch, NULL, NULL, TO_CHAR);
-    act(buf, ch, NULL, NULL, TO_ROOM);
+    act(buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+    act(buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
     return;
 }
 
@@ -1258,60 +1264,69 @@ void do_chcreate(CHAR_DATA *ch, char *argument)
 	return;
     }
 
-    ch->deitypoints -= 3000000;
-    church = new_church();
-    if (church_list == NULL)
-	church_list = church;
-    else
-    {
-	CHURCH_DATA *temp_church;
-	temp_church = church_list;
-	while (temp_church->next != NULL)
-	{
-	    temp_church = temp_church->next;
+	church = NULL;
+	player = NULL;
+	if( (church = new_church()) &&
+		(player = new_church_player()) &&
+		list_appendlink(church->online_players, ch) &&
+		list_appendlink(church->roster, ch->name) &&
+		list_appendlink(list_churches,church) ) {
+
+		if (!church_list)
+			church_list = church;
+		else {
+			CHURCH_DATA *temp_church;
+			temp_church = church_list;
+			while (temp_church->next)
+				temp_church = temp_church->next;
+			temp_church->next = church;
+		}
+
+		church->next = NULL;
+		church->name = str_dup(arg1);
+		church->max_positions = 10;
+		church->pneuma = 0;
+		church->size = CHURCH_SIZE_BAND;
+		church->flag = str_dup(arg2);
+		church->founder_last_login = current_time;
+		church->created = current_time;
+		church->rules = str_dup("No rules have been set yet.\n\r");
+		church->motd = str_dup("No motd has been set yet.\n\r");
+		church->founder = str_dup(ch->name);
+
+		if (!str_cmp(arg3, "evil"))
+			church->alignment = CHURCH_EVIL;
+		else if (!str_cmp(arg3, "good"))
+			church->alignment = CHURCH_GOOD;
+		else
+			church->alignment = CHURCH_NEUTRAL;
+
+		player->next = NULL;
+		player->ch = ch;
+		player->name = str_dup(ch->name);
+		player->rank = CHURCH_RANK_D;
+		player->church = church;
+		player->sex = ch->sex;
+
+		church->people = player;
+		ch->church = church;
+		ch->church_name = str_dup(church->name);
+		ch->church_member = player;
+
+		ch->deitypoints -= 3000000;
+
+		sprintf(buf, "{Y[%s has registered the Band of %s{Y]{x\n\r", ch->name, church->name);
+		gecho(buf);
+
+		write_churches_new();
+	} else {
+		if( church ) {
+			list_remlink(list_churches, church);
+			free_church(church);
+		}
+		if( player ) free_church_player( player);
+		send_to_char("The gods do not smile upon you at this moment.", ch);
 	}
-	temp_church->next = church;
-    }
-
-    church->next = NULL;
-    church->name = str_dup(arg1);
-    church->max_positions = 10;
-    church->pneuma = 0;
-    church->size = CHURCH_SIZE_BAND;
-    church->flag = str_dup(arg2);
-    church->founder_last_login = current_time;
-    church->created = current_time;
-    church->rules = str_dup("No rules have been set yet.\n\r");
-    church->motd = str_dup("No motd has been set yet.\n\r");
-    church->founder = str_dup(ch->name);
-    church->treasure_room = 0;
-
-    if (!str_cmp(arg3, "evil"))
-	church->alignment = CHURCH_EVIL;
-    else if (!str_cmp(arg3, "good"))
-	church->alignment = CHURCH_GOOD;
-    else
-	church->alignment = CHURCH_NEUTRAL;
-
-    player = new_church_player();
-    player->next = NULL;
-    player->ch = ch;
-    player->name = str_dup(ch->name);
-    player->rank = CHURCH_RANK_D;
-    player->church = church;
-    player->sex = ch->sex;
-
-    church->people = player;
-    ch->church = church;
-    ch->church_name = str_dup(church->name);
-    ch->church_member = player;
-
-    sprintf(buf, "{Y[%s has registered the Band of %s{Y]{x\n\r",
-        ch->name,
-	church->name);
-    gecho(buf);
-
-    write_churches_new();
 }
 
 
@@ -1356,6 +1371,7 @@ void do_chdelete(CHAR_DATA *ch, char *argument)
 	    return;
 	}
 
+	list_remlink(list_churches, church);
 	extract_church(church);
 
 	send_to_char("Church deleted.\n\r", ch);
@@ -1690,7 +1706,7 @@ void do_chexcommunicate(CHAR_DATA * ch, char *argument)
 
     if (member->rank == CHURCH_RANK_D)
     {
-	act("You may not excommunicate a church leader.", ch, NULL, NULL, TO_CHAR);
+	act("You may not excommunicate a church leader.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	return;
     }
 
@@ -1931,8 +1947,6 @@ void do_chinfo(CHAR_DATA *ch, char *argument)
 {
     CHURCH_DATA *church;
     CHURCH_PLAYER_DATA *member;
-    OBJ_DATA *obj;
-    ROOM_INDEX_DATA *room;
     char arg[MSL];
     char buf[MAX_STRING_LENGTH];
     char buf2[MSL];
@@ -2185,6 +2199,7 @@ void do_chinfo(CHAR_DATA *ch, char *argument)
 	line(ch, 55);
     }
 
+/*
     room = get_room_index(church->treasure_room);
     if (room != NULL)
     {
@@ -2197,6 +2212,7 @@ void do_chinfo(CHAR_DATA *ch, char *argument)
 	    }
 	}
     }
+*/
 }
 
 
@@ -2798,7 +2814,7 @@ void do_chtoggle(CHAR_DATA * ch, char *argument)
     }
 }
 
-
+// @@@REMOVEME: it is redundant... just reference ch->church directly
 CHURCH_DATA *find_char_church(CHAR_DATA * ch)
 {
     CHURCH_DATA *chr;
@@ -2831,37 +2847,62 @@ int find_char_position_in_church(CHAR_DATA * ch)
 /* return the structure given a # from chlist */
 CHURCH_DATA *find_church(int number)
 {
-    CHURCH_DATA *church = NULL;
-    int i;
+	CHURCH_DATA *church;
+	ITERATOR it;
 
-    i = 0;
-    for (church = church_list; church != NULL; church = church->next)
-    {
-        i++;
-	if (i == number)
-	    break;
-    }
+	iterator_start(&it, list_churches);
 
-    return church;
+	while( (church = (CHURCH_DATA *)iterator_nextdata(&it)) && --number > 0);
+
+	iterator_stop(&it);
+
+	return church;
 }
 
+CHURCH_DATA *find_church_name(char *name)
+{
+	CHURCH_DATA *church;
+	ITERATOR it;
+
+	iterator_start(&it, list_churches);
+
+	while( (church = (CHURCH_DATA *)iterator_nextdata(&it)) ) {
+		if( !str_cmp( church->name, name ) )
+			break;
+	}
+
+	iterator_stop(&it);
+
+	return church;
+}
 
 /* is room players treasure church ? */
-bool is_treasure_room(CHAR_DATA *ch, ROOM_INDEX_DATA *room)
+bool is_treasure_room(CHURCH_DATA *church, ROOM_INDEX_DATA *room)
 {
-    CHURCH_DATA *church;
     ROOM_INDEX_DATA *treasure_room;
+    ITERATOR it;
 
-    if ((church = ch->church) == NULL)
-	return FALSE;
 
-    if ((treasure_room = get_room_index(church->treasure_room)) == NULL)
-	return FALSE;
+    if (!church) {
+		ITERATOR cit;
 
-    if (treasure_room == room)
-	return TRUE;
+		iterator_start(&cit, list_churches);
+		while(( church = (CHURCH_DATA *)iterator_nextdata(&cit)))
+			if( is_treasure_room(church, room) )
+				break;
+		iterator_stop(&cit);
 
-    return FALSE;
+		return church && TRUE;
+	}
+
+	iterator_start(&it, church->treasure_rooms);
+	while( (treasure_room = (ROOM_INDEX_DATA *)iterator_nextdata(&it)) ) {
+		if( treasure_room == room )
+			break;
+	}
+	iterator_stop(&it);
+
+    return treasure_room && TRUE;
 }
 
 
@@ -3007,7 +3048,7 @@ void do_chtrust(CHAR_DATA *ch, char *argument)
 
     if (church_player->rank >= CHURCH_RANK_D)
     {
-	act("That would be pointless. $t is a leader and already has all commands.", ch, church_player->name, NULL, TO_CHAR);
+	act("That would be pointless. $t is a leader and already has all commands.", ch, NULL, NULL, NULL, NULL, church_player->name, NULL, TO_CHAR);
 	return;
     }
 
@@ -3045,7 +3086,7 @@ void do_chtrust(CHAR_DATA *ch, char *argument)
     if (string != NULL)
     {
 	act("$t is no longer entrusted with the '$T' command.",
-	    ch, church_player->name, string->string, TO_CHAR);
+	    ch, NULL, NULL, NULL, NULL, church_player->name, string->string, TO_CHAR);
 	if (string_prev != NULL)
 	    string_prev->next = string->next;
 	else
@@ -3058,7 +3099,7 @@ void do_chtrust(CHAR_DATA *ch, char *argument)
     {
 	string = new_string_data();
 	string->string = str_dup(arg2);
-	act("$t is now entrusted with the '$T' command.", ch, church_player->name, string->string, TO_CHAR);
+	act("$t is now entrusted with the '$T' command.", ch, NULL, NULL, NULL, NULL, church_player->name, string->string, TO_CHAR);
 	string->next = church_player->commands;
 	church_player->commands = string;
     }
@@ -3219,11 +3260,12 @@ void show_church_info(CHURCH_DATA *church, CHAR_DATA *ch)
 	    "none" : get_room_index(church->recall_point.id[0])->name);
     add_buf(buffer, buf);
 
+/*
     sprintf(buf, "{YTreasure Room:{x %ld - %s\n\r",
         church->treasure_room,
 	get_room_index(church->treasure_room) == NULL ?
 	    "none" : get_room_index(church->treasure_room)->name);
-    add_buf(buffer, buf);
+    add_buf(buffer, buf);*/
 
     sprintf(buf, "{YKey:{x %ld - %s\n\r",
         church->key,
@@ -3406,6 +3448,9 @@ void do_chconvert(CHAR_DATA *ch, char *argument)
 
 void do_chdonate(CHAR_DATA *ch, char *argument)
 {
+#if 1
+    send_to_char("Donation is disabled for the time being.\n\r", ch);
+#else
     OBJ_DATA *obj;
     ROOM_INDEX_DATA *room;
 
@@ -3415,7 +3460,7 @@ void do_chdonate(CHAR_DATA *ch, char *argument)
 	return;
     }
 
-    if (!ch->church->treasure_room || (room = get_room_index(ch->church->treasure_room)) == NULL)
+    if (!list_size(ch->church->treasure_rooms))
     {
     	send_to_char("Your church doesn't have a treasure room.\n\r", ch);
 	return;
@@ -3435,7 +3480,7 @@ void do_chdonate(CHAR_DATA *ch, char *argument)
 
     if (obj->timer > 0 || IS_SET(obj->extra2_flags, ITEM_NO_DONATE))
     {
-    	act("You cannot donate $p.", ch, obj, NULL, TO_CHAR);
+    	act("You cannot donate $p.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 	return;
     }
 
@@ -3445,10 +3490,11 @@ void do_chdonate(CHAR_DATA *ch, char *argument)
 	return;
     }
 
-    act("You toss $p into the air and it disappears into a swirling vortex.", ch, obj, NULL, TO_CHAR);
-    act("$n tosses $p into the air and it disappears into a swirling vortex.", ch, obj, NULL, TO_ROOM);
+    act("You toss $p into the air and it disappears into a swirling vortex.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+    act("$n tosses $p into the air and it disappears into a swirling vortex.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
     obj_from_char(obj);
     obj_to_room(obj, room);
+#endif
 }
 
 
@@ -3477,8 +3523,11 @@ void write_churches_new()
 void write_church(CHURCH_DATA *church, FILE *fp)
 {
     char buf[MSL];
+    ITERATOR it;
+    ROOM_INDEX_DATA *room;
 
     fprintf(fp, "#CHURCH %s~\n", church->name);
+    fprintf(fp, "UID %ld\n", church->uid);
     fprintf(fp, "Alignment %d\n", church->alignment);
     fprintf(fp, "CPKLosses %ld\n", church->cpk_losses);
     fprintf(fp, "CPKWins %ld\n", church->cpk_wins);
@@ -3498,13 +3547,21 @@ void write_church(CHURCH_DATA *church, FILE *fp)
     fprintf(fp, "Settings %s\n", fwrite_flag(church->settings, buf));
     fprintf(fp, "Size %d\n", church->size);
     fprintf(fp, "ToggledPK %d\n", church->pk);
-    fprintf(fp, "TreasureRoom %ld\n", church->treasure_room);
     fprintf(fp, "WarsWon %ld\n", church->wars_won);
 
     fprintf(fp, "Motd %s~\n", fix_string(church->motd));
     fprintf(fp, "Rules %s~\n", fix_string(church->rules));
     if (church->info != NULL)
 	fprintf(fp, "Info %s~\n", fix_string(church->info));
+
+	iterator_start(&it, church->treasure_rooms);
+	while(( room = (ROOM_INDEX_DATA *)iterator_nextdata(&it))) {
+		if(room->wilds)
+			fprintf(fp, "TreasureVRoom %ld %ld %ld %ld\n", room->wilds->uid, room->x, room->y, room->z);
+		else
+			fprintf(fp, "TreasureRoom %ld\n", room->vnum);
+	}
+	iterator_stop(&it);
 
     if (church->people != NULL)
 	write_church_member(church->people, fp);
@@ -3572,7 +3629,12 @@ void read_churches_new()
 	    church_list = church;
 	else
 	    add_church_to_list(church, church_list);
+		if( !list_appendlink(list_churches, church) ) {
+			bug("Failed to load churches due to memory issue with 'list_appendlink'", 0);
+			abort();
+		}
     }
+
 
     fclose(fp);
 }
@@ -3609,6 +3671,11 @@ CHURCH_DATA *read_church(FILE *fp)
 			member->next = church->people;
 			church->people = member;
 			member->church = church;
+
+				if( !list_appendlink(church->roster, member->name) ) {
+					bug("Failed to load church member information due to memory issues with 'list_appendlink'.", 0);
+					abort();
+				}
 		    }
 		}
 
@@ -3672,8 +3739,46 @@ CHURCH_DATA *read_church(FILE *fp)
 
 	    case 'T':
 	        KEY("ToggledPK",	church->pk,			fread_number(fp));
-		KEY("TreasureRoom",	church->treasure_room,		fread_number(fp));
+			if( !str_cmp(word, "TreasureRoom") ) {
+				ROOM_INDEX_DATA *room = get_room_index(fread_number(fp));
+
+				if( room ) {
+					if( !list_appendlink(church->treasure_rooms, room) ) {
+						bug("Failed to add church treasure room due to memory issues with 'list_appendlink'.", 0);
+						abort();
+					}
+				}
+
+				fMatch = TRUE;
+			}
+			if( !str_cmp(word, "TreasureVRoom") ) {
+				WILDS_DATA *wilds;
+				ROOM_INDEX_DATA *room;
+				int x;
+				int y;
+				int z;
+
+				wilds = get_wilds_from_uid(NULL,fread_number(fp));
+				x = fread_number(fp);
+				y = fread_number(fp);
+				z = fread_number(fp);
+				room = get_wilds_vroom(wilds, x, y);
+				if(!room)
+					room = create_wilds_vroom(wilds,x, y);
+
+				if( room ) {
+					if( !list_appendlink(church->treasure_rooms, room) ) {
+						bug("Failed to add church treasure room due to memory issues with 'list_appendlink'.", 0);
+						abort();
+					}
+				}
+
+				fMatch = TRUE;
+			}
 		break;
+
+		case 'U':
+			KEY("UID",		church->uid,			fread_number(fp));
 
 	    case 'W':
 		KEY("WarsWon",		church->wars_won,		fread_number(fp));
@@ -3688,6 +3793,10 @@ CHURCH_DATA *read_church(FILE *fp)
 
     if (church->info == NULL)
 	church->info = str_dup("No info set.");
+
+	get_church_id(church);
+
+	variable_dynamic_fix_church(church);
 
     return church;
 }
@@ -3761,17 +3870,31 @@ CHURCH_PLAYER_DATA *read_church_member(FILE *fp)
 bool is_in_treasure_room(OBJ_DATA *obj)
 {
     ROOM_INDEX_DATA *room = obj->in_room;
-    CHURCH_DATA *church;
 
     if (room == NULL)
-	return FALSE;
+		return FALSE;
 
-    for (church = church_list; church != NULL; church = church->next) {
-	if (church->treasure_room == room->vnum)
-	    return TRUE;
-    }
+	return is_treasure_room(NULL, room);
+}
 
-    return FALSE;
+bool vnum_in_treasure_room(CHURCH_DATA *church, long vnum)
+{
+    ROOM_INDEX_DATA *treasure_room = NULL;
+	OBJ_DATA *obj = NULL;
+	ITERATOR rit, oit;
+
+	iterator_start(&rit, church->treasure_rooms);
+	while( (treasure_room = (ROOM_INDEX_DATA *)iterator_nextdata(&rit)) && !obj) {
+		iterator_start(&oit, treasure_room->lcontents);
+		while( (obj = (OBJ_DATA *)iterator_nextdata(&rit))) {
+			if( obj->pIndexData->vnum == vnum )
+				break;
+		}
+		iterator_stop(&oit);
+	}
+	iterator_stop(&rit);
+
+    return obj && TRUE;
 }
 
 

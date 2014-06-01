@@ -30,9 +30,9 @@ SPELL_FUNC(spell_acid_breath)
 	CHAR_DATA *victim = (CHAR_DATA *) vo;
 	int dam;
 
-	act("$n spits acid at $N.",ch,NULL,victim,TO_NOTVICT);
-	act("$n spits a stream of corrosive acid at you.",ch,NULL,victim,TO_VICT);
-	act("You spit acid at $N.",ch,NULL,victim,TO_CHAR);
+	act("$n spits acid at $N.",ch,victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
+	act("$n spits a stream of corrosive acid at you.",ch,victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
+	act("You spit acid at $N.",ch,victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
 	if (check_shield_block_projectile(ch, victim, "acid stream", NULL))
 		return FALSE;

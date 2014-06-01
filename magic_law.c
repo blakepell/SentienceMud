@@ -30,7 +30,7 @@ SPELL_FUNC(spell_armor)
 		if (victim == ch)
 			send_to_char("You are already armored.\n\r",ch);
 		else
-			act("$N is already armored.",ch,NULL,victim,TO_CHAR);
+			act("$N is already armored.",ch,victim, NULL, NULL, NULL, NULL, NULL,TO_CHAR);
 		return FALSE;
 	}
 
@@ -45,7 +45,7 @@ SPELL_FUNC(spell_armor)
 	af.bitvector2 = 0;
 	affect_to_char(victim, &af);
 	send_to_char("You feel someone protecting you.\n\r", victim);
-	if (ch != victim) act("$N is protected by your magic.",ch,NULL,victim,TO_CHAR);
+	if (ch != victim) act("$N is protected by your magic.",ch,victim, NULL, NULL, NULL, NULL, NULL,TO_CHAR);
 	return TRUE;
 }
 
@@ -69,7 +69,7 @@ SPELL_FUNC(spell_cloak_of_guile)
 		if (victim == ch)
 			send_to_char("You are already enshrouded.\n\r",ch);
 		else
-			act("$N is already enshrouded.",ch,NULL,victim,TO_CHAR);
+			act("$N is already enshrouded.",ch,victim, NULL, NULL, NULL, NULL, NULL,TO_CHAR);
 		return FALSE;
 	}
 
@@ -85,7 +85,7 @@ SPELL_FUNC(spell_cloak_of_guile)
 	affect_to_char(victim, &af);
 
 	send_to_char("You feel shrouded.\n\r", victim);
-	act("$n shimmers with a dark green glow.", victim, NULL, NULL, TO_ROOM);
+	act("$n shimmers with a dark green glow.", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	return TRUE;
 }
 
@@ -95,12 +95,12 @@ SPELL_FUNC(spell_entrap)
 
 	if (IS_SET(obj->extra_flags, ITEM_HOLY) ||
 		obj->item_type == ITEM_ARTIFACT) {
-		act("$p is too powerful for you to entrap.", ch, obj, NULL, TO_CHAR);
+		act("$p is too powerful for you to entrap.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 		return FALSE;
 	}
 
-	act("$p vibrates for a second, then stops.", ch, obj, NULL, TO_CHAR);
-	act("$n's $p vibrates for a second, then stops.", ch, obj, NULL, TO_ROOM);
+	act("$p vibrates for a second, then stops.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+	act("$n's $p vibrates for a second, then stops.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 
 	obj->trap_dam = level + dice(get_skill(ch, sn),3);
 	SET_BIT(obj->extra_flags, ITEM_TRAPPED);
@@ -131,7 +131,7 @@ SPELL_FUNC(spell_faerie_fire)
 	affect_to_char(victim, &af);
 
 	send_to_char("You are surrounded by a pink outline.\n\r", victim);
-	act("$n is surrounded by a pink outline.", victim, NULL, NULL, TO_ROOM);
+	act("$n is surrounded by a pink outline.", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
 	return TRUE;
 }
@@ -150,7 +150,7 @@ SPELL_FUNC(spell_identify)
 	SPELL_DATA *spell;
 
 	if (IS_SET(obj->extra2_flags, ITEM_NO_LORE)) {
-		act("$p is beyond your power to identify.", ch, obj, NULL, TO_CHAR);
+		act("$p is beyond your power to identify.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 		return FALSE;
 	}
 
@@ -382,6 +382,15 @@ SPELL_FUNC(spell_identify)
 				case TO_OBJECT:
 					sprintf(buf,"{MAdds {x%s {Mobject flag.{x\n", extra_bit_name(af->bitvector));
 					break;
+				case TO_OBJECT2:
+					sprintf(buf,"{MAdds {x%s {Mobject flag.{x\n", extra2_bit_name(af->bitvector));
+					break;
+				case TO_OBJECT3:
+					sprintf(buf,"{MAdds {x%s {Mobject flag.{x\n", extra3_bit_name(af->bitvector));
+					break;
+				case TO_OBJECT4:
+					sprintf(buf,"{MAdds {x%s {Mobject flag.{x\n", extra4_bit_name(af->bitvector));
+					break;
 				case TO_WEAPON:
 					sprintf(buf,"{MAdds {x%s {Mweapon flags.\n{x", weapon_bit_name(af->bitvector));
 					break;
@@ -410,7 +419,7 @@ SPELL_FUNC(spell_identify)
 	}
 
 	for (af = obj->catalyst; af != NULL; af = af->next) {
-		sprintf(buf, "{MCatalyst {x%s {Mof strength {x%d {M", flag_string( catalyst_types, af->type ), af->level);
+		sprintf(buf, "%satalyst {x%s {Mof strength {x%d {M", ((af->where == TO_CATALYST_ACTIVE) ? "{MC" : "{xDormant{M c" ), flag_string( catalyst_types, af->type ), af->level);
 		add_buf(buffer, buf);
 		if (af->duration > -1)
 			sprintf(buf,"with {x%d%%{M left.\n\r{x",100 * af->duration / (af->level * af->modifier) );
@@ -451,9 +460,9 @@ SPELL_FUNC(spell_identify)
 	free_buf(buffer);
 
 	if(sn == gsn_lore)
-		p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, TRIG_LORE);
+		p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_LORE, NULL);
 	else if(sn == gsn_identify)
-		p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, TRIG_IDENTIFY);
+		p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_IDENTIFY, NULL);
 
 	return TRUE;
 }
@@ -544,7 +553,7 @@ SPELL_FUNC(spell_pass_door)
 		if (victim == ch)
 			send_to_char("You are already out of phase.\n\r",ch);
 		else
-			act("$N is already shifted out of phase.",ch,NULL,victim,TO_CHAR);
+			act("$N is already shifted out of phase.",ch,victim, NULL, NULL, NULL, NULL, NULL,TO_CHAR);
 		return FALSE;
 	}
 
@@ -559,7 +568,7 @@ SPELL_FUNC(spell_pass_door)
 	af.bitvector2 = 0;
 	affect_to_char(victim, &af);
 
-	act("$n turns translucent.", victim, NULL, NULL, TO_ROOM);
+	act("$n turns translucent.", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	send_to_char("You turn translucent.\n\r", victim);
 	return TRUE;
 }
@@ -569,10 +578,21 @@ SPELL_FUNC(spell_room_shield)
 {
 	OBJ_DATA *roomshield;
 	OBJ_DATA *obj;
+	int catalyst;
+	bool outside = FALSE;
+
+	catalyst = has_catalyst(ch,NULL,CATALYST_LAW,CATALYST_INVENTORY|CATALYST_ACTIVE,1,CATALYST_MAXSTRENGTH);
 
 	if(IS_OUTSIDE(ch) || IS_WILDERNESS(ch->in_room)) {
-		send_to_char("You may not cast this spell outdoors.\n\r", ch);
-		return FALSE;
+		if( catalyst >= 0 ) {
+			if ( catalyst < 10 ) {
+				send_to_char("You may not cast this spell outdoors.\n\r", ch);
+				return FALSE;
+			} else {
+				catalyst -= 10;
+				outside = TRUE;
+			}
+		}
 	}
 
 	for (obj = ch->in_room->contents; obj; obj = obj->next_content)
@@ -581,16 +601,30 @@ SPELL_FUNC(spell_room_shield)
 			return FALSE;
 		}
 
+	if( catalyst > 0 )
+	{
+		int cost;
+
+		if( catalyst > 10 )
+			catalyst = 10;
+
+		cost = outside ? (catalyst + 10) : catalyst;	// Being outdoors weakens the use of the catalyst, but is part of the cost
+
+		use_catalyst(ch,NULL,CATALYST_ASTRAL,CATALYST_INVENTORY|CATALYST_ACTIVE,cost,1,CATALYST_MAXSTRENGTH,TRUE);
+	}
+	else if(catalyst < 0)
+		catalyst = 10;
+
 	roomshield = create_object(get_obj_index(OBJ_VNUM_ROOMSHIELD), 0, TRUE);
-	roomshield->timer = 3;
+	roomshield->timer = 3 + ((3 * catalyst * catalyst + 1) / 4);
 	roomshield->level = ch->tot_level;
 	roomshield->owner = str_dup(ch->name);
 
 	obj_to_room(roomshield, ch->in_room);
-	act("{YAn orb of energy forms in $n's hands and $e casts it down.{X",   ch, NULL, NULL, TO_ROOM);
-	act("{YThe fizzling energy orb quickly expands to fill the entire room!{X",   ch, NULL, NULL, TO_ROOM);
-	act("{YAn orb of energy forms in your hands and you cast it at the ground before you.{X",   ch, NULL, NULL, TO_CHAR);
-	act("{YThe fizzling energy orb quickly expands to fill the entire room!{X",   ch, NULL, NULL, TO_CHAR);
+	act("{YAn orb of energy forms in $n's hands and $e casts it down.{X",   ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+	act("{YThe fizzling energy orb quickly expands to fill the entire room!{X",   ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+	act("{YAn orb of energy forms in your hands and you cast it at the ground before you.{X",   ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+	act("{YThe fizzling energy orb quickly expands to fill the entire room!{X",   ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	return TRUE;
 }
 
@@ -606,19 +640,11 @@ SPELL_FUNC(spell_word_of_recall)
 	if (IS_NPC(victim))
 		return FALSE;
 
-	if(p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_PRERECALL) ||
-		p_percent_trigger(NULL, NULL, ch->in_room, NULL, NULL, NULL, NULL, TRIG_PRERECALL))
+	if(p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_PRERECALL, NULL) ||
+		p_percent_trigger(NULL, NULL, ch->in_room, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_PRERECALL, NULL))
 		return FALSE;
 
-	// Prep the recall with the current location's recall
-	ch->recall = ch->in_room->area->recall;
-
-	// Allow scripts to modify said location
-	if(!p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RECALL))
-		p_percent_trigger(NULL, NULL, ch->in_room, NULL, NULL, NULL, NULL, TRIG_RECALL);
-
-	recall = ch->recall;
-	location_clear(&ch->recall);
+	location = get_recall_room(ch);
 
 	if (!(location = location_to_room(&recall))) {
 		send_to_char("You are completely lost.\n\r",victim);
@@ -643,10 +669,10 @@ SPELL_FUNC(spell_word_of_recall)
 
 	victim->move /= 2;
 	if(victim != ch) ch->move /= 2;
-	act("{W$n disappears.{x",victim,NULL,NULL,TO_ROOM);
+	act("{W$n disappears.{x",victim,NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
 	char_from_room(victim);
 	char_to_room(victim,location);
-	act("{W$n appears in the room.{x",victim,NULL,NULL,TO_ROOM);
+	act("{W$n appears in the room.{x",victim, NULL, NULL, NULL, NULL,NULL,NULL,TO_ROOM);
 	do_function(victim, &do_look, "auto");
 	return TRUE;
 }

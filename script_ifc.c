@@ -19,24 +19,61 @@
 #define ISARG_MOB(x)	ISARG_TYPE(x,ENT_MOBILE,mob)
 #define ISARG_OBJ(x)	ISARG_TYPE(x,ENT_OBJECT,obj)
 #define ISARG_ROOM(x)	ISARG_TYPE(x,ENT_ROOM,room)
-#define ISARG_EXIT(x)	ISARG_TYPE(x,ENT_EXIT,exit)
+#define ISARG_EXIT(x)	(argv[(x)].type == ENT_EXIT)
 #define ISARG_TOK(x)	ISARG_TYPE(x,ENT_TOKEN,token)
 #define ISARG_AREA(x)	ISARG_TYPE(x,ENT_AREA,area)
 #define ISARG_SKILL(x)	(argv[(x)].type == ENT_SKILL)
 #define ISARG_SKINFO(x)	(argv[(x)].type == ENT_SKILLINFO)
+#define ISARG_CONN(x)	ISARG_TYPE(x,ENT_CONN,conn)
+#define ISARG_WILDS(x)	ISARG_TYPE(x,ENT_WILDS,wilds)
+#define ISARG_CHURCH(x)	ISARG_TYPE(x,ENT_CHURCH,church)
 #define ISARG_AFF(x)	ISARG_TYPE(x,ENT_AFFECT,aff)
+#define ISARG_MUID(x)	(argv[(x)].type == ENT_MOBILE_ID)
+#define ISARG_OUID(x)	(argv[(x)].type == ENT_OBJECT_ID)
+#define ISARG_TUID(x)	(argv[(x)].type == ENT_TOKEN_ID)
+#define ISARG_SKID(x)	(argv[(x)].type == ENT_SKILLINFO_ID)
+#define ISARG_AID(x)	(argv[(x)].type == ENT_AREA_ID)
+#define ISARG_WID(x)	(argv[(x)].type == ENT_WILDS_ID)
+#define ISARG_CHID(x)	(argv[(x)].type == ENT_CHURCH_ID)
+#define ISARG_BLIST(x,t)	((argv[(x)].type == (t)) && IS_VALID(argv[(x)].d.blist))
+#define ISARG_BLIST_ROOM(x)	ISARG_BLIST(x,ENT_BLIST_ROOM)
+#define ISARG_BLIST_MOB(x)	ISARG_BLIST(x,ENT_BLIST_MOB)
+#define ISARG_BLIST_OBJ(x)	ISARG_BLIST(x,ENT_BLIST_OBJ)
+#define ISARG_BLIST_TOK(x)	ISARG_BLIST(x,ENT_BLIST_TOK)
+#define ISARG_BLIST_EXIT(x)	ISARG_BLIST(x,ENT_BLIST_EXIT)
+#define ISARG_BLIST_SKILL(x)	ISARG_BLIST(x,ENT_BLIST_SKILL)
+#define ISARG_BLIST_AREA(x)		ISARG_BLIST(x,ENT_BLIST_AREA)
+#define ISARG_BLIST_WILDS(x)	ISARG_BLIST(x,ENT_BLIST_WILDS)
+
+#define ISARG_PLIST_STR(x)	ISARG_BLIST(x,ENT_PLIST_STR)
+#define ISARG_PLIST_CONN(x)	ISARG_BLIST(x,ENT_PLIST_CONN)
+#define ISARG_PLIST_ROOM(x)	ISARG_BLIST(x,ENT_PLIST_ROOM)
+#define ISARG_PLIST_MOB(x)	ISARG_BLIST(x,ENT_PLIST_MOB)
+#define ISARG_PLIST_OBJ(x)	ISARG_BLIST(x,ENT_PLIST_OBJ)
+#define ISARG_PLIST_TOK(x)	ISARG_BLIST(x,ENT_PLIST_TOK)
+#define ISARG_PLIST_CHURCH(x)	ISARG_BLIST(x,ENT_PLIST_CHURCH)
+
 
 #define ARG_NUM(x)	ARG_TYPE(x,num)
 #define ARG_STR(x)	ARG_TYPE(x,str)
 #define ARG_MOB(x)	ARG_TYPE(x,mob)
 #define ARG_OBJ(x)	ARG_TYPE(x,obj)
 #define ARG_ROOM(x)	ARG_TYPE(x,room)
-#define ARG_EXIT(x)	ARG_TYPE(x,exit)
+#define ARG_EXIT(x)	ARG_TYPE(x,door)
 #define ARG_TOK(x)	ARG_TYPE(x,token)
 #define ARG_AREA(x)	ARG_TYPE(x,area)
 #define ARG_SKILL(x)	ARG_TYPE(x,sn)
 #define ARG_SKINFO(x)	ARG_TYPE(x,sk)
+#define ARG_CONN(x)	ARG_TYPE(x,conn)
+#define ARG_WILDS(x)	ARG_TYPE(x,wilds)
+#define ARG_CHURCH(x)	ARG_TYPE(x,church)
 #define ARG_AFF(x)	ARG_TYPE(x,aff)
+#define ARG_BLIST(x)	ARG_TYPE(x,blist)
+#define ARG_UID(x)	ARG_TYPE(x,uid)
+#define ARG_UID2(x,y)	(argv[(x)].d.uid[(y)])
+#define ARG_AID(x)	ARG_TYPE(x,aid)
+#define ARG_WID(x)	ARG_TYPE(x,wid)
+#define ARG_CHID(x)	ARG_TYPE(x,chid)
 
 #define SHIFT_MOB()	do { if(ISARG_MOB(0)) { mob = ARG_MOB(0); ++argv; --argc; } } while(0)
 #define SHIFT_OBJ()	do { if(ISARG_OBJ(0)) { obj = ARG_OBJ(0); ++argv; --argc; } } while(0)
@@ -46,6 +83,8 @@
 #define VALID_STR(x) (ISARG_STR(x) && ARG_STR(x))
 #define VALID_NPC(x) (ISARG_MOB(x) && IS_NPC(ARG_MOB(x)))
 #define VALID_PLAYER(x) (ISARG_MOB(x) && !IS_NPC(ARG_MOB(x)))
+
+#define ARG_BOOL(x) ( (ISARG_NUM(x) && ARG_NUM(x) != 0) || (ISARG_STR(x) && !str_cmp(ARG_STR(x), "true")) )
 
 // Checks if the "act" field on the mob has the given flags
 DECL_IFC_FUN(ifc_act)
@@ -60,8 +99,8 @@ DECL_IFC_FUN(ifc_act)
 DECL_IFC_FUN(ifc_act2)
 {
 	*ret = (ISARG_MOB(0) && ISARG_STR(1) &&
-		((IS_NPC(ARG_MOB(0)) && IS_SET(ARG_MOB(0)->act, flag_value(act2_flags,ARG_STR(1)))) ||
-		(!IS_NPC(ARG_MOB(0)) && IS_SET(ARG_MOB(0)->act, flag_value(plr2_flags,ARG_STR(1))))));
+		((IS_NPC(ARG_MOB(0)) && IS_SET(ARG_MOB(0)->act2, flag_value(act2_flags,ARG_STR(1)))) ||
+		(!IS_NPC(ARG_MOB(0)) && IS_SET(ARG_MOB(0)->act2, flag_value(plr2_flags,ARG_STR(1))))));
 	return TRUE;
 }
 
@@ -216,14 +255,24 @@ DECL_IFC_FUN(ifc_carryleft)
 
 DECL_IFC_FUN(ifc_church)
 {
-	*ret = VALID_PLAYER(0) && ISARG_STR(1) && ARG_MOB(0)->church &&
-		!str_cmp(ARG_STR(1), ARG_MOB(0)->church->name);
+	*ret = FALSE;
+	if(VALID_PLAYER(0) && ARG_MOB(0)->church) {
+		if(ISARG_STR(0) && !str_cmp(ARG_STR(1), ARG_MOB(0)->church->name))
+			*ret = TRUE;
+		else if(ISARG_CHURCH(0) && ARG_MOB(0)->church == ARG_CHURCH(1))
+			*ret = TRUE;
+	}
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_churchonline)
 {
-	*ret = VALID_PLAYER(0) ? get_church_online_count(ARG_MOB(0)) : 0;
+	if(VALID_PLAYER(0))
+		*ret = get_church_online_count(ARG_MOB(0));
+	else if(ISARG_CHURCH(0))
+		*ret = list_size(ARG_CHURCH(0)->online_players);
+	else
+		*ret = 0;
 	return TRUE;
 }
 
@@ -405,11 +454,16 @@ DECL_IFC_FUN(ifc_exitexists)
 DECL_IFC_FUN(ifc_exitflag)
 {
 	int door;
+	EXIT_DATA *ex;
 
 	if(ISARG_EXIT(0)) {
 		if(!ISARG_STR(1)) return FALSE;
 
-		*ret = ARG_EXIT(0) && IS_SET(ARG_EXIT(0)->exit_info, flag_value(exit_flags,ARG_STR(1)));
+		if( !ARG_EXIT(0).r ) return FALSE;
+
+		if( !(ex = ARG_EXIT(0).r->exit[ARG_EXIT(0).door]) ) return FALSE;
+
+		*ret = IS_SET(ex->exit_info, flag_value(exit_flags,ARG_STR(1)));
 	} else {
 
 
@@ -525,7 +579,11 @@ DECL_IFC_FUN(ifc_hastarget)
 
 DECL_IFC_FUN(ifc_hastoken)
 {
-	*ret = ISARG_MOB(0) && get_token_char(ARG_MOB(0), ARG_NUM(1));
+	if(ISARG_MOB(0)) *ret = TRUE && get_token_char(ARG_MOB(0), ARG_NUM(1), (ISARG_NUM(2) ? ARG_NUM(2) : 1));
+	else if(ISARG_OBJ(0)) *ret = TRUE && get_token_obj(ARG_OBJ(0), ARG_NUM(1), (ISARG_NUM(2) ? ARG_NUM(2) : 1));
+	else if(ISARG_ROOM(0)) *ret = TRUE && get_token_room(ARG_ROOM(0), ARG_NUM(1), (ISARG_NUM(2) ? ARG_NUM(2) : 1));
+	else return FALSE;
+
 	return TRUE;
 }
 
@@ -566,6 +624,15 @@ DECL_IFC_FUN(ifc_id)
 	else if(ISARG_OBJ(0)) *ret = (int)ARG_OBJ(0)->id[0];
 	else if(ISARG_ROOM(0)) *ret = (int)ARG_ROOM(0)->id[0];
 	else if(ISARG_TOK(0)) *ret = (int)ARG_TOK(0)->id[0];
+	else if(ISARG_MUID(0)) *ret = (int)ARG_UID2(0,0);
+	else if(ISARG_OUID(0)) *ret = (int)ARG_UID2(0,0);
+	else if(ISARG_TUID(0)) *ret = (int)ARG_UID2(0,0);
+	else if(ISARG_AREA(0)) *ret = ARG_AREA(0)->uid;
+	else if(ISARG_AID(0)) *ret = (int)ARG_AID(0);
+	else if(ISARG_WILDS(0)) *ret = ARG_WILDS(0)->uid;
+	else if(ISARG_WID(0)) *ret = (int)ARG_WID(0);
+	else if(ISARG_CHURCH(0)) *ret = ARG_CHURCH(0)->uid;
+	else if(ISARG_CHID(0)) *ret = (int)ARG_CHID(0);
 	else *ret = 0;
 
 	return TRUE;
@@ -577,6 +644,9 @@ DECL_IFC_FUN(ifc_id2)
 	else if(ISARG_OBJ(0)) *ret = (int)ARG_OBJ(0)->id[1];
 	else if(ISARG_ROOM(0)) *ret = (int)ARG_ROOM(0)->id[1];
 	else if(ISARG_TOK(0)) *ret = (int)ARG_TOK(0)->id[1];
+	else if(ISARG_MUID(0)) *ret = (int)ARG_UID2(0,1);
+	else if(ISARG_OUID(0)) *ret = (int)ARG_UID2(0,1);
+	else if(ISARG_TUID(0)) *ret = (int)ARG_UID2(0,1);
 	else *ret = 0;
 
 	return TRUE;
@@ -591,7 +661,7 @@ DECL_IFC_FUN(ifc_identical)
 	else if(ISARG_OBJ(0) && ISARG_OBJ(1)) *ret = ARG_OBJ(0) == ARG_OBJ(1);
 	else if(ISARG_ROOM(0) && ISARG_ROOM(1)) *ret = ARG_ROOM(0) == ARG_ROOM(1);
 	else if(ISARG_TOK(0) && ISARG_TOK(1)) *ret = ARG_TOK(0) == ARG_TOK(1);
-	else if(ISARG_EXIT(0) && ISARG_EXIT(1)) *ret = ARG_EXIT(0) == ARG_EXIT(1);
+	else if(ISARG_EXIT(0) && ISARG_EXIT(1)) *ret = (ARG_EXIT(0).r == ARG_EXIT(1).r) && (ARG_EXIT(0).door == ARG_EXIT(1).door);
 	else if(ISARG_AREA(0) && ISARG_AREA(1)) *ret = ARG_AREA(0) == ARG_AREA(1);
 	else *ret = FALSE;
 
@@ -647,7 +717,7 @@ DECL_IFC_FUN(ifc_iscasting)
 		(!ISARG_STR(1) || !*ARG_STR(1) ||
 			((sn = skill_lookup(ARG_STR(1))) > 0 &&
 				ARG_MOB(0)->cast_sn == sn) ||
-			(ISARG_NUM(1) && (token = get_token_char(ARG_MOB(0), ARG_NUM(1))) &&
+			(ISARG_NUM(1) && (token = get_token_char(ARG_MOB(0), ARG_NUM(1), (ISARG_NUM(2) ? ARG_NUM(2) : 1))) &&
 				token->pIndexData->type == TOKEN_SPELL && ARG_MOB(0)->cast_token == token) ||
 			(ISARG_TOK(1) && ARG_TOK(0)->pIndexData->type == TOKEN_SPELL &&
 				ARG_TOK(1)->player == ARG_MOB(0) && ARG_MOB(0)->cast_token == ARG_TOK(1)));
@@ -771,12 +841,14 @@ DECL_IFC_FUN(ifc_isimmort)
 DECL_IFC_FUN(ifc_iskey)
 {
 	int door;
+	EXIT_DATA *ex;
 
 	if(ISARG_OBJ(0)) {
-		if(ISARG_EXIT(1))
-			*ret = ARG_OBJ(0)->item_type == ITEM_KEY &&
-				ARG_EXIT(1)->door.key_vnum == ARG_OBJ(0)->pIndexData->vnum;
-		else if(ISARG_STR(1))
+		if(ISARG_EXIT(1)) {
+			ex = ARG_EXIT(1).r ? ARG_EXIT(1).r->exit[ARG_EXIT(1).door] : NULL;
+			*ret = ex && ARG_OBJ(0)->item_type == ITEM_KEY &&
+				ex->door.key_vnum == ARG_OBJ(0)->pIndexData->vnum;
+		} else if(ISARG_STR(1))
 			*ret = ARG_OBJ(0)->item_type == ITEM_KEY && (room = obj_room(ARG_OBJ(0))) &&
 				(door = get_num_dir(ARG_STR(1))) != -1 && room->exit[door] &&
 				room->exit[door]->door.key_vnum == ARG_OBJ(0)->pIndexData->vnum;
@@ -784,10 +856,11 @@ DECL_IFC_FUN(ifc_iskey)
 
 		return TRUE;
 	} else if(obj) {
-		if(ISARG_EXIT(0))
-			*ret = obj->item_type == ITEM_KEY &&
-				ARG_EXIT(0)->door.key_vnum == obj->pIndexData->vnum;
-		else if(ISARG_STR(0))
+		if(ISARG_EXIT(0)) {
+			ex = ARG_EXIT(0).r ? ARG_EXIT(0).r->exit[ARG_EXIT(0).door] : NULL;
+			*ret = ex && obj->item_type == ITEM_KEY &&
+				ex->door.key_vnum == obj->pIndexData->vnum;
+		} else if(ISARG_STR(0))
 			*ret = obj->item_type == ITEM_KEY && (room = obj_room(obj)) &&
 				(door = get_num_dir(ARG_STR(0))) != -1 && room->exit[door] &&
 				room->exit[door]->door.key_vnum == obj->pIndexData->vnum;
@@ -1819,6 +1892,8 @@ DECL_IFC_FUN(ifc_tokencount)
 		return FALSE;
 
 	if(ISARG_MOB(0)) tok = ARG_MOB(0)->tokens;
+	else if(ISARG_OBJ(0)) tok = ARG_OBJ(0)->tokens;
+	else if(ISARG_ROOM(0)) tok = ARG_ROOM(0)->tokens;
 	else return FALSE;
 
 	for(i = 0;tok;tok = tok->next) if(!ti || (tok->pIndexData == ti)) ++i;
@@ -1842,27 +1917,46 @@ DECL_IFC_FUN(ifc_tokentype)
 DECL_IFC_FUN(ifc_tokenvalue)
 {
 	TOKEN_DATA *tok;
+	int val;
 
-	if(ISARG_MOB(0) && ISARG_NUM(1) && ISARG_NUM(2)) {
-		tok = get_token_char(ARG_MOB(0), ARG_NUM(1));
+	if(ISARG_MOB(0) && ISARG_NUM(1) && ISARG_NUM(2) && ISARG_NUM(3)) {
+		tok = get_token_char(ARG_MOB(0), ARG_NUM(1), ARG_NUM(2));
+		val = ARG_NUM(3);
 
-		// If the token doesn't exist on the char, any checks on its values are always false.
-		if(!tok) return FALSE;
+	} else if(ISARG_OBJ(0) && ISARG_NUM(1) && ISARG_NUM(2) && ISARG_NUM(3)) {
+		tok = get_token_obj(ARG_OBJ(0), ARG_NUM(1), ARG_NUM(2));
+		val = ARG_NUM(3);
 
-		if (ARG_NUM(2) < 0 || ARG_NUM(2) >= MAX_TOKEN_VALUES)
-			return FALSE;
+	} else if(ISARG_ROOM(0) && ISARG_NUM(1) && ISARG_NUM(2) && ISARG_NUM(3)) {
+		tok = get_token_room(ARG_ROOM(0), ARG_NUM(1), ARG_NUM(2));
+		val = ARG_NUM(3);
 
-		*ret = tok->value[ARG_NUM(2)];
-		return TRUE;
+	} else if(ISARG_MOB(0) && ISARG_NUM(1) && ISARG_NUM(2)) {
+		tok = get_token_char(ARG_MOB(0), ARG_NUM(1), 1);
+		val = ARG_NUM(2);
+
+	} else if(ISARG_OBJ(0) && ISARG_NUM(1) && ISARG_NUM(2)) {
+		tok = get_token_obj(ARG_OBJ(0), ARG_NUM(1), 1);
+		val = ARG_NUM(2);
+
+	} else if(ISARG_ROOM(0) && ISARG_NUM(1) && ISARG_NUM(2)) {
+		tok = get_token_room(ARG_ROOM(0), ARG_NUM(1), 1);
+		val = ARG_NUM(2);
+
 	} else if(ISARG_TOK(0) && ISARG_NUM(1)) {
-		if (ARG_NUM(1) < 0 || ARG_NUM(1) >= MAX_TOKEN_VALUES)
-			return FALSE;
+		tok = ARG_TOK(0);
+		val = ARG_NUM(1);
+	} else
+		return FALSE;
 
-		*ret = ARG_TOK(0)->value[ARG_NUM(1)];
-		return TRUE;
-	}
+	// If the token doesn't exist on the entity, any checks on its values are always false.
+	if(!tok) return FALSE;
 
-	return FALSE;
+	if (val < 0 || val >= MAX_TOKEN_VALUES)
+		return FALSE;
+
+	*ret = tok->value[val];
+	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_totalfights)
@@ -1979,7 +2073,7 @@ DECL_IFC_FUN(ifc_varexit)
 		var = variable_get(vars,ARG_STR(0));
 
 		if(var && var->type == VAR_EXIT) {
-			*ret = var->_.e && var->_.e->orig_door == door;
+			*ret = var->_.door.r && var->_.door.door == door;
 			return TRUE;
 		}
 	}
@@ -3187,7 +3281,7 @@ DECL_IFC_FUN(ifc_testtokenspell)
 DECL_IFC_FUN(ifc_isspell)
 {
 	if(ISARG_MOB(0) && ISARG_NUM(1)) {
-		token = get_token_char(ARG_MOB(0), ARG_NUM(1));
+		token = get_token_char(ARG_MOB(0), ARG_NUM(1), (ISARG_NUM(2) ? ARG_NUM(2) : 1));
 		*ret = token ? (token->pIndexData->type == TOKEN_SPELL) : FALSE;
 	} else if(ISARG_TOK(0)) {
 		*ret = (ARG_TOK(0)->pIndexData->type == TOKEN_SPELL);
@@ -3199,7 +3293,7 @@ DECL_IFC_FUN(ifc_isspell)
 		else if(ISARG_SKILL(0))
 			sn = ARG_SKILL(0);
 		else if(ISARG_SKINFO(0))
-			sn = ARG_SKINFO(0).owner ? ARG_SKINFO(0).sn : -1;
+			sn = ARG_SKINFO(0).m ? ARG_SKINFO(0).sn : -1;
 		else
 			return FALSE;
 
@@ -3263,7 +3357,7 @@ DECL_IFC_FUN(ifc_grouphit)
 	SHIFT_MOB();
 	*ret = 0;
 
-	if(!mob->in_room) return FALSE;	// Since all stats have a minimum, this would be an ERROR
+	if(!mob || !mob->in_room) return FALSE;	// Since all stats have a minimum, this would be an ERROR
 
 	for(rch = mob->in_room->people;rch; rch = rch->next_in_room)
 		if(mob == rch || is_same_group(mob,rch))
@@ -3281,7 +3375,7 @@ DECL_IFC_FUN(ifc_groupmana)
 	SHIFT_MOB();
 	*ret = 0;
 
-	if(!mob->in_room) return FALSE;
+	if(!mob || !mob->in_room) return FALSE;
 
 	for(rch = mob->in_room->people;rch; rch = rch->next_in_room)
 		if(mob == rch || is_same_group(mob,rch))
@@ -3299,7 +3393,7 @@ DECL_IFC_FUN(ifc_groupmove)
 	SHIFT_MOB();
 	*ret = 0;
 
-	if(!mob->in_room) return FALSE;
+	if(!mob || !mob->in_room) return FALSE;
 
 	for(rch = mob->in_room->people;rch; rch = rch->next_in_room)
 		if(mob == rch || is_same_group(mob,rch))
@@ -3317,7 +3411,7 @@ DECL_IFC_FUN(ifc_groupmaxhit)
 	SHIFT_MOB();
 	*ret = 0;
 
-	if(!mob->in_room) return FALSE;	// Since all stats have a minimum, this would be an ERROR
+	if(!mob || !mob->in_room) return FALSE;	// Since all stats have a minimum, this would be an ERROR
 
 	for(rch = mob->in_room->people;rch; rch = rch->next_in_room)
 		if(mob == rch || is_same_group(mob,rch))
@@ -3335,7 +3429,7 @@ DECL_IFC_FUN(ifc_groupmaxmana)
 	SHIFT_MOB();
 	*ret = 0;
 
-	if(!mob->in_room) return FALSE;
+	if(!mob || !mob->in_room) return FALSE;
 
 	for(rch = mob->in_room->people;rch; rch = rch->next_in_room)
 		if(mob == rch || is_same_group(mob,rch))
@@ -3353,7 +3447,7 @@ DECL_IFC_FUN(ifc_groupmaxmove)
 	SHIFT_MOB();
 	*ret = 0;
 
-	if(!mob->in_room) return FALSE;
+	if(!mob || !mob->in_room) return FALSE;
 
 	for(rch = mob->in_room->people;rch; rch = rch->next_in_room)
 		if(mob == rch || is_same_group(mob,rch))
@@ -3496,8 +3590,6 @@ DECL_IFC_FUN(ifc_isremort)
 	return TRUE;
 }
 
-// Prototype for find_path() in hunt.c
-int find_path( long in_room_vnum, long out_room_vnum, CHAR_DATA *ch, int depth, int in_zone );
 
 DECL_IFC_FUN(ifc_findpath)
 {
@@ -3530,3 +3622,330 @@ DECL_IFC_FUN(ifc_findpath)
 	*ret = find_path( start, end, NULL, (thru_doors ? -depth : depth), in_zone);
 	return TRUE;
 }
+
+// Determines the level of sunlight from 0 to 1000
+// Sunlight is 0 inside or in the netherworld
+DECL_IFC_FUN(ifc_sunlight)
+{
+	if(argc > 0) {
+		if(ISARG_MOB(0)) room = ARG_MOB(0)->in_room;
+		else if(ISARG_OBJ(0)) room = obj_room(ARG_OBJ(0));
+		else if(ISARG_ROOM(0)) room = ARG_ROOM(0);
+		else if(ISARG_TOK(0)) room = token_room(ARG_TOK(0));
+	} else {
+		if(mob) room = mob->in_room;
+		else if(obj) room = obj_room(obj);
+		else if(token) room = token_room(token);
+	}
+
+	if (room && (room->wilds || (room->sector_type != SECT_INSIDE && room->sector_type != SECT_NETHERWORLD && !IS_SET(room->room_flags, ROOM_INDOORS)))) {
+		*ret = (int)(-1000 * cos(3.1415926 * time_info.hour / 12));
+		if(*ret < 0) *ret = 0;
+	} else
+		*ret = 0;
+	return TRUE;
+}
+
+// if istreasureroom[ $<mobile|church|name>] $<room|vnum>
+DECL_IFC_FUN(ifc_istreasureroom)
+{
+	CHURCH_DATA *church = NULL;
+	ROOM_INDEX_DATA *here = NULL;
+	ITERATOR it;
+
+	*ret = FALSE;
+	if(ISARG_MOB(0)) church = ARG_MOB(0)->church;
+	else if(ISARG_CHURCH(0)) church = ARG_CHURCH(0);
+	else if(ISARG_STR(0)) church = find_church_name(ARG_STR(0));
+	else {
+		if(ISARG_ROOM(0)) here = ARG_ROOM(0);
+		else if(ISARG_NUM(0)) here = get_room_index(ARG_NUM(0));
+
+		if(here) {
+			iterator_start(&it, list_churches);
+			while( (church = (CHURCH_DATA *)iterator_nextdata(&it)) ) {
+				if( is_treasure_room(church, here) ) {
+					*ret = TRUE;
+					break;
+				}
+			}
+			iterator_stop(&it);
+		}
+
+		return TRUE;
+	}
+
+	if(church) {
+		if(ISARG_ROOM(1)) here = ARG_ROOM(1);
+		else if(ISARG_NUM(1)) here = get_room_index(ARG_NUM(1));
+
+		*ret = here ? is_treasure_room(church, here) : FALSE;
+	}
+
+	return TRUE;
+}
+
+// if churchhasrelic $<mobile|church|name> $<string=relic>
+DECL_IFC_FUN(ifc_churchhasrelic)
+{
+	CHURCH_DATA *church = NULL;
+
+	*ret = FALSE;
+	if(ISARG_MOB(0)) church = ARG_MOB(0)->church;
+	else if(ISARG_CHURCH(0)) church = ARG_CHURCH(0);
+	else if(ISARG_STR(0)) church = find_church_name(ARG_STR(0));
+
+	if(church) {
+		OBJ_DATA *relic = NULL;
+		if(ISARG_STR(1)) {
+			if(!str_cmp(ARG_STR(1),"xp")) relic = xp_relic;
+			else if(!str_cmp(ARG_STR(1),"damage")) relic = damage_relic;
+			else if(!str_cmp(ARG_STR(1),"pneuma")) relic = pneuma_relic;
+			else if(!str_cmp(ARG_STR(1),"health")) relic = hp_regen_relic;
+			else if(!str_cmp(ARG_STR(1),"mana")) relic = mana_regen_relic;
+		}
+
+		if( relic && relic->in_room ) {
+			ITERATOR it;
+			ROOM_INDEX_DATA *troom;
+
+			iterator_start(&it,church->treasure_rooms);
+			while( (troom = (ROOM_INDEX_DATA *)iterator_nextdata(&it)) ) {
+				if( relic->in_room == troom ) {
+					*ret = TRUE;
+					break;
+				}
+			}
+			iterator_stop(&it);
+		}
+	}
+
+	return TRUE;
+}
+
+// if ischurchpk $<mobile|church|name>
+DECL_IFC_FUN(ifc_ischurchpk)
+{
+	CHURCH_DATA *church = NULL;
+
+	if(ISARG_MOB(0)) church = ARG_MOB(0)->church;
+	else if(ISARG_CHURCH(0)) church = ARG_CHURCH(0);
+	else if(ISARG_STR(0)) church = find_church_name(ARG_STR(0));
+
+	*ret = church && church->pk;
+
+	return TRUE;
+}
+
+// if iscrosszone $<mobile|church|name>
+DECL_IFC_FUN(ifc_iscrosszone)
+{
+	CHURCH_DATA *church = NULL;
+
+	if(ISARG_MOB(0)) church = ARG_MOB(0)->church;
+	else if(ISARG_CHURCH(0)) church = ARG_CHURCH(0);
+	else if(ISARG_STR(0)) church = find_church_name(ARG_STR(0));
+
+	if(church) *ret = (int)IS_SET(church->settings,CHURCH_ALLOW_CROSSZONES);
+	else *ret = FALSE;
+	return TRUE;
+}
+
+// if isinchurch $<mobile|church|name>[ $<mobile|name>]
+DECL_IFC_FUN(ifc_inchurch)
+{
+	CHURCH_DATA *church = NULL;
+
+	*ret = FALSE;
+
+	if(ISARG_MOB(0)) church = ARG_MOB(0)->church;
+	else if(ISARG_CHURCH(0)) church = ARG_CHURCH(0);
+	else if(ISARG_STR(0)) church = find_church_name(ARG_STR(0));
+
+	if(church) {
+		if(ISARG_MOB(1)) mob = ARG_MOB(1);
+		else if(ISARG_STR(1)) mob = get_player(ARG_STR(1));
+
+		if(mob && mob->church == church)
+			*ret = TRUE;
+	}
+
+	return TRUE;
+}
+
+// if ispersist $<mobile|object|room>
+DECL_IFC_FUN(ifc_ispersist)
+{
+	if(ISARG_MOB(0)) *ret = IS_NPC(ARG_MOB(0)) ? ARG_MOB(0)->persist : TRUE;	// Players are persistant by nature
+	else if(ISARG_OBJ(0)) *ret = ARG_OBJ(0)->persist;
+	else if(ISARG_ROOM(0)) *ret = ARG_ROOM(0)->persist;
+	else *ret = FALSE;
+
+	return TRUE;
+}
+
+// if listcontains $<list> $<element>
+DECL_IFC_FUN(ifc_listcontains)
+{
+	ITERATOR it;
+	LIST_UID_DATA *luid;
+	LIST_ROOM_DATA *lroom;
+	ROOM_INDEX_DATA *proom;
+	CHAR_DATA *pmob;
+	OBJ_DATA *pobj;
+	TOKEN_DATA *ptoken;
+
+	*ret = FALSE;
+	if(ISARG_BLIST_ROOM(0) && ISARG_ROOM(1)) {
+		iterator_start(&it,ARG_BLIST(0));
+		while( (lroom = (LIST_ROOM_DATA *)iterator_nextdata(&it)) ) {
+			if( lroom->room == ARG_ROOM(1) ) {
+				*ret = TRUE;
+				break;
+			}
+		}
+		iterator_stop(&it);
+	} else if(ISARG_PLIST_ROOM(0) && ISARG_ROOM(1)) {
+		iterator_start(&it,ARG_BLIST(0));
+		while( (proom = (ROOM_INDEX_DATA *)iterator_nextdata(&it)) ) {
+			if( proom == ARG_ROOM(1) ) {
+				*ret = TRUE;
+				break;
+			}
+		}
+		iterator_stop(&it);
+	} else if(ISARG_BLIST_MOB(0) && ISARG_MOB(1)) {
+		iterator_start(&it,ARG_BLIST(0));
+		while( (luid = (LIST_UID_DATA *)iterator_nextdata(&it)) ) {
+			if( (CHAR_DATA*)(luid->ptr) == ARG_MOB(1) ) {
+				*ret = TRUE;
+				break;
+			}
+		}
+		iterator_stop(&it);
+	} else if(ISARG_PLIST_MOB(0) && ISARG_MOB(1)) {
+		iterator_start(&it,ARG_BLIST(0));
+		while( (pmob = (CHAR_DATA *)iterator_nextdata(&it)) ) {
+			if( pmob == ARG_MOB(1) ) {
+				*ret = TRUE;
+				break;
+			}
+		}
+		iterator_stop(&it);
+	} else if(ISARG_BLIST_OBJ(0) && ISARG_OBJ(1)) {
+		iterator_start(&it,ARG_BLIST(0));
+		while( (luid = (LIST_UID_DATA *)iterator_nextdata(&it)) ) {
+			if( (OBJ_DATA*)(luid->ptr) == ARG_OBJ(1) ) {
+				*ret = TRUE;
+				break;
+			}
+		}
+		iterator_stop(&it);
+	} else if(ISARG_PLIST_OBJ(0) && ISARG_OBJ(1)) {
+		iterator_start(&it,ARG_BLIST(0));
+		while( (pobj = (OBJ_DATA *)iterator_nextdata(&it)) ) {
+			if( pobj == ARG_OBJ(1) ) {
+				*ret = TRUE;
+				break;
+			}
+		}
+		iterator_stop(&it);
+	} else if(ISARG_BLIST_TOK(0) && ISARG_TOK(1)) {
+		iterator_start(&it,ARG_BLIST(0));
+		while( (luid = (LIST_UID_DATA *)iterator_nextdata(&it)) ) {
+			if( (TOKEN_DATA*)(luid->ptr) == ARG_TOK(1) ) {
+				*ret = TRUE;
+				break;
+			}
+		}
+		iterator_stop(&it);
+	} else if(ISARG_PLIST_TOK(0) && ISARG_TOK(1)) {
+		iterator_start(&it,ARG_BLIST(0));
+		while( (ptoken = (TOKEN_DATA *)iterator_nextdata(&it)) ) {
+			if( ptoken == ARG_TOK(1) ) {
+				*ret = TRUE;
+				break;
+			}
+		}
+		iterator_stop(&it);
+	}
+
+	return TRUE;
+}
+
+// if ispk $<player>
+// if ispk $<room>[ <boolean=arena>]
+DECL_IFC_FUN(ifc_ispk)
+{
+	if(VALID_PLAYER(0)) *ret = is_pk(ARG_MOB(0));
+	else if(ISARG_ROOM(0)) *ret = is_room_pk(ARG_ROOM(0),ARG_BOOL(1));
+	else *ret = FALSE;
+
+	return TRUE;
+}
+
+// if register <number>
+DECL_IFC_FUN(ifc_register)
+{
+
+	if(ISARG_NUM(0)) {
+		int r = ARG_NUM(0);
+
+		if(r >= 0 && r < 5)
+		{
+			*ret = info->registers[r];
+			return TRUE;
+		}
+	}
+
+	*ret = 0;
+	return FALSE;
+}
+
+// if comm $<player> <flags>
+DECL_IFC_FUN(ifc_comm)
+{
+	*ret = VALID_PLAYER(0) && ISARG_STR(1) && IS_SET(ARG_MOB(0)->comm, flag_value(comm_flags, ARG_STR(1)));
+	return TRUE;
+}
+
+// if flagcomm <flags> == <value>
+// Usually used for $[[flagcomm <flags>]]
+DECL_IFC_FUN(ifc_flag_comm)
+{
+	*ret = ISARG_STR(0) ? flag_value(comm_flags,ARG_STR(0)) : 0;
+	return TRUE;
+}
+
+// if min <number> <number>
+// returns the minimum of the two numbers
+DECL_IFC_FUN(ifc_min)
+{
+	if(ISARG_NUM(0))
+	{
+		if( ISARG_NUM(1) && (ARG_NUM(1) < ARG_NUM(0)) )
+			*ret = ARG_NUM(1);
+		else
+			*ret = ARG_NUM(0);
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+// if max <number> <number>
+// returns the maximum of the two numbers
+DECL_IFC_FUN(ifc_max)
+{
+	if(ISARG_NUM(0))
+	{
+		if( ISARG_NUM(1) && (ARG_NUM(1) > ARG_NUM(0)) )
+			*ret = ARG_NUM(1);
+		else
+			*ret = ARG_NUM(0);
+		return TRUE;
+	}
+
+	return FALSE;
+}
+

@@ -994,6 +994,11 @@ SCRIPTEDIT(scriptedit_flags)
 				return FALSE;
 			}
 
+			if(IS_SET(value,SCRIPT_SYSTEM) && !IS_SET(pCode->flags,SCRIPT_SYSTEM) && !script_imp_check(ch)) {
+				send_to_char("Insufficent security to set script as system.\n\r", ch);
+				return FALSE;
+			}
+
 			TOGGLE_BIT(pCode->flags, value);
 
 			send_to_char("Script flag toggled.\n\r", ch);

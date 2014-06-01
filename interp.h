@@ -460,6 +460,7 @@ DECLARE_DO_FUN(	do_tail_kick	);
 DECLARE_DO_FUN(	do_tell		);
 DECLARE_DO_FUN( do_tells	);
 DECLARE_DO_FUN( do_test		);
+DECLARE_DO_FUN( do_testport	);
 DECLARE_DO_FUN(	do_throw	);
 DECLARE_DO_FUN(	do_time		);
 DECLARE_DO_FUN(	do_title	);
@@ -519,6 +520,7 @@ DECLARE_DO_FUN(	do_wizhelp	);
 DECLARE_DO_FUN( do_wizlist	);
 DECLARE_DO_FUN(	do_wizlock	);
 DECLARE_DO_FUN( do_wiznet	);
+DECLARE_DO_FUN( do_wlist	);		// Wilderness List
 DECLARE_DO_FUN( do_worth	);
 DECLARE_DO_FUN(	do_wstat	);
 DECLARE_DO_FUN(	do_yell		);

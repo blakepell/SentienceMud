@@ -595,6 +595,7 @@ const struct flag_type act2_flags[]=
     {   "soul_deposit",		ACT2_SOUL_DEPOSIT,	TRUE	},
     {   "use_skills_only",	ACT2_USE_SKILLS_ONLY,	TRUE	},
     {   "can_level",		ACT2_CANLEVEL,		TRUE	},
+    {   "no_xp",		ACT2_NO_XP,		TRUE	},
     {   NULL,			0,			FALSE	}
 };
 
@@ -973,6 +974,8 @@ const struct flag_type area_flags[] =
     {   "dark",			AREA_DARK,		TRUE    },
     {	"testport",		AREA_TESTPORT,		TRUE	},
     {	"no_recall",	AREA_NO_RECALL,		TRUE	},
+    {	"no_rooms",		AREA_NO_ROOMS,		TRUE	},
+    {	"newbie",		AREA_NEWBIE,		TRUE	},
     {	NULL,			0,			0	}
 };
 
@@ -981,6 +984,9 @@ const struct flag_type church_flags[] =
 {
     {	"show_pks",		CHURCH_SHOW_PKS,	TRUE 	},
     {   "allow_crosszones",	CHURCH_ALLOW_CROSSZONES,TRUE 	},
+    {	"public_motd",	CHURCH_PUBLIC_MOTD,	TRUE	},
+    {	"public_rules",	CHURCH_PUBLIC_RULES,	TRUE	},
+    {	"public_info",	CHURCH_PUBLIC_INFO,	TRUE	},
     {	NULL,			0,			0	},
 };
 
@@ -1086,7 +1092,11 @@ const struct flag_type room2_flags[] =
     {   "post_office",		ROOM_POST_OFFICE,	TRUE	},
     {	"underground",		ROOM_UNDERGROUND,	TRUE	},
     {	"vis_on_map",		ROOM_VISIBLE_ON_MAP,	TRUE	},
+    {	"no_floor",		ROOM_NOFLOOR,	TRUE	},
+    {	"clone_persist",		ROOM_CLONE_PERSIST,	TRUE	},
+    {	"always_update",		ROOM_ALWAYS_UPDATE,	TRUE	},
     {	NULL,			0,			0	}
+
 };
 
 
@@ -1267,7 +1277,9 @@ const struct flag_type extra2_flags[] =
 const struct flag_type extra3_flags[] =
 {
     {	"exclude_list",		ITEM_EXCLUDE_LIST,	TRUE	},
-    {	"persist",		ITEM_PERSIST,		TRUE	},
+    {	"no_transfer",		ITEM_NO_TRANSFER,	TRUE	},
+    {	"always_loot",		ITEM_ALWAYS_LOOT,	TRUE	},
+    {	"force_loot",		ITEM_FORCE_LOOT,	FALSE	},
     {   NULL,			0,			0	}
 };
 
@@ -1638,18 +1650,18 @@ const struct flag_type portal_flags[]=
 {
     {	"arearandom",	GATE_AREARANDOM,	TRUE	},
     {	"candragitems",	GATE_CANDRAGITEMS,	TRUE	},
-    {	"gravity",	GATE_GRAVITY,		FALSE	},	// @@@NIB : 20070126 : Not imped yet
-    {	"no_curse",	GATE_NOCURSE,		TRUE	},
+    {	"gravity",		GATE_GRAVITY,		FALSE	},	// @@@NIB : 20070126 : Not imped yet
+    {	"no_curse",		GATE_NOCURSE,		TRUE	},
     {	"noprivacy",	GATE_NOPRIVACY,		TRUE	},	// @@@NIB : 20070126
-    {	"nosneak",	GATE_NOSNEAK,		TRUE	},	// @@@NIB : 20070126
-    {	"random",	GATE_RANDOM,		TRUE	},
-    {	"safe",		GATE_SAFE,		FALSE	},	// @@@NIB : 20070126 : Not imped yet
+    {	"nosneak",		GATE_NOSNEAK,		TRUE	},	// @@@NIB : 20070126
+    {	"random",		GATE_RANDOM,		TRUE	},
+    {	"safe",			GATE_SAFE,			FALSE	},	// @@@NIB : 20070126 : Not imped yet
     {	"silententry",	GATE_SILENTENTRY,	TRUE	},	// @@@NIB : 20070126
     {	"silentexit",	GATE_SILENTEXIT,	TRUE	},	// @@@NIB : 20070126
-    {	"sneak",	GATE_SNEAK,		TRUE	},	// @@@NIB : 20070126
+    {	"sneak",		GATE_SNEAK,			TRUE	},	// @@@NIB : 20070126
     {	"turbulent",	GATE_TURBULENT,		FALSE	},	// @@@NIB : 20070126 : Not imped yet
-    {   "buggy",	GATE_BUGGY,		TRUE	},
-    {   "go_with",	GATE_GOWITH,		TRUE	},
+    {   "buggy",		GATE_BUGGY,			TRUE	},
+    {   "go_with",		GATE_GOWITH,		TRUE	},
     {   "normal_exit",	GATE_NORMAL_EXIT,	TRUE	},
     {   NULL,		0,			0	}
 };
@@ -1681,6 +1693,9 @@ const	struct	flag_type	apply_types	[]	=
 {
     {	"affects",	TO_AFFECTS,	TRUE	},
     {	"object",	TO_OBJECT,	TRUE	},
+    {	"object2",	TO_OBJECT2,	TRUE	},
+    {	"object3",	TO_OBJECT3,	TRUE	},
+    {	"object4",	TO_OBJECT4,	TRUE	},
     {	"immune",	TO_IMMUNE,	TRUE	},
     {	"resist",	TO_RESIST,	TRUE	},
     {	"vuln",		TO_VULN,	TRUE	},
@@ -1865,6 +1880,9 @@ const struct flag_type	token_flags[] =
     {	"purge_rift",		TOKEN_PURGE_RIFT,		TRUE	},
     {	"reverse_timer",	TOKEN_REVERSETIMER,		TRUE	},
     {	"no_skill_test",	TOKEN_NOSKILLTEST,		TRUE	},
+    {	"singular",			TOKEN_SINGULAR,			TRUE	},
+    {	"see_all",			TOKEN_SEE_ALL,			TRUE	},
+    {	"permanent",		TOKEN_PERMANENT,		TRUE	},
     {	NULL,			0,				FALSE	}
 };
 
@@ -2357,6 +2375,7 @@ const struct flag_type catalyst_method_types[] = {
 	{ "hold",	CATALYST_HOLD, TRUE},
 	{ "containers",	CATALYST_CONTAINERS, TRUE},
 	{ "worn",	CATALYST_WORN, TRUE},
+	{ "active",	CATALYST_ACTIVE, TRUE},
 	{ NULL,		0, FALSE },
 };
 

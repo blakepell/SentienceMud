@@ -418,7 +418,7 @@ void do_build(CHAR_DATA *ch, char *argument)
     if (argument[0] == '\0') {
 	if (IS_SET(ch->act, PLR_BUILDING)) {
 	    if (IS_SET(ch->act, PLR_BUILDING) && ch->pcdata->immortal->build_project != NULL)
-		act("You stop building in $t.", ch, ch->pcdata->immortal->build_project->name, NULL, TO_CHAR);
+		act("You stop building in $t.", ch, NULL, NULL, NULL, NULL, ch->pcdata->immortal->build_project->name, NULL, TO_CHAR);
 	    REMOVE_BIT(ch->act, PLR_BUILDING);
 	    ch->pcdata->immortal->build_project = NULL;
 	    ch->pcdata->immortal->builder = NULL;
@@ -436,12 +436,12 @@ void do_build(CHAR_DATA *ch, char *argument)
     }
 
     if ((pb = find_project_builder(project, ch->name)) == NULL) {
-	act("You aren't a builder on project $t.", ch, project->name, NULL, TO_CHAR);
+	act("You aren't a builder on project $t.", ch, NULL, NULL, NULL, NULL, project->name, NULL, TO_CHAR);
 	return;
     }
 
     if (IS_SET(ch->act, PLR_BUILDING) && ch->pcdata->immortal->build_project->name != NULL)
-	act("You stop building in $t.", ch, ch->pcdata->immortal->build_project->name, NULL, TO_CHAR);
+	act("You stop building in $t.", ch, NULL, NULL, NULL, NULL, ch->pcdata->immortal->build_project->name, NULL, TO_CHAR);
 
     ch->pcdata->immortal->build_project = project;
 
@@ -449,7 +449,7 @@ void do_build(CHAR_DATA *ch, char *argument)
     ch->pcdata->immortal->last_olc_command = current_time;
 
     SET_BIT(ch->act, PLR_BUILDING);
-    act("You start building in $t.", ch, project->name, NULL, TO_CHAR);
+    act("You start building in $t.", ch, NULL, NULL, NULL, NULL, project->name, NULL, TO_CHAR);
 }
 
 
@@ -983,7 +983,7 @@ PEDIT(pedit_builder)
 	else
 	    pb_prev->next = pb->next;
 
-	act("Builder $t removed.", ch, pb->name, NULL, TO_CHAR);
+	act("Builder $t removed.", ch, NULL, NULL, NULL, NULL, pb->name, NULL, TO_CHAR);
 	free_project_builder(pb);
     }
     else
@@ -1010,7 +1010,7 @@ PEDIT(pedit_builder)
 
         pb->project = project;
 
-	act("Builder $t added.", ch, pb->name, NULL, TO_CHAR);
+	act("Builder $t added.", ch, NULL, NULL, NULL, NULL, pb->name, NULL, TO_CHAR);
     }
 
 
@@ -1072,7 +1072,7 @@ PEDIT(pedit_leader)
     arg[0] = UPPER(arg[0]);
     project->leader = str_dup(arg);
 
-    act("Project leader set to $t.", ch, project->leader, NULL, TO_CHAR);
+    act("Project leader set to $t.", ch, NULL, NULL, NULL, NULL, project->leader, NULL, TO_CHAR);
     return TRUE;
 }
 
@@ -1143,7 +1143,7 @@ PEDIT(pedit_area)
 	else
 	   string_last->next = string->next;
 
-	act("Area $t removed.", ch, string->string, NULL, TO_CHAR);
+	act("Area $t removed.", ch, NULL, NULL, NULL, NULL, string->string, NULL, TO_CHAR);
 
 	free_string_data(string);
     }
@@ -1172,7 +1172,7 @@ PEDIT(pedit_area)
 	else
 	    project->areas = string;
 
-	act("Area $t added.", ch, area->name, NULL, TO_CHAR);
+	act("Area $t added.", ch, NULL, NULL, NULL, NULL, area->name, NULL, TO_CHAR);
     }
 
     return TRUE;

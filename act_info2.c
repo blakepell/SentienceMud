@@ -17,17 +17,19 @@ extern long int   __BUILD_NUMBER;
 /* MOVED: combat/assess.c */
 void do_showdamage(CHAR_DATA *ch, char *argument)
 {
-    if (!IS_IMMORTAL(ch) && port != PORT_TEST && port != 9000) {
+#ifndef DEBUG_ALLOW_SHOW_DAMAGE
+    if (!IS_IMMORTAL(ch) && !is_test_port) {
 	send_to_char("As a player, you may only see the damages of hits on the testport.\n\r", ch);
 	return;
     }
+#endif
 
     if (IS_SET(ch->act, PLR_SHOWDAMAGE)) {
-	REMOVE_BIT(ch->act, PLR_SHOWDAMAGE);
-	send_to_char("You will no longer see the damages of hits.\n\r", ch);
+		REMOVE_BIT(ch->act, PLR_SHOWDAMAGE);
+		send_to_char("You will no longer see the damages of hits.\n\r", ch);
     } else {
-	SET_BIT(ch->act, PLR_SHOWDAMAGE);
-	send_to_char("You will now see the damages of hits.\n\r", ch);
+		SET_BIT(ch->act, PLR_SHOWDAMAGE);
+		send_to_char("You will now see the damages of hits.\n\r", ch);
     }
 }
 
@@ -52,14 +54,14 @@ void do_autosurvey(CHAR_DATA *ch, char *argument)
 void do_showversion(CHAR_DATA *ch, char *argument)
 {
 	char buf[MAX_STRING_LENGTH];
-	buf[0] = '\0';	
+	buf[0] = '\0';
 	time_t  build_date;
 	build_date = (time_t) &__BUILD_DATE;
 //	builddate = &__BUILD_DATE)
 //	sprintf(buf,"Build Date: %u\n\r",&build_date);
-	sprintf(buf,"Build Number: %lu, built on %s",&__BUILD_NUMBER,ctime(&build_date));
+	sprintf(buf,"Build Number: %ld, built on %s",(long int)(size_t)&__BUILD_NUMBER,ctime(&build_date));
 	send_to_char(buf,ch);
 }
-	
+
 
 

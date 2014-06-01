@@ -49,12 +49,12 @@ void do_house(CHAR_DATA *ch, char *argument)
 
  	send_to_char("Congratulations homeowner, on your fine purchase!\n\r", ch);
 	send_to_char("You may come here at any time by typing 'gohome'.\n\r", ch);
-	act("{RA big hairy gnome appears in a flash of lightning.{x", ch, NULL, NULL, TO_ROOM);
-	act("{RA big hairy gnome appears in a flash of lightning.{x", ch, NULL, NULL, TO_CHAR);
-	act("A big hairy gnome pulls out a checklist and ticks a box.", ch, NULL, NULL, TO_CHAR);
-	act("A big hairy gnome pulls out a checklist and ticks a box.", ch, NULL, NULL, TO_ROOM);
-	act("{RA big hairy gnome disappears in a flash of lightning.{x", ch, NULL, NULL, TO_ROOM);
-	act("{RA big hairy gnome disappears in a flash of lightning.{x", ch, NULL, NULL, TO_CHAR);
+	act("{RA big hairy gnome appears in a flash of lightning.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+	act("{RA big hairy gnome appears in a flash of lightning.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+	act("A big hairy gnome pulls out a checklist and ticks a box.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+	act("A big hairy gnome pulls out a checklist and ticks a box.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+	act("{RA big hairy gnome disappears in a flash of lightning.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+	act("{RA big hairy gnome disappears in a flash of lightning.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
 	REMOVE_BIT(ch->in_room->room_flags, ROOM_HOUSE_UNSOLD);
 
@@ -87,8 +87,8 @@ void do_house(CHAR_DATA *ch, char *argument)
 
 	ch->in_room->name = nocolor(argument);
 
-	act("A small gnome appears, changes the room's and then disappears.", ch, NULL, NULL, TO_ROOM);
-	act("A small gnome appears, changes the room's and then disappears.", ch, NULL, NULL, TO_CHAR);
+	act("A small gnome appears, changes the room's and then disappears.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+	act("A small gnome appears, changes the room's and then disappears.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	SET_BIT(ch->in_room->area->area_flags, AREA_CHANGED);
 	return;
     }
@@ -101,8 +101,8 @@ void do_house(CHAR_DATA *ch, char *argument)
 	}
 
 	string_append(ch, &ch->in_room->description);
-	act("There is a crack of lightning and a small hairy gnome appears out of nowhere.", ch, NULL, NULL, TO_ROOM);
-	act("There is a crack of lightning and a small hairy gnome appears out of nowhere.", ch, NULL, NULL, TO_CHAR);
+	act("There is a crack of lightning and a small hairy gnome appears out of nowhere.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+	act("There is a crack of lightning and a small hairy gnome appears out of nowhere.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	SET_BIT(ch->in_room->area->area_flags, AREA_CHANGED);
 	return;
     }
@@ -214,13 +214,11 @@ void do_evict(CHAR_DATA *ch, char *argument)
 	   if ( d.character->home != 0 )
 	   {
 	       d.character->home = 0;
-	       act("You have evicted $N!", ch, NULL, d.character,
-		       TO_CHAR);
+	       act("You have evicted $N!", ch, d.character, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	   }
 	   else
 	   {
-	       act("$N doesn't have a home!", ch, NULL, d.character,
-		       TO_CHAR );
+	       act("$N doesn't have a home!", ch, d.character, NULL, NULL, NULL, NULL, NULL, TO_CHAR );
 	   }
 
 	   save_char_obj(d.character);
@@ -234,12 +232,12 @@ void do_evict(CHAR_DATA *ch, char *argument)
     {
 	victim->home = 0;
 	if ( victim != ch )
-	    act("You have evicted $N!",ch, NULL, victim, TO_CHAR);
+	    act("You have evicted $N!",ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	else
-	    act("You have evicted yourself!", ch, NULL, NULL, TO_CHAR );
+	    act("You have evicted yourself!", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR );
     }
     else
-	act("$N doesn't have a home!", ch, NULL, victim, TO_CHAR );
+	act("$N doesn't have a home!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR );
 }
 
 
@@ -289,7 +287,7 @@ void do_housemove(CHAR_DATA *ch, char *argument)
 	    victim->home = to_room->vnum;
 	    sprintf( buf, "$N's home is now %ld (%s).",
 			    to_room->vnum, to_room->name );
-	    act( buf, ch, NULL, victim, TO_CHAR );
+	    act( buf, ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR );
 
 	    char_to_room( victim, get_room_index( 1 ) );
 	    do_quit(victim,"");
@@ -300,7 +298,7 @@ void do_housemove(CHAR_DATA *ch, char *argument)
     victim->home = to_room->vnum;
     sprintf( buf, "$N's home is now %ld (%s).",
 	to_room->vnum, to_room->name );
-    act( buf, ch, NULL, victim, TO_CHAR );
+    act( buf, ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR );
     save_char_obj( victim );
 }
 
@@ -394,16 +392,12 @@ void do_gohome(CHAR_DATA *ch, char *argument)
     send_to_char
 	("You click your heels three times and whisper \"there's no place like home.\"\n\r",
 	 ch);
-    act("{RThere is a tremendous explosion as a swirling vortex forms!{x",
-	ch, NULL, NULL, TO_ROOM);
-    act("{RThere is a tremendous explosion as a swirling vortex forms!{x",
-	ch, NULL, NULL, TO_CHAR);
-    act("$n steps into the swirling vortex.", ch, NULL, NULL, TO_ROOM);
-    act("You step into the swirling vortex.", ch, NULL, NULL, TO_CHAR);
-    act("{RThere is a loud pop as the vortex collapses in on itself.{x",
-	ch, NULL, NULL, TO_ROOM);
-    act("{RThere is a loud pop as the vortex collapses in on itself.{x",
-	ch, NULL, NULL, TO_CHAR);
+    act("{RThere is a tremendous explosion as a swirling vortex forms!{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+    act("{RThere is a tremendous explosion as a swirling vortex forms!{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+    act("$n steps into the swirling vortex.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+    act("You step into the swirling vortex.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+    act("{RThere is a loud pop as the vortex collapses in on itself.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+    act("{RThere is a loud pop as the vortex collapses in on itself.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
     char_from_room(ch);
     char_to_room(ch, location);

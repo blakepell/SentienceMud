@@ -80,7 +80,7 @@ void do_delete(CHAR_DATA *ch, char *argument)
 			capitalize( ch->name ) );
 			wiznet("$N turns $Mself into line noise.",ch,NULL,0,0,0);
 			stop_fighting(ch,TRUE);
-			do_function(ch, &do_quit, "");
+			do_function(ch, &do_quit, NULL);
 			unlink(strsave);
 		}
 		return;
@@ -98,7 +98,7 @@ void do_delete(CHAR_DATA *ch, char *argument)
 	wiznet("$N is contemplating deletion.",ch,NULL,0,0,get_trust(ch));
 }
 
-/* MOVED: channels.c 
+/* MOVED: channels.c
  Lists all channels and their status */
 void do_channels(CHAR_DATA *ch, char *argument)
 {
@@ -324,7 +324,7 @@ void do_ooc(CHAR_DATA *ch, char *argument)
 				else
 					sprintf(msg, "{G%s", buf);
 
-				act_new("{g$n says OOC: {G$t{x", ch, msg, d->character, TO_VICT,POS_SLEEPING,NULL);
+				act_new("{g$n says OOC: {G$t{x", ch, d->character,NULL,NULL,NULL, msg,NULL, TO_VICT,POS_SLEEPING,NULL);
 			}
 		}
 	}
@@ -413,7 +413,7 @@ void do_gossip(CHAR_DATA *ch, char *argument)
 					sprintf(msg, "%s {M%s", ch->pcdata->flag, buf);
 				else
 					sprintf(msg, "%s", buf);
-				act_new("{M$n gossips '$t{M'{x", ch, msg, d->character, TO_VICT,POS_SLEEPING,NULL);
+				act_new("{M$n gossips '$t{M'{x", ch, d->character,NULL,NULL,NULL, msg,NULL, TO_VICT,POS_SLEEPING,NULL);
 			}
 		}
 	}
@@ -462,7 +462,7 @@ void do_flame(CHAR_DATA *ch, char *argument)
 					sprintf(msg, "%s {r%s", ch->pcdata->flag, buf);
 				else
 					sprintf(msg, "{r%s", buf);
-				act_new("{r({WF{r): $n flames '$t{r'{x", ch, msg, d->character, TO_VICT,POS_SLEEPING,NULL);
+				act_new("{r({WF{r): $n flames '$t{r'{x", ch, d->character,NULL,NULL,NULL,msg,NULL, TO_VICT,POS_SLEEPING,NULL);
 			}
 		}
 	}
@@ -581,7 +581,7 @@ void do_music(CHAR_DATA *ch, char *argument)
 				else
 					sprintf(msg, "%s", buf);
 
-				act_new("{Y($n): o/~ $t{x", ch,msg,d->character,TO_VICT,POS_SLEEPING,NULL);
+				act_new("{Y($n): o/~ $t{x", ch,d->character,NULL,NULL,NULL, msg,NULL,TO_VICT,POS_SLEEPING,NULL);
 			}
 		}
 	}
@@ -604,11 +604,11 @@ void do_immtalk(CHAR_DATA *ch, char *argument)
 		REMOVE_BIT(ch->comm,COMM_NOWIZ);
 
 		sprintf(buf, "{B[{G$n{B]: %s{x", argument);
-		act_new("{B[{G$n{B]: $t{x",ch,argument,NULL,TO_CHAR,POS_DEAD,NULL);
+		act_new("{B[{G$n{B]: $t{x",ch,NULL,NULL,NULL,NULL,argument,NULL,TO_CHAR,POS_DEAD,NULL);
 		for (d = descriptor_list; d; d = d->next) {
 			if (d->connected == CON_PLAYING && IS_IMMORTAL(d->character) &&
 				!IS_SET(d->character->comm,COMM_NOWIZ))
-				act_new("{B[{G$n{B]: $t{x",ch,argument,d->character,TO_VICT,POS_DEAD,NULL);
+				act_new("{B[{G$n{B]: $t{x",ch,d->character,NULL,NULL,NULL,argument,NULL,TO_VICT,POS_DEAD,NULL);
 		}
 	}
 }
@@ -631,7 +631,7 @@ void do_say(CHAR_DATA *ch, char *argument)
 	if (IS_AFFECTED2(ch, AFF2_SILENCE))
 	{
 	send_to_char("You attempt to say something but fail!\n\r", ch);
-	act("$n opens his mouth but nothing comes out.", ch, NULL, NULL, TO_ROOM);
+	act("$n opens his mouth but nothing comes out.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	return;
 	}
 
@@ -665,11 +665,11 @@ void do_say(CHAR_DATA *ch, char *argument)
 	sprintf(buf2, "{C'$T!{C' exclaims $n. '");
 	strcat(buf2, second);
 	strcat(buf2, "'{x");
-	act(buf2, ch, NULL, buf, TO_ROOM);
+	act(buf2, ch, NULL, NULL, NULL, NULL, NULL, buf, TO_ROOM);
 	sprintf(buf2, "{C'$T!{C' you exclaim. '");
 	strcat(buf2, second);
 	strcat(buf2, "'{x");
-	act(buf2, ch, NULL, buf, TO_CHAR);
+	act(buf2, ch, NULL, NULL, NULL, NULL, NULL, buf, TO_CHAR);
 	return;
 	}
 	}
@@ -692,11 +692,11 @@ void do_say(CHAR_DATA *ch, char *argument)
 	sprintf(buf2, "{C'$T?{C' asks $n. '");
 	strcat(buf2, second);
 	strcat(buf2, "'{x");
-	act(buf2, ch, NULL, buf, TO_ROOM);
+	act(buf2, ch, NULL, NULL, NULL, NULL, NULL, buf, TO_ROOM);
 	sprintf(buf2, "{C'$T?{C' you ask. '");
 	strcat(buf2, second);
 	strcat(buf2, "'{x");
-	act(buf2, ch, NULL, buf, TO_CHAR);
+	act(buf2, ch, NULL, NULL, NULL, NULL, NULL, buf, TO_CHAR);
 	return;
 	}
 
@@ -719,11 +719,11 @@ void do_say(CHAR_DATA *ch, char *argument)
 	sprintf(buf2, "{C'$T.{C' says $n. '");
 	strcat(buf2, second);
 	strcat(buf2, "'{x");
-	act(buf2, ch, NULL, buf, TO_ROOM);
+	act(buf2, ch, NULL, NULL, NULL, NULL, NULL, buf, TO_ROOM);
 	sprintf(buf2, "{C'$T.{C' you say. '");
 	strcat(buf2, second);
 	strcat(buf2, "'{x");
-	act(buf2, ch, NULL, buf, TO_CHAR);
+	act(buf2, ch, NULL, NULL, NULL, NULL, NULL, buf, TO_CHAR);
 	return;
 	}
 	}
@@ -732,13 +732,13 @@ void do_say(CHAR_DATA *ch, char *argument)
 	{
 	if (number_percent() < 50)
 	{
-	act("{C'$T{C' exclaims $n.{x", ch, NULL, msg, TO_ROOM);
-	act("{C'$T{C' you exclaim.{x", ch, NULL, msg, TO_CHAR);
+	act("{C'$T{C' exclaims $n.{x", ch, NULL, NULL, NULL, NULL, NULL, msg, TO_ROOM);
+	act("{C'$T{C' you exclaim.{x", ch, NULL, NULL, NULL, NULL, NULL, msg, TO_CHAR);
 	}
 	else
 	{
-	act("{C$n exclaims, '$T{C'{x", ch, NULL, msg, TO_ROOM);
-	act("{CYou exclaim, '$T{C'{x", ch, NULL, msg, TO_CHAR);
+	act("{C$n exclaims, '$T{C'{x", ch, NULL, NULL, NULL, NULL, NULL, msg, TO_ROOM);
+	act("{CYou exclaim, '$T{C'{x", ch, NULL, NULL, NULL, NULL, NULL, msg, TO_CHAR);
 	}
 	}
 	else
@@ -746,26 +746,26 @@ void do_say(CHAR_DATA *ch, char *argument)
 	{
 	if (number_percent() < 50)
 	{
-	act("{C$n asks, '$T{C'{x", ch, NULL, msg, TO_ROOM);
-	act("{CYou ask, '$T{C'{x", ch, NULL, msg, TO_CHAR);
+	act("{C$n asks, '$T{C'{x", ch, NULL, NULL, NULL, NULL, NULL, msg, TO_ROOM);
+	act("{CYou ask, '$T{C'{x", ch, NULL, NULL, NULL, NULL, NULL, msg, TO_CHAR);
 	}
 	else
 	{
-	act("{C'$T{C' asks $n.{x", ch, NULL, msg, TO_ROOM);
-	act("{C'$T{C' you ask.{x", ch, NULL, msg, TO_CHAR);
+	act("{C'$T{C' asks $n.{x", ch, NULL, NULL, NULL, NULL, NULL, msg, TO_ROOM);
+	act("{C'$T{C' you ask.{x", ch, NULL, NULL, NULL, NULL, NULL, msg, TO_CHAR);
 	}
 	}
 	else
 	{
 	if (number_percent() < 50)
 	{
-	act("{C$n says, '$T{C'{x", ch, NULL, msg, TO_ROOM);
-	act("{CYou say, '$T{C'{x", ch, NULL, msg, TO_CHAR);
+	act("{C$n says, '$T{C'{x", ch, NULL, NULL, NULL, NULL, NULL, msg, TO_ROOM);
+	act("{CYou say, '$T{C'{x", ch, NULL, NULL, NULL, NULL, NULL, msg, TO_CHAR);
 	}
 	else
 	{
-	act("{C'$T{C' says $n.{x", ch, NULL, msg, TO_ROOM);
-	act("{C'$T{C' you say.{x", ch, NULL, msg, TO_CHAR);
+	act("{C'$T{C' says $n.{x", ch, NULL, NULL, NULL, NULL, NULL, msg, TO_ROOM);
+	act("{C'$T{C' you say.{x", ch, NULL, NULL, NULL, NULL, NULL, msg, TO_CHAR);
 	}
 	}
 
@@ -774,25 +774,23 @@ void do_say(CHAR_DATA *ch, char *argument)
 	CHAR_DATA *mob, *mob_next;
 	OBJ_DATA *obj, *obj_next;
 
-	for (mob = ch->in_room->people; mob != NULL; mob = mob_next)
-	{
-	mob_next = mob->next_in_room;
-	if (!IS_NPC(mob) || mob->position == mob->pIndexData->default_pos)
-	p_act_trigger(msg, mob, NULL, NULL, ch, NULL, NULL,TRIG_SPEECH  );
+	for (mob = ch->in_room->people; mob != NULL; mob = mob_next) {
+		mob_next = mob->next_in_room;
+		if (!IS_NPC(mob) || mob->position == mob->pIndexData->default_pos)
+			p_act_trigger(msg, mob, NULL, NULL, ch, NULL, NULL,NULL, NULL,TRIG_SPEECH  );
 
-	for (obj = mob->carrying; obj; obj = obj_next)
-	{
-	obj_next = obj->next_content;
-	p_act_trigger(msg, NULL, obj, NULL, ch, NULL, NULL, TRIG_SPEECH);
-	}
+		for (obj = mob->carrying; obj; obj = obj_next) {
+			obj_next = obj->next_content;
+			p_act_trigger(msg, NULL, obj, NULL, ch, NULL, NULL,NULL, NULL, TRIG_SPEECH);
+		}
 	}
 
 	for (obj = ch->in_room->contents; obj; obj = obj_next) {
 	obj_next = obj->next_content;
-	p_act_trigger(msg, NULL, obj, NULL, ch, NULL, NULL, TRIG_SPEECH);
+	p_act_trigger(msg, NULL, obj, NULL, ch, NULL, NULL,NULL, NULL, TRIG_SPEECH);
 	}
 
-	p_act_trigger(msg, NULL, NULL, ch->in_room, ch, NULL, NULL, TRIG_SPEECH);
+	p_act_trigger(msg, NULL, NULL, ch->in_room, ch, NULL, NULL,NULL, NULL, TRIG_SPEECH);
 	}
 }
 
@@ -802,13 +800,13 @@ void do_tells(CHAR_DATA *ch, char *argument)
 	if (IS_SET(ch->comm, COMM_NOTELLS))
 	{
 	REMOVE_BIT(ch->comm, COMM_NOTELLS);
-	act("You will now receive tells.", ch, NULL, NULL, TO_CHAR);
+	act("You will now receive tells.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	return;
 	}
 	else
 	{
 	SET_BIT(ch->comm, COMM_NOTELLS);
-	act("You will no longer receive tells.", ch, NULL, NULL, TO_CHAR);
+	act("You will no longer receive tells.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	return;
 	}
 }
@@ -824,65 +822,60 @@ void do_tell(CHAR_DATA *ch, char *argument)
 
 	if (IS_SET(ch->comm, COMM_NOTELL))
 	{
-	send_to_char("Your tells have been revoked.\n\r", ch);
-	return;
+		send_to_char("Your tells have been revoked.\n\r", ch);
+		return;
 	}
 
 	if (IS_SET(ch->in_room->room_flags, ROOM_NOCOMM))
 	{
-	send_to_char("You can't seem to gather enough energy to do it.\n\r", ch);
-	return;
+		send_to_char("You can't seem to gather enough energy to do it.\n\r", ch);
+		return;
 	}
 
 	argument = one_argument(argument, arg);
 
 	if (arg[0] == '\0' || argument[0] == '\0')
 	{
-	send_to_char("Tell whom what?\n\r", ch);
-	return;
+		send_to_char("Tell whom what?\n\r", ch);
+		return;
 	}
 
-	if ((victim = get_char_world(ch, arg)) == NULL
-	|| (IS_NPC(victim) && victim->in_room != ch->in_room))
+	if ((victim = get_char_world(ch, arg)) == NULL || (IS_NPC(victim) && victim->in_room != ch->in_room))
 	{
-	send_to_char("They aren't here.\n\r", ch);
-	return;
+		send_to_char("They aren't here.\n\r", ch);
+		return;
 	}
 
 	if (IS_SWITCHED(victim))
 	{
-	send_to_char("They aren't here.\n\r", ch);
-	return;
+		send_to_char("They aren't here.\n\r", ch);
+		return;
 	}
 
-	if (is_ignoring(victim, ch)
-	&&  !(!IS_NPC(ch) && IS_IMMORTAL(ch) && ch->tot_level >= victim->tot_level))
+	if (is_ignoring(victim, ch) && !(!IS_NPC(ch) && IS_IMMORTAL(ch) && ch->tot_level >= victim->tot_level))
 	{
-	IGNORE_DATA *ignore;
+		IGNORE_DATA *ignore;
 
-	for (ignore = victim->pcdata->ignoring; ignore != NULL;
-	ignore = ignore->next)
-	{
-	if (!str_cmp(ignore->name, ch->name)) break;
-	}
+		for (ignore = victim->pcdata->ignoring; ignore != NULL; ignore = ignore->next)
+		{
+			if (!str_cmp(ignore->name, ch->name)) break;
+		}
 
-	sprintf(buf,
-	"{R$E is ignoring you.{x\n\r{RReason:{x %s", ignore->reason);
-	act(buf, ch, NULL, victim, TO_CHAR);
-	return;
+		sprintf(buf, "{R$E is ignoring you.{x\n\r{RReason:{x %s", ignore->reason);
+		act(buf, ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		return;
 	}
 
 	if (IS_SET(ch->comm, COMM_QUIET) && !can_tell_while_quiet(victim, ch))
 	{
-	send_to_char("You must turn off quiet mode first.\n\r", ch);
-	return;
+		send_to_char("You must turn off quiet mode first.\n\r", ch);
+		return;
 	}
 
-	if (IS_SET(victim->comm, COMM_NOTELLS)
-	&&  !(!IS_NPC(ch) && IS_IMMORTAL(ch) && ch->tot_level >= victim->tot_level))
+	if (IS_SET(victim->comm, COMM_NOTELLS) && !(!IS_NPC(ch) && IS_IMMORTAL(ch) && ch->tot_level >= victim->tot_level))
 	{
-	send_to_char("Your message didn't get through.\n\r", ch);
-	return;
+		send_to_char("Your message didn't get through.\n\r", ch);
+		return;
 	}
 
 	buf[0] = '\0';
@@ -895,58 +888,56 @@ void do_tell(CHAR_DATA *ch, char *argument)
 
 	if (victim->desc == NULL && !IS_NPC(victim))
 	{
-	act("$N has lost $S link... try again later.",
-	ch,NULL,victim,TO_CHAR);
+		act("$N has lost $S link... try again later.", ch,victim,NULL, NULL, NULL, NULL, NULL,TO_CHAR);
 
-	if (!IS_NPC(ch) && ch->pcdata->flag != NULL && SHOW_CHANNEL_FLAG(victim, FLAG_TELLS))
-	sprintf(msg, "{R%s tells you '%s {R%s'{x\n\r", pers(ch, victim), ch->pcdata->flag, buf);
-	else
-	sprintf(msg, "{R%s tells you '%s'{x\n\r", pers(ch, victim), buf);
+		if (!IS_NPC(ch) && ch->pcdata->flag != NULL && SHOW_CHANNEL_FLAG(victim, FLAG_TELLS))
+			sprintf(msg, "{R%s tells you '%s {R%s'{x\n\r", pers(ch, victim), ch->pcdata->flag, buf);
+		else
+			sprintf(msg, "{R%s tells you '%s'{x\n\r", pers(ch, victim), buf);
 
-	msg[2] = UPPER(msg[2]);
+		msg[2] = UPPER(msg[2]);
 
-	add_buf(victim->pcdata->buffer,msg);
-	return;
+		add_buf(victim->pcdata->buffer,msg);
+		return;
 	}
 
-	if (IS_SET(victim->comm,COMM_QUIET) && !IS_IMMORTAL(ch)
-	&&  !(!IS_NPC(ch) && IS_IMMORTAL(ch) && ch->tot_level >= victim->tot_level)
-	&& !can_tell_while_quiet(ch, victim))
+	if (IS_SET(victim->comm,COMM_QUIET) && !IS_IMMORTAL(ch) &&
+		!(!IS_NPC(ch) && IS_IMMORTAL(ch) && ch->tot_level >= victim->tot_level) &&
+		!can_tell_while_quiet(ch, victim))
 	{
-	act("$E is not receiving tells.", ch, 0, victim, TO_CHAR);
-	return;
+		act("$E is not receiving tells.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		return;
 	}
 
 	if (IS_SET(victim->comm,COMM_AFK))
 	{
-	if (!IS_NPC(ch) && ch->pcdata->flag != NULL && SHOW_CHANNEL_FLAG(victim, FLAG_TELLS))
-	sprintf(msg, "{R%s tells you '%s {R%s'{x\n\r", pers(ch, victim), ch->pcdata->flag, buf);
-	else
-	sprintf(msg, "{R%s tells you '%s'{x\n\r", pers(ch, victim), buf);
+		if (!IS_NPC(ch) && ch->pcdata->flag != NULL && SHOW_CHANNEL_FLAG(victim, FLAG_TELLS))
+			sprintf(msg, "{R%s tells you '%s {R%s'{x\n\r", pers(ch, victim), ch->pcdata->flag, buf);
+		else
+			sprintf(msg, "{R%s tells you '%s'{x\n\r", pers(ch, victim), buf);
 
-	msg[2] = UPPER(msg[2]);
-	add_buf(victim->pcdata->buffer,msg);
+		msg[2] = UPPER(msg[2]);
+			add_buf(victim->pcdata->buffer,msg);
 
-	sprintf(buf, "{R$E is AFK, and has been idle for %d minutes.{x", victim->timer);
-	act(buf, ch,NULL,victim,TO_CHAR);
-	sprintf(buf, "{RMessage: %s{x\n\r",
-	victim->pcdata->afk_message == NULL ?
-	"none" : victim->pcdata->afk_message);
-	send_to_char(buf, ch);
-	return;
+		sprintf(buf, "{R$E is AFK, and has been idle for %d minutes.{x", victim->timer);
+		act(buf, ch,victim,NULL, NULL, NULL, NULL, NULL,TO_CHAR);
+		sprintf(buf, "{RMessage: %s{x\n\r",
+			victim->pcdata->afk_message == NULL ? "none" : victim->pcdata->afk_message);
+		send_to_char(buf, ch);
+		return;
 	}
 
 	if (!IS_NPC(ch) && ch->pcdata->flag != NULL && IS_SET(ch->pcdata->channel_flags, FLAG_TELLS))
-	sprintf(msg, "{RYou tell %s '%s {R%s{R'{x\n\r", pers(victim, ch), ch->pcdata->flag, buf);
+		sprintf(msg, "{RYou tell %s '%s {R%s{R'{x\n\r", pers(victim, ch), ch->pcdata->flag, buf);
 	else
-	sprintf(msg, "{RYou tell %s '%s{R'{x\n\r", pers(victim, ch), buf);
+		sprintf(msg, "{RYou tell %s '%s{R'{x\n\r", pers(victim, ch), buf);
 
 	send_to_char(msg, ch);
 
 	if (!IS_NPC(victim) && !IS_NPC(ch) && ch->pcdata->flag != NULL && IS_SET(victim->pcdata->channel_flags, FLAG_TELLS))
-	sprintf(msg, "{R%s tells you '%s {R%s'{x\n\r", pers(ch, victim), ch->pcdata->flag, buf);
+		sprintf(msg, "{R%s tells you '%s {R%s'{x\n\r", pers(ch, victim), ch->pcdata->flag, buf);
 	else
-	sprintf(msg, "{R%s tells you '%s'{x\n\r", pers(ch, victim), buf);
+		sprintf(msg, "{R%s tells you '%s'{x\n\r", pers(ch, victim), buf);
 
 	msg[2] = UPPER(msg[2]);
 	send_to_char(msg, victim);
@@ -954,14 +945,14 @@ void do_tell(CHAR_DATA *ch, char *argument)
 	if (victim->timer > 1)
 	{
 	sprintf(buf, "{RNote: $E has been idle for %d minutes.{x", victim->timer);
-	act(buf, ch,NULL,victim,TO_CHAR);
+	act(buf, ch,victim, NULL, NULL, NULL, NULL, NULL,TO_CHAR);
 	}
 
 	victim->reply = ch;
 	ch->reply     = victim;
 
 	if (!IS_NPC(ch))
-	p_act_trigger(argument, victim, NULL, NULL, ch, NULL, NULL, TRIG_SPEECH);
+		p_act_trigger(argument, victim, NULL, NULL, ch, NULL, NULL,NULL, NULL, TRIG_SPEECH);
 }
 
 
@@ -973,11 +964,11 @@ void do_reply(CHAR_DATA *ch, char *argument)
 	char buf[MAX_STRING_LENGTH];
 
 	if ((victim = ch->reply) == NULL || !can_see(ch, victim)) {
-	send_to_char("They aren't here.\n\r", ch);
-	return;
+		send_to_char("They aren't here.\n\r", ch);
+		return;
 	}
 
-	sprintf(buf, "%s ", pers(victim, ch));
+	sprintf(buf, "'%s' ", victim->name);	// Was pers(victim, ch), which posed a problem for shaped vampires and shifted vampires/slayers
 	strcat(buf, argument);
 
 	do_function(ch, &do_tell, buf);
@@ -1054,7 +1045,7 @@ void do_yell(CHAR_DATA *ch, char *argument)
 	else
 	sprintf(msg, "%s", buf);
 
-	act("{Y$n yells '$t{Y'{x",ch,msg,d->character,TO_VICT);
+	act("{Y$n yells '$t{Y'{x",ch,d->character, NULL, NULL, NULL, msg, NULL,TO_VICT);
 	}
 	}
 }
@@ -1076,8 +1067,8 @@ void do_emote(CHAR_DATA *ch, char *argument)
 	}
 
 	MOBtrigger = FALSE;
-	act("$n $T{x", ch, NULL, argument, TO_ROOM);
-	act("$n $T{x", ch, NULL, argument, TO_CHAR);
+	act("$n $T{x", ch, NULL, NULL, NULL, NULL, NULL, argument, TO_ROOM);
+	act("$n $T{x", ch, NULL, NULL, NULL, NULL, NULL, argument, TO_CHAR);
 	MOBtrigger = TRUE;
 }
 
@@ -1101,56 +1092,67 @@ void do_quit(CHAR_DATA *ch, char *argument)
 	if (IS_NPC(ch))
 	return;
 
-	if (ch->position == POS_FIGHTING)
-	{
-	send_to_char("No way! You are fighting.\n\r", ch);
-	return;
-	}
+	if (!ch->pcdata->quit_on_input) {
+		if (ch->position == POS_FIGHTING)
+		{
+		send_to_char("No way! You are fighting.\n\r", ch);
+		return;
+		}
 
-	if (auction_info.high_bidder == ch
-	||  auction_info.owner == ch)
-	{
-	send_to_char("You still have a stake in the auction!\n\r",ch);
-	return;
-	}
+		if (auction_info.high_bidder == ch
+		||  auction_info.owner == ch)
+		{
+		send_to_char("You still have a stake in the auction!\n\r",ch);
+		return;
+		}
 
-	if (ch->position < POS_STUNNED)
-	{
-	send_to_char("You're not DEAD yet.\n\r", ch);
-	return;
-	}
+		if (ch->position < POS_STUNNED)
+		{
+		send_to_char("You're not DEAD yet.\n\r", ch);
+		return;
+		}
 
-	if (IS_SET(ch->in_room->room2_flags, ROOM_NO_QUIT))
-	{
-	send_to_char("You can't quit here.\n\r", ch);
-	return;
-	}
+		if (IS_SET(ch->in_room->room2_flags, ROOM_NO_QUIT))
+		{
+		send_to_char("You can't quit here.\n\r", ch);
+		return;
+		}
 
-	/* If person is putting together a package give them back items etc */
-	if (ch->mail != NULL)
-	{
-	OBJ_DATA *obj;
-	OBJ_DATA *obj_next;
+		/* If person is putting together a package give them back items etc */
+		if (ch->mail != NULL)
+		{
+		OBJ_DATA *obj;
+		OBJ_DATA *obj_next;
 
-	for (obj = ch->mail->objects; obj != NULL; obj = obj_next)
-	{
-	obj_next = obj->next_content;
+		for (obj = ch->mail->objects; obj != NULL; obj = obj_next)
+		{
+		obj_next = obj->next_content;
 
-	obj_from_mail(obj);
-	obj_to_char(obj, ch);
-	act("You take $p from your package.", ch, obj, NULL, TO_CHAR);
-	act("$n takes $p from $s package.", ch, obj, NULL, TO_ROOM);
-	}
+		obj_from_mail(obj);
+		obj_to_char(obj, ch);
+		act("You take $p from your package.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+		act("$n takes $p from $s package.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
+		}
 
-	send_to_char("You discard your mail package.\n\r", ch);
-	free_mail(ch->mail);
-	ch->mail = NULL;
-	}
+		send_to_char("You discard your mail package.\n\r", ch);
+		free_mail(ch->mail);
+		ch->mail = NULL;
+		}
 
-	if (ch->quest != NULL)
-	{
-	send_to_char("You can't quit, you're still on a quest!\n\r", ch);
-	return;
+		if (ch->quest != NULL)
+		{
+		send_to_char("You can't quit, you're still on a quest!\n\r", ch);
+		return;
+		}
+
+		if(argument) {
+			p_percent_trigger( ch, NULL, NULL, NULL, ch, NULL, NULL,NULL, NULL, TRIG_QUIT, NULL);
+			// This requested input, pause and wait for input before quiting)
+			if(ch->desc && ch->desc->input) {
+				ch->pcdata->quit_on_input = true;
+				return;
+			}
+		}
 	}
 
 	/* Make sure to unshift them first. Leave ch->shifted ON so we know to re-shift them
@@ -1200,7 +1202,7 @@ void do_quit(CHAR_DATA *ch, char *argument)
 	send_to_char(
 	"{MWe hope you enjoyed your stay and see you again soon!{x\n\r", ch);
 
-	act("$n has left the game.", ch, NULL, NULL, TO_ROOM);
+	act("$n has left the game.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
 	sprintf(log_buf, "%s has quit.", ch->name);
 
@@ -1248,7 +1250,7 @@ void do_quit(CHAR_DATA *ch, char *argument)
 
 	if (!str_cmp(mount->pIndexData->owner, ch->name))
 	{
-	act("$n wanders on home.", mount, NULL, NULL, TO_ROOM);
+	act("$n wanders on home.", mount, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	if (mount->home_room != NULL)
 	{
 	char_from_room(mount);
@@ -1261,7 +1263,11 @@ void do_quit(CHAR_DATA *ch, char *argument)
 
 	id[0] = ch->id[0];
 	id[1] = ch->id[1];
+
 	d = ch->desc;
+
+	connection_remove(d);
+
 	extract_char(ch, TRUE);
 
 	if (d != NULL)
@@ -1335,7 +1341,7 @@ void do_follow(CHAR_DATA *ch, char *argument)
 
 	if (IS_AFFECTED(ch, AFF_CHARM) && ch->master != NULL)
 	{
-	act("But you'd rather follow $N!", ch, NULL, ch->master, TO_CHAR);
+	act("But you'd rather follow $N!", ch, ch->master, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	return;
 	}
 
@@ -1352,8 +1358,7 @@ void do_follow(CHAR_DATA *ch, char *argument)
 
 	if (!IS_NPC(victim) && IS_SET(victim->act,PLR_NOFOLLOW) && !IS_IMMORTAL(ch))
 	{
-	act("$N doesn't seem to want any followers.\n\r",
-	ch,NULL,victim, TO_CHAR);
+	act("$N doesn't seem to want any followers.\n\r", ch,victim,NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	return;
 	}
 
@@ -1394,10 +1399,10 @@ void add_follower(CHAR_DATA *ch, CHAR_DATA *master, bool show)
 	stop_grouped(ch);
 
 	if (can_see(master, ch)) {
-	if(show) act("$n now follows you.", ch, NULL, master, TO_VICT);
+	if(show) act("$n now follows you.", ch, master, NULL, NULL, NULL, NULL, NULL, TO_VICT);
 	}
 
-	if(show) act("You now follow $N.",  ch, NULL, master, TO_CHAR);
+	if(show) act("You now follow $N.",  ch, master, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 }
 
 /* MOVED: groups.c */
@@ -1423,8 +1428,8 @@ void stop_follower(CHAR_DATA *ch, bool show)
 
 	if (can_see(ch->master, ch) && ch->in_room) {
 	if(show) {
-	act("$n stops following you.",     ch, NULL, ch->master, TO_VICT   );
-	act("You stop following $N.",      ch, NULL, ch->master, TO_CHAR   );
+	act("$n stops following you.",     ch, ch->master, NULL, NULL, NULL, NULL, NULL, TO_VICT   );
+	act("You stop following $N.",      ch, ch->master, NULL, NULL, NULL, NULL, NULL, TO_CHAR   );
 	}
 	}
 
@@ -1447,7 +1452,7 @@ void nuke_pets(CHAR_DATA *ch)
 	stop_follower(pet,TRUE);
 
 	if (pet->in_room != NULL)
-	act("$N slowly fades away.",ch,NULL,pet,TO_NOTVICT);
+	act("$N slowly fades away.",ch,pet, NULL,NULL, NULL, NULL, NULL,TO_NOTVICT);
 
 	extract_char(pet,TRUE);
 	}
@@ -1553,7 +1558,7 @@ void do_order(CHAR_DATA *ch, char *argument)
 	||  (IS_IMMORTAL(victim) && victim->trust >= ch->trust))
 	{
 	act("$N has no interest in taking orders from you.",
-	ch, NULL, victim, TO_CHAR);
+	ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	return;
 	}
 
@@ -1577,7 +1582,7 @@ void do_order(CHAR_DATA *ch, char *argument)
 	}
 	else
 	{
-	act("$N ignores your orders.", ch, NULL, victim, TO_CHAR);
+	act("$N ignores your orders.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	return;
 	}
 }
@@ -1586,7 +1591,7 @@ void do_order(CHAR_DATA *ch, char *argument)
 /* MOVED: groups.c */
 void do_ungroup(CHAR_DATA *ch, char *argument)
 {
-	act("Ungrouping.", ch, NULL, NULL, TO_CHAR);
+	send_to_char("Ungrouping.", ch);
 	die_follower(ch);
 }
 
@@ -1648,7 +1653,7 @@ void do_group(CHAR_DATA *ch, char *argument)
 
 	if (victim->master != ch && ch != victim)
 	{
-	act_new("$N isn't following you.",ch,NULL,victim,TO_CHAR,POS_SLEEPING,NULL);
+	act_new("$N isn't following you.",ch,victim,NULL,NULL,NULL,NULL,NULL,TO_CHAR,POS_SLEEPING,NULL);
 	return;
 	}
 
@@ -1660,16 +1665,16 @@ void do_group(CHAR_DATA *ch, char *argument)
 
 	if (IS_AFFECTED(ch,AFF_CHARM))
 	{
-	act_new("You like your master too much to leave $m!", ch,NULL,victim,TO_VICT,POS_SLEEPING,NULL);
+	act_new("You like your master too much to leave $m!", ch,victim,NULL,NULL,NULL,NULL,NULL,TO_VICT,POS_SLEEPING,NULL);
 	return;
 	}
 
 	if (is_same_group(victim, ch) && ch != victim)
 	{
 	stop_grouped(victim);
-	act_new("$n removes $N from $s group.", ch,NULL,victim,TO_NOTVICT,POS_RESTING,NULL);
-	act_new("$n removes you from $s group.", ch,NULL,victim,TO_VICT,POS_SLEEPING,NULL);
-	act_new("You remove $N from your group.", ch,NULL,victim,TO_CHAR,POS_SLEEPING,NULL);
+	act_new("$n removes $N from $s group.", ch,victim,NULL,NULL,NULL,NULL,NULL,TO_NOTVICT,POS_RESTING,NULL);
+	act_new("$n removes you from $s group.", ch,victim,NULL,NULL,NULL,NULL,NULL,TO_VICT,POS_SLEEPING,NULL);
+	act_new("You remove $N from your group.", ch,victim,NULL,NULL,NULL,NULL,NULL,TO_CHAR,POS_SLEEPING,NULL);
 	return;
 	}
 
@@ -1682,9 +1687,9 @@ void do_group(CHAR_DATA *ch, char *argument)
 	if (!add_grouped(victim, ch,TRUE))
 	return;
 
-	act_new("$N joins $n's group.",ch,NULL,victim,TO_NOTVICT,POS_RESTING,NULL);
-	act_new("You join $n's group.",ch,NULL,victim,TO_VICT,POS_SLEEPING,NULL);
-	act_new("$N joins your group.",ch,NULL,victim,TO_CHAR,POS_SLEEPING,NULL);
+	act_new("$N joins $n's group.",ch,victim,NULL,NULL,NULL,NULL,NULL,TO_NOTVICT,POS_RESTING,NULL);
+	act_new("You join $n's group.",ch,victim,NULL,NULL,NULL,NULL,NULL,TO_VICT,POS_SLEEPING,NULL);
+	act_new("$N joins your group.",ch,victim,NULL,NULL,NULL,NULL,NULL,TO_CHAR,POS_SLEEPING,NULL);
 }
 
 
@@ -1798,7 +1803,7 @@ void do_split(CHAR_DATA *ch, char *argument)
 	{
 	if (gch != ch && is_same_group(gch,ch) && gch->pcdata != NULL)
 	{
-	act(buf, ch, NULL, gch, TO_VICT);
+	act(buf, ch, gch, NULL, NULL, NULL, NULL, NULL, TO_VICT);
 	gch->gold += share_gold;
 	gch->silver += share_silver;
 	}
@@ -1830,7 +1835,7 @@ void do_gtell(CHAR_DATA *ch, char *argument)
 	{
 	if (is_same_group(gch, ch))
 	{
-	act_new("{C$n tells the group '$t'{x", ch,argument,gch,TO_VICT,POS_SLEEPING,NULL);
+	act_new("{C$n tells the group '$t'{x", ch,gch,NULL,NULL,NULL,argument,NULL,TO_VICT,POS_SLEEPING,NULL);
 	if (gch != ch)
 	another_person = TRUE;
 	}
@@ -1908,7 +1913,7 @@ bool add_grouped(CHAR_DATA *ch, CHAR_DATA *master, bool show)
 	{
 	if(show) {
 	send_to_char("You may only have 9 people in your group.\n\r", master);
-	act("$N's group is currently full.", ch, NULL, master, TO_CHAR);
+	act("$N's group is currently full.", ch, master, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	}
 	return FALSE;
 	}
@@ -1918,6 +1923,8 @@ bool add_grouped(CHAR_DATA *ch, CHAR_DATA *master, bool show)
 
 	ch->leader = master;
 
+	p_percent_trigger( ch, NULL, NULL, NULL, master, NULL, NULL, NULL, NULL, TRIG_GROUPED, NULL);
+
 	return TRUE;
 }
 
@@ -1925,16 +1932,24 @@ bool add_grouped(CHAR_DATA *ch, CHAR_DATA *master, bool show)
 /* MOVED: groups.c */
 void stop_grouped(CHAR_DATA *ch)
 {
+	CHAR_DATA *leader;
 	if (!IS_VALID(ch))
 	{
 	bug("stop_grouped: invalid ch.", 0);
 	return;
 	}
+
+
 	if (ch->leader != ch)
 	if (ch->leader != NULL)
 	ch->leader->num_grouped--;
 
+	leader = ch->leader;
+
 	ch->leader = NULL;
+
+	p_percent_trigger( ch, NULL, NULL, NULL, leader, NULL, NULL, NULL, NULL, TRIG_UNGROUPED, NULL);
+
 }
 
 
@@ -2148,13 +2163,13 @@ void do_formstate(CHAR_DATA *ch, char *argument)
 	{
 	REMOVE_BIT(ch->comm, COMM_SHOW_FORM_STATE);
 	act("You will no longer see your formation's health in combat.",
-	ch, NULL, NULL, TO_CHAR);
+	ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	}
 	else
 	{
 	SET_BIT(ch->comm, COMM_SHOW_FORM_STATE);
 	act("You will now see your formation's health in combat.",
-	ch, NULL, NULL, TO_CHAR);
+	ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	}
 }
 
@@ -2280,7 +2295,7 @@ void do_qlist(CHAR_DATA *ch, char *argument)
 
 	if (found)
 	{
-	act("Removed $t from quiet list.", ch, string->string, NULL, TO_CHAR);
+	act("Removed $t from quiet list.", ch, NULL, NULL, NULL, NULL, string->string, NULL, TO_CHAR);
 	if (string_prev != NULL)
 	string_prev->next = string->next;
 	else
@@ -2331,7 +2346,7 @@ void do_qlist(CHAR_DATA *ch, char *argument)
 
 	string = new_string_data();
 	string->string = str_dup(arg);
-	act("Added $t to your quiet list.", ch, string->string, NULL, TO_CHAR);
+	act("Added $t to your quiet list.", ch, NULL, NULL, NULL, NULL, string->string, NULL, TO_CHAR);
 	string->next = ch->pcdata->quiet_people;
 	ch->pcdata->quiet_people = string;
 	}
@@ -2353,7 +2368,7 @@ void do_whisper(CHAR_DATA *ch, char *argument)
 	if (IS_AFFECTED2(ch, AFF2_SILENCE))
 	{
 	send_to_char("You attempt to say something but fail!\n\r", ch);
-	act("$n opens his mouth but nothing comes out.", ch, NULL, NULL, TO_ROOM);
+	act("$n opens his mouth but nothing comes out.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	return;
 	}
 
@@ -2369,16 +2384,16 @@ void do_whisper(CHAR_DATA *ch, char *argument)
 	return;
 	}
 
-	act("{CYou whisper to $N '$t'{x", ch, argument, victim, TO_CHAR);
-	act("{C$n whispers something to $N.{x", ch, NULL, victim, TO_NOTVICT);
-	act("{C$n whispers to you '$t'{x", ch, argument, victim, TO_VICT);
+	act("{CYou whisper to $N '$t'{x", ch, victim,NULL,NULL, NULL, argument, NULL, TO_CHAR);
+	act("{C$n whispers something to $N.{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
+	act("{C$n whispers to you '$t'{x", ch, victim,NULL,NULL, NULL, argument, NULL, TO_VICT);
 
 	/* This should only do whisper trigger?
 	    if (!IS_NPC(ch))
-		p_act_trigger(argument, victim, NULL, NULL, ch, NULL, NULL, TRIG_SPEECH); */
+		p_act_trigger(argument, victim, NULL, NULL, ch, NULL, NULL,NULL, NULL, TRIG_SPEECH); */
 
 	if (!IS_NPC(ch))
-	p_act_trigger(argument, victim, NULL, NULL, ch, NULL, NULL, TRIG_WHISPER);
+	p_act_trigger(argument, victim, NULL, NULL, ch, NULL, NULL, NULL, NULL,TRIG_WHISPER);
 }
 
 /* MOVED: bulletin.c
@@ -2544,12 +2559,12 @@ void do_toggle(CHAR_DATA *ch, char *argument)
 	if (IS_SET(*field, vector))
 	{
 	REMOVE_BIT(*field, vector);
-	act("$t is now {WON{x.", ch, pc_set_table[i].name, NULL, TO_CHAR);
+	act("$t is now {WON{x.", ch, NULL, NULL, NULL, NULL, pc_set_table[i].name, NULL, TO_CHAR);
 	}
 	else
 	{
 	SET_BIT(*field, vector);
-	act("$t is now {WOFF{x.", ch, pc_set_table[i].name, NULL, TO_CHAR);
+	act("$t is now {WOFF{x.", ch, NULL, NULL, NULL, NULL, pc_set_table[i].name, NULL, TO_CHAR);
 	}
 	}
 	else
@@ -2557,12 +2572,12 @@ void do_toggle(CHAR_DATA *ch, char *argument)
 	if (IS_SET(*field, vector))
 	{
 	REMOVE_BIT(*field, vector);
-	act("$t is now {DOFF{x.", ch, pc_set_table[i].name, NULL, TO_CHAR);
+	act("$t is now {DOFF{x.", ch, NULL, NULL, NULL, NULL, pc_set_table[i].name, NULL, TO_CHAR);
 	}
 	else
 	{
 	SET_BIT(*field, vector);
-	act("$t is now {WON{x.", ch, pc_set_table[i].name, NULL, TO_CHAR);
+	act("$t is now {WON{x.", ch, NULL, NULL, NULL, NULL, pc_set_table[i].name, NULL, TO_CHAR);
 	}
 	}
 }
@@ -2645,7 +2660,7 @@ void do_quote(CHAR_DATA *ch, char *argument)
 	sprintf(msg, "%s {W%s", ch->pcdata->flag, buf);
 	else
 	sprintf(msg, "%s", buf);
-	act_new("{x$n quotes {D\"{W$t{D\"{x", ch, msg, d->character, TO_VICT,POS_SLEEPING,NULL);
+	act_new("{x$n quotes {D\"{W$t{D\"{x", ch, d->character,NULL,NULL,NULL, msg,NULL, TO_VICT,POS_SLEEPING,NULL);
 	}
 	}
 	}
@@ -2782,7 +2797,7 @@ void do_sayto(CHAR_DATA *ch, char *argument)
 
 	if (IS_AFFECTED2(ch, AFF2_SILENCE)) {
 	send_to_char("You attempt to say something but fail!\n\r", ch);
-	act("$n opens his mouth but nothing comes out.", ch, NULL, NULL, TO_ROOM);
+	act("$n opens his mouth but nothing comes out.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	return;
 	}
 
@@ -2806,15 +2821,15 @@ void do_sayto(CHAR_DATA *ch, char *argument)
 	sprintf(buf2, "{C'$t!{C' exclaims $n to $N. '");
 	strcat(buf2, second);
 	strcat(buf2, "'{x");
-	act(buf2, ch, buf, victim, TO_NOTVICT);
+	act(buf2, ch, victim, NULL, NULL, NULL,buf,NULL, TO_NOTVICT);
 	sprintf(buf2, "{C'$t!{C' exclaims $n to you. '");
 	strcat(buf2, second);
 	strcat(buf2, "'{x");
-	act(buf2, ch, buf, victim, TO_VICT);
+	act(buf2, ch, victim, NULL, NULL, NULL,buf, NULL, TO_VICT);
 	sprintf(buf2, "{C'$t!{C' you exclaim to $N. '");
 	strcat(buf2, second);
 	strcat(buf2, "'{x");
-	act(buf2, ch, buf, victim, TO_CHAR);
+	act(buf2, ch, victim, NULL, NULL, NULL,buf, NULL, TO_CHAR);
 	return;
 	}
 	}
@@ -2832,15 +2847,15 @@ void do_sayto(CHAR_DATA *ch, char *argument)
 	sprintf(buf2, "{C'$t!{C' asks $n to $N. '");
 	strcat(buf2, second);
 	strcat(buf2, "'{x");
-	act(buf2, ch, buf, victim, TO_NOTVICT);
+	act(buf2, ch, victim, NULL, NULL, NULL, buf, NULL, TO_NOTVICT);
 	sprintf(buf2, "{C'$t!{C' $n asks you. '");
 	strcat(buf2, second);
 	strcat(buf2, "'{x");
-	act(buf2, ch, buf, victim, TO_VICT);
+	act(buf2, ch, victim, NULL, NULL, NULL, buf, NULL, TO_VICT);
 	sprintf(buf2, "{C'$t!{C' you ask $N. '");
 	strcat(buf2, second);
 	strcat(buf2, "'{x");
-	act(buf2, ch, buf, victim, TO_CHAR);
+	act(buf2, ch, victim, NULL, NULL, NULL, buf, NULL, TO_CHAR);
 	return;
 	}
 	}
@@ -2858,15 +2873,15 @@ void do_sayto(CHAR_DATA *ch, char *argument)
 	sprintf(buf2, "{C'$t!{C' says $n to $N. '");
 	strcat(buf2, second);
 	strcat(buf2, "'{x");
-	act(buf2, ch, buf, victim, TO_NOTVICT);
+	act(buf2, ch, victim, NULL, NULL, NULL, buf, NULL, TO_NOTVICT);
 	sprintf(buf2, "{C'$t!{C' says $n to you. '");
 	strcat(buf2, second);
 	strcat(buf2, "'{x");
-	act(buf2, ch, buf, victim, TO_VICT);
+	act(buf2, ch, victim, NULL, NULL, NULL, buf, NULL, TO_VICT);
 	sprintf(buf2, "{C'$t!{C' you say to $N. '");
 	strcat(buf2, second);
 	strcat(buf2, "'{x");
-	act(buf2, ch, buf, victim, TO_CHAR);
+	act(buf2, ch, victim, NULL, NULL, NULL, buf, NULL, TO_CHAR);
 	return;
 	}
 	}
@@ -2874,39 +2889,39 @@ void do_sayto(CHAR_DATA *ch, char *argument)
 	i = strlen(msg)-1;
 	if (msg[i] == '!') {
 	if (number_percent() < 50) {
-	act("{C'$t{C' exclaims $n to $N.{x", ch, msg, victim, TO_NOTVICT);
-	act("{C'$t{C' exclaims $n to you.{x", ch, msg, victim, TO_VICT);
-	act("{C'$t{C' you exclaim to $N.{x", ch, msg, victim, TO_CHAR);
+	act("{C'$t{C' exclaims $n to $N.{x", ch, victim, NULL, NULL, NULL, msg, NULL, TO_NOTVICT);
+	act("{C'$t{C' exclaims $n to you.{x", ch, victim, NULL, NULL, NULL, msg, NULL, TO_VICT);
+	act("{C'$t{C' you exclaim to $N.{x", ch, victim, NULL, NULL, NULL, msg, NULL, TO_CHAR);
 	} else {
-	act("{C$n exclaims to $N, '$t{C'{x", ch, msg, victim, TO_NOTVICT);
-	act("{C$n exclaims to you, '$t{C'{x", ch, msg, victim, TO_VICT);
-	act("{CYou exclaim to $N, '$t{C'{x", ch, msg, victim, TO_CHAR);
+	act("{C$n exclaims to $N, '$t{C'{x", ch, victim, NULL, NULL, NULL, msg, NULL, TO_NOTVICT);
+	act("{C$n exclaims to you, '$t{C'{x", ch, victim, NULL, NULL, NULL, msg, NULL, TO_VICT);
+	act("{CYou exclaim to $N, '$t{C'{x", ch, victim, NULL, NULL, NULL, msg, NULL, TO_CHAR);
 	}
 	} else if (msg[i] == '?') {
 	if (number_percent() < 50) {
-	act("{C$n asks $N, '$t{C'{x", ch, msg, victim, TO_NOTVICT);
-	act("{C$n asks you, '$t{C'{x", ch, msg, victim, TO_VICT);
-	act("{CYou ask $N, '$t{C'{x", ch, msg, victim, TO_CHAR);
+	act("{C$n asks $N, '$t{C'{x", ch, victim, NULL, NULL, NULL, msg, NULL, TO_NOTVICT);
+	act("{C$n asks you, '$t{C'{x", ch, victim, NULL, NULL, NULL, msg, NULL, TO_VICT);
+	act("{CYou ask $N, '$t{C'{x", ch, victim, NULL, NULL, NULL, msg, NULL, TO_CHAR);
 	} else {
-	act("{C'$t{C' asks $n to $N.{x", ch, msg, victim, TO_NOTVICT);
-	act("{C'$t{C' $n asks you.{x", ch, msg, victim, TO_VICT);
-	act("{C'$t{C' you ask $N.{x", ch, msg, victim, TO_CHAR);
+	act("{C'$t{C' asks $n to $N.{x", ch, victim, NULL, NULL, NULL, msg, NULL, TO_NOTVICT);
+	act("{C'$t{C' $n asks you.{x", ch, victim, NULL, NULL, NULL, msg, NULL, TO_VICT);
+	act("{C'$t{C' you ask $N.{x", ch, victim, NULL, NULL, NULL, msg, NULL, TO_CHAR);
 	}
 	} else {
 	if (number_percent() < 50) {
-	act("{C$n says to $N, '$t{C'{x", ch, msg, victim, TO_NOTVICT);
-	act("{C$n says to you, '$t{C'{x", ch, msg, victim, TO_VICT);
-	act("{CYou say to $N, '$t{C'{x", ch, msg, victim, TO_CHAR);
+	act("{C$n says to $N, '$t{C'{x", ch, victim, NULL, NULL, NULL, msg, NULL, TO_NOTVICT);
+	act("{C$n says to you, '$t{C'{x", ch, victim, NULL, NULL, NULL, msg, NULL, TO_VICT);
+	act("{CYou say to $N, '$t{C'{x", ch, victim, NULL, NULL, NULL, msg, NULL, TO_CHAR);
 	} else {
-	act("{C'$t{C' says $n to $N.{x", ch, msg, victim, TO_NOTVICT);
-	act("{C'$t{C' says $n to you.{x", ch, msg, victim, TO_VICT);
-	act("{C'$t{C' you say to $N.{x", ch, msg, victim, TO_CHAR);
+	act("{C'$t{C' says $n to $N.{x", ch, victim, NULL, NULL, NULL, msg, NULL, TO_NOTVICT);
+	act("{C'$t{C' says $n to you.{x", ch, victim, NULL, NULL, NULL, msg, NULL, TO_VICT);
+	act("{C'$t{C' you say to $N.{x", ch, victim, NULL, NULL, NULL, msg, NULL, TO_CHAR);
 	}
 	}
 
 	if ((!IS_NPC(ch) || IS_SWITCHED(ch)) &&
 	(!IS_NPC(victim) || victim->position == victim->pIndexData->default_pos))
-	p_act_trigger(msg, victim, NULL, NULL, ch, NULL, NULL, TRIG_SAYTO);
+	p_act_trigger(msg, victim, NULL, NULL, ch, NULL, NULL,NULL, NULL, TRIG_SAYTO);
 
 }
 
@@ -2925,7 +2940,7 @@ void do_intone(CHAR_DATA *ch, char *argument)
 
 	argument = one_argument(argument,arg);
 	if (!(obj = get_obj_here(ch, NULL, arg))) {
-	act("I see no $T here.", ch, NULL, arg, TO_CHAR);
+	act("I see no $T here.", ch, NULL, NULL, NULL, NULL, NULL, arg, TO_CHAR);
 	return;
 	}
 
@@ -2936,7 +2951,7 @@ void do_intone(CHAR_DATA *ch, char *argument)
 
 	if (IS_AFFECTED2(ch, AFF2_SILENCE)) {
 	send_to_char("You attempt to say something but fail!\n\r", ch);
-	act("$n opens his mouth but nothing comes out.", ch, NULL, NULL, TO_ROOM);
+	act("$n opens his mouth but nothing comes out.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	return;
 	}
 
@@ -2946,9 +2961,9 @@ void do_intone(CHAR_DATA *ch, char *argument)
 	msg[0] = '\0';
 	STRIP_COLOR(argument, msg);
 
-	act("{C$n intones to $p '$T'{x", ch, obj, msg, TO_ROOM);
-	act("{CYou intone to $p '$T'{x", ch, obj, msg, TO_CHAR);
+	act("{C$n intones to $p '$t'{x", ch, NULL, NULL, obj, NULL, msg, NULL, TO_ROOM);
+	act("{CYou intone to $p '$t'{x", ch, NULL, NULL, obj, NULL, msg, NULL, TO_CHAR);
 
 	if ((!IS_NPC(ch) || IS_SWITCHED(ch)))
-	p_act_trigger(msg, NULL, obj, NULL, ch, NULL, NULL, TRIG_SAYTO);
+	p_act_trigger(msg, NULL, obj, NULL, ch, NULL, NULL, NULL, NULL,TRIG_SAYTO);
 }

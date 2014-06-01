@@ -38,40 +38,39 @@ void do_smite(CHAR_DATA *ch, char *argument)
 	wield = get_eq_char(ch, WEAR_WIELD);
 	if (wield == NULL) {
 		if ((wield = get_eq_char(ch, WEAR_SECONDARY)) == NULL) {
-			act("You aren't even wielding a weapon.", ch, NULL, NULL, TO_CHAR);
+			act("You aren't even wielding a weapon.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 			return;
 		}
 	}
 
 	if (IS_GOOD(ch) && !IS_SET(wield->extra_flags, ITEM_BLESS)) {
-		act("$p is not a holy weapon.", ch, wield, NULL, TO_CHAR);
+		act("$p is not a holy weapon.", ch, NULL, NULL, wield, NULL, NULL, NULL, TO_CHAR);
 		return;
 	}
 
 	if (IS_EVIL(ch) && !IS_SET(wield->extra_flags, ITEM_EVIL)) {
-		act("$p is not a cursed weapon.", ch, wield, NULL, TO_CHAR);
+		act("$p is not a cursed weapon.", ch, NULL, NULL, wield, NULL, NULL, NULL, TO_CHAR);
 		return;
 	}
 
 	if (ch->alignment == 0 && !IS_SET(wield->extra_flags, ITEM_EVIL) && !IS_SET(wield->extra_flags, ITEM_BLESS)) {
-		act("$p is neither a cursed nor a holy weapon.",
-		ch, wield, NULL, TO_CHAR);
+		act("$p is neither a cursed nor a holy weapon.", ch, NULL, NULL, wield, NULL, NULL, NULL, TO_CHAR);
 		return;
 	}
 
 	if ((IS_EVIL(ch) && victim->alignment < 300) || (IS_GOOD(ch) && victim->alignment > -300) || (ch->alignment == 0 && victim->alignment != 0)) {
-		act("$N is not a creature you can smite.", ch, NULL, victim, TO_CHAR);
+		act("$N is not a creature you can smite.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		return;
 	}
 
 	if (victim->hit > victim->max_hit/4) {
-		act("$N is still too strong for you to smite.", ch, NULL, victim, TO_CHAR);
+		act("$N is still too strong for you to smite.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		return;
 	}
 
-	if(p_percent_trigger_phrase(victim,NULL, NULL, NULL, ch, wield, victim, TRIG_ATTACK_SMITE,"pretest") ||
-		p_percent_trigger_phrase(ch,NULL, NULL, NULL, ch, wield, victim, TRIG_ATTACK_SMITE,"pretest") ||
-		p_percent_trigger_phrase(NULL, wield, NULL, NULL, ch, NULL, victim, TRIG_ATTACK_SMITE,"pretest"))
+	if(p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, wield, NULL, TRIG_ATTACK_SMITE,"pretest") ||
+		p_percent_trigger(ch,NULL, NULL, NULL, ch, victim, NULL, wield, NULL, TRIG_ATTACK_SMITE,"pretest") ||
+		p_percent_trigger(NULL, wield, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_SMITE,"pretest"))
 		return;
 
 	if (IS_AFFECTED(ch, AFF_FRENZY))
@@ -83,9 +82,9 @@ void do_smite(CHAR_DATA *ch, char *argument)
 	WAIT_STATE(ch, skill_table[gsn_smite].beats);
 
 	if (number_percent() < chance) {
-		act("{GYou smite $N with a powerful $t!", ch, attack_table[wield->value[3]].noun, victim, TO_CHAR);
-		act("{Y$n smites $N with a powerful $t!{x", ch, attack_table[wield->value[3]].noun, victim, TO_NOTVICT);
-		act("{R$n smites you with a powerful $t!{x", ch, attack_table[wield->value[3]].noun, victim, TO_VICT);
+		act("{GYou smite $N with a powerful $t!", ch, victim, NULL, NULL, NULL, attack_table[wield->value[3]].noun, NULL, TO_CHAR);
+		act("{Y$n smites $N with a powerful $t!{x", ch, victim, NULL, NULL, NULL, attack_table[wield->value[3]].noun, NULL, TO_NOTVICT);
+		act("{R$n smites you with a powerful $t!{x", ch, victim, NULL, NULL, NULL, attack_table[wield->value[3]].noun, NULL, TO_VICT);
 
 		victim->set_death_type = DEATHTYPE_SMITE;
 		damage(ch, victim, 30000, gsn_smite, DAM_NONE, TRUE);
@@ -139,14 +138,13 @@ void do_stake(CHAR_DATA *ch, char *argument)
 
     if (!IS_VAMPIRE(victim))
     {
-	act("$N isn't a vampire.", ch, NULL, victim, TO_CHAR);
+	act("$N isn't a vampire.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	return;
     }
 
     if (IS_AWAKE(victim))
     {
-	act("$N must be sleeping or $E will see you.",
-		ch, NULL, victim, TO_CHAR);
+	act("$N must be sleeping or $E will see you.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	return;
     }
 
@@ -156,12 +154,9 @@ void do_stake(CHAR_DATA *ch, char *argument)
 
     if (number_percent() < chance)
     {
-	act("{RYou plunge $p into $N's heart, turning $M to dust!{x",
-		ch, stake, victim, TO_CHAR);
-	act("{RYour body disintegrates as $n plunges $p into your heart!{x",
-		ch, stake, victim, TO_VICT);
-	act("{R$N's body turns to dust as $n plunges $p into $S heart!{x",
-		ch, stake, victim, TO_NOTVICT);
+	act("{RYou plunge $p into $N's heart, turning $M to dust!{x", ch, victim, NULL, stake, NULL, NULL, NULL, TO_CHAR);
+	act("{RYour body disintegrates as $n plunges $p into your heart!{x", ch, victim, NULL, stake, NULL, NULL, NULL, TO_VICT);
+	act("{R$N's body turns to dust as $n plunges $p into $S heart!{x", 	ch, victim, NULL, stake, NULL, NULL, NULL, TO_NOTVICT);
 
 	if (IS_NPC(victim))
 	    ch->monster_kills++;
@@ -173,8 +168,8 @@ void do_stake(CHAR_DATA *ch, char *argument)
 	{
 		ROOM_INDEX_DATA *here = victim->in_room;
 		victim->position = POS_STANDING;
-		if(!p_percent_trigger(victim, NULL, NULL, NULL, ch, NULL, victim, TRIG_DEATH))
-			p_percent_trigger(NULL, NULL, here, NULL, ch, NULL, victim, TRIG_DEATH);
+		if(!p_percent_trigger(victim, NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_DEATH, NULL))
+			p_percent_trigger(NULL, NULL, here, NULL, ch, victim, NULL, NULL, NULL, TRIG_DEATH, NULL);
 	}
 
 	raw_kill(victim, FALSE, TRUE, RAWKILL_INCINERATE);
@@ -183,12 +178,9 @@ void do_stake(CHAR_DATA *ch, char *argument)
     }
     else
     {
-	act("You stumble and wake $N!",
-		ch, NULL, victim, TO_CHAR);
-	act("You awake to the sight of $n looming over you with $p in $s hand!",
-		ch, stake, victim, TO_VICT);
-	act("$n sneaks up on $N, stakeing $p, but wakes $M!",
-		ch, stake, victim, TO_NOTVICT);
+	act("You stumble and wake $N!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+	act("You awake to the sight of $n looming over you with $p in $s hand!", ch, victim, NULL, stake, NULL, NULL, NULL, TO_VICT);
+	act("$n sneaks up on $N, stakeing $p, but wakes $M!", ch, victim, NULL, stake, NULL, NULL, NULL, TO_NOTVICT);
 
 	one_hit(victim, ch, 0, FALSE);
 	check_improve(ch, gsn_stake, FALSE, 1);
@@ -237,9 +229,9 @@ void do_trample(CHAR_DATA *ch, char *argument)
 	mount = MOUNTED(ch);
 
 	// Check all three...
-	if(p_percent_trigger_phrase(victim,NULL, NULL, NULL, ch, NULL, victim, TRIG_ATTACK_TRAMPLE,"pretest") ||
-		p_percent_trigger_phrase(mount,NULL, NULL, NULL, ch, NULL, victim, TRIG_ATTACK_TRAMPLE,"premount") ||
-		p_percent_trigger_phrase(ch,NULL, NULL, NULL, ch, NULL, victim, TRIG_ATTACK_TRAMPLE,"prerider"))
+	if(p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_TRAMPLE,"pretest") ||
+		p_percent_trigger(mount,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_TRAMPLE,"premount") ||
+		p_percent_trigger(ch,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_TRAMPLE,"prerider"))
 		return;
 
 	chance = skill;
@@ -256,19 +248,19 @@ void do_trample(CHAR_DATA *ch, char *argument)
 	dam = URANGE(1, dam, 4500);
 
 	if (number_percent() < chance) {
-		if(!p_percent_trigger_phrase(mount,NULL, NULL, NULL, ch, NULL, victim, TRIG_ATTACK_TRAMPLE,"message_pass")) {
+		if(!p_percent_trigger(mount,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_TRAMPLE,"message_pass")) {
 			sprintf(buf, "{RYou charge full-speed on %s into $N!{x", pers(mount, ch));
-			act(buf, ch, NULL, victim, TO_CHAR);
+			act(buf, ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 			sprintf(buf, "{RRiding %s, $n charges into you full-speed!{x", pers(mount, victim));
-			act(buf, ch, NULL, victim, TO_VICT);
+			act(buf, ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
 			sprintf(buf, "{RRiding %s, $n charges into $N at full speed!{x", mount->short_descr);
-			act(buf, ch, NULL, victim, TO_NOTVICT);
+			act(buf, ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
 		}
 
 		victim->hit_damage = dam;
 		victim->hit_class = DAM_BASH;
-		if(!p_percent_trigger_phrase(mount,NULL, NULL, NULL, ch, NULL, victim, TRIG_ATTACK_TRAMPLE,"damage_mount") &&
-			!p_percent_trigger_phrase(victim,NULL, NULL, NULL, ch, NULL, victim, TRIG_ATTACK_TRAMPLE,"damage") && victim->hit_damage > 0) {
+		if(!p_percent_trigger(mount,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_TRAMPLE,"damage_mount") &&
+			!p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_TRAMPLE,"damage") && victim->hit_damage > 0) {
 			dam = victim->hit_damage;
 			damclass = victim->hit_class;
 			victim->hit_damage = 0;
@@ -286,23 +278,23 @@ void do_trample(CHAR_DATA *ch, char *argument)
 		WAIT_STATE(ch, skill_table[gsn_trample].beats);
 		WAIT_STATE(victim, skill_table[gsn_trample].beats);
 
-		if(!p_percent_trigger_phrase(victim,NULL, NULL, NULL, ch, NULL, victim, TRIG_ATTACK_TRAMPLE,"attack_pass"))
+		if(!p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_TRAMPLE,"attack_pass"))
 			multi_hit(ch, victim, TYPE_UNDEFINED);
 	} else {
-		if(!p_percent_trigger_phrase(victim,NULL, NULL, NULL, ch, NULL, victim, TRIG_ATTACK_TRAMPLE,"message_fail")) {
-			act("{RYou charge towards $N but $E scrambles out of the way!{x", ch, NULL, victim, TO_CHAR);
-			act("{R$n charges towards you but you scramble out of the way!{x", ch, NULL, victim, TO_VICT);
-			act("{R$n charges towards $N at full speed but $E scrambles out of the way!{x", ch, NULL, victim, TO_NOTVICT);
+		if(!p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_TRAMPLE,"message_fail")) {
+			act("{RYou charge towards $N but $E scrambles out of the way!{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+			act("{R$n charges towards you but you scramble out of the way!{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
+			act("{R$n charges towards $N at full speed but $E scrambles out of the way!{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
 		}
 		WAIT_STATE(ch, (skill_table[gsn_trample].beats * 3)/2);
 		check_improve(ch, gsn_trample, FALSE, 1);
 		check_improve(ch, gsn_riding, FALSE, 10);
 
-		if(!p_percent_trigger_phrase(victim,NULL, NULL, NULL, ch, NULL, victim, TRIG_ATTACK_TRAMPLE,"attack_fail"))
+		if(!p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_TRAMPLE,"attack_fail"))
 			multi_hit(victim, ch, TYPE_UNDEFINED);
 	}
-	p_percent_trigger_phrase(mount,NULL, NULL, NULL, ch, NULL, victim, TRIG_ATTACK_TRAMPLE,"postmount");
-	p_percent_trigger_phrase(ch,NULL, NULL, NULL, ch, NULL, victim, TRIG_ATTACK_TRAMPLE,"postrider");
+	p_percent_trigger(mount,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_TRAMPLE,"postmount");
+	p_percent_trigger(ch,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_TRAMPLE,"postrider");
 }
 
 
@@ -370,10 +362,8 @@ memset(&af,0,sizeof(af));
         ch->affected_by = race_table[ch->race].aff;
 
 	if (!silent) {
-	    act("$n winces in pain as $e constrains the demon inside $m.",
-		    ch, NULL, NULL, TO_ROOM);
-	    act("You constrain the demon inside you.",
-		    ch, NULL, NULL, TO_CHAR);
+	    act("$n winces in pain as $e constrains the demon inside $m.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+	    act("You constrain the demon inside you.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	}
     }
     else
@@ -387,21 +377,20 @@ memset(&af,0,sizeof(af));
 	{
 	    if (!silent) {
 		send_to_char("{YYou feel the demon inside you taking control.{x\n\r", ch);
-		sprintf(buf, "{Y%s's eyes turn dark red.{x", ch->name);
-		act(buf, ch, NULL, NULL, TO_ROOM);
+		act("{Y$n's eyes turn dark red.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
 		if (!IS_REMORT(ch))
 		{
-		    act("{RSharp black spikes rip up out from your body as you take on the form of the Slayer!{x", ch, NULL, NULL, TO_CHAR);
+		    act("{RSharp black spikes rip up out from your body as you take on the form of the Slayer!{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		    sprintf(buf, "{RSharp black spikes rip up out from %s's torso as $e takes on the form of the Slayer!{x",ch->name);
 		}
 		else
 		{
-		    act("{RSharp black spikes rip up out from your body as you take on the form of the Changeling!{x", ch, NULL, NULL, TO_CHAR);
+		    act("{RSharp black spikes rip up out from your body as you take on the form of the Changeling!{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		    sprintf(buf, "{RSharp black spikes rip up out from %s's torso as $e takes on the form of the Changeling!{x",ch->name);
 		}
 
-		act(buf, ch, NULL, NULL, TO_ROOM);
+		act(buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	    }
 	}
 	else
@@ -409,7 +398,7 @@ memset(&af,0,sizeof(af));
 	    if (!silent) {
 		send_to_char("{RYou become a Werewolf!{x\n\r", ch);
 		sprintf(buf, "{R%s shifts into a Werewolf!{x", ch->name);
-		act(buf, ch, NULL, NULL, TO_ROOM);
+		act(buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	    }
 	}
 
@@ -574,7 +563,7 @@ void do_shape(CHAR_DATA *ch, char *argument)
 
 	lev = (ch->tot_level + (IS_REMORT(ch) ? ch->tot_level/3 : 0)) * skill / 100;
 	if (pMob->tot_level > lev) {
-		act("$N is too powerful for you to imitate.", ch, NULL, pMob, TO_CHAR);
+		act("$N is too powerful for you to imitate.", ch, pMob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		return;
 	}
 
@@ -583,18 +572,18 @@ void do_shape(CHAR_DATA *ch, char *argument)
 		return;
 	}
 
+	send_to_char("{YYou concentrate for a minute or two.{x\n\r", ch);
+
+	act("$n's eyes turn a misty white.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+
+	sprintf(buf, "{YYou twist your body into the shape of %s!\n\r{x", pMob->short_descr);
+	send_to_char(buf, ch);
+
+	act("{YThere is a puff of smoke as $n turns into $t!{x", ch, NULL, NULL, NULL, NULL, pMob->short_descr, NULL, TO_ROOM);
+
 	ch->morphed = TRUE;
 	ch->short_descr = str_dup(pMob->short_descr);
 	ch->long_descr  = str_dup(pMob->long_descr);
-
-	send_to_char("{YYou concentrate for a minute or two.{x\n\r", ch);
-
-	act("$n's eyes turn a misty white.{x", ch, NULL, NULL, TO_ROOM);
-
-	sprintf(buf, "{YYou twist your body into the shape of %s!\n\r{x", ch->short_descr);
-	send_to_char(buf, ch);
-
-	act("{YThere is a puff of smoke as $n turns into $t!{x", ch, ch->short_descr, NULL, TO_ROOM);
 
 	check_improve(ch, gsn_shape,TRUE,6);
 }
@@ -609,7 +598,7 @@ void set_pk_timer(CHAR_DATA *ch, CHAR_DATA *victim, int time)
 	}
 
 	send_to_char("{RYou feel a swirl of dangerous energy surrounding you!{x\n\r", ch);
-	act("{RA swirl of dangerous energy surrounds $n!", ch, NULL, NULL, TO_ROOM);
+	act("{RA swirl of dangerous energy surrounds $n!", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	ch->pk_timer = PULSE_VIOLENCE * 4;
 }
 
@@ -669,28 +658,28 @@ void do_behead(CHAR_DATA *ch, char *argument)
 	}
 
 	if(!IS_SET(victim->parts,PART_HEAD)) {
-		act("$N lacks a head to behead...", ch, NULL, victim, TO_CHAR);
+		act("$N lacks a head to behead...", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		return;
 	}
 
 	if(victim->hit >= (victim->max_hit / 10)) {
-		act("$N is still too strong to behead.", ch, NULL, victim, TO_CHAR);
+		act("$N is still too strong to behead.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		return;
 	}
 
 
-	if(p_percent_trigger_phrase(victim,NULL, NULL, NULL, ch, wield, victim, TRIG_ATTACK_BEHEAD,"pretest") ||
-		p_percent_trigger_phrase(ch,NULL, NULL, NULL, ch, wield, victim, TRIG_ATTACK_BEHEAD,"pretest") ||
-		p_percent_trigger_phrase(NULL, wield, NULL, NULL, ch, NULL, victim, TRIG_ATTACK_BEHEAD,"pretest"))
+	if(p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, wield, NULL, TRIG_ATTACK_BEHEAD,"pretest") ||
+		p_percent_trigger(ch,NULL, NULL, NULL, ch, victim, NULL, wield, NULL, TRIG_ATTACK_BEHEAD,"pretest") ||
+		p_percent_trigger(NULL, wield, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_BEHEAD,"pretest"))
 		return;
 
 	chance = skill - get_curr_stat(victim, STAT_DEX) + get_curr_stat(ch, STAT_STR) + 2;
 
 	WAIT_STATE(ch, skill_table[gsn_behead].beats);
 
-	act("{RWith a mighty $t, $n brings $s weight upon $N...{x", ch, attack_table[wield->value[3]].noun, victim, TO_NOTVICT);
-	act("{RWith a mighty $t, you bring your weight upon $N...{x", ch, attack_table[wield->value[3]].noun, victim, TO_CHAR);
-	act("{RWith a mighty $t, $n brings $s weight upon you...{x", ch, attack_table[wield->value[3]].noun, victim, TO_VICT);
+	act("{RWith a mighty $t, $n brings $s weight upon $N...{x", ch, victim, NULL, NULL, NULL, attack_table[wield->value[3]].noun, NULL, TO_NOTVICT);
+	act("{RWith a mighty $t, you bring your weight upon $N...{x", ch, victim, NULL, NULL, NULL, attack_table[wield->value[3]].noun, NULL, TO_CHAR);
+	act("{RWith a mighty $t, $n brings $s weight upon you...{x", ch, victim, NULL, NULL, NULL, attack_table[wield->value[3]].noun, NULL, TO_VICT);
 	if(number_percent() < skill) {
 		if(!check_acro(ch, victim, wield) &&
 			!check_catch(ch, victim, wield) &&
@@ -702,8 +691,8 @@ void do_behead(CHAR_DATA *ch, char *argument)
 			victim->set_death_type = DEATHTYPE_BEHEAD;
 
 			victim->hit_damage = 30000;
-			p_percent_trigger_phrase(NULL,wield, NULL, NULL, ch, NULL, victim, TRIG_ATTACK_BEHEAD,"damage");
-			p_percent_trigger_phrase(victim,NULL, NULL, NULL, ch, wield, victim, TRIG_ATTACK_BEHEAD,"damage");
+			p_percent_trigger(NULL,wield, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_BEHEAD,"damage");
+			p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, wield, NULL, TRIG_ATTACK_BEHEAD,"damage");
 
 			hit = victim->hit_damage;
 			victim->hit_damage = 0;
@@ -711,17 +700,17 @@ void do_behead(CHAR_DATA *ch, char *argument)
 			if(hit > 0) {
 				damage(ch, victim, hit, gsn_behead, DAM_SLASH, FALSE);
 			} else {
-				p_percent_trigger_phrase(victim,NULL, NULL, NULL, ch, wield, victim, TRIG_ATTACK_BEHEAD,"failvict");
-				p_percent_trigger_phrase(ch,NULL, NULL, NULL, ch, wield, victim, TRIG_ATTACK_BEHEAD,"failatt");
+				p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, wield, NULL, TRIG_ATTACK_BEHEAD,"failvict");
+				p_percent_trigger(ch,NULL, NULL, NULL, ch, victim, NULL, wield, NULL, TRIG_ATTACK_BEHEAD,"failatt");
 			}
 
 			check_improve(ch, gsn_behead, TRUE, 6);
 		} else
 			check_improve(ch, gsn_behead, FALSE, 6);
 	} else {
-		act("{Y$N quickly ducks under your decapitating $t!{x", ch, attack_table[wield->value[3]].noun, victim, TO_CHAR);
-		act("{GYou quickly duck under $n's decapitating $t!{x",	ch, attack_table[wield->value[3]].noun, victim, TO_VICT);
-		act("{Y$N quickly ducks under $n's decapitating $t!{x",	ch, attack_table[wield->value[3]].noun, victim, TO_NOTVICT);
+		act("{Y$N quickly ducks under your decapitating $t!{x", ch, victim, NULL, NULL, NULL, attack_table[wield->value[3]].noun, NULL, TO_CHAR);
+		act("{GYou quickly duck under $n's decapitating $t!{x",	ch, victim, NULL, NULL, NULL, attack_table[wield->value[3]].noun, NULL, TO_VICT);
+		act("{Y$N quickly ducks under $n's decapitating $t!{x",	ch, victim, NULL, NULL, NULL, attack_table[wield->value[3]].noun, NULL, TO_NOTVICT);
 		check_improve(ch, gsn_behead, FALSE, 6);
 	}
 }

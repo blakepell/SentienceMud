@@ -188,7 +188,7 @@ DECLARE_SPELL_FUN(	spell_vision		);
 DECLARE_SPELL_FUN(	spell_vocalize		);
 DECLARE_SPELL_FUN(	spell_weaken		);
 DECLARE_SPELL_FUN(	spell_web		);
-DECLARE_SPELL_FUN(	spell_wither		);
+DECLARE_SPELL_FUN(	spell_withering_cloud	);
 DECLARE_SPELL_FUN(	spell_wind_of_confusion	);
 DECLARE_SPELL_FUN(	spell_word_of_recall	);
 DECLARE_SPELL_FUN(	spell_toxic_fumes	);	/* NIB : 20070126 */

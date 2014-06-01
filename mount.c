@@ -77,10 +77,8 @@ void do_mount(CHAR_DATA *ch, char *argument)
     && str_cmp(mount->owner, "(no owner)")
     && str_cmp(mount->owner, "(null)"))
     {
-	act("{ROUCH! You attempt to mount $N, but $E bucks and kicks you off!{x",
-		ch, NULL, mount, TO_CHAR);
-	act("{R$n attempts to mount $N, but $E bucks and kicks $m off!{x",
-		ch, NULL, mount, TO_ROOM);
+	act("{ROUCH! You attempt to mount $N, but $E bucks and kicks you off!{x", ch, mount, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+	act("{R$n attempts to mount $N, but $E bucks and kicks $m off!{x", ch, mount, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	damage(mount, ch, ch->hit/5, gsn_kick, DAM_BASH, FALSE);
 	stop_fighting(ch, TRUE);
 	ch->position = POS_RESTING;
@@ -88,19 +86,19 @@ void do_mount(CHAR_DATA *ch, char *argument)
 	return;
     }
 
-    if(p_percent_trigger(mount, NULL, NULL, NULL, ch, NULL, NULL, TRIG_PREMOUNT))
+    if(p_percent_trigger(mount, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_PREMOUNT, NULL))
     	return;
 
-    act("You hop on $N's back.", ch, NULL, mount, TO_CHAR);
-    act("$n hops on $N's back.", ch, NULL, mount, TO_NOTVICT);
-    act("$n hops on your back!", ch, NULL, mount, TO_VICT);
+    act("You hop on $N's back.", ch, mount, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+    act("$n hops on $N's back.", ch, mount, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
+    act("$n hops on your back!", ch, mount, NULL, NULL, NULL, NULL, NULL, TO_VICT);
 
     ch->mount = mount;
     ch->riding = TRUE;
     mount->rider = ch;
     mount->riding = TRUE;
 
-    p_percent_trigger(mount, NULL, NULL, NULL, ch, NULL, NULL, TRIG_MOUNT);
+    p_percent_trigger(mount, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_MOUNT, NULL);
 
     affect_strip(ch, gsn_sneak);
     REMOVE_BIT(ch->affected_by, AFF_SNEAK);
@@ -120,12 +118,12 @@ void do_dismount(CHAR_DATA *ch, char *argument)
     {
 	mount = MOUNTED(ch);
 
-	if(p_percent_trigger(mount, NULL, NULL, NULL, ch, NULL, NULL, TRIG_PREDISMOUNT))
+	if(p_percent_trigger(mount, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_PREDISMOUNT, NULL))
 		return;
 
-	act("You dismount from $N.", ch, NULL, mount, TO_CHAR);
-	act("$n dismounts from $N.", ch, NULL, mount, TO_NOTVICT);
-	act("$n dismounts from you.", ch, NULL, mount, TO_VICT);
+	act("You dismount from $N.",  ch, mount, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+	act("$n dismounts from $N.",  ch, mount, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
+	act("$n dismounts from you.", ch, mount, NULL, NULL, NULL, NULL, NULL, TO_VICT);
 
 	ch->riding = FALSE;
 	mount->riding = FALSE;
@@ -145,8 +143,7 @@ void do_dismount(CHAR_DATA *ch, char *argument)
     // nobody else can mount them except the owner
     if (IS_SOCIAL(mount) && str_cmp(ch->name, mount->owner))
     {
-	act("{WA ghostly spirit appears before $n and pulls $m back to the mortal world.{x",
-		mount, NULL, NULL, TO_ROOM);
+	act("{WA ghostly spirit appears before $n and pulls $m back to the mortal world.{x", mount, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
         do_function(mount, &do_chat, "exit");
     }
 }
@@ -195,18 +192,18 @@ void do_whistle(CHAR_DATA *ch, char *argument)
     if (obj == NULL || IS_NPC(ch))
     {
 	send_to_char("You whistle a little tune to yourself.\n\r", ch);
-	act("$n whistles a little tune to $mself.", ch, NULL, NULL, TO_ROOM);
+	act("$n whistles a little tune to $mself.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	return;
     }
 
     if ((mount = find_personal_mount(ch->name)) == NULL)
     {
-    	act("You whistle on $p loudly, but nothing happens.", ch, obj, NULL, TO_CHAR);
+    	act("You whistle on $p loudly, but nothing happens.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 	return;
     }
 
-    act("You whistle on $p loudly and $N appears out of nowhere.", ch, obj, mount, TO_CHAR);
-    act("$n whistles on $p loudly and $N appears out of nowhere.", ch, obj, mount, TO_ROOM);
+    act("You whistle on $p loudly and $N appears out of nowhere.", ch, mount, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+    act("$n whistles on $p loudly and $N appears out of nowhere.", ch, mount, NULL, obj, NULL, NULL, NULL, TO_ROOM);
     char_from_room(mount);
     char_to_room(mount, ch->in_room);
     mount->position = POS_STANDING;

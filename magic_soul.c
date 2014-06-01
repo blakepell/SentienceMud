@@ -48,13 +48,13 @@ SPELL_FUNC(spell_soul_essence)
 		i = i * skill * skill2 / 10000;
 
 		// Give boost for avatars
-		if(!str_cmp(race_table[ch->race].name, "avatar"))
+		if(ch->race == grn_avatar)
 			i = i * ( 240 + ch->tot_level ) / 240;
 
 		if(i > 0) {
 			sprintf(buf, "{BYou feel {C%d{B soul%s with flowing into you!{x\n\r", i, ((i==1)?"":"s"));
 			send_to_char(buf,ch);
-			act("{B$n glows briefly.{x", ch, NULL, NULL, TO_ROOM);
+			act("{B$n glows briefly.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
 			ch->pneuma += i;
 		} else

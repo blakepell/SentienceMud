@@ -103,7 +103,7 @@ void do_sadd(CHAR_DATA *ch, char *argument)
 
     add_immortal(immortal);
 
-    act("Created new immortal $T.", ch, NULL, immortal->name, TO_CHAR);
+    act("Created new immortal $T.", ch, NULL, NULL, NULL, NULL, NULL, immortal->name, TO_CHAR);
     save_immstaff();
 }
 
@@ -214,7 +214,7 @@ void do_sdelete(CHAR_DATA *ch, char *argument)
 	return;
     }
 
-    act("$T's immortal priveleges have been terminated.", ch, NULL, immortal->name, TO_CHAR);
+    act("$T's immortal priveleges have been terminated.", ch, NULL, NULL, NULL, NULL, NULL, immortal->name, TO_CHAR);
     /* Remove it from the global list */
     last = NULL;
     for (tmp = immortal_list; tmp != NULL; tmp = tmp->next) {
@@ -261,7 +261,7 @@ void do_ssupervisor(CHAR_DATA *ch, char *argument)
     }
 
     immortal->leader = str_dup(leader->name);
-    act("Set $t's supervisor to $T.", ch, immortal->name, leader->name,  TO_CHAR);
+    act("Set $t's supervisor to $T.", ch, NULL, NULL, NULL, NULL, immortal->name, leader->name,  TO_CHAR);
 	}
 
 

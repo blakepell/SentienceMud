@@ -118,7 +118,7 @@ C_FILES = \
 	weather.c \
 	wilds.c \
 
-#IMC = 0
+IMC = 0
 O_FILES = \
 	$(OBJDIR)/act_comm.o \
 	$(OBJDIR)/act_enter.o \

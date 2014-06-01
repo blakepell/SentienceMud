@@ -36,8 +36,6 @@
 #include "olc.h"
 #include "wilds.h"
 
-AREA_DATA *get_area_data args ((long anum));
-AREA_DATA *get_area_from_uid args ((long uid));
 
 char *	const	dir_name	[]		=
 {
@@ -205,7 +203,7 @@ void move_char(CHAR_DATA *ch, int door, bool follow)
 /*	WILDS_DATA *to_wilds = NULL;
 	WILDS_TERRAIN *pTerrain; */
 	EXIT_DATA *pexit;
-/*	AREA_DATA *pArea = NULL; 
+/*	AREA_DATA *pArea = NULL;
 	int to_vroom_x = 0;
 	int to_vroom_y = 0; */
 	char buf[MAX_STRING_LENGTH];
@@ -231,7 +229,7 @@ void move_char(CHAR_DATA *ch, int door, bool follow)
 
 	/* Check if char is "on" something. preventing movement */
 	if (ch->on) {
-		act("You must get off $p first.", ch, ch->on, NULL, TO_CHAR);
+		act("You must get off $p first.", ch, NULL, NULL, ch->on, NULL, NULL, NULL, TO_CHAR);
 		return;
 	}
 
@@ -304,14 +302,14 @@ void move_char(CHAR_DATA *ch, int door, bool follow)
 
 		if ((in_room->sector_type != SECT_WATER_NOSWIM && to_room->sector_type == SECT_WATER_NOSWIM) &&
 			!IS_AFFECTED(ch,AFF_FLYING)) {
-			act("You dive into the deep water and begin to swim.", ch, NULL, NULL, TO_CHAR);
-			act("$n dives into the deep water and begins to swim.", ch, NULL, NULL, TO_ROOM);
+			act("You dive into the deep water and begin to swim.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+			act("$n dives into the deep water and begins to swim.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		}
 
 		if (in_room->sector_type == SECT_WATER_NOSWIM && to_room->sector_type != SECT_WATER_NOSWIM &&
 			!IS_AFFECTED(ch,AFF_FLYING)) {
-			act("You can touch the ground here.", ch, NULL, NULL, TO_CHAR);
-			act("$n stops swimming and stands.", ch, NULL, NULL, TO_ROOM);
+			act("You can touch the ground here.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+			act("$n stops swimming and stands.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		}
 
 		{	/* City-move will reduce movement, if greater, to city movement */
@@ -374,20 +372,20 @@ void move_char(CHAR_DATA *ch, int door, bool follow)
 	/* echo messages */
 	if (!IS_AFFECTED(ch, AFF_SNEAK) &&  ch->invis_level < 150) {
 		if (in_room->sector_type == SECT_WATER_NOSWIM)
-			act("{W$n swims $T.{x", ch, NULL, dir_name[door], TO_ROOM);
+			act("{W$n swims $T.{x", ch, NULL, NULL, NULL, NULL, NULL, dir_name[door], TO_ROOM);
 		else if (PULLING_CART(ch))
-			act("{W$n leaves $T, pulling $p.{x", ch, PULLING_CART(ch), dir_name[door], TO_ROOM);
+			act("{W$n leaves $T, pulling $p.{x", ch, NULL, NULL, PULLING_CART(ch), NULL, NULL, dir_name[door], TO_ROOM);
 		else if (MOUNTED(ch)) {
 			if(!IS_AFFECTED(MOUNTED(ch), AFF_FLYING))
-				sprintf(buf, "{W$n leaves $T, riding on %s.{x", MOUNTED(ch)->short_descr);
+				strcpy(buf, "{W$n leaves $T, riding on $N.{x");
 			else
-				sprintf(buf, "{W$n soars $T, on %s.{x", MOUNTED(ch)->short_descr);
-			act(buf, ch, NULL, dir_name[door], TO_ROOM);
+				strcpy(buf, "{W$n soars $T, on $N.{x");
+			act(buf, ch, MOUNTED(ch), NULL, NULL, NULL, NULL, dir_name[door], TO_ROOM);
 		} else {
 			if (!IS_NPC(ch) && ch->pcdata->condition[COND_DRUNK] > 10)
-				act("{W$n stumbles off drunkenly on $s way $T.{x", ch,NULL,dir_name[door],TO_ROOM);
+				act("{W$n stumbles off drunkenly on $s way $T.{x", ch, NULL, NULL, NULL, NULL,NULL,dir_name[door],TO_ROOM);
 			else
-				act("{W$n leaves $T.{x", ch, NULL, dir_name[door], TO_ROOM);
+				act("{W$n leaves $T.{x", ch, NULL, NULL, NULL, NULL, NULL, dir_name[door], TO_ROOM);
 		}
 	}
 
@@ -410,7 +408,7 @@ void move_char(CHAR_DATA *ch, int door, bool follow)
 	   from some other function and doesnt go through interpret(). */
 	if (ch->recite > 0) {
 		send_to_char("You stop reciting.\n\r", ch);
-		act("$n stops reciting.", ch, NULL, NULL, TO_ROOM);
+		act("$n stops reciting.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		ch->recite = 0;
 	}
 
@@ -424,19 +422,19 @@ void move_char(CHAR_DATA *ch, int door, bool follow)
 
 	if (!IS_AFFECTED(ch, AFF_SNEAK) && ch->invis_level < LEVEL_HERO) {
 		if (in_room->sector_type == SECT_WATER_NOSWIM)
-			act("{W$n swims in.{x", ch, NULL, dir_name[door], TO_ROOM);
+			act("{W$n swims in.{x", ch, NULL, NULL, NULL, NULL, NULL, dir_name[door], TO_ROOM);
 		else if (PULLING_CART(ch))
-			act("{W$n has arrived, pulling $p.{x", ch, PULLING_CART(ch), NULL, TO_ROOM);
+			act("{W$n has arrived, pulling $p.{x", ch, NULL, NULL, PULLING_CART(ch), NULL, NULL, NULL, TO_ROOM);
 		else if(!MOUNTED(ch)) {
 			if (!IS_NPC(ch) && ch->pcdata->condition[COND_DRUNK] > 10)
-				act("{W$n stumbles in drunkenly.{x", ch, NULL, NULL, TO_ROOM);
+				act("{W$n stumbles in drunkenly.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 			else
-				act("{W$n has arrived.{x", ch, NULL, NULL, TO_ROOM);
+				act("{W$n has arrived.{x", ch,NULL,NULL,NULL,NULL, NULL, NULL, TO_ROOM);
 		} else {
 			if (!IS_AFFECTED(MOUNTED(ch), AFF_FLYING))
-				act("{W$n has arrived, riding on $N.{x", ch, NULL, MOUNTED(ch), TO_ROOM);
+				act("{W$n has arrived, riding on $N.{x", ch, MOUNTED(ch), NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 			else
-			act("{W$n soars in, riding on $N.{x", ch, NULL, MOUNTED(ch), TO_ROOM);
+			act("{W$n soars in, riding on $N.{x", ch, MOUNTED(ch), NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		}
 	}
 
@@ -463,7 +461,7 @@ void move_char(CHAR_DATA *ch, int door, bool follow)
 			do_function(fch, &do_stand, "");
 
 		if (fch->master == ch && fch->position == POS_STANDING && can_see_room(fch,to_room)) {
-			act("{WYou follow $N.{x", fch, NULL, ch, TO_CHAR);
+			act("{WYou follow $N.{x", fch, ch, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 			move_char(fch, door, TRUE);
 		}
 	}
@@ -472,7 +470,7 @@ void move_char(CHAR_DATA *ch, int door, bool follow)
 	* If someone is following the char, these triggers get activated
 	* for the followers before the char, but it's safer this way...
 	*/
-	if (IS_NPC(ch)) p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_ENTRY);
+	if (IS_NPC(ch)) p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_ENTRY, NULL);
 
 	if (!IS_NPC(ch)) {
 		p_greet_trigger(ch, PRG_MPROG);
@@ -540,12 +538,9 @@ void check_ambush(CHAR_DATA *ch)
             if (number_percent() > get_skill(ach, gsn_ambush))
 	    {
 		ach->position = POS_STANDING;
-		act("You jump out of nowhere but $N notices you!",
-		   ach, NULL, ch, TO_CHAR);
-		act("You notice $n jump out of nowhere!",
-		   ach, NULL, ch, TO_VICT);
-		act("$n jumps out of nowhere trying to surprise $N, but fails!",
-		   ach, NULL, ch, TO_NOTVICT);
+		act("You jump out of nowhere but $N notices you!", ach, ch, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		act("You notice $n jump out of nowhere!", ach, ch, NULL, NULL, NULL, NULL, NULL, TO_VICT);
+		act("$n jumps out of nowhere trying to surprise $N, but fails!", ach, ch, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
 		check_improve(ach, gsn_ambush, 4, FALSE);
 		continue;
 	    }
@@ -553,12 +548,9 @@ void check_ambush(CHAR_DATA *ch)
 	    ach->position = POS_STANDING;
 
 	    sprintf(command, "%s %s", ambush->command, ch->name);
-	    act("{RYou jump out of nowhere, surprising $N!{x",
-	        ach, NULL, ch, TO_CHAR);
-	    act("{R$n jumps out of nowhere, surprising you!{x",
-	        ach, NULL, ch, TO_VICT);
-	    act("{R$n jumps out of nowhere, surprising $N!{x",
-	        ach, NULL, ch, TO_NOTVICT);
+	    act("{RYou jump out of nowhere, surprising $N!{x", ach, ch, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+	    act("{R$n jumps out of nowhere, surprising you!{x", ach, ch, NULL, NULL, NULL, NULL, NULL, TO_VICT);
+	    act("{R$n jumps out of nowhere, surprising $N!{x", ach, ch, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
 	    interpret(ach, command);
 
 	    /* end the ambush */
@@ -584,16 +576,15 @@ bool check_rocks(CHAR_DATA *ch)
     && !IS_DEAD(ch)
     && !IS_AFFECTED(ch, AFF_FLYING))
     {
- 	act("{yLoose rocks fall from the ceiling!{x", ch, NULL, NULL, TO_CHAR);
- 	act("{yLoose rocks fall from the ceiling!{x", ch, NULL, NULL, TO_ROOM);
+ 	act("{yLoose rocks fall from the ceiling!{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ALL);
    	for (vch = ch->in_room->people; vch != NULL; vch = vch_next)
      	{
     	    vch_next = vch->next_in_room;
 
  	    if (number_percent() < 50)
  	    {
- 		act("{RYou are struck by a rock!{x", vch, NULL, NULL, TO_CHAR);
-		act("{R$n is struck by a rock!{x", vch, NULL, NULL, TO_ROOM);
+ 		act("{RYou are struck by a rock!{x", vch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		act("{R$n is struck by a rock!{x", vch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		vch->set_death_type = DEATHTYPE_ROCKS;
  	   	damage(vch, vch, number_range(vch->tot_level * 4, vch->tot_level * 10), 0, DAM_BASH, FALSE);
 	    }
@@ -623,8 +614,8 @@ bool check_ice(CHAR_DATA *ch)
 
     if (number_percent() > get_curr_stat(ch, STAT_DEX) * 2 + ch->tot_level / 20 && !IS_AFFECTED(ch, AFF_FLYING))
     {
-	act("{xYou slip on the icy ground and fall down!", ch, NULL, NULL, TO_CHAR);
-	act("{x$n slips on the icy ground and falls down!", ch, NULL, NULL, TO_ROOM);
+	act("{xYou slip on the icy ground and fall down!", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+	act("{x$n slips on the icy ground and falls down!", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	damage(ch, ch, UMIN(ch->max_hit/2, 50), 0, DAM_BASH, FALSE);
 	ch->position = POS_RESTING;
 	return TRUE;
@@ -654,8 +645,8 @@ bool check_room_flames(CHAR_DATA *ch)
 		 || is_pk(ch)
 		 || IS_NPC(ch)))
 	    {
-		act("{RYou are scorched by flames!{x", ch, NULL, NULL, TO_CHAR);
-		act("{R$n is scorched by flames!{x", ch, NULL, NULL, TO_ROOM);
+		act("{RYou are scorched by flames!{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		act("{R$n is scorched by flames!{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		damage(ch, ch, number_range(50, 500),
 			TYPE_UNDEFINED, DAM_FIRE, FALSE);
 
@@ -664,8 +655,8 @@ bool check_room_flames(CHAR_DATA *ch)
 		    AFFECT_DATA af;
 			memset(&af,0,sizeof(af));
 
-		    act("{DYou are blinded by smoke!{x", ch, NULL, NULL, TO_CHAR);
-		    act("{D$n is blinded by smoke!{x", ch, NULL, NULL, TO_ROOM);
+		    act("{DYou are blinded by smoke!{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		    act("{D$n is blinded by smoke!{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		    af.where     = TO_AFFECTS;
 		    af.group     = AFFGROUP_PHYSICAL;
 		    af.type      = gsn_blindness;
@@ -679,10 +670,8 @@ bool check_room_flames(CHAR_DATA *ch)
 	    }
 	    else
 	    {
-		act("{RYou pass through the scorching inferno unscathed.{x",
-			ch, NULL, NULL, TO_CHAR);
-		act("{R$n passes through the scorching inferno unscathed.{x",
-			ch, NULL, NULL, TO_ROOM);
+		act("{RYou pass through the scorching inferno unscathed.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		act("{R$n passes through the scorching inferno unscathed.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	    }
 	}
     }
@@ -702,10 +691,8 @@ void check_room_shield_source(CHAR_DATA *ch)
     for (obj = ch->in_room->contents; obj != NULL; obj = obj->next_content)
 	if (obj->item_type == ITEM_ROOM_ROOMSHIELD)
 	{
-	    act("{YYou pass through the shimmering shield.{x",
-		    ch, NULL, NULL, TO_CHAR);
-	    act("{Y$n passes through the shimmering shield.{x",
-		    ch, NULL, NULL, TO_ROOM);
+	    act("{YYou pass through the shimmering shield.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+	    act("{Y$n passes through the shimmering shield.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	}
 }
 
@@ -736,9 +723,9 @@ bool can_move_room(CHAR_DATA *ch, int door, ROOM_INDEX_DATA *room)
 	if (IS_SET(pexit->exit_info, EX_CLOSED)	&& !(IS_IMMORTAL(ch) && !IS_NPC(ch)) &&
 		(!IS_AFFECTED(ch, AFF_PASS_DOOR) || IS_SET(pexit->exit_info,EX_NOPASS))) {
 		if (IS_AFFECTED(ch, AFF_PASS_DOOR))
-			act("Something blocks you from passing through $T.", ch, NULL, exit, TO_CHAR);
+			act("Something blocks you from passing through $T.", ch, NULL, NULL, NULL, NULL, NULL, exit, TO_CHAR);
 		else
-			act("$T is closed.", ch, NULL, exit, TO_CHAR);
+			act("$T is closed.", ch, NULL, NULL, NULL, NULL, NULL, exit, TO_CHAR);
 
 		return FALSE;
 	}
@@ -749,12 +736,12 @@ bool can_move_room(CHAR_DATA *ch, int door, ROOM_INDEX_DATA *room)
 		return FALSE;
 	}
 
-	if ((IS_SET(room->room_flags, ROOM_PK) || IS_SET(room->room_flags, ROOM_CPK) || IS_SET(room->room_flags, ROOM_ARENA) || is_pk(ch)) &&
+	if ((is_room_pk(room, TRUE) || is_pk(ch)) &&
 		!(IS_IMMORTAL(ch) && !IS_NPC(ch))) {
 		for (obj = room->contents; obj != NULL; obj = obj->next_content) {
 			if (obj->item_type == ITEM_ROOM_ROOMSHIELD) {
-				act("{YYou try to move $T, but run into an invisible wall!{x", ch, NULL, dir_name[door], TO_CHAR);
-				act("{Y$n tries to move $T, but runs into an invisible wall!{x", ch, NULL, dir_name[door], TO_ROOM);
+				act("{YYou try to move $T, but run into an invisible wall!{x", ch, NULL, NULL, NULL, NULL, NULL, dir_name[door], TO_CHAR);
+				act("{Y$n tries to move $T, but runs into an invisible wall!{x", ch, NULL, NULL, NULL, NULL, NULL, dir_name[door], TO_ROOM);
 				sprintf(buf, "{YYou hear a {R***BONK***{Y as someone runs into the shield from the %s!{x\n\r", dir_name[rev_dir[door]]);
 				room_echo(room, buf);
 				return FALSE;
@@ -773,12 +760,12 @@ bool can_move_room(CHAR_DATA *ch, int door, ROOM_INDEX_DATA *room)
 
 	if (IS_AFFECTED2(ch, AFF2_ENSNARE)) {
 		send_to_char("The vines clutching your body prevent you from moving!{x\n\r", ch);
-		act("$n attempts to move, but the vines hold $m in place!", ch, NULL, NULL, TO_ROOM);
+		act("$n attempts to move, but the vines hold $m in place!", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		return FALSE;
 	}
 
 	if (IS_SET(pexit->exit_info, EX_CLOSED) && IS_SET(pexit->exit_info, EX_BARRED)) {
-		act("$T is barred shut.", ch, NULL, exit, TO_CHAR);
+		act("$T is barred shut.", ch, NULL, NULL, NULL, NULL, NULL, exit, TO_CHAR);
 		return FALSE;
 	}
 
@@ -792,19 +779,36 @@ bool can_move_room(CHAR_DATA *ch, int door, ROOM_INDEX_DATA *room)
 		return FALSE;
 	}
 
-	if(p_percent_trigger_phrase(NULL, NULL, room, NULL, ch, NULL, NULL, TRIG_PREENTER, dir_name[door]))
+	if(p_percent_trigger(NULL, NULL, room, NULL, ch, NULL, NULL, NULL, NULL, TRIG_PREENTER, dir_name[door]))
 		return FALSE;
-
-	if (ch->pulled_cart && ch->pulled_cart->value[2] > get_curr_stat(ch, STAT_STR)) {
-		act("You aren't strong enough to pull $p.", ch, ch->pulled_cart, NULL, TO_CHAR);
-		act("$n attempts to pull $p but is too weak.", ch, ch->pulled_cart, NULL, TO_ROOM);
-		return FALSE;
-	}
 
 	if (MOUNTED(ch) && (MOUNTED(ch)->position < POS_FIGHTING)) {
 		send_to_char("Your mount must be standing.\n\r", ch);
 		return FALSE;
 	}
+
+	if ( ch->pulled_cart )
+	{
+		CHAR_DATA *mount = MOUNTED(ch);
+
+		if (mount)
+		{
+			if (ch->pulled_cart->value[2] > get_curr_stat(mount, STAT_STR)) {
+				act("$N isn't strong enough to pull $p.", ch, mount, NULL, ch->pulled_cart, NULL, NULL, NULL, TO_CHAR);
+				act("$N struggles to pull $p but is too weak.", ch, mount, NULL, ch->pulled_cart, NULL, NULL, NULL, TO_NOTVICT);
+				return FALSE;
+			}
+		}
+		else
+		{
+			if (ch->pulled_cart->value[2] > get_curr_stat(ch, STAT_STR)) {
+				act("You aren't strong enough to pull $p.", ch, NULL, NULL, ch->pulled_cart, NULL, NULL, NULL, TO_CHAR);
+				act("$n attempts to pull $p but is too weak.", ch, NULL, NULL, ch->pulled_cart, NULL, NULL, NULL, TO_ROOM);
+				return FALSE;
+			}
+		}
+	}
+
 
 	/* Cant move into rooms with passwords */
 	if (room->chat_room && room->chat_room->password && str_cmp(room->chat_room->password, "none") &&
@@ -818,8 +822,8 @@ bool can_move_room(CHAR_DATA *ch, int door, ROOM_INDEX_DATA *room)
 		ROOM_INDEX_DATA *to_room;
 
 		if ((to_room = location_to_room(&ch->pcdata->room_before_arena))) {
-			act("{YA swirl of colours surrounds you as you travel back to $t.{x", ch, to_room->name, NULL, TO_CHAR);
-			act("{YA swirl of colours surrounds $n as $e vanishes.{x", ch, NULL, NULL, TO_ROOM);
+			act("{YA swirl of colours surrounds you as you travel back to $t.{x", ch, NULL, NULL, NULL, NULL, to_room->name, NULL, TO_CHAR);
+			act("{YA swirl of colours surrounds $n as $e vanishes.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 			char_from_room(ch);
 			char_to_room(ch, to_room);
 			location_clear(&ch->pcdata->room_before_arena);
@@ -856,22 +860,22 @@ void drunk_walk(CHAR_DATA *ch, int door)
 		if (!IS_NPC(ch) && ch->pcdata->condition[COND_DRUNK] > 10) {
 			if (!IS_NPC(ch) && number_percent() < (10 + ch->pcdata->condition[COND_DRUNK])) {
 				if (!IS_NPC(ch) && ch->pcdata->condition[COND_DRUNK] > 10) {
-					act("You drunkenly slam face-first into the 'exit' on your way $T.", ch, NULL, dir_name[door], TO_CHAR);
-					act("$n drunkenly slams face-first into the 'exit' on $s way $T.", ch, NULL, dir_name[door], TO_ROOM);
+					act("You drunkenly slam face-first into the 'exit' on your way $T.", ch, NULL, NULL, NULL, NULL, NULL, dir_name[door], TO_CHAR);
+					act("$n drunkenly slams face-first into the 'exit' on $s way $T.", ch, NULL, NULL, NULL, NULL, NULL, dir_name[door], TO_ROOM);
 					/* damage(ch, ch, 3, 0, DAM_BASH , FALSE); */
 				} else {
-					act("You drunkenly face-first into the 'exit' on your way $T. WHAM!", ch, NULL, dir_name[door], TO_CHAR);
-					act("$n slams face-first into the 'exit' on $s way $T. WHAM!", ch, NULL, dir_name[door], TO_ROOM);
+					act("You drunkenly face-first into the 'exit' on your way $T. WHAM!", ch, NULL, NULL, NULL, NULL, NULL, dir_name[door], TO_CHAR);
+					act("$n slams face-first into the 'exit' on $s way $T. WHAM!", ch, NULL, NULL, NULL, NULL, NULL, dir_name[door], TO_ROOM);
 					/* damage(ch, ch, 3, 0, DAM_BASH, FALSE); */
 				}
 			} else {
 				if (!IS_NPC(ch) && ch->pcdata->condition[COND_DRUNK] > 10) {
-					act("You stumble about aimlessly and fall down drunk.", ch,NULL,dir_name[door],TO_CHAR);
-					act("$n stumbles about aimlessly and falls down drunk.", ch,NULL,dir_name[door],TO_ROOM);
+					act("You stumble about aimlessly and fall down drunk.", ch, NULL, NULL, NULL, NULL,NULL,dir_name[door],TO_CHAR);
+					act("$n stumbles about aimlessly and falls down drunk.", ch, NULL, NULL, NULL, NULL,NULL,dir_name[door],TO_ROOM);
 					ch->position = POS_RESTING;
 				} else {
-					act("You almost go $T, but suddenly realize that there's no exit there.",ch,NULL,dir_name[door],TO_CHAR);
-					act("$n looks like $e's about to go $T, but suddenly stops short and looks confused.",ch,NULL,dir_name[door],TO_ROOM);
+					act("You almost go $T, but suddenly realize that there's no exit there.",ch, NULL, NULL, NULL, NULL,NULL,dir_name[door],TO_CHAR);
+					act("$n looks like $e's about to go $T, but suddenly stops short and looks confused.",ch, NULL, NULL, NULL, NULL,NULL,dir_name[door],TO_ROOM);
 				}
 			}
 		} else
@@ -891,67 +895,96 @@ void do_search(CHAR_DATA *ch, char *argument)
     int door = 0;
     OBJ_DATA *obj;
 
-    sprintf(buf, "%s searched in %s (%ld)", ch->name,
-	    ch->in_room->name, ch->in_room->vnum);
+    sprintf(buf, "%s searched in %s (%ld) (argument=%s)", ch->name,
+	    ch->in_room->name, ch->in_room->vnum, (IS_NULLSTR(argument)?"(nothing)":argument));
     log_string(buf);
 
-    act("You start searching the room for hidden exits and items...",
-	    ch, NULL, NULL, TO_CHAR);
-
-    for (obj = ch->in_room->contents; obj != NULL; obj = obj->next_content)
+    if( IS_NULLSTR(argument) )
     {
-	if (IS_SET(obj->extra_flags, ITEM_HIDDEN)
-	&&   number_percent() < number_range(60, 90))
-	{
-	    REMOVE_BIT(obj->extra_flags, ITEM_HIDDEN);
-	    act("$n has uncovered $p!", ch, obj, NULL, TO_ROOM);
-	    act("You have uncovered $p!", ch, obj, NULL, TO_CHAR);
-	}
-    }
+		act("You start searching the room for hidden exits and items...", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
-    for (door = 0; door <= 9; door++)
-    {
-	if ((pexit = ch->in_room->exit[door]) != NULL
-	&&    pexit->u1.to_room != NULL
-	&&    (pexit_rev = pexit->u1.to_room->exit[rev_dir[door]]) != NULL
-	&&    IS_SET(pexit->exit_info, EX_HIDDEN)
-	&&    !IS_SET(pexit->exit_info, EX_FOUND))
-	{
-	    exit_name(ch->in_room, door, exit);
-	    if (door == 4)
-	    {
-		if (exit[0] == '\0')
-		    sprintf(buf, "You have discovered an entrance above you.\n\r");
-		else
-		    sprintf(buf, "You have discovered %s above you.\n\r", exit);
-	    }
-	    else
-	    if (door == 5)
-	    {
-		if (exit[0] == '\0')
-		    sprintf(buf, "You have discovered an entrance beneath you.\n\r");
-		else
-		    sprintf(buf, "You have discovered %s beneath you.\n\r", exit);
-	    }
-	    else
-	    {
-		if (exit[0] == '\0')
-		    sprintf(buf, "You have discovered an entrance to your %s.\n\r", dir_name[door]);
-		else {
-		    sprintf(buf, "You have discovered %s to your %s.\n\r",
-			exit, dir_name[door]);
+		for (obj = ch->in_room->contents; obj != NULL; obj = obj->next_content)
+		{
+			if (IS_SET(obj->extra_flags, ITEM_HIDDEN) && number_percent() < number_range(60, 90))
+			{
+				REMOVE_BIT(obj->extra_flags, ITEM_HIDDEN);
+				act("$n has uncovered $p!", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
+				act("You have uncovered $p!", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+				found = TRUE;
+			}
 		}
-	    }
 
-	    send_to_char(buf, ch);
-	    found = TRUE;
-	    SET_BIT(pexit->exit_info, EX_FOUND);
-	    SET_BIT(pexit_rev->exit_info, EX_FOUND);
+		for (door = 0; door <= 9; door++)
+		{
+			if ((pexit = ch->in_room->exit[door]) != NULL && pexit->u1.to_room != NULL &&
+				(pexit_rev = pexit->u1.to_room->exit[rev_dir[door]]) != NULL &&
+				IS_SET(pexit->exit_info, EX_HIDDEN) && !IS_SET(pexit->exit_info, EX_FOUND))
+			{
+				exit_name(ch->in_room, door, exit);
+				if (door == DIR_UP)
+				{
+					if (exit[0] == '\0')
+						sprintf(buf, "You have discovered an entrance above you.\n\r");
+					else
+						sprintf(buf, "You have discovered %s above you.\n\r", exit);
+				} else if (door == DIR_DOWN) {
+					if (exit[0] == '\0')
+						sprintf(buf, "You have discovered an entrance beneath you.\n\r");
+					else
+						sprintf(buf, "You have discovered %s beneath you.\n\r", exit);
+				} else {
+					if (exit[0] == '\0')
+						sprintf(buf, "You have discovered an entrance to your %s.\n\r", dir_name[door]);
+					else {
+						sprintf(buf, "You have discovered %s to your %s.\n\r",
+						exit, dir_name[door]);
+					}
+				}
+
+				send_to_char(buf, ch);
+				found = TRUE;
+				SET_BIT(pexit->exit_info, EX_FOUND);
+				SET_BIT(pexit_rev->exit_info, EX_FOUND);
+			}
+		}
+	} else if( !str_cmp(argument, "self") ) {
+
+		act("You start searching your inventory...", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+
+		for (obj = ch->carrying; obj != NULL; obj = obj->next_content)
+		{
+			if (IS_SET(obj->extra_flags, ITEM_HIDDEN) && number_percent() < number_range(60, 90))
+			{
+				REMOVE_BIT(obj->extra_flags, ITEM_HIDDEN);
+				act("You have uncovered $p{x!", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+				found = TRUE;
+			}
+		}
+
+	} else {
+		OBJ_DATA *container;
+
+		if( (container = get_obj_here(ch, ch->in_room, argument)) == NULL )
+		{
+			act("You see no $T.", ch, NULL, NULL, NULL, NULL, argument, NULL, TO_CHAR);
+			return;
+		}
+
+		act("You start searching $p{x...", ch, NULL, container, NULL, NULL, NULL, NULL, TO_CHAR);
+
+		for (obj = container->contents; obj != NULL; obj = obj->next_content)
+		{
+			if (IS_SET(obj->extra_flags, ITEM_HIDDEN) && number_percent() < number_range(60, 90))
+			{
+				REMOVE_BIT(obj->extra_flags, ITEM_HIDDEN);
+				act("You have uncovered $p{x inside $P{x!", ch, NULL, NULL, obj, container, NULL, NULL, TO_CHAR);
+				found = TRUE;
+			}
+		}
 	}
-    }
 
     if (!found)
-	act("You find nothing unusual.", ch, NULL, NULL, TO_CHAR);
+		act("You find nothing unusual.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 }
 
 /* MOVED: movement/move.c */
@@ -1047,7 +1080,7 @@ int find_door(CHAR_DATA *ch, char *arg, bool show)
 	}
 
 	if (show)
-	    act("I see no $T here.", ch, NULL, arg, TO_CHAR);
+	    act("I see no $T here.", ch, NULL, NULL, NULL, NULL, NULL, arg, TO_CHAR);
 
 	return -1;
     }
@@ -1055,7 +1088,7 @@ int find_door(CHAR_DATA *ch, char *arg, bool show)
     if(ch) {
 	if ((pexit = ch->in_room->exit[door]) == NULL) {
 		if (show)
-		act("I see no door $T here.", ch, NULL, arg, TO_CHAR);
+		act("I see no door $T here.", ch, NULL, NULL, NULL, NULL, NULL, arg, TO_CHAR);
 		return -1;
 	}
 
@@ -1098,8 +1131,8 @@ void do_open(CHAR_DATA *ch, char *argument)
 	    }
 
 	    REMOVE_BIT(obj->value[1],EX_CLOSED);
-	    act("You open $p.",ch,obj,NULL,TO_CHAR);
-	    act("$n opens $p.",ch,obj,NULL,TO_ROOM);
+	    act("You open $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
+	    act("$n opens $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 	    return;
 	}
 
@@ -1126,9 +1159,9 @@ void do_open(CHAR_DATA *ch, char *argument)
 	}
 
 	REMOVE_BIT(obj->value[1], CONT_CLOSED);
-	act("You open $p.",ch,obj,NULL,TO_CHAR);
-	act("$n opens $p.", ch, obj, NULL, TO_ROOM);
-        p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, TRIG_OPEN);
+	act("You open $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
+	act("$n opens $p.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
+        p_percent_trigger(NULL, obj, NULL, NULL, NULL, NULL, ch, NULL, NULL, TRIG_OPEN, NULL);
 
 /*  act("You open the door.", ch, obj, NULL, TO_CHAR);
     act("$n opens a door.", ch, obj, NULL, TO_CHAR); */
@@ -1163,8 +1196,8 @@ void do_open(CHAR_DATA *ch, char *argument)
 	}
 
 	REMOVE_BIT(pexit->exit_info, EX_CLOSED);
-	act("$n opens $T.", ch, NULL, exit, TO_ROOM);
-	act("You open $T.", ch, NULL, exit, TO_CHAR);
+	act("$n opens $T.", ch, NULL, NULL, NULL, NULL, NULL, exit, TO_ROOM);
+	act("You open $T.", ch, NULL, NULL, NULL, NULL, NULL, exit, TO_CHAR);
         p_direction_trigger(ch, ch->in_room, door, PRG_RPROG, TRIG_OPEN);
 
 	if ((to_room   = pexit->u1.to_room           ) != NULL
@@ -1175,7 +1208,7 @@ void do_open(CHAR_DATA *ch, char *argument)
 
 	    REMOVE_BIT(pexit_rev->exit_info, EX_CLOSED);
 	    for (rch = to_room->people; rch != NULL; rch = rch->next_in_room)
-		act("$T opens.", rch, NULL, exit, TO_CHAR);
+		act("$T opens.", rch, NULL, NULL, NULL, NULL, NULL, exit, TO_CHAR);
 	}
     }
 }
@@ -1209,8 +1242,8 @@ void do_close(CHAR_DATA *ch, char *argument)
 	    }
 
 	    SET_BIT(obj->value[1],EX_CLOSED);
-	    act("You close $p.",ch,obj,NULL,TO_CHAR);
-	    act("$n closes $p.",ch,obj,NULL,TO_ROOM);
+	    act("You close $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
+	    act("$n closes $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 	    return;
 	}
 
@@ -1223,14 +1256,14 @@ void do_close(CHAR_DATA *ch, char *argument)
 	    { send_to_char("You can't do that.\n\r",      ch); return; }
 
 	SET_BIT(obj->value[1], CONT_CLOSED);
-	act("You close $p.",ch,obj,NULL,TO_CHAR);
-	act("$n closes $p.", ch, obj, NULL, TO_ROOM);
+	act("You close $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
+	act("$n closes $p.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 	/* @@@NIB : 20070126 */
 	if (IS_SET(obj->value[1], CONT_CLOSELOCK)) {
-	    act("$p locks once closed.", ch, obj, NULL, TO_ALL);
+	    act("$p locks once closed.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ALL);
 	    SET_BIT(obj->value[1], CONT_LOCKED);
 	}
-        p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, TRIG_CLOSE);
+        p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_CLOSE, NULL);
 	return;
     }
 
@@ -1256,8 +1289,8 @@ void do_close(CHAR_DATA *ch, char *argument)
 	}
 
 	SET_BIT(pexit->exit_info, EX_CLOSED);
-	act("$n closes $T.", ch, NULL, exit, TO_ROOM);
-	act("You close $T.", ch, NULL, exit, TO_CHAR);
+	act("$n closes $T.", ch, NULL, NULL, NULL, NULL, NULL, exit, TO_ROOM);
+	act("You close $T.", ch, NULL, NULL, NULL, NULL, NULL, exit, TO_CHAR);
         p_direction_trigger(ch, ch->in_room, door, PRG_RPROG, TRIG_CLOSE);
 
 	/* close the other side */
@@ -1269,7 +1302,7 @@ void do_close(CHAR_DATA *ch, char *argument)
 
 	    SET_BIT(pexit_rev->exit_info, EX_CLOSED);
 	    for (rch = to_room->people; rch != NULL; rch = rch->next_in_room)
-		act("The $T closes.", rch, NULL, exit, TO_CHAR);
+		act("The $T closes.", rch, NULL, NULL, NULL, NULL, NULL, exit, TO_CHAR);
 	}
     }
 
@@ -1330,8 +1363,8 @@ void use_key(CHAR_DATA *ch, OBJ_DATA *key)
 	if (church->key == key->pIndexData->vnum && ch->church != church)
 	{
 	    sprintf(buf, "Rent by the spiritual powers of %s, $p dissipates into nothingness.\n\r", church->name);
-	    act(buf, ch, key, NULL, TO_CHAR);
-	    act(buf, ch, key, NULL, TO_ROOM);
+	    act(buf, ch, NULL, NULL, key, NULL, NULL, NULL, TO_CHAR);
+	    act(buf, ch, NULL, NULL, key, NULL, NULL, NULL, TO_ROOM);
 	    extract_obj(key);
 	    return;
 	}
@@ -1353,8 +1386,7 @@ void use_key(CHAR_DATA *ch, OBJ_DATA *key)
 
     if (key->condition <= 0)
     {
-	act("$p snaps and breaks.", ch, key, NULL, TO_CHAR);
-	act("$p snaps and breaks.", ch, key, NULL, TO_ROOM);
+	act("$p snaps and breaks.", ch, NULL, NULL, key, NULL, NULL, NULL, TO_ALL);
 	extract_obj(key);
     }
 }
@@ -1413,8 +1445,8 @@ void do_lock(CHAR_DATA *ch, char *argument)
 	    }
 
 	    SET_BIT(obj->value[1],EX_LOCKED);
-	    act("You lock $p.",ch,obj,NULL,TO_CHAR);
-	    act("$n locks $p.",ch,obj,NULL,TO_ROOM);
+	    act("You lock $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
+	    act("$n locks $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 
 	    use_key(ch, key);
 	    return;
@@ -1433,8 +1465,8 @@ void do_lock(CHAR_DATA *ch, char *argument)
 	    { send_to_char("It's already locked.\n\r",    ch); return; }
 
 	SET_BIT(obj->value[1], CONT_LOCKED);
-	act("You lock $p.",ch,obj,NULL,TO_CHAR);
-	act("$n locks $p.", ch, obj, NULL, TO_ROOM);
+	act("You lock $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
+	act("$n locks $p.",ch, NULL, NULL,obj, NULL, NULL, NULL, TO_ROOM);
 
 	use_key(ch, key);
 	return;
@@ -1460,8 +1492,8 @@ void do_lock(CHAR_DATA *ch, char *argument)
 	SET_BIT(pexit->exit_info, EX_LOCKED);
 	/* send_to_char("*Click*\n\r", ch); */
 	exit_name(ch->in_room, door, exit);
-	act("You lock $T.", ch, NULL, exit, TO_CHAR);
-	act("$n locks $T.", ch, NULL, exit, TO_ROOM);
+	act("You lock $T.", ch, NULL, NULL, NULL, NULL, NULL, exit, TO_CHAR);
+	act("$n locks $T.", ch, NULL, NULL, NULL, NULL, NULL, exit, TO_ROOM);
 
 	/* lock the other side */
 	if ((to_room   = pexit->u1.to_room           ) != NULL
@@ -1526,8 +1558,8 @@ void do_unlock(CHAR_DATA *ch, char *argument)
 	    }
 
 	    REMOVE_BIT(obj->value[1],EX_LOCKED);
-	    act("You unlock $p.",ch,obj,NULL,TO_CHAR);
-	    act("$n unlocks $p.",ch,obj,NULL,TO_ROOM);
+	    act("You unlock $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
+	    act("$n unlocks $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 	    use_key(ch, key);
 	    return;
 	}
@@ -1548,8 +1580,8 @@ void do_unlock(CHAR_DATA *ch, char *argument)
 		ch->carrying);
 
 	REMOVE_BIT(obj->value[1], CONT_LOCKED);
-	act("You unlock $p.",ch,obj,NULL,TO_CHAR);
-	act("$n unlocks $p.", ch, obj, NULL, TO_ROOM);
+	act("You unlock $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
+	act("$n unlocks $p.",ch, NULL, NULL,obj, NULL, NULL,NULL, TO_ROOM);
 
 	if (key && !is_name("house",key->name))
 	{
@@ -1557,10 +1589,8 @@ void do_unlock(CHAR_DATA *ch, char *argument)
 	    /* @@@NIB : 20070126 */
 	    if (IS_SET(obj->value[1], CONT_SNAPKEY) || key->condition <= 0)
 	    {
-		act("$p snaps and breaks in the lock.",
-			ch, key, NULL, TO_CHAR);
-		act("$p snaps and breaks in the lock.",
-			ch, key, NULL, TO_ROOM);
+		act("$p snaps and breaks in the lock.", ch, NULL, NULL, key, NULL, NULL, NULL, TO_CHAR);
+		act("$p snaps and breaks in the lock.", ch, NULL, NULL, key, NULL, NULL, NULL, TO_ROOM);
 
 		extract_obj(key);
 	    }
@@ -1588,8 +1618,8 @@ void do_unlock(CHAR_DATA *ch, char *argument)
 	REMOVE_BIT(pexit->exit_info, EX_LOCKED);
 	/* send_to_char("*Click*\n\r", ch); */
 	exit_name(ch->in_room, door, exit);
-	act("You unlock $T.", ch, NULL, exit, TO_CHAR);
-	act("$n unlocks $T.", ch, NULL, exit, TO_ROOM);
+	act("You unlock $T.", ch, NULL, NULL, NULL, NULL, NULL, exit, TO_CHAR);
+	act("$n unlocks $T.", ch, NULL, NULL, NULL, NULL, NULL, exit, TO_ROOM);
 
 	/* unlock the other side */
 	if ((to_room   = pexit->u1.to_room           ) != NULL
@@ -1668,8 +1698,8 @@ void do_pick(CHAR_DATA *ch, char *argument)
 	    }
 
 	    REMOVE_BIT(obj->value[1],EX_LOCKED);
-	    act("You pick the lock on $p.",ch,obj,NULL,TO_CHAR);
-	    act("$n picks the lock on $p.",ch,obj,NULL,TO_ROOM);
+	    act("You pick the lock on $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
+	    act("$n picks the lock on $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 	    check_improve(ch,gsn_pick_lock,TRUE,2);
 	    return;
 	}
@@ -1687,8 +1717,8 @@ void do_pick(CHAR_DATA *ch, char *argument)
 	    { send_to_char("You failed.\n\r",             ch); return; }
 
 	REMOVE_BIT(obj->value[1], CONT_LOCKED);
-        act("You pick the lock on $p.",ch,obj,NULL,TO_CHAR);
-        act("$n picks the lock on $p.",ch,obj,NULL,TO_ROOM);
+        act("You pick the lock on $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
+        act("$n picks the lock on $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 	check_improve(ch,gsn_pick_lock,TRUE,2);
 	return;
     }
@@ -1712,7 +1742,7 @@ void do_pick(CHAR_DATA *ch, char *argument)
 
 	REMOVE_BIT(pexit->exit_info, EX_LOCKED);
 	send_to_char("*Click*\n\r", ch);
-	act("$n picks the $d.", ch, NULL, pexit->keyword, TO_ROOM);
+	act("$n picks the $d.", ch, NULL, NULL, NULL, NULL, NULL, pexit->keyword, TO_ROOM);
 	check_improve(ch,gsn_pick_lock,TRUE,2);
 
 	/* pick the other side */
@@ -1756,25 +1786,25 @@ void do_stand(CHAR_DATA *ch, char *argument)
 
 	if (ch->on != obj && count_users(obj) >= obj->value[0])
 	{
-	    act_new("There's no room to stand on $p.", ch,obj,NULL,TO_CHAR,POS_DEAD,NULL);
+	    act_new("There's no room to stand on $p.", ch,NULL,NULL,obj,NULL,NULL,NULL,TO_CHAR,POS_DEAD,NULL);
 	    return;
 	}
 
  	ch->on = obj;
 	if (IS_SET(obj->value[2],STAND_AT))
 	{
-	    act("You stand at $p.", ch, obj, NULL, TO_CHAR);
-	    act("$n stands at $p.", ch, obj, NULL, TO_ROOM);
+	    act("You stand at $p.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+	    act("$n stands at $p.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 	}
 	else if (IS_SET(obj->value[2],STAND_ON))
 	{
-	    act("You stand on $p.", ch, obj, NULL, TO_CHAR);
-	    act("$n stands on $p.", ch, obj, NULL, TO_ROOM);
+	    act("You stand on $p.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+	    act("$n stands on $p.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 	}
 	else
 	{
-	    act("You stand in $p.", ch, obj, NULL, TO_CHAR);
-	    act("$n stands in $p.", ch, obj, NULL, TO_ROOM);
+	    act("You stand in $p.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+	    act("$n stands in $p.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 	}
 	return;
     }
@@ -1788,23 +1818,23 @@ void do_stand(CHAR_DATA *ch, char *argument)
 	    if (obj == NULL)
 	    {
 		send_to_char("You wake and stand up.\n\r", ch);
-		act("$n wakes and stands up.", ch, NULL, NULL, TO_ROOM);
+		act("$n wakes and stands up.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		ch->on = NULL;
 	    }
 	    else if (IS_SET(obj->value[2],STAND_AT))
 	    {
-	       act_new("You wake and stand at $p.",ch,obj,NULL,TO_CHAR,POS_DEAD,NULL);
-	       act("$n wakes and stands at $p.",ch,obj,NULL,TO_ROOM);
+	       act_new("You wake and stand at $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR,POS_DEAD,NULL);
+	       act("$n wakes and stands at $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 	    }
 	    else if (IS_SET(obj->value[2],STAND_ON))
 	    {
-		act_new("You wake and stand on $p.",ch,obj,NULL,TO_CHAR,POS_DEAD,NULL);
-		act("$n wakes and stands on $p.",ch,obj,NULL,TO_ROOM);
+		act_new("You wake and stand on $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR,POS_DEAD,NULL);
+		act("$n wakes and stands on $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 	    }
 	    else
 	    {
-		act_new("You wake and stand in $p.",ch,obj,NULL,TO_CHAR,POS_DEAD,NULL);
-		act("$n wakes and stands in $p.",ch,obj,NULL,TO_ROOM);
+		act_new("You wake and stand in $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR,POS_DEAD,NULL);
+		act("$n wakes and stands in $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 	    }
 
 	    ch->position = POS_STANDING;
@@ -1816,23 +1846,23 @@ void do_stand(CHAR_DATA *ch, char *argument)
 	    if (obj == NULL)
 	    {
 		send_to_char("You stand up.\n\r", ch);
-		act("$n stands up.", ch, NULL, NULL, TO_ROOM);
+		act("$n stands up.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		ch->on = NULL;
 	    }
 	    else if (IS_SET(obj->value[2],STAND_AT))
 	    {
-		act("You stand at $p.",ch,obj,NULL,TO_CHAR);
-		act("$n stands at $p.",ch,obj,NULL,TO_ROOM);
+		act("You stand at $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
+		act("$n stands at $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 	    }
 	    else if (IS_SET(obj->value[2],STAND_ON))
 	    {
-		act("You stand on $p.",ch,obj,NULL,TO_CHAR);
-		act("$n stands on $p.",ch,obj,NULL,TO_ROOM);
+		act("You stand on $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
+		act("$n stands on $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 	    }
 	    else
 	    {
-		act("You stand in $p.",ch,obj,NULL,TO_CHAR);
-		act("$n stands on $p.",ch,obj,NULL,TO_ROOM);
+		act("You stand in $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
+		act("$n stands on $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 	    }
 
 	    ch->position = ch->fighting == NULL ? POS_STANDING : POS_FIGHTING;
@@ -1847,18 +1877,18 @@ void do_stand(CHAR_DATA *ch, char *argument)
 	    {
 		if (IS_SET(ch->on->value[2],STAND_AT))
 		{
-		    act("You get off of $p.",ch,ch->on,NULL,TO_CHAR);
-		    act("$n gets off of $p.",ch,ch->on,NULL,TO_ROOM);
+		    act("You get off of $p.",ch, NULL, NULL,ch->on, NULL, NULL,NULL,TO_CHAR);
+		    act("$n gets off of $p.",ch, NULL, NULL,ch->on, NULL, NULL,NULL,TO_ROOM);
 		}
 		else if (IS_SET(ch->on->value[2],STAND_ON))
 		{
-		    act("You get off of $p.",ch,ch->on,NULL,TO_CHAR);
-		    act("$n gets off of $p.",ch,ch->on,NULL,TO_ROOM);
+		    act("You get off of $p.",ch, NULL, NULL,ch->on, NULL, NULL,NULL,TO_CHAR);
+		    act("$n gets off of $p.",ch, NULL, NULL,ch->on, NULL, NULL,NULL,TO_ROOM);
 		}
 		else
 		{
-		    act("You get out of $p.",ch,ch->on,NULL,TO_CHAR);
-		    act("$n gets out of $p.",ch,ch->on,NULL,TO_ROOM);
+		    act("You get out of $p.",ch, NULL, NULL,ch->on, NULL, NULL,NULL,TO_CHAR);
+		    act("$n gets out of $p.",ch, NULL, NULL,ch->on, NULL, NULL,NULL,TO_ROOM);
 		}
 
 		ch->on = NULL;
@@ -1920,12 +1950,12 @@ void do_rest(CHAR_DATA *ch, char *argument)
 
         if (obj != NULL && ch->on != obj && count_users(obj) >= obj->value[0])
         {
-	    act_new("There's no more room on $p.",ch,obj,NULL,TO_CHAR,POS_DEAD,NULL);
+	    act_new("There's no more room on $p.",ch,NULL,NULL,obj,NULL,NULL,NULL,TO_CHAR,POS_DEAD,NULL);
 	    return;
     	}
 
 	ch->on = obj;
-	p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, TRIG_SIT);
+	p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_SIT, NULL);
     }
 
     switch (ch->position)
@@ -1940,22 +1970,22 @@ void do_rest(CHAR_DATA *ch, char *argument)
 	    if (obj == NULL)
 	    {
 		send_to_char("You wake up and start resting.\n\r", ch);
-		act ("$n wakes up and starts resting.",ch,NULL,NULL,TO_ROOM);
+		act ("$n wakes up and starts resting.",ch,NULL, NULL, NULL, NULL, NULL,NULL,TO_ROOM);
 	    }
 	    else if (IS_SET(obj->value[2],REST_AT))
 	    {
-		act_new("You wake up and rest at $p.", ch,obj,NULL,TO_CHAR,POS_SLEEPING,NULL);
-		act("$n wakes up and rests at $p.",ch,obj,NULL,TO_ROOM);
+		act_new("You wake up and rest at $p.", ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR,POS_SLEEPING,NULL);
+		act("$n wakes up and rests at $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 	    }
 	    else if (IS_SET(obj->value[2],REST_ON))
 	    {
-		act_new("You wake up and rest on $p.", ch,obj,NULL,TO_CHAR,POS_SLEEPING,NULL);
-		act("$n wakes up and rests on $p.",ch,obj,NULL,TO_ROOM);
+		act_new("You wake up and rest on $p.", ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR,POS_SLEEPING,NULL);
+		act("$n wakes up and rests on $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 	    }
 	    else
 	    {
-		act_new("You wake up and rest in $p.", ch,obj,NULL,TO_CHAR,POS_SLEEPING,NULL);
-		act("$n wakes up and rests in $p.",ch,obj,NULL,TO_ROOM);
+		act_new("You wake up and rest in $p.", ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR,POS_SLEEPING,NULL);
+		act("$n wakes up and rests in $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 	    }
 	    ch->position = POS_RESTING;
 	    break;
@@ -1968,22 +1998,22 @@ void do_rest(CHAR_DATA *ch, char *argument)
 	    if (obj == NULL)
 	    {
 		send_to_char("You rest.\n\r", ch);
-		act("$n sits down and rests.", ch, NULL, NULL, TO_ROOM);
+		act("$n sits down and rests.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	    }
 	    else if (IS_SET(obj->value[2],REST_AT))
 	    {
-		act("You sit down at $p and rest.",ch,obj,NULL,TO_CHAR);
-		act("$n sits down at $p and rests.",ch,obj,NULL,TO_ROOM);
+		act("You sit down at $p and rest.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
+		act("$n sits down at $p and rests.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 	    }
 	    else if (IS_SET(obj->value[2],REST_ON))
 	    {
-		act("You sit on $p and rest.",ch,obj,NULL,TO_CHAR);
-		act("$n sits on $p and rests.",ch,obj,NULL,TO_ROOM);
+		act("You sit on $p and rest.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
+		act("$n sits on $p and rests.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 	    }
 	    else
 	    {
-		act("You rest in $p.",ch,obj,NULL,TO_CHAR);
-		act("$n rests in $p.",ch,obj,NULL,TO_ROOM);
+		act("You rest in $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
+		act("$n rests in $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 	    }
 	    ch->position = POS_RESTING;
 	    break;
@@ -1992,22 +2022,22 @@ void do_rest(CHAR_DATA *ch, char *argument)
 	    if (obj == NULL)
 	    {
 		send_to_char("You rest.\n\r",ch);
-		act("$n rests.",ch,NULL,NULL,TO_ROOM);
+		act("$n rests.",ch, NULL, NULL, NULL, NULL,NULL,NULL,TO_ROOM);
 	    }
 	    else if (IS_SET(obj->value[2],REST_AT))
 	    {
-		act("You rest at $p.",ch,obj,NULL,TO_CHAR);
-		act("$n rests at $p.",ch,obj,NULL,TO_ROOM);
+		act("You rest at $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
+		act("$n rests at $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 	    }
 	    else if (IS_SET(obj->value[2],REST_ON))
 	    {
-		act("You rest on $p.",ch,obj,NULL,TO_CHAR);
-		act("$n rests on $p.",ch,obj,NULL,TO_ROOM);
+		act("You rest on $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
+		act("$n rests on $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 	    }
 	    else
 	    {
-		act("You rest in $p.",ch,obj,NULL,TO_CHAR);
-		act("$n rests in $p.",ch,obj,NULL,TO_ROOM);
+		act("You rest in $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
+		act("$n rests in $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 	    }
 	    ch->position = POS_RESTING;
 	    break;
@@ -2063,7 +2093,7 @@ void do_sit (CHAR_DATA *ch, char *argument)
 
 	if (obj != NULL && ch->on != obj && count_users(obj) >= obj->value[0])
 	{
-	    act_new("There's no more room on $p.",ch,obj,NULL,TO_CHAR,POS_DEAD,NULL);
+	    act_new("There's no more room on $p.",ch,NULL,NULL,obj,NULL,NULL,NULL,TO_CHAR,POS_DEAD,NULL);
 	    return;
 	}
 
@@ -2082,22 +2112,22 @@ void do_sit (CHAR_DATA *ch, char *argument)
             if (obj == NULL)
             {
             	send_to_char("You wake and sit up.\n\r", ch);
-            	act("$n wakes and sits up.", ch, NULL, NULL, TO_ROOM);
+            	act("$n wakes and sits up.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
             }
             else if (IS_SET(obj->value[2],SIT_AT))
             {
-            	act_new("You wake and sit at $p.",ch,obj,NULL,TO_CHAR,POS_DEAD,NULL);
-            	act("$n wakes and sits at $p.",ch,obj,NULL,TO_ROOM);
+            	act_new("You wake and sit at $p.",ch, NULL, NULL,obj,NULL, NULL, NULL,TO_CHAR,POS_DEAD,NULL);
+            	act("$n wakes and sits at $p.",ch, NULL, NULL,obj,NULL, NULL, NULL,TO_ROOM);
             }
             else if (IS_SET(obj->value[2],SIT_ON))
             {
-            	act_new("You wake and sit on $p.",ch,obj,NULL,TO_CHAR,POS_DEAD,NULL);
-            	act("$n wakes and sits at $p.",ch,obj,NULL,TO_ROOM);
+            	act_new("You wake and sit on $p.",ch, NULL, NULL,obj,NULL, NULL, NULL,TO_CHAR,POS_DEAD,NULL);
+            	act("$n wakes and sits at $p.",ch, NULL, NULL,obj,NULL, NULL, NULL,TO_ROOM);
             }
             else
             {
-            	act_new("You wake and sit in $p.",ch,obj,NULL,TO_CHAR,POS_DEAD,NULL);
-            	act("$n wakes and sits in $p.",ch,obj,NULL,TO_ROOM);
+            	act_new("You wake and sit in $p.",ch, NULL, NULL,obj,NULL, NULL, NULL,TO_CHAR,POS_DEAD,NULL);
+            	act("$n wakes and sits in $p.",ch, NULL, NULL,obj,NULL, NULL, NULL,TO_ROOM);
             }
 
 	    ch->position = POS_SITTING;
@@ -2107,14 +2137,14 @@ void do_sit (CHAR_DATA *ch, char *argument)
 		send_to_char("You stop resting.\n\r",ch);
 	    else if (IS_SET(obj->value[2],SIT_AT))
 	    {
-		act("You sit at $p.",ch,obj,NULL,TO_CHAR);
-		act("$n sits at $p.",ch,obj,NULL,TO_ROOM);
+		act("You sit at $p.",ch, NULL, NULL,obj,NULL, NULL, NULL,TO_CHAR);
+		act("$n sits at $p.",ch, NULL, NULL,obj,NULL, NULL, NULL,TO_ROOM);
 	    }
 
 	    else if (IS_SET(obj->value[2],SIT_ON))
 	    {
-		act("You sit on $p.",ch,obj,NULL,TO_CHAR);
-		act("$n sits on $p.",ch,obj,NULL,TO_ROOM);
+		act("You sit on $p.",ch, NULL, NULL,obj,NULL, NULL, NULL,TO_CHAR);
+		act("$n sits on $p.",ch, NULL, NULL,obj,NULL, NULL, NULL,TO_ROOM);
 	    }
 	    ch->position = POS_SITTING;
 	    break;
@@ -2125,28 +2155,28 @@ void do_sit (CHAR_DATA *ch, char *argument)
 	    if (obj == NULL)
     	    {
 		send_to_char("You sit down.\n\r",ch);
-    	        act("$n sits down on the ground.",ch,NULL,NULL,TO_ROOM);
+    	        act("$n sits down on the ground.",ch,NULL, NULL, NULL, NULL, NULL,NULL,TO_ROOM);
 	    }
 	    else if (IS_SET(obj->value[2],SIT_AT))
 	    {
-		act("You sit down at $p.",ch,obj,NULL,TO_CHAR);
-		act("$n sits down at $p.",ch,obj,NULL,TO_ROOM);
+		act("You sit down at $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
+		act("$n sits down at $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 	    }
 	    else if (IS_SET(obj->value[2],SIT_ON))
 	    {
-		act("You sit on $p.",ch,obj,NULL,TO_CHAR);
-		act("$n sits on $p.",ch,obj,NULL,TO_ROOM);
+		act("You sit on $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
+		act("$n sits on $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 	    }
 	    else
 	    {
-		act("You sit down in $p.",ch,obj,NULL,TO_CHAR);
-		act("$n sits down in $p.",ch,obj,NULL,TO_ROOM);
+		act("You sit down in $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
+		act("$n sits down in $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 	    }
     	    ch->position = POS_SITTING;
     	    break;
     }
 
-    if (obj) p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, TRIG_SIT);
+    if (obj) p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_SIT, NULL);
 }
 
 
@@ -2179,7 +2209,7 @@ void do_sleep(CHAR_DATA *ch, char *argument)
 	    if (argument[0] == '\0' && ch->on == NULL)
 	    {
 		send_to_char("You go to sleep.\n\r", ch);
-		act("$n goes to sleep.", ch, NULL, NULL, TO_ROOM);
+		act("$n goes to sleep.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		ch->position = POS_SLEEPING;
 	    }
 	    else  /* find an object and sleep on it */
@@ -2205,26 +2235,26 @@ void do_sleep(CHAR_DATA *ch, char *argument)
 
 		if (ch->on != obj && count_users(obj) >= obj->value[0])
 		{
-		    act_new("There is no room on $p for you.", ch,obj,NULL,TO_CHAR,POS_DEAD,NULL);
+		    act_new("There is no room on $p for you.", ch,NULL,NULL,obj,NULL,NULL,NULL,TO_CHAR,POS_DEAD,NULL);
 		    return;
 		}
 
 		ch->on = obj;
-		p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, TRIG_SIT);
+		p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_SIT, NULL);
 		if (IS_SET(obj->value[2],SLEEP_AT))
 		{
-		    act("You go to sleep at $p.",ch,obj,NULL,TO_CHAR);
-		    act("$n goes to sleep at $p.",ch,obj,NULL,TO_ROOM);
+		    act("You go to sleep at $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
+		    act("$n goes to sleep at $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 		}
 		else if (IS_SET(obj->value[2],SLEEP_ON))
 		{
-		    act("You go to sleep on $p.",ch,obj,NULL,TO_CHAR);
-		    act("$n goes to sleep on $p.",ch,obj,NULL,TO_ROOM);
+		    act("You go to sleep on $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
+		    act("$n goes to sleep on $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 		}
 		else
 		{
-		    act("You go to sleep in $p.",ch,obj,NULL,TO_CHAR);
-		    act("$n goes to sleep in $p.",ch,obj,NULL,TO_ROOM);
+		    act("You go to sleep in $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
+		    act("$n goes to sleep in $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 		}
 		ch->position = POS_SLEEPING;
 	    }
@@ -2254,12 +2284,12 @@ void do_wake(CHAR_DATA *ch, char *argument)
 	{ send_to_char("They aren't here.\n\r",              ch); return; }
 
     if (IS_AWAKE(victim))
-	{ act("$N is already awake.", ch, NULL, victim, TO_CHAR); return; }
+	{ act("$N is already awake.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR); return; }
 
     if (!IS_IMMORTAL(ch) && (IS_AFFECTED(victim, AFF_SLEEP) || (!IS_NPC(victim) && IS_SET(victim->act2, PLR_NO_WAKE))))
-	{ act("You can't wake $M!",   ch, NULL, victim, TO_CHAR);  return; }
+	{ act("You can't wake $M!",   ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);  return; }
 
-    act_new("$n wakes you.", ch, NULL, victim, TO_VICT,POS_SLEEPING,NULL);
+    act_new("$n wakes you.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT,POS_SLEEPING,NULL);
     do_function(victim, &do_stand, "");
 }
 
@@ -2339,127 +2369,234 @@ void do_hide(CHAR_DATA *ch, char *argument)
     /* take care of hide <obj> */
     if (argument[0] != '\0')
     {
-	if ((obj = get_obj_carry(ch, argument, ch)) != NULL)
-	{
-	    char buf[MAX_STRING_LENGTH];
-	    char buf2[MAX_STRING_LENGTH];
-	    int chance;
-	    CHAR_DATA *others;
+		char arg1[MIL];
+		char arg2[MIL];
 
-	    if (!can_drop_obj(ch, obj, TRUE) || IS_SET(obj->extra2_flags, ITEM_KEPT)) {
-		send_to_char("You can't let go of it.\n\r", ch);
-		return;
-	    }
+		argument = one_argument(argument, arg1);
+		argument = one_argument(argument, arg2);
 
-    	    if (ch->in_room->sector_type == SECT_WATER_NOSWIM)
-	    {
-  	        send_to_char("You would never see it again.\n\r", ch);
-		return;
-	    }
-
-	    if (ch->in_room->sector_type == SECT_AIR)
-	    {
-		send_to_char("Nowhere to hide it when you're floating...\n\r", ch);
-		return;
-	    }
-
-	    chance = number_range (0, 4);
-
-	    switch(ch->in_room->sector_type)
-	    {
-	        case SECT_INSIDE:
-		case SECT_CITY:
-		    if (chance == 0)
-			    sprintf(buf2, "in the corner");
-		    else if (chance == 1)
-			    sprintf(buf2, "amidst the shadows");
-		    else if (chance == 2)
-			    sprintf(buf2, "beneath some forgotten trash");
-		    else if (chance == 3)
-			    sprintf(buf2, "in a poorly lit area");
-		    else
-			    sprintf(buf2, "from view");
-		    break;
-		case SECT_FIELD:
-	   	    if (chance == 0)
-			    sprintf(buf2, "among the grasses");
-		    else if (chance == 1)
-			    sprintf(buf2, "in a bed of flowers");
-		    else if (chance == 2)
-			    sprintf(buf2, "under a pile of stones");
-		    else if (chance == 3)
-			    sprintf(buf2, "in a small hole");
-		    else
-			    sprintf(buf2, "from sight");
-		    break;
-		case SECT_FOREST:
-		    if (chance == 0)
-			    sprintf(buf2, "inside a tree");
-		    else if (chance == 1)
-			    sprintf(buf2, "under a stump");
-		    else if (chance == 2)
-			    sprintf(buf2, "in the thick vegetation");
-		    else if (chance == 3)
-			    sprintf(buf2, "in the branches of a tree");
-		    else
-			    sprintf(buf, "from sight");
-		    break;
-		case SECT_HILLS:
-		    if (chance == 0)
-			    sprintf(buf2, "under a large rock");
-		    else
-			    sprintf(buf2, "from sight");
-		    break;
-		case SECT_MOUNTAIN:
-		    sprintf(buf2, "in the deep mountain crags");
-		    break;
-		case SECT_WATER_SWIM:
-		    sprintf(buf2, "in the sands beneath your feet");
-		    break;
-		case SECT_TUNDRA:
-		    sprintf(buf2, "beneath a large pile of snow");
-		    break;
-		case SECT_DESERT:
-		    sprintf(buf2, "under a pile of desert sand");
-		    break;
-		case SECT_NETHERWORLD:
-		    sprintf(buf2, "beneath a pile of bones");
-		    break;
-		case SECT_DOCK:
-		    sprintf(buf2, "under a couple of planks");
-		    break;
-	    }
-
-	    sprintf(buf, "You deftly hide $p %s.", buf2);
-	    act(buf, ch, obj, NULL, TO_CHAR);
-	    for (others = ch->in_room->people;
-	          others != NULL; others = others->next_in_room)
-	    {
-	        if (((get_skill(ch, gsn_deception > 0)
-		&& number_percent() < get_skill(ch, gsn_deception))
-		|| ( number_percent() < get_skill(ch, gsn_hide)))
-		&& ch != others)
+		if ((obj = get_obj_carry(ch, arg1, ch)) != NULL)
 		{
-			act("You notice $N hide something.", others,
-					obj, ch, TO_CHAR);
+			char buf[MAX_STRING_LENGTH];
+			char buf2[MAX_STRING_LENGTH];
+			int chance;
+			CHAR_DATA *others;
+
+			if (!can_drop_obj(ch, obj, TRUE) || IS_SET(obj->extra2_flags, ITEM_KEPT)) {
+				send_to_char("You can't let go of it.\n\r", ch);
+				return;
+			}
+
+			if( p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_PREHIDE, NULL) )
+				return;
+
+			if( !str_cmp(arg2, "in") )
+			{
+				// We are trying to hide something inside an object
+				OBJ_DATA *container;
+
+				if( IS_NULLSTR(argument) )
+				{
+					act("Hide it in what?", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+					return;
+				}
+
+				if( (container = get_obj_here(ch, ch->in_room, argument)) == NULL )
+				{
+					act("You don't have that item.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+					return;
+				}
+
+				if (!can_put_obj(ch, obj, container, NULL, FALSE))
+					return;
+
+				if( p_percent_trigger(NULL, container, NULL, NULL, ch, NULL, NULL, obj, NULL, TRIG_PREHIDE_IN, NULL) )
+					return;
+
+				obj_from_char(ch);
+				obj_to_obj(obj, container);
+
+				p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, container, NULL, TRIG_HIDE, NULL);
+			}
+			else if( !str_cmp(arg2, "on") )
+			{
+				CHAR_DATA *victim;
+
+				int sneak1;
+				int sneak2;
+
+				if( IS_NULLSTR(argument) )
+				{
+					act("Hide it on whom?", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+					return;
+				}
+
+				if( (victim == get_char_room(ch, NULL, argument)) == NULL )
+				{
+					act("They aren't here.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+					return;
+				}
+
+				if( victim == ch )
+				{
+					send_to_char("You would you hide that on yourself?", ch);
+					return;
+				}
+
+				if( (victim->carry_number + get_obj_number(obj)) > can_carry_n(victim))
+				{
+					act("$N can't carry that.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+					return;
+				}
+
+				if( (get_carry_weight(victim) + get_obj_weight(obj)) > can_carry_w(victim))
+				{
+					act("$N can't carry that.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+					return;
+				}
+
+				if( p_percent_trigger(victim, NULL, NULL, NULL, ch, NULL, NULL, obj, NULL, TRIG_PREHIDE_IN, NULL) )
+					return;
+
+				act("You deftly hide $p on $N.", ch, victim, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+
+				// Do a skill test
+				sneak1 = get_skill(ch, gsn_sneak) * ch->tot_level;
+				if( IS_REMORT(ch) ) sneak1 = 3 * sneak1 / 2;	// 50% boost
+				if( IS_SAGE(ch) ) sneak1 = 3 * sneak1 / 2;		// 50% boost
+				if( number_percent() < get_skill(ch, gsn_deception) ) sneak1 *= 2;
+
+				sneak2 = get_skill(victim, gsn_sneak) * victim->tot_level;
+				if( IS_REMORT(victim) ) sneak2 = 3 * sneak2 / 2;	// 50% boost
+				if( IS_SAGE(victim) ) sneak2 = 3 * sneak2 / 2;		// 50% boost
+				if( number_percent() < get_skill(victim, gsn_deception) ) sneak2 *= 2;
+
+				// Check if victim is awake or if the victim is immortal and hider is not
+				if( IS_AWAKE(victim) || (IS_IMMORTAL(victim) && !IS_IMMORTAL(ch)) )
+				{
+					// Check if hider's sneak score is weaker and if the hider is a player or the victim is immortal
+					if( (sneak1 < sneak2) && (!IS_IMMORTAL(ch) || IS_IMMORTAL(victim)) )
+						act("$n hides something on you.", ch, victim, NULL, obj, NULL, NULL, NULL, TO_VICT);
+				}
+
+				obj_from_char(ch);
+				obj_to_char(victim);
+
+				p_percent_trigger(NULL, obj, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_HIDE, NULL);
+			}
+			else
+			{
+				if (ch->in_room->sector_type == SECT_WATER_NOSWIM)
+				{
+					send_to_char("You would never see it again.\n\r", ch);
+					return;
+				}
+
+				if (ch->in_room->sector_type == SECT_AIR)
+				{
+					send_to_char("Nowhere to hide it when you're floating...\n\r", ch);
+					return;
+				}
+
+				chance = number_range (0, 4);
+
+				switch(ch->in_room->sector_type)
+				{
+					case SECT_INSIDE:
+				case SECT_CITY:
+					if (chance == 0)
+						sprintf(buf2, "in the corner");
+					else if (chance == 1)
+						sprintf(buf2, "amidst the shadows");
+					else if (chance == 2)
+						sprintf(buf2, "beneath some forgotten trash");
+					else if (chance == 3)
+						sprintf(buf2, "in a poorly lit area");
+					else
+						sprintf(buf2, "from view");
+					break;
+				case SECT_FIELD:
+					if (chance == 0)
+						sprintf(buf2, "among the grasses");
+					else if (chance == 1)
+						sprintf(buf2, "in a bed of flowers");
+					else if (chance == 2)
+						sprintf(buf2, "under a pile of stones");
+					else if (chance == 3)
+						sprintf(buf2, "in a small hole");
+					else
+						sprintf(buf2, "from sight");
+					break;
+				case SECT_FOREST:
+					if (chance == 0)
+						sprintf(buf2, "inside a tree");
+					else if (chance == 1)
+						sprintf(buf2, "under a stump");
+					else if (chance == 2)
+						sprintf(buf2, "in the thick vegetation");
+					else if (chance == 3)
+						sprintf(buf2, "in the branches of a tree");
+					else
+						sprintf(buf, "from sight");
+					break;
+				case SECT_HILLS:
+					if (chance == 0)
+						sprintf(buf2, "under a large rock");
+					else
+						sprintf(buf2, "from sight");
+					break;
+				case SECT_MOUNTAIN:
+					sprintf(buf2, "in the deep mountain crags");
+					break;
+				case SECT_WATER_SWIM:
+					sprintf(buf2, "in the sands beneath your feet");
+					break;
+				case SECT_TUNDRA:
+					sprintf(buf2, "beneath a large pile of snow");
+					break;
+				case SECT_DESERT:
+					sprintf(buf2, "under a pile of desert sand");
+					break;
+				case SECT_NETHERWORLD:
+					sprintf(buf2, "beneath a pile of bones");
+					break;
+				case SECT_DOCK:
+					sprintf(buf2, "under a couple of planks");
+					break;
+				}
+
+				act("You deftly hide $p $t.", ch, NULL, NULL, obj, NULL, buf2, NULL, TO_CHAR);
+				for (others = ch->in_room->people;
+					  others != NULL; others = others->next_in_room)
+				{
+					if (((get_skill(ch, gsn_deception > 0) && number_percent() < get_skill(ch, gsn_deception)) ||
+						( number_percent() < get_skill(ch, gsn_hide))) &&
+						ch != others &&
+						can_see_obj(others, obj))
+				{
+					act("You notice $N hide $p $t.", others, ch, NULL, obj, NULL, buf2, NULL, TO_CHAR);
+				}
+				}
+				obj_from_char(obj);
+				obj_to_room(obj, ch->in_room);
+
+				p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_HIDE, NULL);
+			}
+			SET_BIT(obj->extra_flags, ITEM_HIDDEN);
+			return;
 		}
-	    }
-	    obj_from_char(obj);
-	    obj_to_room(obj, ch->in_room);
-	    SET_BIT(obj->extra_flags, ITEM_HIDDEN);
-	    return;
-	}
-	else
-	{
-   	    act("You don't have that item.", ch, NULL, NULL, TO_CHAR);
-	    return;
-	}
+		else
+		{
+			act("You don't have that item.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+			return;
+		}
     }
 
+	// Hiding self
     if (IS_SET(ch->affected_by, AFF_HIDE))
     {
     	send_to_char("You are already hidden.\n\r", ch);
-	return;
+		return;
     }
 
     if (MOUNTED(ch))
@@ -2470,9 +2607,12 @@ void do_hide(CHAR_DATA *ch, char *argument)
 
     if (ch->fighting != NULL)
     {
-	send_to_char("You can't hide while fighting.\n\r", ch);
-	return;
+		send_to_char("You can't hide while fighting.\n\r", ch);
+		return;
     }
+
+	if( p_percent_trigger(ch, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_PREHIDE, NULL) )
+		return;
 
     send_to_char("You attempt to hide.\n\r", ch);
 
@@ -2485,28 +2625,32 @@ void do_hide(CHAR_DATA *ch, char *argument)
 void hide_end(CHAR_DATA *ch)
 {
     CHAR_DATA *rch;
+
     if (number_percent() < get_skill(ch,gsn_hide))
     {
-	SET_BIT(ch->affected_by, AFF_HIDE);
+		SET_BIT(ch->affected_by, AFF_HIDE);
         for (rch = ch->in_room->people; rch != NULL; rch = rch->next_in_room)
-	{
-            if (get_skill(rch, gsn_deception) > 0)
-	    {
-	        if (number_percent() < get_skill(rch, gsn_deception))
 		{
-	            act("{D$n hides in the shadows.{x", ch, NULL, rch, TO_VICT);
-		    check_improve(rch, gsn_deception, TRUE, 1);
+            if (get_skill(rch, gsn_deception) > 0)
+		    {
+		        if (number_percent() < get_skill(rch, gsn_deception))
+				{
+		            act("{D$n hides in the shadows.{x", ch, rch, NULL, NULL, NULL, NULL, NULL, TO_VICT);
+				    check_improve(rch, gsn_deception, TRUE, 1);
+				}
+		    }
 		}
-	    }
-	}
 
-	send_to_char("You successfully hide in the shadows.\n\r{x", ch);
-	check_improve(ch,gsn_hide,TRUE,3);
+		send_to_char("You successfully hide in the shadows.\n\r{x", ch);
+		check_improve(ch,gsn_hide,TRUE,3);
+
+		// Allow for other fun stuff to occur when you are fully hidden
+		p_percent_trigger(ch, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_HIDDEN, NULL);
     }
     else
     {
-	send_to_char("You fail to hide in the shadows.\n\r", ch);
-	check_improve(ch,gsn_hide,FALSE,3);
+		send_to_char("You fail to hide in the shadows.\n\r", ch);
+		check_improve(ch,gsn_hide,FALSE,3);
     }
 }
 
@@ -2549,12 +2693,12 @@ void do_recall(CHAR_DATA *ch, char *argument)
 	return;
     }
 
-    if(p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_PRERECALL) ||
-	p_percent_trigger(NULL, NULL, ch->in_room, NULL, NULL, NULL, NULL, TRIG_PRERECALL))
+    if(p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_PRERECALL,NULL) ||
+	p_percent_trigger(NULL, NULL, ch->in_room, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_PRERECALL,NULL))
 	return;
 
 
-    act("$n prays for transportation!", ch, 0, 0, TO_ROOM);
+    act("$n prays for transportation!", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
     if (!(location = get_recall_room(ch))) {
 	send_to_char("You are completely lost.\n\r", ch);
@@ -2579,27 +2723,27 @@ void do_recall(CHAR_DATA *ch, char *argument)
     }
 
     ch->move /= 2;
-    act("{D$n disappears.{x", ch, NULL, NULL, TO_ROOM);
+    act("{D$n disappears.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
     char_from_room(ch);
     char_to_room(ch, location);
-    act("{D$n appears in the room.{x", ch, NULL, NULL, TO_ROOM);
+    act("{D$n appears in the room.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
     do_function(ch, &do_look, "auto");
 
 
     if (ch->pet && !ch->pet->fighting) {
 	ch->pet->move /= 2;
-	act("{D$n disappears.{x", ch->pet, NULL, NULL, TO_ROOM);
+	act("{D$n disappears.{x", ch->pet, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	char_from_room(ch->pet);
 	char_to_room(ch->pet, location);
-	act("{D$n appears in the room.{x", ch->pet, NULL, NULL, TO_ROOM);
+	act("{D$n appears in the room.{x", ch->pet, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	do_function(ch->pet, &do_look, "auto");
     }
     if (ch->mount && !ch->mount->fighting) {
 	ch->mount->move /= 2;
-	act("{D$n disappears.{x", ch->mount, NULL, NULL, TO_ROOM);
+	act("{D$n disappears.{x", ch->mount, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	char_from_room(ch->mount);
 	char_to_room(ch->mount, location);
-	act("{D$n appears in the room.{x", ch->mount, NULL, NULL, TO_ROOM);
+	act("{D$n appears in the room.{x", ch->mount, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	do_function(ch->mount, &do_look, "auto");
     }
 }
@@ -2925,7 +3069,7 @@ void do_aim( CHAR_DATA *ch, char *argument )
 					}
 				}
 /*
-				 coast guard ship saw attack 
+				 coast guard ship saw attack
 				if (npc_ship != NULL) {
 					set_pirate_status(ch, npc_ship->pShipData->npc_sub_type == NPC_SHIP_SUB_TYPE_COAST_GUARD_SERALIA ? CONT_SERALIA : CONT_ATHEMIA, ch->tot_level * 1000);
 
@@ -2977,7 +3121,7 @@ void do_fade(CHAR_DATA *ch, char *argument)
 
     if (ch->pulled_cart != NULL)
     {
-	act("You can't fade while pulling $p.", ch, ch->pulled_cart, NULL, TO_CHAR);
+	act("You can't fade while pulling $p.", ch, NULL, NULL, ch->pulled_cart, NULL, NULL, NULL, TO_CHAR);
 	return;
     }
 
@@ -3026,8 +3170,8 @@ void do_fade(CHAR_DATA *ch, char *argument)
     ch->fade_dir = door;
     FADE_STATE(ch, 4);
 
-    act("{W$n fades to a different dimension.{x", ch, NULL, dir_name[door], TO_ROOM);
-    act("{WYou fade to a different dimension.{x", ch, NULL, dir_name[door], TO_CHAR);
+    act("{W$n fades to a different dimension.{x", ch, NULL, NULL, NULL, NULL, NULL, dir_name[door], TO_ROOM);
+    act("{WYou fade to a different dimension.{x", ch, NULL, NULL, NULL, NULL, NULL, dir_name[door], TO_CHAR);
     check_improve(ch,gsn_fade,TRUE,1);
 }
 
@@ -3055,16 +3199,16 @@ void fade_end(CHAR_DATA *ch)
 
 	for (counter = 0; counter < max_fade; counter++) {
 		if (!move_success(ch)) {
-			act("{W$n fades in.{x", ch, NULL, NULL, TO_ROOM);
+			act("{W$n fades in.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 			ch->fade_dir = -1;	/* @@@NIB : 20071020 */
 			return;
 		} else if (counter != 2)
-			act("{W$n fades in then off to the $T.{x", ch, NULL, dir_name[ch->fade_dir], TO_ROOM);
+			act("{W$n fades in then off to the $T.{x", ch, NULL, NULL, NULL, NULL, NULL, dir_name[ch->fade_dir], TO_ROOM);
 	}
 
 	do_function(ch, &do_look, "auto");
 	FADE_STATE(ch, beats);
-	act("{W$n fades in.{x", ch, NULL, NULL, TO_ROOM);
+	act("{W$n fades in.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 }
 
 
@@ -3088,7 +3232,7 @@ bool move_success(CHAR_DATA *ch)
 
 	if (ch->in_room && (ch->in_room->sector_type == SECT_WATER_NOSWIM ||
 		ch->in_room->sector_type == SECT_WATER_SWIM)) {
-		act("The magical inteference radiating from the water stops your ability to fade.", ch, NULL, NULL, TO_CHAR);
+		act("The magical inteference radiating from the water stops your ability to fade.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		return FALSE;
 	}
 
@@ -3099,7 +3243,7 @@ bool move_success(CHAR_DATA *ch)
 	if (!(pexit = in_room->exit[door])) {
 		//Updated show_room_to_char to show_room -- Tieryo 08/18/2010
 		show_room(ch,ch->in_room,false,false);
-	        act("\n\rYou can't go any further.", ch, NULL, NULL, TO_CHAR);
+	        act("\n\rYou can't go any further.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	        return FALSE;
 	}
 
@@ -3107,7 +3251,7 @@ bool move_success(CHAR_DATA *ch)
 		(!IS_AFFECTED(ch, AFF_PASS_DOOR) || IS_SET(pexit->exit_info,EX_NOPASS))) {
 		//Updated show_room_to_char to show_room --Tieryo 08/18/2010
 		show_room(ch,ch->in_room,false,false);
-	        act("\n\rYou can't go any further.", ch, NULL, NULL, TO_CHAR);
+	        act("\n\rYou can't go any further.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	        return FALSE;
 	}
 
@@ -3249,18 +3393,18 @@ void do_bar(CHAR_DATA *ch, char *argument)
 
 	    if (IS_SET(obj->value[1],EX_NOBAR))
 	    {
-	    act("You can't find a way to bar up the $p.",ch,obj,NULL,TO_CHAR);
+	    act("You can't find a way to bar up the $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
 		return;
 	    }
 
 	    SET_BIT(obj->value[1],EX_BARRED);
-	    act("You bar up the $p.",ch,obj,NULL,TO_CHAR);
-	    act("$n bars up the $p.",ch,obj,NULL,TO_ROOM);
+	    act("You bar up the $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
+	    act("$n bars up the $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 	    check_improve(ch, gsn_bar, TRUE, 1);
 	    return;
 	}
 
-	act("You can't bar up the $p.",ch,obj,NULL,TO_CHAR);
+	act("You can't bar up the $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
 	return;
     }
 
@@ -3281,8 +3425,8 @@ void do_bar(CHAR_DATA *ch, char *argument)
 	exit_name(ch->in_room, door, exit);
 
 	SET_BIT(pexit->exit_info, EX_BARRED);
-	act("You bar up the $T.", ch, NULL, exit, TO_CHAR);
-	act("$n bars the $T.", ch, NULL, exit, TO_ROOM);
+	act("You bar up the $T.", ch, NULL, NULL, NULL, NULL, NULL, exit, TO_CHAR);
+	act("$n bars the $T.", ch, NULL, NULL, NULL, NULL, NULL, exit, TO_ROOM);
 	check_improve(ch, gsn_bar, TRUE, 1);
 
 	/* bar the other side */
@@ -3376,10 +3520,8 @@ void check_see_hidden(CHAR_DATA *ch)
 	    &&  IS_SET(temp_exit->exit_info, EX_HIDDEN)
 	    &&  !IS_SET(temp_exit->exit_info, EX_FOUND))
 	    {
-		act("{Y$p{Y begins to vibrate and hum.{x",
-			ch, obj, NULL, TO_CHAR);
-		act("{Y$n's $p{Y begins to vibrate and hum.{x",
-			ch, obj, NULL, TO_ROOM);
+		act("{Y$p{Y begins to vibrate and hum.{x", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+		act("{Y$n's $p{Y begins to vibrate and hum.{x", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 		return;
 	    }
 	}
@@ -3412,7 +3554,7 @@ void check_traps(CHAR_DATA *ch)
 	&&  number_percent() < get_skill(ch, gsn_detect_traps))
 	{
 	    act("{RYou sense a strong feeling of danger coming from the $t.{x",
-		ch, dir_name[i], NULL, TO_CHAR);
+		ch, NULL, NULL, NULL, NULL, dir_name[i], NULL, TO_CHAR);
 
 	    if (number_percent() < 5)
 		check_improve(ch, gsn_detect_traps, TRUE, 5);
@@ -3426,7 +3568,7 @@ void check_traps(CHAR_DATA *ch)
 	&&  number_percent() < get_skill(ch, gsn_detect_traps))
 	{
 	    act("{RYou sense a strong feeling of danger coming from $p.{x",
-		    ch, obj, NULL, TO_CHAR);
+		    ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 
 	    if (number_percent() < 5)
 		check_improve(ch, gsn_detect_traps, TRUE, 5);
@@ -3515,8 +3657,8 @@ void do_ambush(CHAR_DATA *ch, char *argument)
     ambush->max_level = max;
     ambush->command = str_dup(argument);
     ch->ambush = ambush;
-    act("You find a good place to hide and crouch down.", ch, NULL, NULL, TO_CHAR);
-    act("$n finds a good place to hide and crouches down.", ch, NULL, NULL, TO_ROOM);
+    act("You find a good place to hide and crouch down.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+    act("$n finds a good place to hide and crouches down.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 }
 
 /* MOVED: combat/pk.c
@@ -3595,8 +3737,8 @@ void do_knock(CHAR_DATA *ch, char *argument)
 		return;
 	}
 
-	act("$n knocks on $T.", ch, NULL, exit, TO_ROOM);
-	act("You knock on $T.", ch, NULL, exit, TO_CHAR);
+	act("$n knocks on $T.", ch, NULL, NULL, NULL, NULL, NULL, exit, TO_ROOM);
+	act("You knock on $T.", ch, NULL, NULL, NULL, NULL, NULL, exit, TO_CHAR);
 	p_direction_trigger(ch, ch->in_room, door, PRG_RPROG, TRIG_KNOCK);
 
 	if ((to_room = pexit->u1.to_room) != NULL
@@ -3604,7 +3746,7 @@ void do_knock(CHAR_DATA *ch, char *argument)
 	&& pexit_rev->u1.to_room == ch->in_room) {
 		if(to_room->people) {
 			exit_name(to_room, rev_dir[door], exit);
-			act("Knocking comes from $T.", to_room->people, NULL, exit, TO_ROOM);
+			act("Knocking comes from $T.", to_room->people, NULL, NULL, NULL, NULL, NULL, exit, TO_ROOM);
 		}
 		p_direction_trigger(ch, to_room, rev_dir[door], PRG_RPROG, TRIG_KNOCKING);
 	}
@@ -3620,18 +3762,18 @@ void do_takeoff(CHAR_DATA *ch, char *argument)
 
 	if(MOUNTED(ch)) {
 		if(IS_AFFECTED(MOUNTED(ch), AFF_FLYING) || is_affected(MOUNTED(ch),gsn_flight)) {
-			act("$N is already flying.", ch, NULL, MOUNTED(ch), TO_CHAR);
+			act("$N is already flying.", ch, MOUNTED(ch), NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 			return;
 		}
 
-		if(!p_percent_trigger(MOUNTED(ch), NULL, NULL, NULL, ch, NULL, NULL, TRIG_TAKEOFF)) {
+		if(!p_percent_trigger(MOUNTED(ch), NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_TAKEOFF,NULL)) {
 			if(!IS_SET(MOUNTED(ch)->parts,PART_WINGS)) {
-				act("$N doesn't seem to be able to fly.", ch, NULL, MOUNTED(ch), TO_CHAR);
+				act("$N doesn't seem to be able to fly.", ch, MOUNTED(ch), NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 				return;
 			}
 
 			if(number_range(0,MOUNTED(ch)->max_move/get_curr_stat(MOUNTED(ch),STAT_CON)) > MOUNTED(ch)->move) {
-				act("$N appears too exhausted to take flight.", ch, NULL, MOUNTED(ch), TO_CHAR);
+				act("$N appears too exhausted to take flight.", ch, MOUNTED(ch), NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 				send_to_char("You are too exhausted to take flight.\n\r",ch);
 				return;
 			}
@@ -3645,7 +3787,7 @@ void do_takeoff(CHAR_DATA *ch, char *argument)
   				return;
   			}
 */
-			act("$n spreads $s wings, taking a few strokes in the air before taking off.", MOUNTED(ch), NULL, NULL, TO_ROOM);
+			act("$n spreads $s wings, taking a few strokes in the air before taking off.", MOUNTED(ch), NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		}
 		af.where     = TO_AFFECTS;
 		af.group     = AFFGROUP_PHYSICAL;
@@ -3665,7 +3807,7 @@ void do_takeoff(CHAR_DATA *ch, char *argument)
 		}
 
 		/* Trigger is responsible for messages! */
-		if(!p_percent_trigger(ch, NULL, NULL, NULL, ch, NULL, NULL, TRIG_TAKEOFF)) {
+		if(!p_percent_trigger(ch, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_TAKEOFF,NULL)) {
 			chance = get_skill(ch,gsn_flight);
 
 			if(!chance) {
@@ -3696,13 +3838,13 @@ void do_takeoff(CHAR_DATA *ch, char *argument)
 
 			if(chance < number_percent()) {
 				send_to_char("You flap your wings in effort to take off but fail to generate lift.\n\r", ch);
-				act("$n flaps $s wings in effort to take off but fails to generate lift.", ch, NULL, NULL, TO_ROOM);
+				act("$n flaps $s wings in effort to take off but fails to generate lift.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 				check_improve(ch,gsn_flight,FALSE,3);
 				return;
 			}
 
 			send_to_char("You spread your wings, taking a few strokes in the air before taking off.\n\r", ch);
-			act("$n spreads $s wings, taking a few strokes in the air before taking off.", ch, NULL, NULL, TO_ROOM);
+			act("$n spreads $s wings, taking a few strokes in the air before taking off.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		}
 		af.where     = TO_AFFECTS;
 		af.group     = AFFGROUP_PHYSICAL;
@@ -3724,32 +3866,32 @@ void do_land(CHAR_DATA *ch, char *argument)
 {
 	if(MOUNTED(ch)) {
 		if(!IS_AFFECTED(MOUNTED(ch),AFF_FLYING) && !is_affected(MOUNTED(ch),gsn_flight)) {
-			act("$N doesn't seem to be airborne.", ch, NULL, MOUNTED(ch), TO_CHAR);
+			act("$N doesn't seem to be airborne.", ch, MOUNTED(ch),NULL,NULL,NULL,NULL, NULL, TO_CHAR);
 			return;
 		}
 
-		if(!p_percent_trigger(MOUNTED(ch), NULL, NULL, NULL, ch, NULL, NULL, TRIG_LAND)) {
+		if(!p_percent_trigger(MOUNTED(ch), NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_LAND,NULL)) {
 			if(is_affected(ch,gsn_flight)) {
 				if(	ch->in_room->sector_type == SECT_WATER_NOSWIM ||
 					ch->in_room->sector_type == SECT_WATER_SWIM ||
 					ch->in_room->sector_type == SECT_UNDERWATER ||
 					ch->in_room->sector_type == SECT_DEEP_UNDERWATER) {
-					act("Diving down, you descend to the water below.", ch, NULL, NULL, TO_CHAR);
-					act("Diving down, $n descends to the water below.", ch, NULL, NULL, TO_ROOM);
+					act("Diving down, you descend to the water below.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+					act("Diving down, $n descends to the water below.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 				} else {
-					act("Diving down, you descend to the ground below.", ch, NULL, NULL, TO_CHAR);
-					act("Diving down, $n descends to the ground below.", ch, NULL, NULL, TO_ROOM);
+					act("Diving down, you descend to the ground below.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+					act("Diving down, $n descends to the ground below.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 				}
 			} else {
 				if(	ch->in_room->sector_type == SECT_WATER_NOSWIM ||
 					ch->in_room->sector_type == SECT_WATER_SWIM ||
 					ch->in_room->sector_type == SECT_UNDERWATER ||
 					ch->in_room->sector_type == SECT_DEEP_UNDERWATER) {
-					act("You slowly descend to the water below.", ch, NULL, NULL, TO_CHAR);
-					act("$n slowly descends to the water below.", ch, NULL, NULL, TO_ROOM);
+					act("You slowly descend to the water below.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+					act("$n slowly descends to the water below.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 				} else {
-					act("You slowly descend to the ground below.", ch, NULL, NULL, TO_CHAR);
-					act("$n slowly descends to the ground below.", ch, NULL, NULL, TO_ROOM);
+					act("You slowly descend to the ground below.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+					act("$n slowly descends to the ground below.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 				}
 			}
 		}
@@ -3762,28 +3904,28 @@ void do_land(CHAR_DATA *ch, char *argument)
 			return;
 		}
 
-		if(!p_percent_trigger(ch, NULL, NULL, NULL, ch, NULL, NULL, TRIG_LAND)) {
+		if(!p_percent_trigger(ch, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_LAND,NULL)) {
 			if(is_affected(ch,gsn_flight)) {
 				if(	ch->in_room->sector_type == SECT_WATER_NOSWIM ||
 					ch->in_room->sector_type == SECT_WATER_SWIM ||
 					ch->in_room->sector_type == SECT_UNDERWATER ||
 					ch->in_room->sector_type == SECT_DEEP_UNDERWATER) {
-					act("Diving down, you descend to the water below.", ch, NULL, NULL, TO_CHAR);
-					act("Diving down, $n descends to the water below.", ch, NULL, NULL, TO_ROOM);
+					act("Diving down, you descend to the water below.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+					act("Diving down, $n descends to the water below.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 				} else {
-					act("Diving down, you descend to the ground below.", ch, NULL, NULL, TO_CHAR);
-					act("Diving down, $n descends to the ground below.", ch, NULL, NULL, TO_ROOM);
+					act("Diving down, you descend to the ground below.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+					act("Diving down, $n descends to the ground below.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 				}
 			} else {
 				if(	ch->in_room->sector_type == SECT_WATER_NOSWIM ||
 					ch->in_room->sector_type == SECT_WATER_SWIM ||
 					ch->in_room->sector_type == SECT_UNDERWATER ||
 					ch->in_room->sector_type == SECT_DEEP_UNDERWATER) {
-					act("You slowly descend to the water below.", ch, NULL, NULL, TO_CHAR);
-					act("$n slowly descends to the water below.", ch, NULL, NULL, TO_ROOM);
+					act("You slowly descend to the water below.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+					act("$n slowly descends to the water below.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 				} else {
-					act("You slowly descend to the ground below.", ch, NULL, NULL, TO_CHAR);
-					act("$n slowly descends to the ground below.", ch, NULL, NULL, TO_ROOM);
+					act("You slowly descend to the ground below.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+					act("$n slowly descends to the ground below.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 				}
 			}
 		}

@@ -416,22 +416,26 @@ bool check_range(long lower, long upper)
     return TRUE;
 }
 
-bool edit_deltrigger(PROG_LIST **list, int index)
+bool edit_deltrigger(LIST **list, int index)
 {
-	PROG_LIST *trigger, *prev, *next;
+	PROG_LIST *trigger;
 	int slot;
+	ITERATOR it;
 
 	if(list) {
 		for(slot = 0; slot < TRIGSLOT_MAX; slot++) {
-			for(trigger = list[slot], prev = NULL; trigger; prev = trigger, trigger = next) {
-				next = trigger->next;
+			iterator_start(&it, list[slot]);
+			while(( trigger = (PROG_LIST *)iterator_nextdata(&it) )) {
 				if(!index--) {
-					if(prev) prev->next = next;
-					else list[slot] = next;
-
-					free_trigger(trigger);
-					return TRUE;
+					iterator_remcurrent(&it);
+					break;
 				}
+			}
+			iterator_stop(&it);
+
+			if(trigger) {
+				free_trigger(trigger);
+				return TRUE;
 			}
 		}
 	}
@@ -469,10 +473,10 @@ AEDIT(aedit_show)
 	if(pArea->recall.wuid) {
 		WILDS_DATA *wilds = get_wilds_from_uid(NULL,pArea->recall.wuid);
 		if(wilds)
-			sprintf(buf, "Recall:    Wilds %s [%u] at <%lu,%lu,%lu>\n\r", wilds->name, pArea->recall.wuid,
+			sprintf(buf, "Recall:    Wilds %s [%lu] at <%lu,%lu,%lu>\n\r", wilds->name, pArea->recall.wuid,
 				pArea->recall.id[0],pArea->recall.id[1],pArea->recall.id[2]);
 		else
-			sprintf(buf, "Recall:    Wilds ??? [%u]\n\r", pArea->recall.wuid);
+			sprintf(buf, "Recall:    Wilds ??? [%lu]\n\r", pArea->recall.wuid);
 	} else if(pArea->recall.id[0] > 0 && (recall = get_room_index(pArea->recall.id[0]))) {
 		sprintf(buf, "Recall:    Room [%5ld] %s\n\r", pArea->recall.id[0], recall->name);
 	} else
@@ -1223,7 +1227,7 @@ AEDIT(aedit_builder)
 
 	if (!player_exists(name) && str_cmp(name, "All"))
 	{
-	    act("There is no character by the name of $t.", ch, name, NULL, TO_CHAR);
+	    act("There is no character by the name of $t.", ch, NULL, NULL, NULL, NULL, name, NULL, TO_CHAR);
 	    return FALSE;
 	}
 
@@ -1344,7 +1348,8 @@ REDIT(redit_show)
     ROOM_INDEX_DATA *pRoom;
     char buf[MAX_STRING_LENGTH];
     BUFFER *buf1;
-    PROG_LIST *list;
+    ITERATOR it;
+    PROG_LIST *trigger;
     int door;
     CONDITIONAL_DESCR_DATA *cd;
     int i;
@@ -1375,6 +1380,9 @@ REDIT(redit_show)
                      "Sector:       {r[{x%s{r]{x\n\r",
 	        pRoom->vnum, flag_string(sector_flags, pRoom->sector_type));
 
+    add_buf(buf1, buf);
+
+    sprintf(buf, "Persist:      {r[%s{r]{x\n\r", (pRoom->persist ? "{WON" : "{Doff"));
     add_buf(buf1, buf);
 
     sprintf(buf, "Room flags:   {r[{x%s{r]{x\n\r",
@@ -1552,7 +1560,7 @@ REDIT(redit_show)
 	int cnt, slot;
 
 	for (cnt = 0, slot = 0; slot < TRIGSLOT_MAX; slot++)
-		if(pRoom->progs->progs[slot]) ++cnt;
+		if(list_size(pRoom->progs->progs[slot]) > 0) ++cnt;
 
 	if (cnt > 0) {
 		sprintf(buf, "{R%-6s %-20s %-10s %-10s\n\r{x", "Number", "RoomProg Vnum", "Trigger", "Phrase");
@@ -1562,13 +1570,15 @@ REDIT(redit_show)
 		add_buf(buf1, buf);
 
 		for (cnt = 0, slot = 0; slot < TRIGSLOT_MAX; slot++) {
-			for (list = pRoom->progs->progs[slot]; list; list=list->next) {
+			iterator_start(&it, pRoom->progs->progs[slot]);
+			while(( trigger = (PROG_LIST *)iterator_nextdata(&it))) {
 				sprintf(buf, "{r[{W%4d{r]{x %-20ld %-10s %-10s\n\r", cnt,
-					list->vnum,trigger_name(list->trig_type),
-					trigger_phrase(list->trig_type,list->trig_phrase));
+					trigger->vnum,trigger_name(trigger->trig_type),
+					trigger_phrase(trigger->trig_type,trigger->trig_phrase));
 				add_buf(buf1, buf);
 				cnt++;
 			}
+			iterator_stop(&it);
 		}
 	}
     }
@@ -2451,6 +2461,7 @@ REDIT(redit_create)
 
     pRoom			= new_room_index();
     pRoom->area			= pArea;
+	list_appendlink(pArea->room_list, pRoom);	// Add to the area room list
     pRoom->vnum			= value;
     if (value > top_vnum_room)
         top_vnum_room = value;
@@ -2610,14 +2621,14 @@ REDIT(redit_mreset)
     newmob = create_mobile(pMobIndex);
     char_to_room(newmob, pRoom);
 //    if (HAS_TRIGGER_MOB(newmob, TRIG_REPOP))
-	p_percent_trigger(newmob, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_REPOP);
+	p_percent_trigger(newmob, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_REPOP, NULL);
     sprintf(output, "%s (%ld) has been loaded and added to resets.\n\r"
 	"There will be a maximum of %ld loaded to this room.\n\r",
 	capitalize(pMobIndex->short_descr),
 	pMobIndex->vnum,
 	pReset->arg2);
     send_to_char(output, ch);
-    act("$n has created $N!", ch, NULL, newmob, TO_ROOM);
+    act("$n has created $N!", ch, newmob, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
     return TRUE;
 }
 
@@ -2878,8 +2889,34 @@ REDIT(redit_oreset)
 	return FALSE;
     }
 
-    act("$n has created $p!", ch, newobj, NULL, TO_ROOM);
+    act("$n has created $p!", ch, NULL, NULL, newobj, NULL, NULL, NULL, TO_ROOM);
     return TRUE;
+}
+
+REDIT(redit_persist)
+{
+	ROOM_INDEX_DATA *pRoom;
+
+	EDIT_ROOM(ch, pRoom);
+
+
+	if (!str_cmp(argument,"on")) {
+	    if (ch->tot_level < (MAX_LEVEL-1)) {
+			send_to_char("Insufficient security.  Department of Homeland Security has been notified.\n\r", ch);
+			return FALSE;
+	    }
+
+		persist_addroom(pRoom);
+		send_to_char("Persistance enabled.\n\r", ch);
+	} else if (!str_cmp(argument,"off")) {
+		persist_removeroom(pRoom);
+		send_to_char("Persistance disabled.\n\r", ch);
+	} else {
+		send_to_char("Usage: persist on/off\n\r", ch);
+		return FALSE;
+	}
+
+	return TRUE;
 }
 
 
@@ -4064,7 +4101,8 @@ OEDIT(oedit_show)
     BUFFER *buffer;
     char buf[MAX_STRING_LENGTH];
     AFFECT_DATA *paf;
-    PROG_LIST *list;
+    ITERATOR it;
+    PROG_LIST *trigger;
     SPELL_DATA *spell;
     int cnt;
 
@@ -4082,6 +4120,10 @@ OEDIT(oedit_show)
 	pObj->vnum,
 	flag_string(type_flags, pObj->item_type));
     add_buf(buffer, buf);
+
+    sprintf(buf, "Persist:      {B[%s{B]{x\n\r", (pObj->persist ? "{WON" : "{Doff"));
+    add_buf(buffer, buf);
+
 
     sprintf(buf, "Level:        {B[{x%7d{B]{x\n\r", pObj->level);
     add_buf(buffer, buf);
@@ -4179,26 +4221,62 @@ OEDIT(oedit_show)
 
     for (cnt = 0, paf = pObj->affected; paf; paf = paf->next)
     {
-	if (cnt == 0)
-	{
-	    sprintf(buf, "{Y%-6s %-20s %-10s %-10s{x\n\r",
-	        "Number", "Affects", "Modifier", "Random");
-	    add_buf(buffer, buf);
+		if( paf->where == TO_OBJECT )
+		{
+			if (cnt == 0)
+			{
+				sprintf(buf, "{Y%-6s %-20s %-10s %-10s{x\n\r", "Number", "Affects", "Modifier", "Random");
+				add_buf(buffer, buf);
 
-	    sprintf(buf, "{Y%-6s %-20s %-10s %-10s{x\n\r",
-	        "------", "-------", "--------", "------");
-	    add_buf(buffer, buf);
-	}
+				sprintf(buf, "{Y%-6s %-20s %-10s %-10s{x\n\r", "------", "-------", "--------", "------");
+				add_buf(buffer, buf);
+			}
 
-	sprintf(buf, "{B[{W%4d{B] {%c%-20s{x %-10d %d%%\n\r",
-	    cnt,
-	    (paf->location >= APPLY_SKILL && paf->location < APPLY_SKILL_MAX)?'Y':'G',
-	    affect_loc_name(paf->location),
-	    paf->modifier,
-	    paf->random);
-	add_buf(buffer, buf);
-	cnt++;
+			sprintf(buf, "{B[{W%4d{B] {%c%-20s{x %-20d %d%%\n\r",
+				cnt,
+				(paf->location >= APPLY_SKILL && paf->location < APPLY_SKILL_MAX)?'Y':'G',
+				affect_loc_name(paf->location),
+				paf->modifier,
+				paf->random);
+
+			add_buf(buffer, buf);
+			cnt++;
+		}
     }
+
+    for (cnt = 0, paf = pObj->affected; paf; paf = paf->next)
+    {
+		if( paf->where == TO_IMMUNE || paf->where == TO_RESIST || paf->where == TO_VULN )
+		{
+			char* irv;
+
+			if(paf->where == TO_IMMUNE)
+				irv = "Wimmunity";
+			else if(paf->where == TO_VULN)
+				irv = "Rvulnerability";
+			else
+				irv = "Gresistance";
+
+			if (cnt == 0)
+			{
+				sprintf(buf, "{C%-6s %-15s %-15s %-10s{x\n\r", "Number", "Adds", "Modifier", "Random");
+				add_buf(buffer, buf);
+
+				sprintf(buf, "{C%-6s %-15s %-15s %-10s{x\n\r", "------", "-------", "--------", "------");
+				add_buf(buffer, buf);
+			}
+
+			sprintf(buf, "{B[{W%4d{B] {%-16s{x %-15s %d%%\n\r",
+				cnt,
+				irv,
+				imm_bit_name(paf->bitvector),
+				paf->random);
+
+			add_buf(buffer, buf);
+			cnt++;
+		}
+    }
+
 
     if (pObj->spells)
     {
@@ -4222,24 +4300,29 @@ OEDIT(oedit_show)
 
     if (pObj->catalyst)
     {
-	cnt = 0;
+		cnt = 0;
+		char line_color = 'x';
 
-	sprintf(buf, "{m%-6s %-20s %-10s %-6s %-6s{x\n\r", "Number", "Type", "Strength", "Amount", "Random");
-	add_buf(buffer, buf);
+		sprintf(buf, "{m%-6s %-20s %-10s %-6s %-6s %-11s{x\n\r", "Number", "Type", "Strength", "Amount", "Random", "Script Name");
+		add_buf(buffer, buf);
 
-	sprintf(buf, "{m%-6s %-20s %-10s %-6s %-6s{x\n\r", "------", "----", "--------", "------", "------");
-	add_buf(buffer, buf);
+		sprintf(buf, "{m%-6s %-20s %-10s %-6s %-6s %-11s{x\n\r", "------", "----", "--------", "------", "------", "-----------");
+		add_buf(buffer, buf);
 
-	for (paf = pObj->catalyst; paf; paf = paf->next, cnt++) {
-	    if(paf->modifier < 0)
-		    sprintf(buf, "{M[{W%4d{M]{x %-20s %-10d {Wsource{x %d%%\n\r", cnt,
-		    	flag_string(catalyst_types,paf->type),paf->level,paf->random);
-	    else
-		    sprintf(buf, "{M[{W%4d{M]{x %-20s %-10d %-6d %d%%\n\r", cnt,
-		    	flag_string(catalyst_types,paf->type),paf->level,paf->modifier,paf->random);
-	    buf[0] = UPPER(buf[0]);
-	    add_buf(buffer, buf);
-	}
+		for (paf = pObj->catalyst; paf; paf = paf->next, cnt++) {
+			line_color = ( paf->where == TO_CATALYST_ACTIVE ) ? 'W' : 'x';
+
+			char *name = (IS_NULLSTR(paf->custom_name)) ? "---" : paf->custom_name;
+
+			if(paf->modifier < 0)
+				sprintf(buf, "{M[{W%4d{M]{%c %-20s %-10d {Wsource{%c %d%% %s{x\n\r", cnt, line_color,
+					flag_string(catalyst_types,paf->type),paf->level,line_color,paf->random, name);
+			else
+				sprintf(buf, "{M[{W%4d{M]{%c %-20s %-10d %-6d %d%% %s{x\n\r", cnt, line_color,
+					flag_string(catalyst_types,paf->type),paf->level,paf->modifier,paf->random, name);
+			buf[0] = UPPER(buf[0]);
+			add_buf(buffer, buf);
+		}
     }
 
 
@@ -4247,7 +4330,7 @@ OEDIT(oedit_show)
 	int cnt, slot;
 
 	for (cnt = 0, slot = 0; slot < TRIGSLOT_MAX; slot++)
-		if(pObj->progs[slot]) ++cnt;
+		if(list_size(pObj->progs[slot]) > 0) ++cnt;
 
 	if (cnt > 0) {
 		sprintf(buf, "{R%-6s %-20s %-10s %-10s\n\r{x", "Number", "MobProg Vnum", "Trigger", "Phrase");
@@ -4257,13 +4340,15 @@ OEDIT(oedit_show)
 		add_buf(buffer, buf);
 
 		for (cnt = 0, slot = 0; slot < TRIGSLOT_MAX; slot++) {
-			for (list = pObj->progs[slot]; list; list=list->next) {
+			iterator_start(&it, pObj->progs[slot]);
+			while(( trigger = (PROG_LIST *)iterator_nextdata(&it))) {
 				sprintf(buf, "{B[{W%4d{B]{x %-20ld %-10s %-6s\n\r", cnt,
-					list->vnum,trigger_name(list->trig_type),
-					trigger_phrase(list->trig_type,list->trig_phrase));
+					trigger->vnum,trigger_name(trigger->trig_type),
+					trigger_phrase(trigger->trig_type,trigger->trig_phrase));
 				add_buf(buffer, buf);
 				cnt++;
 			}
+			iterator_stop(&it);
 		}
 	}
     }
@@ -4350,7 +4435,7 @@ OEDIT(oedit_addaffect)
 
     for (pAf = pObj->affected; pAf != NULL; pAf = pAf->next)
     {
-	if (pAf->location == value)
+	if (pAf->where == TO_OBJECT && pAf->location == value)
 	{
 	    sprintf(buf, "There's already a %s modifier on that item.\n\r",
 	        flag_string(apply_flags, value));
@@ -4447,6 +4532,129 @@ OEDIT(oedit_addaffect)
     return TRUE;
 }
 
+OEDIT(oedit_addimmune)
+{
+    long value;
+    OBJ_INDEX_DATA *pObj;
+    AFFECT_DATA *pAf, *pAf_tmp;
+    int pMod;
+    int where;
+    bool pAdd = FALSE;
+    char loc[MAX_STRING_LENGTH];
+    char mod[MAX_STRING_LENGTH];
+    char randm[MAX_STRING_LENGTH];
+    char buf[MSL];
+
+    EDIT_OBJ(ch, pObj);
+
+    argument = one_argument(argument, loc);
+    argument = one_argument(argument, mod);
+    argument = one_argument(argument, randm);
+
+    if (loc[0] == '\0'
+    || mod[0] == '\0'
+    || randm[0] == '\0'
+    || !is_number(randm))
+    {
+		send_to_char("Syntax:  addimmune [immune|resist|vuln] [bit] [#rand]\n\r", ch);
+		return FALSE;
+    }
+
+    where = flag_value(apply_types, loc);
+
+    if( where != TO_IMMUNE && where != TO_RESIST && where != TO_VULN )
+    {
+		send_to_char("Syntax:  addimmune [immune|resist|vuln] [bit] [#rand]\n\r", ch);
+		return FALSE;
+	}
+
+	if( where == TO_IMMUNE )
+	{
+	    if (!str_cmp(pObj->imp_sig, "none") && ch->tot_level < MAX_LEVEL)
+	    {
+			send_to_char("You can't do this without an IMP's permission.\n\r", ch);
+			return FALSE;
+	    }
+	}
+
+	value = flag_value(imm_flags, mod);
+	if( value == NO_FLAG || value == 0 )
+	{
+	    send_to_char("Invalid bit flag\n\r"
+			  "Type '? imm' for a list of flags.\n\r", ch);
+		return FALSE;
+	}
+
+	if ( (value & (~value + 1)) != value )
+	{
+		send_to_char("You can only put one flag per immunity modifier.\n\r", ch);
+		return FALSE;
+	}
+
+
+    for (pAf = pObj->affected; pAf != NULL; pAf = pAf->next)
+    {
+		if ((pAf->where == TO_IMMUNE || pAf->where == TO_RESIST || pAf->where == TO_VULN) && ((pAf->bivector & value) != 0))
+		{
+			sprintf(buf, "There's already an immunity modifier for %s on that item.\n\r",
+				flag_string(imm_flags, value));
+			send_to_char(buf, ch);
+			return FALSE;
+		}
+    }
+
+    pMod = atoi(randm);
+
+	switch(where)
+	{
+		case TO_IMMUNE:
+			pMod = 5 * pMod / 2;
+			break;
+		case TO_RESIST:
+			break;
+		case TO_VULN:
+			pAdd = TRUE;
+			break;
+	}
+
+	pMod = (pMod + 9) / 10;
+
+    if (!pAdd && (pObj->points - pMod) < 0)
+    {
+        send_to_char("You've already added enough positive affects.\n\r", ch);
+        return FALSE;
+    }
+
+    if (!pAdd)
+        pObj->points -= pMod;
+    else
+        pObj->points += pMod;
+
+    pAf             =   new_affect();
+    pAf->next	    =   NULL;
+    pAf->location   =   APPLY_NONE;
+    pAf->modifier   =   0;
+    pAf->where	    =   where;
+    pAf->type       =   -1;
+    pAf->duration   =   -1;
+    pAf->bitvector  =   value;
+    pAf->level      =	pObj->level;
+    pAf->random	    =   atoi(randm);
+
+    if (!pObj->affected)
+	pObj->affected = pAf;
+    else
+    {
+	for (pAf_tmp = pObj->affected; pAf_tmp->next != NULL; pAf_tmp = pAf_tmp->next)
+	    ;
+
+        pAf_tmp->next = pAf;
+    }
+
+    send_to_char("Immunity modifier added.\n\r", ch);
+    return TRUE;
+}
+
 
 OEDIT(oedit_addspell)
 {
@@ -4457,16 +4665,28 @@ OEDIT(oedit_addspell)
     char rand[MSL];
     SPELL_DATA *spell, *spell_tmp;
     int sn, i;
+    bool restricted = TRUE;
+    bool spell_restricted = TRUE;
 
     EDIT_OBJ(ch, pObj);
 
-    if (ch->tot_level < MAX_LEVEL
-    && !has_imp_sig(NULL, pObj)
-    && !(pObj->item_type == ITEM_SCROLL || pObj->item_type == ITEM_WAND || pObj->item_type == ITEM_STAFF
-         || pObj->item_type == ITEM_POTION || pObj->item_type == ITEM_PILL || pObj->item_type == ITEM_TATTOO || pObj->item_type == ITEM_PORTAL))
+    if( ch->tot_level == MAX_LEVEL || has_imp_sig(NULL, pObj) )
+    	restricted = FALSE;
+
+    if( ch->tot_level == MAX_LEVEL )
+    	spell_restricted = FALSE;
+
+    if (restricted &&
+    	!(pObj->item_type == ITEM_SCROLL ||
+    	pObj->item_type == ITEM_WAND ||
+    	pObj->item_type == ITEM_STAFF ||
+    	pObj->item_type == ITEM_POTION ||
+    	pObj->item_type == ITEM_PILL ||
+    	pObj->item_type == ITEM_TATTOO ||
+    	pObj->item_type == ITEM_PORTAL))
     {
-	send_to_char("You can't do this without an IMP's permission.\n\r", ch);
-	return FALSE;
+		send_to_char("You can't do this without an IMP's permission.\n\r", ch);
+		return FALSE;
     }
 
     argument = one_argument(argument, name);
@@ -4480,10 +4700,10 @@ OEDIT(oedit_addspell)
 	return FALSE;
     }
 
-    if ((sn = skill_lookup(name)) == -1 || skill_table[sn].spell_fun == spell_null)
+    if ((sn = skill_lookup(name)) == -1 || (spell_restricted && (skill_table[sn].spell_fun == spell_null)))
     {
-	send_to_char("That's not a spell.\n\r", ch);
-	return FALSE;
+		send_to_char("That's not a spell.\n\r", ch);
+		return FALSE;
     }
 
     if (pObj->item_type != ITEM_SCROLL
@@ -4616,11 +4836,14 @@ OEDIT(oedit_addskill)
 OEDIT(oedit_addcatalyst)
 {
     OBJ_INDEX_DATA *pObj;
+    char buf[MSL];
     char type[MSL];
     char strength[MSL];
     char charges[MSL];
+    char chance[MIL];
+    char where[MIL];
     AFFECT_DATA *cat, *pCat;
-    int t, s, c, n;
+    int t, s, c, n, w;
 
     EDIT_OBJ(ch, pObj);
 
@@ -4633,11 +4856,13 @@ OEDIT(oedit_addcatalyst)
     argument = one_argument(argument, type);
     argument = one_argument(argument, strength);
     argument = one_argument(argument, charges);
+    argument = one_argument(argument, chance);
+    argument = one_argument(argument, where);
 
-    if (!type[0] || !strength[0] || !charges[0] || !argument[0]
-    ||  !is_number(strength) || (!is_number(charges) && str_prefix(charges,"source")) || !is_number(argument))
+    if (!type[0] || !strength[0] || !charges[0] || !chance[0]
+    ||  !is_number(strength) || (!is_number(charges) && str_prefix(charges,"source")) || !is_number(chance))
     {
-	send_to_char("Syntax: addcatalyst [type] [strength] [charges] [chance]\n\r", ch);
+	send_to_char("Syntax: addcatalyst [type] [strength] [charges] [chance] [active] [name]\n\r", ch);
 	return FALSE;
     }
 
@@ -4648,12 +4873,14 @@ OEDIT(oedit_addcatalyst)
     }
 
     s = atoi(strength);
-    c = atoi(argument);
+    c = atoi(chance);
+    w = (where[0] && !str_cmp(where, "active")) ? TO_CATALYST_ACTIVE : TO_CATALYST_DORMANT;
 
     if (s < 1 || s > CATALYST_MAXSTRENGTH)
     {
-	send_to_char("Invalid strength.\n\r", ch);
-	return FALSE;
+		sprintf(buf, "Valid strengths are from 1 to %d.\n\r", CATALYST_MAXSTRENGTH);
+		send_to_char(buf, ch);
+		return FALSE;
     }
 
 	if(!str_prefix(charges,"source"))
@@ -4666,7 +4893,7 @@ OEDIT(oedit_addcatalyst)
 	c = URANGE(1,c,100);
 
     for(cat = pObj->catalyst; cat; cat = cat->next) {
-	    if(cat->type == t && cat->level == s && cat->random == c) {
+	    if(cat->where == w && cat->type == t && cat->level == s && cat->random == c) {
 		    if(cat->modifier < 0 || n < 0)
 			    cat->modifier = -1;
 		    else
@@ -4678,10 +4905,14 @@ OEDIT(oedit_addcatalyst)
 	if(!cat) {
 		pCat = new_affect();
 		pCat->next = NULL;
+		pCat->where = TO_CATALYST_DORMANT;
 		pCat->modifier = n;
 		pCat->type = t;
 		pCat->level = s;
 		pCat->random = c;
+
+		if( !IS_NULLSTR(argument) )
+			pCat->custom_name = str_dup(argument);
 
 		// Add to end of list
 		if (!pObj->catalyst)
@@ -4826,6 +5057,32 @@ OEDIT(oedit_next)
     return FALSE;
 }
 
+OEDIT(oedit_persist)
+{
+	OBJ_INDEX_DATA *pObj;
+
+	EDIT_OBJ(ch, pObj);
+
+
+	if (!str_cmp(argument,"on")) {
+	    if (!str_cmp(pObj->imp_sig, "none") && ch->tot_level < MAX_LEVEL) {
+			send_to_char("You can't do this without an IMP's permission.\n\r", ch);
+			return FALSE;
+	    }
+
+		pObj->persist = TRUE;
+	    use_imp_sig(NULL, pObj);
+		send_to_char("Persistance enabled.\n\r", ch);
+	} else if (!str_cmp(argument,"off")) {
+		pObj->persist = FALSE;
+		send_to_char("Persistance disabled.\n\r", ch);
+	} else {
+		send_to_char("Usage: persist on/off\n\r", ch);
+		return FALSE;
+	}
+
+	return TRUE;
+}
 
 OEDIT(oedit_prev)
 {
@@ -4863,6 +5120,7 @@ OEDIT(oedit_delaffect)
 {
     OBJ_INDEX_DATA *pObj;
     AFFECT_DATA *pAf;
+    AFFECT_DATA *pAf_prev;
     AFFECT_DATA *pAf_next;
     char affect[MAX_STRING_LENGTH];
     int  value;
@@ -4892,33 +5150,91 @@ OEDIT(oedit_delaffect)
 	return FALSE;
     }
 
-    if(value == 0)	/* First case: Remove first affect */
+	pAf_prev = NULL;
+    for(;pAf;pAf_prev = pAf, pAf = pAf_next)
     {
-	pAf = pObj->affected;
-	pObj->affected = pAf->next;
-	free_affect(pAf);
-    }
-    else		/* Affect to remove is not the first */
-    {
-	while ((pAf_next = pAf->next) && (++cnt < value))
-	     pAf = pAf_next;
+		pAf_next = pAf->next;
 
-	if(pAf_next)		/* See if it's the next affect */
-	{
-	    pAf->next = pAf_next->next;
-	    free_affect(pAf_next);
-	}
-	else                                 /* Doesn't exist */
-	{
-	     send_to_char("No such affect.\n\r", ch);
-	     return FALSE;
-	}
-    }
+		if( pAf->where == TO_OBJECT )
+		{
+			if( --value < 0 )
+			{
+				if( pAf_prev == NULL )
+					pObj->affected = pAf_next;
+				else
+					pAf_prev->next = pAf_next;
 
-    send_to_char("Affect removed.\n\r", ch);
-    return TRUE;
+				free_affect(pAf);
+				send_to_char("Affect removed.\n\r", ch);
+				return TRUE;
+			}
+		}
+
+	}
+
+	send_to_char("No such affect.\n\r", ch);
+	return FALSE;
 }
 
+OEDIT(oedit_delimmune)
+{
+    OBJ_INDEX_DATA *pObj;
+    AFFECT_DATA *pAf;
+    AFFECT_DATA *pAf_prev;
+    AFFECT_DATA *pAf_next;
+    char affect[MAX_STRING_LENGTH];
+    int  value;
+    int  cnt = 0;
+
+    EDIT_OBJ(ch, pObj);
+
+    one_argument(argument, affect);
+
+    if (!is_number(affect) || affect[0] == '\0')
+    {
+	send_to_char("Syntax:  delimmune [#xaffect]\n\r", ch);
+	return FALSE;
+    }
+
+    value = atoi(affect);
+
+    if (value < 0)
+    {
+	send_to_char("Only non-negative affect-numbers allowed.\n\r", ch);
+	return FALSE;
+    }
+
+    if (!(pAf = pObj->affected))
+    {
+	send_to_char("OEdit:  Non-existant affect.\n\r", ch);
+	return FALSE;
+    }
+
+	pAf_prev = NULL;
+    for(;pAf;pAf_prev = pAf, pAf = pAf_next)
+    {
+		pAf_next = pAf->next;
+
+		if( pAf->where == TO_IMMUNE || pAf->where == TO_RESIST || pAf->where == TO_VULN )
+		{
+			if( --value < 0 )
+			{
+				if( pAf_prev == NULL )
+					pObj->affected = pAf_next;
+				else
+					pAf_prev->next = pAf_next;
+
+				free_affect(pAf);
+				send_to_char("Immunity modifier removed.\n\r", ch);
+				return TRUE;
+			}
+		}
+
+	}
+
+	send_to_char("No such immunity modifier.\n\r", ch);
+	return FALSE;
+}
 
 OEDIT(oedit_name)
 {
@@ -5956,7 +6272,8 @@ MEDIT(medit_show)
 {
 	MOB_INDEX_DATA *pMob;
 	char buf[MAX_STRING_LENGTH];
-	PROG_LIST *list;
+	ITERATOR it;
+	PROG_LIST *trigger;
 	BUFFER *buffer;
 
 	EDIT_MOB(ch, pMob);
@@ -5988,6 +6305,9 @@ MEDIT(medit_show)
 		pMob->sex == 3           ? "random " : "neutral",
 		race_table[pMob->race].name);
 	add_buf(buffer, buf);
+
+    sprintf(buf, "Persist:      {C[%s{C]{x\n\r", (pMob->persist ? "{WON" : "{Doff"));
+    add_buf(buffer, buf);
 
 	if(pMob->attacks < 0) {
 		sprintf(buf,
@@ -6146,7 +6466,7 @@ MEDIT(medit_show)
 		int cnt, slot;
 
 		for (cnt = 0, slot = 0; slot < TRIGSLOT_MAX; slot++)
-			if(pMob->progs[slot]) ++cnt;
+			if(list_size(pMob->progs[slot]) > 0) ++cnt;
 
 		if (cnt > 0) {
 			sprintf(buf, "{R%-6s %-20s %-10s %-10s\n\r{x", "Number", "MobProg Vnum", "Trigger", "Phrase");
@@ -6156,13 +6476,15 @@ MEDIT(medit_show)
 			add_buf(buffer, buf);
 
 			for (cnt = 0, slot = 0; slot < TRIGSLOT_MAX; slot++) {
-				for (list = pMob->progs[slot]; list; list=list->next) {
+				iterator_start(&it, pMob->progs[slot]);
+				while(( trigger = (PROG_LIST *)iterator_nextdata(&it))) {
 					sprintf(buf, "{C[{W%4d{C]{x %-20ld %-10s %-6s\n\r", cnt,
-						list->vnum,trigger_name(list->trig_type),
-						trigger_phrase(list->trig_type,list->trig_phrase));
+						trigger->vnum,trigger_name(trigger->trig_type),
+						trigger_phrase(trigger->trig_type,trigger->trig_phrase));
 					add_buf(buffer, buf);
 					cnt++;
 				}
+				iterator_stop(&it);
 			}
 		}
 	}
@@ -6238,6 +6560,33 @@ MEDIT(medit_next)
 	ch->desc->editor = ED_MOBILE;
     }
     return FALSE;
+}
+
+MEDIT(medit_persist)
+{
+	MOB_INDEX_DATA *pMob;
+
+	EDIT_MOB(ch, pMob);
+
+
+	if (!str_cmp(argument,"on")) {
+	    if (!str_cmp(pMob->sig, "none") && ch->tot_level < MAX_LEVEL) {
+			send_to_char("You can't do this without an IMP's permission.\n\r", ch);
+			return FALSE;
+	    }
+
+		pMob->persist = TRUE;
+	    use_imp_sig(pMob, NULL);
+		send_to_char("Persistance enabled.\n\r", ch);
+	} else if (!str_cmp(argument,"off")) {
+		pMob->persist = FALSE;
+		send_to_char("Persistance disabled.\n\r", ch);
+	} else {
+		send_to_char("Usage: persist on/off\n\r", ch);
+		return FALSE;
+	}
+
+	return TRUE;
 }
 
 
@@ -7801,7 +8150,7 @@ MEDIT (medit_addmprog)
 	return FALSE;
     }
 
-    value = trigger_table[tindex].value;
+    value = tindex;//trigger_table[tindex].value;
     slot = trigger_table[tindex].slot;
 
 	if(value == TRIG_SPELLCAST) {
@@ -7826,10 +8175,13 @@ MEDIT (medit_addmprog)
     list->vnum            = atol(num);
     list->trig_type       = tindex;
     list->trig_phrase     = str_dup(phrase);
+	list->trig_number		= atoi(list->trig_phrase);
+    list->numeric		= is_number(list->trig_phrase);
+
     list->script          = code;
     //SET_BIT(pMob->mprog_flags,value);
-    list->next            = pMob->progs[slot];
-    pMob->progs[slot]     = list;
+
+    list_appendlink(pMob->progs[slot], list);
 
     send_to_char("Mprog Added.\n\r",ch);
     return TRUE;
@@ -8132,7 +8484,7 @@ OEDIT (oedit_addoprog)
 	return FALSE;
     }
 
-    value = trigger_table[tindex].value;
+    value = tindex;//trigger_table[tindex].value;
     slot = trigger_table[tindex].slot;
 
 
@@ -8149,10 +8501,12 @@ OEDIT (oedit_addoprog)
     list->vnum            = atol(num);
     list->trig_type       = tindex;
     list->trig_phrase     = str_dup(phrase);
+	list->trig_number		= atoi(list->trig_phrase);
+    list->numeric		= is_number(list->trig_phrase);
     list->script          = code;
     //SET_BIT(pMob->mprog_flags,value);
-    list->next            = pObj->progs[slot];
-    pObj->progs[slot]     = list;
+
+    list_appendlink(pObj->progs[slot], list);
 
   send_to_char("Oprog Added.\n\r",ch);
   return TRUE;
@@ -8218,7 +8572,7 @@ REDIT (redit_addrprog)
 	return FALSE;
     }
 
-    value = trigger_table[tindex].value;
+    value = tindex;//trigger_table[tindex].value;
     slot = trigger_table[tindex].slot;
 
 
@@ -8235,10 +8589,11 @@ REDIT (redit_addrprog)
     list->vnum            = atol(num);
     list->trig_type       = tindex;
     list->trig_phrase     = str_dup(phrase);
+	list->trig_number		= atoi(list->trig_phrase);
+    list->numeric		= is_number(list->trig_phrase);
     list->script          = code;
     //SET_BIT(pMob->mprog_flags,value);
-    list->next            = pRoom->progs->progs[slot];
-    pRoom->progs->progs[slot]     = list;
+    list_appendlink(pRoom->progs->progs[slot], list);
 
     send_to_char("Rprog Added.\n\r",ch);
     return TRUE;
@@ -8280,6 +8635,7 @@ REDIT (redit_delrprog)
 
 WEDIT ( wedit_create )
 {
+	LIST_WILDS_DATA *data;
     WILDS_DATA *pWilds, *pLastWilds;
     WILDS_TERRAIN *pTerrain;
     AREA_DATA *pArea;
@@ -8327,6 +8683,13 @@ WEDIT ( wedit_create )
 
     pMap = pWilds->map;
     pStaticMap = pWilds->staticmap;
+
+    if((data = alloc_mem(sizeof(LIST_WILDS_DATA)))) {
+		data->wilds = pWilds;
+		data->uid = pWilds->uid;
+
+		list_appendlink(loaded_wilds, pWilds);
+	}
 
     for(lScount = 0;lScount < lMapsize; lScount++)
     {
@@ -8461,14 +8824,21 @@ WEDIT (wedit_name)
 void correct_vrooms(WILDS_DATA *pWilds, WILDS_TERRAIN *pTerrain)
 {
 	register ROOM_INDEX_DATA *vroom;
+	ITERATOR it;
 
-	for(vroom = pWilds->loaded_vroom; vroom; vroom = vroom->next) if(vroom->parent_template == pTerrain) {
-		free_string(vroom->name);
-		vroom->name = str_dup(pTerrain->template->name);
-		vroom->room_flags = pTerrain->template->room_flags;
-		vroom->room2_flags = pTerrain->template->room2_flags|ROOM_VIRTUAL_ROOM;
-    		vroom->sector_type = pTerrain->template->sector_type;
+	iterator_start(&it, pWilds->loaded_vrooms);
+
+	while( (vroom = (ROOM_INDEX_DATA *)iterator_nextdata(&it)) ) {
+		if(vroom->parent_template == pTerrain) {
+			free_string(vroom->name);
+			vroom->name = str_dup(pTerrain->template->name);
+			vroom->room_flags = pTerrain->template->room_flags;
+			vroom->room2_flags = pTerrain->template->room2_flags|ROOM_VIRTUAL_ROOM;
+				vroom->sector_type = pTerrain->template->sector_type;
+		}
 	}
+
+	iterator_stop(&it);
 }
 
 WEDIT ( wedit_terrain )

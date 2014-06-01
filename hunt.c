@@ -357,9 +357,9 @@ int find_path( long in_room_vnum, long out_room_vnum, CHAR_DATA *ch,
 
 			    /* ancestor for first layer is the direction */
 			    hash_enter( &x_room, tmp_room,
-				    ((int)hash_find(&x_room,q_head->room_nr)
-				     == -1) ? (void*)(i+1)
-				    : hash_find(&x_room,q_head->room_nr));
+				    (hash_find(&x_room,q_head->room_nr) == (void*)-1) ?
+				    (void*)(size_t)(i+1) :
+				    hash_find(&x_room,q_head->room_nr));
 			}
 		    }
 		    else
@@ -372,7 +372,7 @@ int find_path( long in_room_vnum, long out_room_vnum, CHAR_DATA *ch,
 			    free(q_head);
 			}
 			/* return direction if first layer */
-			if ((int)hash_find(&x_room,tmp_room)==-1)
+			if (hash_find(&x_room,tmp_room)==(void *)-1)
 			{
 			    if (x_room.buckets)
 			    {
@@ -386,7 +386,7 @@ int find_path( long in_room_vnum, long out_room_vnum, CHAR_DATA *ch,
 			    /* else return the ancestor */
 			    int i;
 
-			    i = (int)hash_find(&x_room,tmp_room);
+			    i = (int)(size_t)hash_find(&x_room,tmp_room);
 			    if (x_room.buckets)
 			    {
 				/* junk left over from a previous track */
@@ -417,7 +417,7 @@ int find_path( long in_room_vnum, long out_room_vnum, CHAR_DATA *ch,
 
 void do_hunt( CHAR_DATA *ch, char *argument )
 {
-    char buf[MAX_STRING_LENGTH];
+//    char buf[MAX_STRING_LENGTH];
     char arg[MAX_STRING_LENGTH];
     char arg2[MSL];
     CHAR_DATA *victim;
@@ -472,29 +472,25 @@ void do_hunt( CHAR_DATA *ch, char *argument )
 
     if ( !can_hunt( ch, victim ) )
     {
-	sprintf(buf, "%s has magically covered $S tracks.",
-	    IS_NPC(victim) ? victim->short_descr : victim->name);
-	act(buf, ch, NULL, victim, TO_CHAR);
+	act("$N has magically covered $S tracks.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	return;
     }
 
     if ( ch->in_room == victim->in_room )
     {
-	act( "$N is here!", ch, NULL, victim, TO_CHAR );
+	act( "$N is here!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR );
 	return;
     }
 
     if ( IN_WILDERNESS( ch ) )
     {
-	act( "You can't track people out in the wilderness.",
-		ch, NULL, victim, TO_CHAR );
+	act( "You can't track people out in the wilderness.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR );
 	return;
     }
 
     if ( IN_WILDERNESS( victim ) )
     {
-	act( "You can't track people who are out in the wilderness.",
-		ch, NULL, victim, TO_CHAR );
+	act( "You can't track people who are out in the wilderness.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR );
 	return;
     }
 
@@ -520,17 +516,15 @@ void do_hunt( CHAR_DATA *ch, char *argument )
     {
 	if ( number_percent() < get_skill( victim, gsn_trackless_step ) )
 	{
-	    sprintf(buf, "%s has covered $S tracks too well for you to follow.",
-	        IS_NPC(victim) ? victim->short_descr : victim->name);
-	    act(buf, ch, NULL, victim, TO_CHAR);
+	    act("$N has covered $S tracks too well for you to follow.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	    return;
 	}
     }
 
     if (!IS_SITH(ch))
-	act( "$n carefully sniffs the air.", ch, NULL, NULL, TO_ROOM );
+	act( "$n carefully sniffs the air.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM );
     else
-	act("$n's forked tongue whips out and tastes the air.", ch, NULL, NULL, TO_ROOM);
+	act("$n's forked tongue whips out and tastes the air.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
 
     // Max rooms so people can track across areas without megalag
@@ -539,9 +533,7 @@ void do_hunt( CHAR_DATA *ch, char *argument )
 
     if( direction == -1 || (IS_NPC(victim) && IS_SET(victim->act2, ACT2_NO_HUNT)))
     {
-	sprintf(buf, "You couldn't find a path to %s from here.\n\r",
-	    IS_NPC(victim) ? victim->short_descr : victim->name);
-	send_to_char(buf, ch);
+	act("You couldn't find a path to $N from here.\n\r", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	return;
     }
 
@@ -551,8 +543,8 @@ void do_hunt( CHAR_DATA *ch, char *argument )
 	if ( IS_NPC( ch ) )
 	    return;
 
-	act("You begin hunting $N.", ch, NULL, victim, TO_CHAR );
-	act("$n poises $mself stealthily and sniffs the air.", ch, NULL, victim, TO_ROOM );
+	act("You begin hunting $N.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR );
+	act("$n poises $mself stealthily and sniffs the air.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_ROOM );
 	ch->hunting = victim;
 	return;
     }
@@ -572,9 +564,7 @@ void do_hunt( CHAR_DATA *ch, char *argument )
     /*
      * Display the results of the search.
      */
-    sprintf( buf, "%s is %s from here.",
-        IS_NPC(victim) ? victim->short_descr : victim->name, dir_name[direction] );
-    act( buf, ch, NULL, victim, TO_CHAR );
+    act("$N is $t from here.", ch, victim, NULL, NULL, NULL, dir_name[direction], NULL, TO_CHAR );
     check_improve(ch,gsn_hunt,TRUE,1);
 }
 

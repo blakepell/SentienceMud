@@ -60,10 +60,8 @@ void do_trance(CHAR_DATA *ch, char *argument)
 	return;
     }
 
-    act("{YYou begin to meditate and fall into a trance.{x",
-	    ch, NULL, NULL, TO_CHAR);
-    act("{Y$n begins to meditate and fall into a trance.{x",
-	    ch, NULL, NULL, TO_ROOM);
+    act("{YYou begin to meditate and fall into a trance.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+    act("{Y$n begins to meditate and fall into a trance.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
     ch->trance = 2 * PULSE_VIOLENCE + (100-get_skill(ch,gsn_deep_trance))/10;
 }
@@ -83,7 +81,7 @@ void trance_end(CHAR_DATA *ch)
 	gain += get_skill(ch, gsn_deep_trance)/10;
 
 	sprintf(buf, "You regain %d lost mana!", gain);
-	act(buf, ch, NULL, NULL, TO_CHAR);
+	act(buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
 	ch->mana += gain;
 
@@ -101,7 +99,7 @@ void trance_end(CHAR_DATA *ch)
     else
 	strcat(buf, ", but appears unchanged.{x");
 
-    act(buf, ch, NULL, NULL, TO_ROOM);
+    act(buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 }
 
 // Returns TRUE if the spell got through.
@@ -115,8 +113,8 @@ bool check_spell_deflection(CHAR_DATA *ch, CHAR_DATA *victim, int sn)
 	if (!IS_AFFECTED2(victim, AFF2_SPELL_DEFLECTION))
 		return TRUE;
 
-	act("{MThe crimson aura around you pulses!{x", victim, NULL, NULL, TO_CHAR);
-	act("{MThe crimson aura around $n pulses!{x", victim, NULL, NULL, TO_ROOM);
+	act("{MThe crimson aura around you pulses!{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+	act("{MThe crimson aura around $n pulses!{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
 	// Find spell deflection
 	for (af = victim->affected; af != NULL; af = af->next) {
@@ -135,9 +133,9 @@ bool check_spell_deflection(CHAR_DATA *ch, CHAR_DATA *victim, int sn)
 			if (ch == victim)
 				send_to_char("Your spell gets through your protective crimson aura!\n\r", ch);
 			else {
-				act("Your spell gets through $N's protective crimson aura!", ch, NULL, victim, TO_CHAR);
-				act("$n's spell gets through your protective crimson aura!", ch, NULL, victim, TO_VICT);
-				act("$n's spell gets through $N's protective crimson aura!", ch, NULL, victim, TO_NOTVICT);
+				act("Your spell gets through $N's protective crimson aura!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+				act("$n's spell gets through your protective crimson aura!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
+				act("$n's spell gets through $N's protective crimson aura!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
 			}
 		}
 
@@ -162,23 +160,23 @@ bool check_spell_deflection(CHAR_DATA *ch, CHAR_DATA *victim, int sn)
 	af->level -= 10;
 	if (af->level <= 0) {
 		send_to_char("{MThe crimson aura around you vanishes.{x\n\r", victim);
-		act("{MThe crimson aura around $n vanishes.{x", victim, NULL, NULL, TO_ROOM);
+		act("{MThe crimson aura around $n vanishes.{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		affect_remove(victim, af);
 		return TRUE;
 	}
 
 	if (rch != NULL) {
 		if (ch != NULL) {
-			act("{YYour spell bounces off onto $N!{x", ch, NULL, rch, TO_CHAR);
-			act("{Y$n's spell bounces off onto you!{x", ch, NULL, rch, TO_VICT);
-			act("{Y$n's spell bounces off onto $N!{x", ch, NULL, rch, TO_NOTVICT);
+			act("{YYour spell bounces off onto $N!{x", ch,  rch, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+			act("{Y$n's spell bounces off onto you!{x", ch, rch, NULL, NULL, NULL, NULL, NULL, TO_VICT);
+			act("{Y$n's spell bounces off onto $N!{x", ch,  rch, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
 		}
 
 		(*skill_table[sn].spell_fun)(sn, ch != NULL ? ch->tot_level : af->level, ch != NULL ? ch : rch, rch, TARGET_CHAR);
 	} else {
 		if (ch != NULL) {
-			act("{YYour spell bounces around for a while, then dies out.{x", ch, NULL, NULL, TO_CHAR);
-			act("{Y$n's spell bounces around for a while, then dies out.{x",ch, NULL, NULL, TO_ROOM);
+			act("{YYour spell bounces around for a while, then dies out.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+			act("{Y$n's spell bounces around for a while, then dies out.{x",ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		}
 	}
 
@@ -198,8 +196,8 @@ bool check_spell_deflection_token(CHAR_DATA *ch, CHAR_DATA *victim, TOKEN_DATA *
 	if (!IS_AFFECTED2(victim, AFF2_SPELL_DEFLECTION))
 		return TRUE;
 
-	act("{MThe crimson aura around you pulses!{x", victim, NULL, NULL, TO_CHAR);
-	act("{MThe crimson aura around $n pulses!{x", victim, NULL, NULL, TO_ROOM);
+	act("{MThe crimson aura around you pulses!{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+	act("{MThe crimson aura around $n pulses!{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
 	// Find spell deflection
 	for (af = victim->affected; af != NULL; af = af->next) {
@@ -218,9 +216,9 @@ bool check_spell_deflection_token(CHAR_DATA *ch, CHAR_DATA *victim, TOKEN_DATA *
 			if (ch == victim)
 				send_to_char("Your spell gets through your protective crimson aura!\n\r", ch);
 			else {
-				act("Your spell gets through $N's protective crimson aura!", ch, NULL, victim, TO_CHAR);
-				act("$n's spell gets through your protective crimson aura!", ch, NULL, victim, TO_VICT);
-				act("$n's spell gets through $N's protective crimson aura!", ch, NULL, victim, TO_NOTVICT);
+				act("Your spell gets through $N's protective crimson aura!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+				act("$n's spell gets through your protective crimson aura!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
+				act("$n's spell gets through $N's protective crimson aura!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
 			}
 		}
 
@@ -246,24 +244,24 @@ bool check_spell_deflection_token(CHAR_DATA *ch, CHAR_DATA *victim, TOKEN_DATA *
 	af->level -= 10;
 	if (af->level <= 0) {
 		send_to_char("{MThe crimson aura around you vanishes.{x\n\r", victim);
-		act("{MThe crimson aura around $n vanishes.{x", victim, NULL, NULL, TO_ROOM);
+		act("{MThe crimson aura around $n vanishes.{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		affect_remove(victim, af);
 		return TRUE;
 	}
 
 	if (rch != NULL) {
 		if (ch != NULL) {
-			act("{YYour spell bounces off onto $N!{x", ch, NULL, rch, TO_CHAR);
-			act("{Y$n's spell bounces off onto you!{x", ch, NULL, rch, TO_VICT);
-			act("{Y$n's spell bounces off onto $N!{x", ch, NULL, rch, TO_NOTVICT);
+			act("{YYour spell bounces off onto $N!{x", ch,  rch, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+			act("{Y$n's spell bounces off onto you!{x", ch, rch, NULL, NULL, NULL, NULL, NULL, TO_VICT);
+			act("{Y$n's spell bounces off onto $N!{x", ch,  rch, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
 		}
 
 		token->value[3] = ch->tot_level;
-		execute_script(script->vnum, script, NULL, NULL, NULL, token, ch, NULL, NULL, rch, NULL,ch->cast_target_name,NULL);
+		execute_script(script->vnum, script, NULL, NULL, NULL, token, ch, NULL, NULL, rch, NULL,NULL,ch->cast_target_name,NULL,0,0,0,0,0);
 	} else {
 		if (ch != NULL) {
-			act("{YYour spell bounces around for a while, then dies out.{x", ch, NULL, NULL, TO_CHAR);
-			act("{Y$n's spell bounces around for a while, then dies out.{x",ch, NULL, NULL, TO_ROOM);
+			act("{YYour spell bounces around for a while, then dies out.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+			act("{Y$n's spell bounces around for a while, then dies out.{x",ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		}
 	}
 

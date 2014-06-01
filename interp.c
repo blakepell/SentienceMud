@@ -176,8 +176,8 @@ const	struct	cmd_type	cmd_table	[] =
     { "afk",		do_afk,		POS_SLEEPING,	 0,  LOG_NORMAL, 1 },
     { "announcements",  do_announcements, POS_SLEEPING,  0,  LOG_NORMAL, 1 },
     { "catchup",	do_catchup,	POS_DEAD,	 0,  LOG_NORMAL, 1 },
-//    { "chat",		do_chat,	POS_RESTING,	 0,  LOG_NORMAL, 1 },
-//    { "/",		do_chat,	POS_RESTING,	 0,  LOG_NORMAL, 1 },
+    { "chat",		do_chat,	POS_RESTING,	 0,  LOG_NORMAL, 1 },
+    { "/",		do_chat,	POS_RESTING,	 0,  LOG_NORMAL, 1 },
     { ",",		do_emote,	POS_RESTING,	 0,  LOG_NEVER,  0 },
     { ".",		do_gossip,	POS_SLEEPING,	 0,  LOG_NORMAL, 0 },
     { ";",		do_gtell,	POS_DEAD,	 0,  LOG_NEVER,  0 },
@@ -314,7 +314,7 @@ const	struct	cmd_type	cmd_table	[] =
 //    { "damage",		do_damage, 	POS_STANDING,	L1,  LOG_NORMAL, 1 },
 //    { "crew",     do_crew,   	POS_SLEEPING,    0,  LOG_NORMAL, 1 },
     { "dig",      do_dig,   	POS_STANDING,    0,  LOG_NORMAL, 1 },
-    { "ban",		do_ban,	POS_DEAD,	L2,	LOG_ALWAYS,	1},
+
     // Misc commands
     { "bank",           do_bank,     	POS_RESTING, 	0,  LOG_NORMAL, 1 },
 //    { "board", 		do_board, 	POS_STANDING,	0,  LOG_NORMAL, 1 },
@@ -327,7 +327,7 @@ const	struct	cmd_type	cmd_table	[] =
     { "enter", 		do_enter, 	POS_STANDING,	0,  LOG_NORMAL, 1 },
     { "follow",		do_follow,	POS_RESTING,	0,  LOG_NORMAL, 1 },
     { "go",		do_enter,	POS_STANDING,	0,  LOG_NORMAL, 0 },
-//    { "gohome",		do_gohome,	POS_RESTING,	0,  LOG_NORMAL, 1 },
+    { "gohome",		do_gohome,	POS_RESTING,	0,  LOG_NORMAL, 1 },
     { "hide",		do_hide,	POS_RESTING,	0,  LOG_NORMAL, 1 },
     { "hunt",		do_hunt,	POS_STANDING,	0,  LOG_NORMAL, 1 },
 //  { "mana",		do_mana,	POS_RESTING,	0,  LOG_NEVER,  1 },
@@ -365,7 +365,7 @@ const	struct	cmd_type	cmd_table	[] =
     { "assignhelper",	do_assignhelper, POS_RESTING,	L2,  LOG_ALWAYS, 1 },
     { "autosetname",	do_autosetname,	POS_DEAD,	IM,  LOG_NORMAL, 1 },
     { "autowar",	do_autowar,	POS_DEAD,	L2,  LOG_ALWAYS, 1 },
-//    { "ban",		do_ban,		POS_DEAD,	L2,  LOG_ALWAYS, 1 },
+    { "ban",		do_ban,		POS_DEAD,	L2,  LOG_ALWAYS, 1 },
     { "besteq",		do_besteq,	POS_DEAD,	ML,  LOG_NORMAL, 1 },
     { "boost",		do_boost,	POS_DEAD,	L1,  LOG_ALWAYS, 1 },
     { "botter",		do_botter,	POS_RESTING,	L4,  LOG_ALWAYS, 1 },
@@ -426,7 +426,8 @@ const	struct	cmd_type	cmd_table	[] =
     { "startinvasion",     do_startinvasion,  POS_DEAD,       L2,  LOG_ALWAYS, 1 },
     { "string",		do_string,	POS_DEAD,	L5,  LOG_ALWAYS, 1 },
     { "switch",		do_switch,	POS_DEAD,	L4,  LOG_ALWAYS, 1 },
-//    { "test",		do_test,	POS_DEAD,	ML,  LOG_NORMAL, 1 },  -- EFF YEW! - NIBS
+    { "testport",	do_testport,POS_DEAD,	ML,  LOG_ALWAYS, 1 },	// 20140521 Nibs
+
     { "tlist",		do_tlist,	POS_DEAD,	L5,  LOG_NORMAL, 1 },
     { "token",		do_token,	POS_DEAD,	L5,  LOG_NORMAL, 1 },
     { "tshow",		do_tshow,	POS_DEAD,	L5,  LOG_NORMAL, 1 },
@@ -497,6 +498,7 @@ const	struct	cmd_type	cmd_table	[] =
 /* VIZZWILDS */
     { "wedit",		do_wedit,	POS_DEAD,    L5,  LOG_NORMAL, 1 },
     { "vledit",		do_vledit,	POS_DEAD,    L5,  LOG_NORMAL, 1 },
+    { "wlist",		do_wlist,	POS_DEAD,    L5,  LOG_NORMAL, 1 },
 
     /* Staff management commands */
     { "slist",		do_slist,	POS_DEAD,    ML,  LOG_ALWAYS, 1 },
@@ -516,107 +518,207 @@ bool forced_command = FALSE;	// 20070511NIB: Used to prevent forces to do any re
 bool check_verbs(CHAR_DATA *ch, char *command, char *argument)
 {
 	char buf[MIL], *p;
-	TOKEN_DATA *token, *tnext;
-	CHAR_DATA *mob;
+	ITERATOR tit, pit;
+	TOKEN_DATA *token;
 	OBJ_DATA *obj;
+	CHAR_DATA *mob;
 	PROG_LIST *prg;
-	extern bool script_destructed;
+//	SCRIPT_DATA *script;
+	unsigned long uid[2];
+	int slot;
+	int ret_val = PRET_NOSCRIPT, ret; // @@@NIB Default for a trigger loop is NO SCRIPT
 
-	if(IS_NPC(ch)) return FALSE;
+	log_stringf("check_verbs: ch(%s), command(%s), argument(%s)", ch->name, command, argument);
+//	printf_to_char(ch, "check_verbs: ch(%s), command(%s), argument(%s)", ch->name, command, argument);
 
-	// Check tokens on the enactor for self verbs
-	for(token = ch->tokens; token; token = tnext) {
-		tnext = token->next;
+	slot = TRIGSLOT_VERB;
+
+	// Save the UID
+	uid[0] = ch->id[0];
+	uid[1] = ch->id[1];
+
+	// Check for tokens FIRST
+	iterator_start(&tit, ch->ltokens);
+	while(( token = (TOKEN_DATA *)iterator_nextdata(&tit))) {
 		if(token->pIndexData->progs) {
+			log_stringf("check_verbs: ch(%s) token(%ld, %s)", ch->name, token->pIndexData->vnum, token->name);
+			script_token_addref(token);
 			script_destructed = FALSE;
-			for (prg = token->pIndexData->progs[TRIGSLOT_VERB]; prg && !script_destructed; prg = prg->next) {
-				if (is_trigger_type(prg->trig_type,TRIG_VERBSELF)) {
-					if (!str_prefix(command, prg->trig_phrase)) {
-						if(execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, ch, NULL, NULL, NULL, NULL,argument,prg->trig_phrase) > 0) return TRUE;
+			iterator_start(&pit, token->pIndexData->progs[slot]);
+			while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+				log_stringf("check_verbs: ch(%s) token(%ld, %s) trigger(%s, %s)", ch->name, token->pIndexData->vnum, token->name, trigger_name(prg->trig_type), prg->trig_phrase);
+				if (is_trigger_type(prg->trig_type,TRIG_VERB) && !str_prefix(command, prg->trig_phrase)) {
+					log_stringf("check_verbs: ch(%s) token(%ld, %s) trigger(%s, %s) executing", ch->name, token->pIndexData->vnum, token->name, trigger_name(prg->trig_type), prg->trig_phrase);
+					ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, ch, NULL, NULL, NULL, NULL,NULL,argument,prg->trig_phrase,0,0,0,0,0);
+					if( ret != PRET_NOSCRIPT ) {
+						ret_val = ret;
+						break; // Exit: Level 2
 					}
+
 				}
 			}
-			if(!script_destructed) tnext = token->next;
+			iterator_stop(&pit);
+			script_token_remref(token);
+			BREAKPRET;
 		}
 	}
-
-	// Check verbs on the ROOM
+	iterator_stop(&tit);
+	if( ret_val != PRET_NOSCRIPT ) return TRUE;
 
 	p = one_argument(argument,buf);
 	if(!str_cmp(buf,"here")) {
-		// Check the room
-		if(ch->in_room->source) {
-			if(ch->in_room->source->progs->progs) {
+		ROOM_INDEX_DATA *room = ch->in_room;
+		ROOM_INDEX_DATA *source;
+		bool isclone;
+
+		if(room->source) {
+			source = room->source;
+			isclone = TRUE;
+			uid[0] = room->id[0];
+			uid[1] = room->id[1];
+		} else {
+			source = room;
+			isclone = FALSE;
+		}
+
+		script_room_addref(room);
+
+		// Check for tokens FIRST
+		iterator_start(&tit, room->ltokens);
+		while((token = (TOKEN_DATA *)iterator_nextdata(&tit))) {
+			if( token->pIndexData->progs ) {
+				script_token_addref(token);
 				script_destructed = FALSE;
-				for (prg = ch->in_room->source->progs->progs[TRIGSLOT_VERB]; prg && !script_destructed; prg = prg->next) {
-					if (is_trigger_type(prg->trig_type,TRIG_VERB)) {
-						if (!str_prefix(command, prg->trig_phrase)) {
-							if(execute_script(prg->vnum, prg->script, NULL, NULL, ch->in_room, NULL, ch, NULL, NULL, NULL, NULL,p,prg->trig_phrase) > 0) return TRUE;
+				iterator_start(&pit, token->pIndexData->progs[slot]);
+				while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+					if (is_trigger_type(prg->trig_type,TRIG_VERB) && !str_prefix(command, prg->trig_phrase)) {
+						ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, ch, NULL, NULL, NULL, NULL,NULL,p,prg->trig_phrase,0,0,0,0,0);
+						if( ret != PRET_NOSCRIPT ) {
+							ret_val = ret;
+							break; // Exit: while((prg = ... )))
 						}
 					}
 				}
-			}
-		} else if(ch->in_room->progs->progs) {
-			script_destructed = FALSE;
-			for (prg = ch->in_room->progs->progs[TRIGSLOT_VERB]; prg && !script_destructed; prg = prg->next) {
-				if (is_trigger_type(prg->trig_type,TRIG_VERB)) {
-					if (!str_prefix(command, prg->trig_phrase)) {
-						if(execute_script(prg->vnum, prg->script, NULL, NULL, ch->in_room, NULL, ch, NULL, NULL, NULL, NULL,p,prg->trig_phrase) > 0) return TRUE;
-					}
-				}
+				iterator_stop(&pit);
+				script_token_remref(token);
+				BREAKPRET;
 			}
 		}
-		return FALSE;
+		iterator_stop(&tit);
+
+		if(ret_val == PRET_NOSCRIPT && source->progs->progs) {
+			script_destructed = FALSE;
+			iterator_start(&pit, source->progs->progs[slot]);
+			while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+				if (is_trigger_type(prg->trig_type,TRIG_VERB) && !str_prefix(command, prg->trig_phrase)) {
+					ret = execute_script(prg->vnum, prg->script, NULL, NULL, room, NULL, ch, NULL, NULL, NULL, NULL,NULL,p,prg->trig_phrase,0,0,0,0,0);
+					if( ret != PRET_NOSCRIPT ) {
+						ret_val = ret;
+						break; // Exit: while((prg = ... )))
+					}
+				}
+				BREAKPRET;
+			}
+			iterator_stop(&pit);
+
+		}
+		script_room_remref(room);
+
+		if( ret_val != PRET_NOSCRIPT ) return TRUE;
 	}
 
 	// Get mobile...
 	mob = strcmp(buf,"self") ? get_char_room(ch, NULL, buf) : ch;
-
 	if(mob) {
-		script_destructed = FALSE;
-		if(IS_NPC(mob) && mob->pIndexData->progs) {
-			for (prg = mob->pIndexData->progs[TRIGSLOT_VERB]; prg && !script_destructed; prg = prg->next) {
-				if (is_trigger_type(prg->trig_type,TRIG_VERB)) {
-					if (!str_prefix(command, prg->trig_phrase)) {
-						if(execute_script(prg->vnum, prg->script, mob, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL,p,prg->trig_phrase) > 0) return TRUE;
-					}
-				}
-			}
-		}
+		script_mobile_addref(mob);
 
-		if(!script_destructed) {
-			// Check tokens on the mobs
-			for(token = mob->tokens; token; token = tnext) {
-				tnext = token->next;
-				if(token->pIndexData->progs) {
-					script_destructed = FALSE;
-					for (prg = token->pIndexData->progs[TRIGSLOT_VERB]; prg && !script_destructed; prg = prg->next) {
-						if (is_trigger_type(prg->trig_type,TRIG_VERB)) {
-							if (!str_prefix(command, prg->trig_phrase)) {
-								if(execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, ch, NULL, NULL, NULL, NULL,p,prg->trig_phrase) > 0) return TRUE;
-							}
+		// Check for tokens FIRST
+		iterator_start(&tit, mob->ltokens);
+		while((token = (TOKEN_DATA *)iterator_nextdata(&tit))) {
+			if( token->pIndexData->progs ) {
+				script_token_addref(token);
+				script_destructed = FALSE;
+				iterator_start(&pit, token->pIndexData->progs[slot]);
+				while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+					if (is_trigger_type(prg->trig_type,TRIG_VERB) && !str_prefix(command, prg->trig_phrase)) {
+						ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, ch, NULL, NULL, NULL, NULL,NULL,p,prg->trig_phrase,0,0,0,0,0);
+						if( ret != PRET_NOSCRIPT ) {
+							ret_val = ret;
+							break; // Exit: while((prg = ... )))
 						}
 					}
-					if(!script_destructed) tnext = token->next;
 				}
+				iterator_stop(&pit);
+				script_token_remref(token);
+				BREAKPRET;
 			}
 		}
-		return FALSE;
+		iterator_stop(&tit);
+
+		if(ret_val == PRET_NOSCRIPT && IS_NPC(mob) && mob->pIndexData->progs) {
+			script_destructed = FALSE;
+			iterator_start(&pit, mob->pIndexData->progs[slot]);
+			while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+				if (is_trigger_type(prg->trig_type,TRIG_VERB) && !str_prefix(command, prg->trig_phrase)) {
+					ret = execute_script(prg->vnum, prg->script, mob, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL,NULL,p,prg->trig_phrase,0,0,0,0,0);
+					if( ret != PRET_NOSCRIPT ) {
+						ret_val = ret;
+						break; // Exit: while((prg = ... )))
+					}
+				}
+			}
+			iterator_stop(&pit);
+		}
+		script_mobile_remref(mob);
+
+		if( ret_val != PRET_NOSCRIPT ) return TRUE;
 	}
 
 	// Get obj...
 	if ((obj = get_obj_here(ch, NULL, buf))) {
-		if(obj->pIndexData->progs) {
+		script_object_addref(obj);
+
+		// Check for tokens FIRST
+		iterator_start(&tit, obj->ltokens);
+		while((token = (TOKEN_DATA *)iterator_nextdata(&tit))) {
+			if( token->pIndexData->progs ) {
+				script_token_addref(token);
+				script_destructed = FALSE;
+				iterator_start(&pit, token->pIndexData->progs[slot]);
+				while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+					if (is_trigger_type(prg->trig_type,TRIG_VERB) && !str_prefix(command, prg->trig_phrase)) {
+						ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, ch, NULL, NULL, NULL, NULL,NULL,p,prg->trig_phrase,0,0,0,0,0);
+						if( ret != PRET_NOSCRIPT ) {
+							ret_val = ret;
+							break; // Exit: while((prg = ... )))
+						}
+					}
+				}
+				iterator_stop(&pit);
+				script_token_remref(token);
+				BREAKPRET;
+			}
+		}
+		iterator_stop(&tit);
+
+		if(ret_val == PRET_NOSCRIPT && obj->pIndexData->progs) {
 			script_destructed = FALSE;
-			for (prg = obj->pIndexData->progs[TRIGSLOT_VERB]; prg && !script_destructed; prg = prg->next) {
-				if (is_trigger_type(prg->trig_type,TRIG_VERB)) {
-					if (!str_prefix(command, prg->trig_phrase)) {
-						if(execute_script(prg->vnum, prg->script, NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL,p,prg->trig_phrase) > 0) return TRUE;
+			iterator_start(&pit, obj->pIndexData->progs[slot]);
+			while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+				if (is_trigger_type(prg->trig_type,TRIG_VERB) && !str_prefix(command, prg->trig_phrase)) {
+					ret = execute_script(prg->vnum, prg->script, NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL,NULL,p,prg->trig_phrase,0,0,0,0,0);
+					if( ret != PRET_NOSCRIPT ) {
+						ret_val = ret;
+						break; // Exit: while((prg = ... )))
 					}
 				}
 			}
+			iterator_stop(&pit);
 		}
-		return FALSE;
+
+		script_object_remref(obj);
+
+		if( ret_val != PRET_NOSCRIPT ) return TRUE;
 	}
 
 	return FALSE;
@@ -657,6 +759,7 @@ void interpret( CHAR_DATA *ch, char *argument )
 
 	// Deal with scripted input
 	if(ch->desc && ch->desc->input && ch->desc->input_script > 0) {
+		int ret;
 		SCRIPT_DATA *script = NULL;
 		VARIABLE **var = NULL;
 		CHAR_DATA *mob = ch->desc->input_mob;
@@ -699,7 +802,9 @@ void interpret( CHAR_DATA *ch, char *argument )
 				variables_set_string(var,v,argument,FALSE);
 			}
 
-			execute_script(script->vnum, script, mob, obj, room, tok, ch, NULL, NULL, NULL, NULL, NULL, NULL);
+			ret = execute_script(script->vnum, script, mob, obj, room, tok, ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+			if(ret > 0 && !IS_NPC(ch) && ch->pcdata->quit_on_input)
+				do_function(ch, &do_quit, NULL);
 		}
 
 		if(v) free_string(v);
@@ -740,9 +845,8 @@ void interpret( CHAR_DATA *ch, char *argument )
 	    {
 		if (!str_cmp(ch->name, ch->remove_question->church->founder))
 		{
-		    act("{Y[You have removed yourself.]{x", ch, NULL, NULL, TO_CHAR);
-		    sprintf(buf, "{Y[%s has quit %s]{x\n\r", ch->remove_question->name,
-			    ch->church->name);
+		    act("{Y[You have removed yourself.]{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		    sprintf(buf, "{Y[%s has quit %s]{x\n\r", ch->remove_question->name, ch->church->name);
 		    gecho( buf );
 		    ch->pneuma = 0;
 		    ch->deitypoints = 0;
@@ -753,9 +857,8 @@ void interpret( CHAR_DATA *ch, char *argument )
 		}
 		else
 		{
-		    act("{Y[You have removed yourself.]{x", ch, NULL, NULL, TO_CHAR);
-		    sprintf(buf, "{Y[%s has quit %s]{x\n\r", ch->remove_question->name,
-			    ch->church->name);
+		    act("{Y[You have removed yourself.]{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		    sprintf(buf, "{Y[%s has quit %s]{x\n\r", ch->remove_question->name, ch->church->name);
 		    gecho( buf );
 		    sprintf( buf, "%s has quit.", ch->name );
 		    append_church_log( ch->church, ch->name );
@@ -892,10 +995,10 @@ void interpret( CHAR_DATA *ch, char *argument )
 	    msg_church_members( ch->church, buf );
 	    ch->cross_zone_question = FALSE;
 
-	    act("{R$n disappears, leaving a resounding echo of discord.{X", ch, NULL, NULL, TO_ROOM);
+	    act("{R$n disappears, leaving a resounding echo of discord.{X", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	    char_from_room(ch);
 	    char_to_room(ch, location_to_room(&ch->church->recall_point));
-	    act("$n appears in the room.", ch, NULL, NULL, TO_ROOM);
+	    act("$n appears in the room.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	    do_function(ch, &do_look, "auto");
 	    return;
 	}
@@ -1057,8 +1160,8 @@ void interpret( CHAR_DATA *ch, char *argument )
     {
         affect_strip(ch, gsn_hide);
 	REMOVE_BIT(ch->affected_by, AFF_HIDE);
-	act("You step out of the shadows.", ch, NULL, NULL, TO_CHAR );
-	act("$n steps out of the shadows.", ch, NULL, NULL, TO_ROOM );
+	act("You step out of the shadows.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR );
+	act("$n steps out of the shadows.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM );
     }
 
     if (is_affected(ch, skill_lookup("paralysis"))
@@ -1073,38 +1176,32 @@ void interpret( CHAR_DATA *ch, char *argument )
 	if (number_percent() < 20)
 	{
 	    send_to_char("{YYou flail your arms about wildly.{x\n\r", ch);
-	    act("$n flails $s arms about wildly, unable to control $mself.{x",
-	        ch, NULL, NULL, TO_ROOM);
+	    act("$n flails $s arms about wildly, unable to control $mself.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	}
 	else if (number_percent() < 20)
 	{
 	    send_to_char("{YYou cartwheel across the floor.{x\n\r", ch);
-	    act("{Y$n cartwheels across the floor.{x", ch, NULL, NULL, TO_ROOM);
+	    act("{Y$n cartwheels across the floor.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	}
 	else if (number_percent() < 20)
 	{
-	    send_to_char("{YYou babble nonsensically and foam at the mouth.{x\n\r",
-                ch );
-  	    act("{Y$n babbles nonsensically and foams at the mouth.{x",
-		ch, NULL, NULL, TO_ROOM);
+	    send_to_char("{YYou babble nonsensically and foam at the mouth.{x\n\r", ch );
+  	    act("{Y$n babbles nonsensically and foams at the mouth.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	}
 	else if (number_percent() < 20)
 	{
-	    send_to_char("{YYour fall to the floor and begin to convulse.{x\n\r",
-		ch );
- 	    act("{Y$n collapses to the floor and begins to have seizures.{x",
-	        ch, NULL, NULL, TO_ROOM );
+	    send_to_char("{YYour fall to the floor and begin to convulse.{x\n\r", ch );
+ 	    act("{Y$n collapses to the floor and begins to have seizures.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM );
 	}
 	else if (number_percent() < 20)
 	{
 	    send_to_char("{YYou begin to spin around in circles.{x\n\r", ch);
- 	    act("$n spins around dizzifyingly.", ch, NULL, NULL, TO_ROOM);
+ 	    act("$n spins around dizzifyingly.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	}
 	else
 	{
 	    send_to_char("{YYou stare blankly at your feet.{x\n\r", ch);
-    	    act("$n stares blankly, unable to do anything.",
-	        ch, NULL, NULL, TO_ROOM);
+    	    act("$n stares blankly, unable to do anything.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	}
 
 	return;
@@ -1126,8 +1223,8 @@ void interpret( CHAR_DATA *ch, char *argument )
 
     if (ch->repair > 0 && !allowed)
     {
-        act("You stop repairing $p.", ch, ch->repair_obj, NULL, TO_CHAR);
-	act("$n stops repairing $p.", ch, ch->repair_obj, NULL, TO_ROOM);
+        act("You stop repairing $p.", ch, NULL, NULL, ch->repair_obj, NULL, NULL, NULL, TO_CHAR);
+	act("$n stops repairing $p.", ch, NULL, NULL, ch->repair_obj, NULL, NULL, NULL, TO_ROOM);
 	ch->repair_obj = NULL;
 	ch->repair_amt = 0;
 	ch->repair = 0;
@@ -1271,12 +1368,9 @@ void interpret( CHAR_DATA *ch, char *argument )
 
     if (ch->heldup != NULL)
     {
-	act( "You lose your concentration and $N escapes!",
-			ch, NULL, ch->heldup, TO_CHAR);
-	act( "$n loses $s concentration, freeing you from the holdup!",
-			ch, NULL, ch->heldup, TO_VICT);
-	act( "$n loses $s concentration and $N frees $Mself!",
-			ch, NULL, ch->heldup, TO_ROOM);
+	act( "You lose your concentration and $N escapes!", ch, ch->heldup, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+	act( "$n loses $s concentration, freeing you from the holdup!", ch, ch->heldup, NULL, NULL, NULL, NULL, NULL, TO_VICT);
+	act( "$n loses $s concentration and $N frees $Mself!", ch, ch->heldup, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
  	stop_holdup(ch);
     }
 
@@ -1331,13 +1425,13 @@ void do_function( CHAR_DATA *ch, DO_FUN *do_fun, char *argument )
     char *command_string;
 
     // copy the string
-    command_string = str_dup(argument);
+    command_string = argument ? str_dup(argument) : NULL;
 
     // dispatch the command
     (*do_fun) (ch, command_string);
 
     // free the string
-    free_string(command_string);
+    if(command_string) free_string(command_string);
 }
 
 
@@ -1391,26 +1485,32 @@ bool check_social( CHAR_DATA *ch, char *command, char *argument )
 
     one_argument( argument, arg );
     victim = NULL;
-    if ( arg[0] == '\0' )
-    {
-	act( social_table[cmd].others_no_arg, ch, NULL, victim, TO_ROOM    );
-	act( social_table[cmd].char_no_arg,   ch, NULL, victim, TO_CHAR    );
+    if ( arg[0] == '\0' ) {
+		act( social_table[cmd].others_no_arg, ch, victim, NULL, NULL, NULL, NULL, NULL, TO_ROOM    );
+		act( social_table[cmd].char_no_arg,   ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR    );
     }
     else if ( ( victim = get_char_room( ch, NULL, arg ) ) == NULL )
     {
-	send_to_char( "They aren't here.\n\r", ch );
+		send_to_char( "They aren't here.\n\r", ch );
     }
     else if ( victim == ch )
     {
-	act( social_table[cmd].others_auto,   ch, NULL, victim, TO_ROOM    );
-	act( social_table[cmd].char_auto,     ch, NULL, victim, TO_CHAR    );
+		act( social_table[cmd].others_auto,   ch, victim, NULL, NULL, NULL, NULL, NULL, TO_ROOM    );
+		act( social_table[cmd].char_auto,     ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR    );
     }
     else
     {
-	act( social_table[cmd].others_found,  ch, NULL, victim, TO_NOTVICT );
-	act( social_table[cmd].char_found,    ch, NULL, victim, TO_CHAR    );
-	act( social_table[cmd].vict_found,    ch, NULL, victim, TO_VICT    );
+		act( social_table[cmd].others_found,  ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT );
+		act( social_table[cmd].char_found,    ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR    );
+		act( social_table[cmd].vict_found,    ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT    );
     }
+
+    // 20140508NIB - Adding EMOTE triggering
+
+    if( victim != null )
+		p_emoteat_trigger(victim, ch, social_table[cmd].name);
+	else
+		p_emote_trigger(ch, social_table[cmd].name);
 
     return TRUE;
 }
@@ -1655,7 +1755,7 @@ void stop_casting( CHAR_DATA *ch, bool messages )
 	// Allow for custom messages as well as handling interrupted spells
 	if(ch->cast_token) {
 		ch->tempstore[0] = messages?1:0;	// Tell the script whether to show messages or not
-		p_percent_trigger(NULL,NULL,NULL,ch->cast_token,ch,NULL,NULL,TRIG_SPELLINTER);
+		p_percent_trigger(NULL,NULL,NULL,ch->cast_token,ch, NULL, NULL,NULL,NULL,TRIG_SPELLINTER, NULL);
 		messages = ch->tempstore[0]?TRUE:FALSE;
 	}
     free_string( ch->cast_target_name );
@@ -1672,64 +1772,61 @@ void stop_casting( CHAR_DATA *ch, bool messages )
 	if (number_percent() < 10)
 	{
 	    send_to_char("{YSmall yellow sparks spiral around you then fade away.{x\n\r", ch);
-	    act("$n's magic fizzles and dies.{x", ch, NULL, NULL, TO_ROOM);
+	    act("$n's magic fizzles and dies.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	}
 	else
 	if (number_percent() < 20)
 	{
 	    send_to_char("{YYou hear a loud bang as your magic dissipates.{x\n\r", ch);
-	    act("{YYou hear a loud bang as $n stops $s casting.{x", ch, NULL, NULL, TO_ROOM);
+	    act("{YYou hear a loud bang as $n stops $s casting.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	}
 	else
 	if (number_percent() < 30)
 	{
 	    send_to_char("{YA puff of smoke billows out of your ears.{x\n\r", ch);
-	    act("{YA puff of smoke billows out of $n's ears as $e stops $s casting.{x", ch, NULL, NULL, TO_ROOM);
+	    act("{YA puff of smoke billows out of $n's ears as $e stops $s casting.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	}
 	else
 	if (number_percent() < 40)
 	{
 	    send_to_char("{YYour skin turns multicoloured then turns back to normal.{x\n\r", ch);
-	    act("{Y$n's skin turns multicoloured momentarily as $e stops $s casting.{x", ch, NULL, NULL, TO_ROOM);
+	    act("{Y$n's skin turns multicoloured momentarily as $e stops $s casting.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	}
 	else
 	if (number_percent() < 50)
 	{
 	    send_to_char("{YYour magic fizzles and dies.\n\r{x", ch );
-	    act("{Y$n's magic fizzles and dies.{x", ch, NULL, NULL, TO_ROOM);
+	    act("{Y$n's magic fizzles and dies.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	}
 	else
 	if ( number_percent() < 60 )
 	{
 	    send_to_char("{YEnergy sizzles as you stop your casting.\n\r{x",
 		    ch );
-	    act("{YEnergy sizzles as $n stops $s casting.{x", ch,
-		    NULL, NULL, TO_ROOM );
+	    act("{YEnergy sizzles as $n stops $s casting.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM );
 	}
 	else
 	if (number_percent() < 70 )
 	{
 	    send_to_char("{YSparks fly from your fingers as your magic dissipates.{x\n\r", ch );
-	    act("{YSparks fly from $n's fingers as $s magic dissipates.{x",
-		    ch, NULL, NULL, TO_ROOM );
+	    act("{YSparks fly from $n's fingers as $s magic dissipates.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM );
 	}
 	else
 	if (number_percent() < 80 )
 	{
 	    send_to_char("{YYou eyes flash with white light as you interrupt your spell.{x\n\r", ch );
-	    act("{Y$n's eyes flash with white light as $e interrupts $s spell.{x", ch, NULL, NULL, TO_ROOM );
+	    act("{Y$n's eyes flash with white light as $e interrupts $s spell.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM );
 	}
 	else
 	if ( number_percent() < 90 )
 	{
 	    send_to_char("{YYour hair stands on end for a moment as you stop your spell.{x\n\r", ch );
-	    act("{Y$n's hair stands on end for a moment as $e finishes $s spell.", ch ,NULL, NULL, TO_ROOM );
+	    act("{Y$n's hair stands on end for a moment as $e finishes $s spell.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM );
 	}
 	else
 	{
 	    send_to_char("{YYour magic dissipates into the air.{x\n\r", ch );
-	    act("{Y$n's magic dissipates into the air.{x", ch, NULL, NULL,
-		    TO_ROOM );
+	    act("{Y$n's magic dissipates into the air.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM );
 	}
     }
 }
@@ -1748,8 +1845,8 @@ void stop_ranged( CHAR_DATA *ch, bool messages )
     {
 	if ( messages )
 	{
-	    act("You put down $p.", ch, ch->projectile_weapon, NULL, TO_CHAR );
-	    act("$n puts down $p.", ch, ch->projectile_weapon, NULL, TO_ROOM );
+	    act("You put down $p.", ch, NULL, NULL, ch->projectile_weapon, NULL, NULL, NULL, TO_CHAR );
+	    act("$n puts down $p.", ch, NULL, NULL, ch->projectile_weapon, NULL, NULL, NULL, TO_ROOM );
 	}
 
 	ch->ranged = 0;

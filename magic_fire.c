@@ -35,8 +35,8 @@ SPELL_FUNC(spell_afterburn)
 		return FALSE;
 	}
 
-	act("{RA scorching fireball erupts from your hands and flies $tward!{x", ch, dir_name[door], NULL, TO_CHAR);
-	act("{RA scorching fireball erupts from $n's hands and flies $tward!{x", ch, dir_name[door], NULL, TO_ROOM);
+	act("{RA scorching fireball erupts from your hands and flies $tward!{x", ch, NULL, NULL, NULL, NULL, dir_name[door], NULL, TO_CHAR);
+	act("{RA scorching fireball erupts from $n's hands and flies $tward!{x", ch, NULL, NULL, NULL, NULL, dir_name[door], NULL, TO_ROOM);
 
 	max_depth = 5;
 
@@ -126,7 +126,7 @@ SPELL_FUNC(spell_fire_barrier)
 		if (victim == ch)
 			send_to_char("You are already surrounded by a fire barrier.\n\r",ch);
 		else
-			act("$N is already surrounded by a fire barrier.", ch, NULL, victim, TO_CHAR);
+			act("$N is already surrounded by a fire barrier.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		return FALSE;
 	}
 
@@ -140,7 +140,7 @@ SPELL_FUNC(spell_fire_barrier)
 	af.bitvector = 0;
 	af.bitvector2 = AFF2_FIRE_BARRIER;
 	affect_to_char(victim, &af);
-	act("{RA barrier fire blooms around $n, defending $m from harm.{x", victim, NULL, NULL, TO_ROOM);
+	act("{RA barrier fire blooms around $n, defending $m from harm.{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	send_to_char("{RA barrier of fire blooms around you.{x\n\r", victim);
 	return TRUE;
 }
@@ -152,9 +152,9 @@ SPELL_FUNC(spell_fire_breath)
 	CHAR_DATA *vch, *vch_next;
 	int dam;
 
-	act("$n breathes forth a cone of fire.",ch,NULL,victim,TO_NOTVICT);
-	act("$n breathes a cone of hot fire over you!",ch,NULL,victim,TO_VICT);
-	act("You breathe forth a cone of fire.",ch,NULL,NULL,TO_CHAR);
+	act("$n breathes forth a cone of fire.",ch,victim, NULL, NULL, NULL, NULL, NULL,TO_NOTVICT);
+	act("$n breathes a cone of hot fire over you!",ch,victim, NULL, NULL, NULL, NULL, NULL,TO_VICT);
+	act("You breathe forth a cone of fire.",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_CHAR);
 
 	if (check_shield_block_projectile(ch, victim, "cone of fire", NULL))
 		return FALSE;
@@ -211,8 +211,8 @@ SPELL_FUNC(spell_fire_cloud)
 		return FALSE;
 	}
 
-	act("{RA cloud of burning fire erupts from $n's mouth setting light to everything!{x", ch, NULL, NULL, TO_ROOM);
-	act("{RYou breathe forth a massive cloud of fire!{x", ch, NULL, NULL, TO_CHAR);
+	act("{RA cloud of burning fire erupts from $n's mouth setting light to everything!{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+	act("{RYou breathe forth a massive cloud of fire!{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
 	for (obj = ch->in_room->contents; obj; obj = obj->next_content) {
 		if (obj->item_type == ITEM_ROOM_FLAME) {
@@ -260,9 +260,9 @@ SPELL_FUNC(spell_fireball)
 	CHAR_DATA *victim = (CHAR_DATA *) vo;
 	int dam;
 
-	act("{RA large fireball shoots from the palms of your hands.{x", ch, NULL, NULL, TO_CHAR);
-	act("{RA large fireball flies from $n's hands toward $N!{x", ch, NULL, victim, TO_NOTVICT);
-	act("{RA large fireball flies from $n's hands towards you!{x", ch, NULL, victim, TO_VICT);
+	act("{RA large fireball shoots from the palms of your hands.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+	act("{RA large fireball flies from $n's hands toward $N!{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
+	act("{RA large fireball flies from $n's hands towards you!{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
 
 	if (check_shield_block_projectile(ch, victim, "fireball", NULL))
 		return FALSE;
@@ -289,12 +289,12 @@ SPELL_FUNC(spell_fireproof)
 	memset(&af,0,sizeof(af));
 
 	if (IS_OBJ_STAT(obj,ITEM_BURN_PROOF)) {
-		act("$p is already protected from burning.",ch,obj,NULL,TO_CHAR);
+		act("$p is already protected from burning.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
 		return FALSE;
 	}
 
 	if (obj->item_type == ITEM_SCROLL || obj->item_type == ITEM_POTION) {
-		act("$p is already invested with enough magic. You can't make it fireproof.", ch, obj, NULL, TO_CHAR);
+		act("$p is already invested with enough magic. You can't make it fireproof.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 		return FALSE;
 	}
 
@@ -310,8 +310,8 @@ SPELL_FUNC(spell_fireproof)
 
 	affect_to_obj(obj,&af);
 
-	act("You protect $p from fire.",ch,obj,NULL,TO_CHAR);
-	act("$p is surrounded by a protective aura.",ch,obj,NULL,TO_ROOM);
+	act("You protect $p from fire.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
+	act("$p is surrounded by a protective aura.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 	return TRUE;
 }
 
@@ -320,9 +320,9 @@ SPELL_FUNC(spell_flamestrike)
 	CHAR_DATA *victim = (CHAR_DATA *) vo;
 	int dam;
 
-	act("{RA large stream of fire shoots from your fingertips toward $N.{x",ch, NULL, victim, TO_CHAR);
-	act("{RA large stream of fire shoots from $n's fingertips toward $N.{x",ch, NULL, victim, TO_NOTVICT);
-	act("{RA large stream of fire shoots from $n's fingertips toward you.{x",ch, NULL, victim, TO_VICT);
+	act("{RA large stream of fire shoots from your fingertips toward $N.{x",ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+	act("{RA large stream of fire shoots from $n's fingertips toward $N.{x",ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
+	act("{RA large stream of fire shoots from $n's fingertips toward you.{x",ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
 
 	if (check_shield_block_projectile(ch, victim, "flamestrike", NULL))
 		return FALSE;
@@ -350,16 +350,12 @@ SPELL_FUNC(spell_inferno)
 	inferno = create_object(get_obj_index(OBJ_VNUM_INFERNO), 0, TRUE);
 	inferno->timer = 4;
 	obj_to_room(inferno, ch->in_room);
-	act("With a whisper, the room is ablaze with the burning fires of Hell!",   ch, NULL, NULL, TO_ROOM);
-	act("With a whisper, the room is ablaze with the burning fires of Hell!",   ch, NULL, NULL, TO_CHAR);
+	act("With a whisper, the room is ablaze with the burning fires of Hell!",   ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ALL);
 	return TRUE;
 }
 
 SPELL_FUNC(spell_hell_forge)
 {
-#if 0
-
-#endif
 	return TRUE;
 }
 

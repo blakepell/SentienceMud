@@ -117,6 +117,7 @@ const struct olc_cmd_type redit_table[] =
     {   "northwest",	redit_northwest	},
     {	"oreset",	redit_oreset	},
     {   "owner",	redit_owner	},
+    {	"persist",	redit_persist },
     {	"room",		redit_room	},
     {	"room2",	redit_room2	},
     {	"sector",	redit_sector	},
@@ -137,6 +138,7 @@ const struct olc_cmd_type oedit_table[] =
     {   "?",		show_help	},
     {   "addaffect",	oedit_addaffect	},
     {	"addcatalyst",	oedit_addcatalyst	},
+    {   "addimmune",	oedit_addimmune	},
     {	"addoprog",	oedit_addoprog	},
     {	"addspell",	oedit_addspell	},
     {	"addskill",	oedit_addskill	},
@@ -147,6 +149,7 @@ const struct olc_cmd_type oedit_table[] =
     {   "create",	oedit_create	},
     {   "delaffect",	oedit_delaffect	},
     {	"delcatalyst",	oedit_delcatalyst  },
+    {   "delimmune",	oedit_delimmune	},
     {	"deloprog",	oedit_deloprog	},
     {	"delspell",	oedit_delspell  },
     {   "description",	oedit_desc	},
@@ -168,6 +171,7 @@ const struct olc_cmd_type oedit_table[] =
     {   "timer",	oedit_timer	},
     {   "type",         oedit_type      },
     {   "oupdate",	oedit_update	},
+    {	"persist",	oedit_persist	},
     {   "v0",		oedit_value0	},
     {   "v1",		oedit_value1	},
     {   "v2",		oedit_value2	},
@@ -246,6 +250,7 @@ const struct olc_cmd_type medit_table[] =
     {   "off",          medit_off       },
     {   "owner",	medit_owner	},
     {   "part",         medit_part      },
+    {	"persist",		medit_persist	},
     {   "position",     medit_position  },
     {   "prev", 	medit_prev      },
     {   "race",         medit_race      },
@@ -669,18 +674,7 @@ bool has_access_area(CHAR_DATA *ch, AREA_DATA *area)
     if (ch->tot_level == MAX_LEVEL)
 	return TRUE;
 
-    if (!str_cmp(area->name, "Reward Zone") && get_trust(ch) < MAX_LEVEL)
-	return FALSE;
-
     if (!IS_BUILDER(ch, area))
-	return FALSE;
-
-    if (!str_cmp(area->name, "Wilderness Stock")
-    ||  !str_cmp(area->name, "Netherworld")
-    ||  !str_cmp(area->name, "Eden")
-    ||  !str_cmp(area->name, "Wilderness")
-    ||  !str_cmp(area->name, "Limbo")
-    ||  !str_cmp(area->name, "Ethereal Void"))
 	return FALSE;
 
     return TRUE;
@@ -1237,20 +1231,6 @@ void do_aedit(CHAR_DATA *ch, char *argument)
 
 	aedit_create(ch, "");
 	ch->desc->editor = ED_AREA;
-	return;
-    }
-
-    /* some areas are stricter than others, eg ones which hold quest items */
-    if (!IS_BUILDER(ch,pArea)
-    || ((!str_cmp(pArea->name, "Wilderness Stock")
-        || !str_cmp(pArea->name, "Ethereal Void")
-	|| !str_cmp(pArea->name, "Netherworld")
-	|| !str_cmp(pArea->name, "Limbo")
-	|| !str_infix("Maze-level", pArea->name)
-	|| !str_cmp(pArea->name, "Reward Zone"))
-	&& (str_cmp(ch->name,"Tieryo"))))
-    {
-	send_to_char("AEDIT: Insufficient security to edit area - action logged.\n\r",ch);
 	return;
     }
 
@@ -2542,6 +2522,8 @@ void do_rcopy(CHAR_DATA *ch, char *argument)
     new_room = new_room_index();
 
     new_room->area                 = area;
+    list_appendlink(area->room_list, new_room);	// Add to the area room list
+
     new_room->vnum                 = new_v;
     if (new_v > top_vnum_room)
         top_vnum_room = new_v;
@@ -3743,9 +3725,6 @@ bool has_access_helpcat(CHAR_DATA *ch, HELP_CATEGORY *hcat)
     if (IS_NPC(ch))
 	return FALSE;
 
-    if (!str_cmp(ch->name, "Syn") || !str_cmp(ch->name, "Ertai"))
-	return TRUE;
-
     if (ch->pcdata->security >= 9)
     	return TRUE;
 
@@ -3765,10 +3744,7 @@ bool has_access_help(CHAR_DATA *ch, HELP_DATA *help)
     if (IS_NPC(ch))
 	return FALSE;
 
-    if (!str_cmp(ch->name, "Syn") || !str_cmp(ch->name, "Ertai"))
-	return TRUE;
-
-    if (ch->pcdata->security == 9)
+    if (ch->pcdata->security >= 9)
     	return TRUE;
 
     if (strstr(help->builders, ch->name)

@@ -54,6 +54,8 @@ bool            check_for_bad_room args (( WILDS_DATA *pWilds, int x, int y ));
 bool            map_char_cmp args (( WILDS_DATA *pWilds, int x, int y, char *check ));
 int             get_squares_to_show_x args (( int bonus_view ));
 int             get_squares_to_show_y args (( int bonus_view ));
+void            show_map_to_char_wyx args(( WILDS_DATA *pWilds, int wx, int wy, CHAR_DATA *to,
+                                        int bonus_view_x, int bonus_view_y, bool olc ));
 void            show_map_to_char args(( CHAR_DATA *ch, CHAR_DATA *to,
                                         int bonus_view_x, int bonus_view_y, bool olc ));
 
@@ -121,7 +123,7 @@ struct wilds_data
     WILDS_TERRAIN   *pTerrain;
     WILDS_VLINK     *pVLink;
     int             loaded_rooms;    /* Dynamically loaded vroom count for wilds v2 */
-    ROOM_INDEX_DATA *loaded_vroom;
+    LIST *loaded_vrooms;
     int             loaded_mobs;
     CHAR_DATA       *char_list;        /* Statically allocated list of pointers to lists of characters */
     int             loaded_objs;

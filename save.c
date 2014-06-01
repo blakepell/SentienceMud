@@ -45,7 +45,6 @@
 #include "wilds.h"
 
 // External functions
-extern AREA_DATA *get_area_from_uid args ((long uid));
 
 
 // Globals.
@@ -142,6 +141,9 @@ void save_char_obj(CHAR_DATA *ch)
     }
     else
     {
+	    // Used to do SAVE checks
+	p_percent_trigger( ch,NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_SAVE, NULL );
+
 	fwrite_char(ch, fp);
 
 	if (ch->carrying != NULL)
@@ -174,6 +176,7 @@ void fwrite_char(CHAR_DATA *ch, FILE *fp)
     COMMAND_DATA *cmd;
 
     fprintf(fp, "#%s\n", IS_NPC(ch) ? "MOB" : "PLAYER"	);
+// VERSION MUST ALWAYS BE THE FIRST FIELD!!!
     fprintf(fp, "Vers %d\n", IS_NPC(ch) ? VERSION_MOBILE : VERSION_PLAYER);
     fprintf(fp, "Name %s~\n",	ch->name		);
     if(!IS_NPC(ch))
@@ -303,11 +306,14 @@ void fwrite_char(CHAR_DATA *ch, FILE *fp)
 		fprintf (fp, "Room %ld\n", (long int)3001);
 	else if(ch->in_wilds) {
 		fprintf (fp, "Vroom %ld %ld %ld %ld\n",
-			ch->in_room->x, ch->in_room->y, ch->in_room->area->uid, ch->in_wilds->uid);
+			ch->in_room->x, ch->in_room->y, ch->in_wilds->pArea->uid, ch->in_wilds->uid);
 	} else if(ch->was_in_room) {
 		if(ch->was_in_room->source)
 			fprintf(fp,"CloneRoom %ld %ld %ld\n",
 				ch->was_in_room->source->vnum, ch->was_in_room->id[0], ch->was_in_room->id[1]);
+		else if( ch->was_in_wilds )
+			fprintf (fp, "Vroom %ld %ld %ld %ld\n",
+				ch->was_in_room->x, ch->was_in_room->y, ch->was_in_wilds->pArea->uid, ch->was_in_wilds->uid);
 		else
 			fprintf(fp,"Room %ld\n", ch->was_in_room->vnum);
 	} else if(ch->in_room->source) {
@@ -365,7 +371,7 @@ void fwrite_char(CHAR_DATA *ch, FILE *fp)
 	ch->pcdata->hit_before,
 	ch->pcdata->mana_before,
 	ch->pcdata->move_before);
-    fprintf(fp, "ManaStore  %ld\n", ch->manastore);
+    fprintf(fp, "ManaStore  %d\n", ch->manastore);
 
     if (ch->gold > 0)
       fprintf(fp, "Gold %ld\n",	ch->gold		);
@@ -444,10 +450,19 @@ void fwrite_char(CHAR_DATA *ch, FILE *fp)
 	fprintf(fp, "Act  %s\n",   print_flags(ch->act));
     if (ch->act2 != 0)
 	fprintf(fp, "Act2 %s\n",   print_flags(ch->act2));
-    if (ch->affected_by != 0)
-	fprintf(fp, "AfBy %s\n",   print_flags(ch->affected_by));
-    if (ch->affected_by2 != 0)
-	fprintf(fp, "AfBy2 %s\n",   print_flags(ch->affected_by2));
+    if (ch->affected_by != 0)		fprintf(fp, "AfBy %s\n",   print_flags(ch->affected_by));
+    if (ch->affected_by2 != 0)		fprintf(fp, "AfBy2 %s\n",   print_flags(ch->affected_by2));
+
+    // 20140514 NIB - adding for being able to reset the flags
+    if (ch->affected_by_perm != 0)	fprintf(fp, "AfByPerm %s\n",   print_flags(ch->affected_by_perm));
+    if (ch->affected_by2_perm != 0) fprintf(fp, "AfBy2Perm %s\n",   print_flags(ch->affected_by2_perm));
+    if (ch->imm_flags != 0) fprintf(fp, "Immune %s\n",   print_flags(ch->imm_flags));
+    if (ch->imm_flags_perm != 0) fprintf(fp, "ImmunePerm %s\n",   print_flags(ch->imm_flags_perm));
+    if (ch->res_flags != 0) fprintf(fp, "Resist %s\n",   print_flags(ch->res_flags));
+    if (ch->res_flags_perm != 0) fprintf(fp, "ResistPerm %s\n",   print_flags(ch->res_flags_perm));
+    if (ch->vuln_flags != 0) fprintf(fp, "Vuln %s\n",   print_flags(ch->vuln_flags));
+    if (ch->vuln_flags_perm != 0) fprintf(fp, "VulnPerm %s\n",   print_flags(ch->vuln_flags_perm));
+
     fprintf(fp, "Comm %s\n",       print_flags(ch->comm));
     if (ch->wiznet)
     	fprintf(fp, "Wizn %s\n",   print_flags(ch->wiznet));
@@ -548,7 +563,7 @@ void fwrite_char(CHAR_DATA *ch, FILE *fp)
 
     for (paf = ch->affected; paf != NULL; paf = paf->next)
     {
-	if (paf->type < 0 || paf->type>= MAX_SKILL)
+	if (!paf->custom_name && (paf->type < 0 || paf->type>= MAX_SKILL))
 	    continue;
 
 	fprintf(fp, "%s '%s' '%s' %3d %3d %3d %3d %3d %10ld %10ld\n",
@@ -572,6 +587,8 @@ void fwrite_char(CHAR_DATA *ch, FILE *fp)
     fprintf(fp, "End\n\n");
 }
 
+extern pVARIABLE variable_head;
+extern pVARIABLE variable_tail;
 
 /*
  * Load a char and inventory into a new ch structure.
@@ -588,6 +605,7 @@ bool load_char_obj(DESCRIPTOR_DATA *d, char *name)
     bool found;
     int stat;
     TOKEN_DATA *token;
+    pVARIABLE last_var = variable_tail;
 
     ch = new_char();
     ch->pcdata = new_pcdata();
@@ -618,6 +636,8 @@ bool load_char_obj(DESCRIPTOR_DATA *d, char *name)
     ch->pcdata->security		= 0;
     ch->pcdata->challenge_delay		= 0;
     ch->morphed = FALSE;
+    ch->locker_rent = 0;
+    ch->deathsight_vision = 0;
 
 	#ifdef IMC
 	imc_initchar( ch );
@@ -763,8 +783,6 @@ bool load_char_obj(DESCRIPTOR_DATA *d, char *name)
 	    ch->pcdata->immortal = immortal;
 	    immortal->pc = ch->pcdata;
 
-	    immortal->created = ch->pcdata->creation_date;
-
 	    add_immortal(immortal);
 
 	} else { // Readjust the char's level accordingly.
@@ -776,6 +794,8 @@ bool load_char_obj(DESCRIPTOR_DATA *d, char *name)
 	    //ch->tot_level = immortal->level;
 	}
     }
+
+	variable_fix_list(last_var ? last_var : variable_head);
 
     ch->pcdata->last_login = current_time;
     return found;
@@ -821,6 +841,8 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
 	    KEY("AffectedBy",	ch->affected_by,	fread_flag(fp));
 	    KEY("AfBy",	ch->affected_by,	fread_flag(fp));
 	    KEY("AfBy2",	ch->affected_by2,	fread_flag(fp));
+	    KEY("AfByPerm", ch->affected_by_perm,	fread_flag(fp));
+	    KEY("AfBy2Perm", ch->affected_by2_perm,	fread_flag(fp));
 	    KEY("Alignment",	ch->alignment,		fread_number(fp));
 	    KEY("Alig",	ch->alignment,		fread_number(fp));
 	    KEY("ArenaCount",	ch->arena_deaths,	fread_number(fp));
@@ -1362,6 +1384,8 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
 		free_string(immortal_flag);
 		immortal_flag = fread_string(fp);\
 		}
+	    KEY("Immune", ch->imm_flags,	fread_flag(fp));
+	    KEY("ImmunePerm", ch->imm_flags_perm,	fread_flag(fp));
 
 	    KEY("Inco",	ch->incog_level,	fread_number(fp));
 	    KEY("Invi",	ch->invis_level,	fread_number(fp));
@@ -1646,6 +1670,9 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
                  break;
             }
 
+	    KEY("Resist", ch->res_flags,	fread_flag(fp));
+	    KEY("ResistPerm", ch->res_flags_perm,	fread_flag(fp));
+
 	    if (!str_cmp(word, "Room"))
 	    {
 		ch->in_room = get_room_index(fread_number(fp));
@@ -1728,9 +1755,12 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
 	        int prac;
 
 		value = fread_number(fp);
-		temp = fread_word(fp) ;
-		sn = skill_lookup(temp);
-		if (sn < 0)
+		temp = fread_word(fp);
+		if (ch->version < VERSION_PLAYER_002 && !str_cmp(temp,"wither"))
+			sn = gsn_withering_cloud;
+		else
+			sn = skill_lookup(temp);
+		if (sn <= 0)
 		{
 		    sprintf(buf, "fread_char: unknown skill %s", temp);
 		    log_string(buf);
@@ -1743,6 +1773,10 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
 		else
 		{
 		    ch->pcdata->learned[sn] = value;
+			if( skill_table[sn].spell_fun == spell_null)
+		    	skill_entry_addskill(ch, sn, NULL);
+			else
+				skill_entry_addspell(ch, sn, NULL);
 		}
 
 		fMatch = TRUE;
@@ -1757,7 +1791,10 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
 
 		value = fread_number(fp);
 		temp = fread_word(fp) ;
-		sn = skill_lookup(temp);
+		if (ch->version < VERSION_PLAYER_002 && !str_cmp(temp,"wither"))
+			sn = gsn_withering_cloud;
+		else
+			sn = skill_lookup(temp);
 		if (sn > 0) ch->pcdata->mod_learned[sn] = value;
 
 		fMatch = TRUE;
@@ -1842,6 +1879,9 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
 		fMatch = TRUE;
 		break;
 	    }
+
+	    KEY("Vuln", ch->vuln_flags,	fread_flag(fp));
+	    KEY("VulnPerm", ch->vuln_flags_perm,	fread_flag(fp));
 
 	    if (!str_cmp(word, "Vnum"))
 	    {
@@ -1949,13 +1989,13 @@ void fwrite_obj_new(CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest)
         fprintf(fp, "Desc %s~\n",	obj->description	    );
     if (obj->full_description != obj->pIndexData->full_description)
 	fprintf(fp, "FullD %s~\n",     fix_string(obj->full_description));
-    if (obj->extra_flags != obj->pIndexData->extra_flags)
+    if (obj->extra_flags != obj->extra_flags_perm)
         fprintf(fp, "ExtF %ld\n",	obj->extra_flags	    );
-    if (obj->extra2_flags != obj->pIndexData->extra2_flags)
+    if (obj->extra2_flags != obj->extra2_flags_perm)
         fprintf(fp, "Ext2F %ld\n",	obj->extra2_flags	    );
-    if (obj->extra3_flags != obj->pIndexData->extra3_flags)
+    if (obj->extra3_flags != obj->extra3_flags_perm)
         fprintf(fp, "Ext3F %ld\n",	obj->extra3_flags	    );
-    if (obj->extra4_flags != obj->pIndexData->extra4_flags)
+    if (obj->extra4_flags != obj->extra4_flags_perm)
         fprintf(fp, "Ext4F %ld\n",	obj->extra4_flags	    );
     if (obj->wear_flags != obj->pIndexData->wear_flags)
         fprintf(fp, "WeaF %d\n",	obj->wear_flags		    );
@@ -1991,6 +2031,14 @@ void fwrite_obj_new(CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest)
 	fprintf(fp, "TimesAllowedFixed %d\n", obj->times_allowed_fixed);
     if (obj->locker == TRUE)
     	fprintf(fp, "Locker %d\n", obj->locker);
+
+	// Permanent flags based
+    fprintf(fp, "PermExtra %ld\n",	obj->extra_flags_perm );
+    fprintf(fp, "PermExtra2 %ld\n",	obj->extra2_flags_perm );
+	fprintf(fp, "PermExtra3 %ld\n",	obj->extra3_flags_perm );
+	fprintf(fp, "PermExtra4 %ld\n",	obj->extra4_flags_perm );
+	if( obj->item_type == ITEM_WEAPON )
+		fprintf(fp, "PermWeapon %ld\n",	obj->weapon_flags_perm );
 
     /* variable data */
     fprintf(fp, "Wear %d\n",   obj->wear_loc               );
@@ -2117,11 +2165,26 @@ void fwrite_obj_new(CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest)
     // for catalysts
     for (paf = obj->catalyst; paf != NULL; paf = paf->next)
     {
-	fprintf(fp, "Cata '%s' %3d %3d %3d\n",
-		flag_string( catalyst_types, paf->type ),
-		paf->level,
-		paf->modifier,
-		paf->duration);
+		if( IS_NULLSTR(paf->custom_name) )
+		{
+			fprintf(fp, "%s '%s' %3d %3d %3d\n",
+				((paf->where == TO_CATALYST_ACTIVE) ? "CataA" : "Cata"),
+				flag_string( catalyst_types, paf->type ),
+				paf->level,
+				paf->modifier,
+				paf->duration);
+		}
+		else
+		{
+			fprintf(fp, "%s '%s' %3d %3d %3d %s\n",
+				((paf->where == TO_CATALYST_ACTIVE) ? "CataNA" : "CataN"),
+				flag_string( catalyst_types, paf->type ),
+				paf->level,
+				paf->modifier,
+				paf->duration,
+				paf->custom_name
+				);
+		}
     }
 
     for (ed = obj->extra_descr; ed != NULL; ed = ed->next)
@@ -2133,15 +2196,16 @@ void fwrite_obj_new(CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest)
     if(obj->progs && obj->progs->vars) {
 	pVARIABLE var;
 
-	for(var = obj->progs->vars; var; var = var->next) if(var->save) {
-		if(var->type == VAR_INTEGER)
-			fprintf(fp, "VarInt %s~ %d\n", var->name, var->_.i);
-		else if(var->type == VAR_STRING || var->type == VAR_STRING_S)
-			fprintf(fp, "VarStr %s~ %s~\n", var->name, var->_.s ? var->_.s : "");
-		else if(var->type == VAR_ROOM && var->_.r && var->_.r->vnum)
-			fprintf(fp, "VarRoom %s~ %d\n", var->name, (int)var->_.r->vnum);
-	}
+	for(var = obj->progs->vars; var; var = var->next)
+		if(var->save)
+			variable_fwrite(var, fp);
     }
+
+    if( !IS_NULLSTR(obj->owner_name) )
+    	fprintf(fp, "OwnerName %s~\n", obj->owner_name);
+
+    if( !IS_NULLSTR(obj->owner_short) )
+    	fprintf(fp, "OwnerShort %s~\n", obj->owner_short);
 
     fprintf(fp, "End\n\n");
 
@@ -2155,7 +2219,7 @@ OBJ_DATA *fread_obj_new(FILE *fp)
 {
     OBJ_DATA *obj;
     char *word;
-    int iNest;
+    int iNest, vtype;
     bool fMatch;
     bool fNest;
     bool fVnum;
@@ -2429,27 +2493,94 @@ OBJ_DATA *fread_obj_new(FILE *fp)
 	    break;
 
 	case 'C':
-            if (!str_cmp(word, "Cata"))
-            {
-                AFFECT_DATA *paf;
+		if (!str_cmp(word, "Cata"))
+		{
+			AFFECT_DATA *paf;
 
-                paf = new_affect();
+			paf = new_affect();
 
-                paf->type = flag_value(catalyst_types,fread_word(fp));
-                if(paf->type == NO_FLAG) {
-			log_string("fread_char: invalid catalyst type.");
-			free_affect(paf);
-                } else {
-			paf->custom_name = NULL;
-			paf->level       = fread_number(fp);
-			paf->modifier    = fread_number(fp);
-			paf->duration    = fread_number(fp);
-			paf->next        = obj->catalyst;
-			obj->catalyst    = paf;
+			paf->type = flag_value(catalyst_types,fread_word(fp));
+			if(paf->type == NO_FLAG) {
+				log_string("fread_char: invalid catalyst type.");
+				free_affect(paf);
+			} else {
+				paf->custom_name = NULL;
+				paf->where		= TO_CATALYST_DORMANT;
+				paf->level       = fread_number(fp);
+				paf->modifier    = fread_number(fp);
+				paf->duration    = fread_number(fp);
+				paf->next        = obj->catalyst;
+				obj->catalyst    = paf;
+			}
+			fMatch = TRUE;
+			break;
 		}
-                fMatch = TRUE;
-                break;
-            }
+		if (!str_cmp(word, "CataA"))
+		{
+			AFFECT_DATA *paf;
+
+			paf = new_affect();
+
+			paf->type = flag_value(catalyst_types,fread_word(fp));
+			if(paf->type == NO_FLAG) {
+				log_string("fread_char: invalid catalyst type.");
+				free_affect(paf);
+			} else {
+				paf->custom_name = NULL;
+				paf->where		= TO_CATALYST_ACTIVE;
+				paf->level       = fread_number(fp);
+				paf->modifier    = fread_number(fp);
+				paf->duration    = fread_number(fp);
+				paf->next        = obj->catalyst;
+				obj->catalyst    = paf;
+			}
+			fMatch = TRUE;
+			break;
+		}
+		if (!str_cmp(word, "CataN"))
+		{
+			AFFECT_DATA *paf;
+
+			paf = new_affect();
+
+			paf->type = flag_value(catalyst_types,fread_word(fp));
+			if(paf->type == NO_FLAG) {
+				log_string("fread_char: invalid catalyst type.");
+				free_affect(paf);
+			} else {
+				paf->where		= TO_CATALYST_DORMANT;
+				paf->level       = fread_number(fp);
+				paf->modifier    = fread_number(fp);
+				paf->duration    = fread_number(fp);
+				paf->custom_name = fread_string_eol(fp);
+				paf->next        = obj->catalyst;
+				obj->catalyst    = paf;
+			}
+			fMatch = TRUE;
+			break;
+		}
+		if (!str_cmp(word, "CataNA"))
+		{
+			AFFECT_DATA *paf;
+
+			paf = new_affect();
+
+			paf->type = flag_value(catalyst_types,fread_word(fp));
+			if(paf->type == NO_FLAG) {
+				log_string("fread_char: invalid catalyst type.");
+				free_affect(paf);
+			} else {
+				paf->where		= TO_CATALYST_ACTIVE;
+				paf->level       = fread_number(fp);
+				paf->modifier    = fread_number(fp);
+				paf->duration    = fread_number(fp);
+				paf->custom_name = fread_string_eol(fp);
+				paf->next        = obj->catalyst;
+				obj->catalyst    = paf;
+			}
+			fMatch = TRUE;
+			break;
+		}
 	    KEY("Cond",	obj->condition,		fread_number(fp));
 	    KEY("Cost",	obj->cost,		fread_number(fp));
 	    break;
@@ -2635,6 +2766,8 @@ OBJ_DATA *fread_obj_new(FILE *fp)
 
    	case 'O':
 	    KEY("Owner",	obj->owner,	       fread_string(fp));
+	    KEY("OwnerName",	obj->owner_name,	       fread_string(fp));
+	    KEY("OwnerShort",	obj->owner_short,	       fread_string(fp));
 	    KEY("OldShort",	obj->old_short_descr,  fread_string(fp));
 	    KEY("OldDescr",	obj->old_description,  fread_string(fp));
 	    KEY("OldFullDescr", obj->old_full_description, fread_string(fp));
@@ -2650,6 +2783,13 @@ OBJ_DATA *fread_obj_new(FILE *fp)
 		obj->in_room = room;
 		fMatch = TRUE;
 	    }
+	case 'P':
+		KEY("PermExtra",		obj->extra_flags_perm,	fread_number(fp));
+		KEY("PermExtra2",		obj->extra2_flags_perm,	fread_number(fp));
+		KEY("PermExtra3",		obj->extra3_flags_perm,	fread_number(fp));
+		KEY("PermExtra4",		obj->extra4_flags_perm,	fread_number(fp));
+		KEY("PermWeapon",		obj->weapon_flags_perm,	fread_number(fp));
+		break;
 
 	case 'S':
 	    KEY("ShortDescr",	obj->short_descr,	fread_string(fp));
@@ -2759,40 +2899,9 @@ OBJ_DATA *fread_obj_new(FILE *fp)
 		break;
 	    }
 
-		if (!str_cmp(word, "VarInt")) {
-			char *name;
-			int value;
-
+		if( (vtype = variable_fread_type(word)) != VAR_UNKNOWN ) {
+			variable_fread(&obj->progs->vars, vtype, fp);
 			fMatch = TRUE;
-
-			name = fread_string(fp);
-			value = fread_number(fp);
-
-			variables_setindex_integer (&obj->progs->vars,name,value,TRUE);
-		}
-
-		if (!str_cmp(word, "VarStr")) {
-			char *name;
-			char *str;
-
-			fMatch = TRUE;
-
-			name = fread_string(fp);
-			str = fread_string(fp);
-
-			variables_setindex_string (&obj->progs->vars,name,str,FALSE,TRUE);
-		}
-
-		if (!str_cmp(word, "VarRoom")) {
-			char *name;
-			int value;
-
-			fMatch = TRUE;
-
-			name = fread_string(fp);
-			value = fread_number(fp);
-
-			variables_setindex_room (&obj->progs->vars,name,value,TRUE);
 		}
 
 	    if (!str_cmp(word, "Vnum"))
@@ -2834,94 +2943,99 @@ OBJ_DATA *fread_obj_new(FILE *fp)
 // Write the permanent objects - the ones which save over reboots, etc.
 void write_permanent_objs()
 {
-    FILE *fp;
-    CHURCH_DATA *church;
-    ROOM_INDEX_DATA *room;
-
-    if ((fp = fopen(PERM_OBJS_FILE, "w")) == NULL)
-	bug("perm_objs_new.dat: Couldn't open file.",0);
-    else
-    {
-    	wiznet("writing permanent objects...", NULL, NULL, WIZ_TESTING, 0, 0);
-
-	// save relics
-	if (pneuma_relic != NULL && !is_in_treasure_room(pneuma_relic))
-	    fwrite_obj_new(NULL, pneuma_relic, fp, 0);
-
-	if (damage_relic != NULL && !is_in_treasure_room(damage_relic))
-	    fwrite_obj_new(NULL, damage_relic, fp, 0);
-
-	if (xp_relic != NULL && !is_in_treasure_room(xp_relic))
-	    fwrite_obj_new(NULL, xp_relic, fp, 0);
-
-	if (mana_regen_relic != NULL && !is_in_treasure_room(mana_regen_relic))
-	    fwrite_obj_new(NULL, mana_regen_relic, fp, 0);
-
-	if (hp_regen_relic != NULL && !is_in_treasure_room(hp_regen_relic))
-	    fwrite_obj_new(NULL, hp_regen_relic, fp, 0);
-
-	// save church treasure rooms
-	for (church = church_list; church != NULL; church = church->next)
-	{
-	    if ((room = get_room_index(church->treasure_room)) != NULL)
-	    {
-		if (room->contents != NULL)
-		    fwrite_obj_new(NULL, room->contents, fp, 0);
-	    }
-	}
-
-	fprintf(fp, "#END\n");
-
-	fclose(fp);
-    }
+#if 0
+//    FILE *fp;
+//    CHURCH_DATA *church;
+//    ROOM_INDEX_DATA *room;
+//    OBJ_DATA *obj;
+//
+//    if ((fp = fopen(PERM_OBJS_FILE, "w")) == NULL)
+//	bug("perm_objs_new.dat: Couldn't open file.",0);
+//	else
+//    {
+//    	wiznet("writing permanent objects...", NULL, NULL, WIZ_TESTING, 0, 0);
+//
+//	// save relics
+//	if (pneuma_relic != NULL && !is_in_treasure_room(pneuma_relic))
+//	    fwrite_obj_new(NULL, pneuma_relic, fp, 0);
+//
+//	if (damage_relic != NULL && !is_in_treasure_room(damage_relic))
+//	    fwrite_obj_new(NULL, damage_relic, fp, 0);
+//
+//	if (xp_relic != NULL && !is_in_treasure_room(xp_relic))
+//	    fwrite_obj_new(NULL, xp_relic, fp, 0);
+//
+//	if (mana_regen_relic != NULL && !is_in_treasure_room(mana_regen_relic))
+//	    fwrite_obj_new(NULL, mana_regen_relic, fp, 0);
+//
+//	if (hp_regen_relic != NULL && !is_in_treasure_room(hp_regen_relic))
+//	    fwrite_obj_new(NULL, hp_regen_relic, fp, 0);
+//
+//	// save church treasure rooms
+//	for (church = church_list; church != NULL; church = church->next)
+//	{
+//	    if ((room = get_room_index(church->treasure_room)) != NULL)
+//	    {
+//		if (room->contents != NULL)
+//		    fwrite_obj_new(NULL, room->contents, fp, 0);
+//	    }
+//	}
+//
+//	fprintf(fp, "#END\n");
+//
+//	fclose(fp);
+//	}
+#endif
 }
 
 
 void read_permanent_objs()
 {
-    FILE *fp;
-    OBJ_DATA *obj;
-    OBJ_DATA *objNestList[MAX_NEST];
-    char *word;
-
-    log_string("Loading permanent objs");
-    if ((fp = fopen(PERM_OBJS_FILE, "r")) == NULL)
-	bug("perm_objs_new.dat: Couldn't open file.",0);
-    else
-    {
-    	for (;;)
-	{
-	    word = fread_word(fp);
-	    if (!str_cmp(word, "#O"))
-	    {
-	    	obj = fread_obj_new(fp);
-		objNestList[obj->nest] = obj;
-
-		if (obj->in_room != NULL)
-		{
-		    if (obj->nest > 0)
-		    {
-			obj->in_room = NULL;
-			obj_to_obj(obj, objNestList[obj->nest - 1]);
-		    }
-		    else
-		    {
-			ROOM_INDEX_DATA *to_room = get_room_index(obj->in_room->vnum);
-			obj->in_room = NULL;
-			obj_to_room(obj, to_room == NULL ? get_room_index(1) : to_room);
-		    }
-		}
-	    }
-	    else if (!str_cmp(word, "#END"))
-	        break;
-	    else {
-		bug("perm_objs_new.dat: bad format", 0);
-		break;
-	    }
-	}
-
-	fclose(fp);
-    }
+#if 0
+//    FILE *fp;
+//    OBJ_DATA *obj;
+//    OBJ_DATA *objNestList[MAX_NEST];
+//    char *word;
+//
+//    log_string("Loading permanent objs");
+//    if ((fp = fopen(PERM_OBJS_FILE, "r")) == NULL)
+//	bug("perm_objs_new.dat: Couldn't open file.",0);
+//    else
+//    {
+//    	for (;;)
+//	{
+//	    word = fread_word(fp);
+//	    if (!str_cmp(word, "#O"))
+//	    {
+//	    	obj = fread_obj_new(fp);
+//		objNestList[obj->nest] = obj;
+//
+//		if (obj->in_room != NULL)
+//		{
+//		    if (obj->nest > 0)
+//		    {
+//			obj->in_room = NULL;
+//			obj_to_obj(obj, objNestList[obj->nest - 1]);
+//		    }
+//		    else
+//		    {
+//			ROOM_INDEX_DATA *to_room = get_room_index(obj->in_room->vnum);
+//			obj->in_room = NULL;
+//			obj_to_room(obj, to_room == NULL ? get_room_index(1) : to_room);
+//		    }
+//		}
+//	    }
+//	    else if (!str_cmp(word, "#END"))
+//	        break;
+//	    else {
+//		bug("perm_objs_new.dat: bad format", 0);
+//		break;
+//	    }
+//	}
+//
+//	fclose(fp);
+//	}
+#endif
 }
 
 
@@ -2954,259 +3068,289 @@ void fix_object(OBJ_DATA *obj)
     AFFECT_DATA *af, *af_next;
     SPELL_DATA *spell, *spell_new;
 
-    if (obj == NULL)
-    {
-	bug("fix_object: obj was null.", 0);
-	return;
+    if (obj == NULL) {
+		bug("fix_object: obj was null.", 0);
+		return;
     }
 
-    if (obj->pIndexData == NULL)
-    {
-	bug("fix_object: pIndexData was null.", 0);
-	return;
+    if (obj->pIndexData == NULL) {
+		bug("fix_object: pIndexData was null.", 0);
+		return;
     }
 
-    if (obj->version == 0)
-    {
-	bool fEnchanted = FALSE;
+    //////////////////////////////////////////////////////////////////////
+    // LEGACY UPDATES
 
-	if (IS_SET(obj->extra2_flags, ITEM_ENCHANTED))
-	    fEnchanted = TRUE;
+    if (obj->version == 0) {
+		bool fEnchanted = FALSE;
 
-	obj->extra2_flags = obj->pIndexData->extra2_flags | obj->extra2_flags;
-	obj->extra3_flags = obj->pIndexData->extra3_flags | obj->extra3_flags;
-	obj->extra4_flags = obj->pIndexData->extra4_flags | obj->extra4_flags;
+		if (IS_SET(obj->extra2_flags, ITEM_ENCHANTED))
+			fEnchanted = TRUE;
 
-	if (fEnchanted)
-	    SET_BIT(obj->extra2_flags, ITEM_ENCHANTED);
+		obj->extra2_flags = obj->pIndexData->extra2_flags | obj->extra2_flags;
+		obj->extra3_flags = obj->pIndexData->extra3_flags | obj->extra3_flags;
+		obj->extra4_flags = obj->pIndexData->extra4_flags | obj->extra4_flags;
 
-	if (is_quest_item(obj))
-	    obj->cost = obj->pIndexData->cost;
+		if (fEnchanted)
+			SET_BIT(obj->extra2_flags, ITEM_ENCHANTED);
+
+		if (is_quest_item(obj))
+			obj->cost = obj->pIndexData->cost;
     }
 
     if (obj->version == 1)
-	obj->version = 2; // latest version
-
-    /* Syn - now made redundant by spell pointers on objects
-    // scroll/potion debugging.
-    if (obj->item_type == ITEM_SCROLL
-    || obj->item_type == ITEM_POTION)
     {
-	if (obj->value[1] >= MAX_SKILL)
-	    obj->value[1] = 0;
-	if (obj->value[2] >= MAX_SKILL)
-	    obj->value[2] = 0;
-	if (obj->value[3] >= MAX_SKILL)
-	    obj->value[3] = 0;
-	if (obj->value[4] >= MAX_SKILL)
-	    obj->value[4] = 0;
-    }
+		// remove dup affects - don't do for now
+		// cleanup_affects(obj);
 
-    */
+		// Fix skulls
+		if (obj->pIndexData->vnum == OBJ_VNUM_SKULL || obj->pIndexData->vnum == OBJ_VNUM_GOLD_SKULL) {
+			int i;
+			char buf[MSL];
 
-    // remove dup affects - don't do for now
-    // cleanup_affects(obj);
+			if (obj->owner == NULL)
+				obj->owner = str_dup("Nobody");
 
-    // Hack, fix mishkal swords so myth stops bitching
-    if (obj->pIndexData->vnum == OBJ_VNUM_SWORD_MISHKAL)
-    {
-	AFFECT_DATA *af;
+			// Fix name
+			if (str_infix(obj->owner, obj->name))
+			{
+				sprintf(buf, "skull %s", obj->owner);
 
-	for (af = obj->affected; af != NULL; af = af->next)
-	{
-	    if (af->modifier == -300)
-		af->modifier = -25;
-	}
-    }
+				for (i = 0; buf[i] != '\0'; i++)
+				{
+				buf[i] = LOWER(buf[i]);
+				}
 
-    // Fix skulls
-    if (obj->pIndexData->vnum == OBJ_VNUM_SKULL
-    ||   obj->pIndexData->vnum == OBJ_VNUM_GOLD_SKULL)
-    {
-	int i;
-	char buf[MSL];
+				free_string(obj->name);
+				obj->name = str_dup(buf);
+			}
 
-	if (obj->owner == NULL)
-	    obj->owner = str_dup("Nobody");
-
-	// Fix name
-	if (str_infix(obj->owner, obj->name))
-	{
-	    sprintf(buf, "skull %s", obj->owner);
-
-	    for (i = 0; buf[i] != '\0'; i++)
-	    {
-		buf[i] = LOWER(buf[i]);
-	    }
-
-	    free_string(obj->name);
-	    obj->name = str_dup(buf);
-	}
-
-	// Fix full desc field
-	free_string(obj->full_description);
-	sprintf(buf, obj->pIndexData->full_description, obj->owner);
-	obj->full_description = str_dup(buf);
-    }
-
-    /* Syn - this is also in fread_obj so let's not do it twice unless there is some reason
-       I am not seeing.
-    if (update_object(obj))
-    {
-	i = 0;
-	while (i <= 8)
-	{
-	    obj->value[i] = obj->pIndexData->value[i];
-	    i++;
-	}
-
-	obj->wear_flags = obj->pIndexData->wear_flags;
-	obj->extra_flags = obj->extra_flags | obj->pIndexData->extra_flags;
-	obj->extra2_flags = obj->extra2_flags | obj->pIndexData->extra2_flags;
-	obj->extra3_flags = obj->extra3_flags | obj->pIndexData->extra3_flags;
-	obj->extra4_flags = obj->extra4_flags | obj->pIndexData->extra4_flags;
-	free_string(obj->material);
-	obj->material = str_dup(obj->pIndexData->material);
-    }
-     */
-    // Fix dual enchant affects
-    if (IS_SET(obj->extra2_flags, ITEM_ENCHANTED))
-    {
-	for (af = obj->affected; af != NULL; af = af_next)
-	{
-	    af_next = af->next;
-
-	    if (af->type == gsn_enchant_weapon)
-	    {
-		af_level = af->level;
-
-		if (af->location == APPLY_DAMROLL)
-		    af_dr_mod += af->modifier;
-		else
-		    af_hr_mod += af->modifier;
-
-		affect_remove_obj(obj, af);
-	    }
-	}
-
-	if (af_level > 0)
-	{
-	    // HR mods
-	    af = new_affect();
-	    af->group = AFFGROUP_ENCHANT;
-	    af->level = af_level;
-	    af->duration = -1;
-	    af->location = APPLY_HITROLL;
-	    af->modifier = af_hr_mod;
-	    af->type = gsn_enchant_weapon;
-	    affect_to_obj(obj, af);
-
-	    // DR mods
-	    af = new_affect();
-	    af->group = AFFGROUP_ENCHANT;
-	    af->level = af_level;
-	    af->duration = -1;
-	    af->location = APPLY_DAMROLL;
-	    af->modifier = af_dr_mod;
-	    af->type = gsn_enchant_weapon;
-	    affect_to_obj(obj, af);
-	}
-    }
-
-    // Update spells to be done the correct way.
-    if (obj->spells == NULL)
-    switch (obj->item_type)
-    {
-	case ITEM_PILL:
-	case ITEM_POTION:
-	case ITEM_SCROLL:
-            if (obj->value[0] > 0)
-		level = obj->value[0];
-            else
-		level = obj->level;
-
-            for (i = 1; i < 4; i++)
-	    {
-		if ((sn = obj->value[i]) > 0 && sn < MAX_SKILL
-		&&  skill_table[sn].spell_fun != spell_null)
-		{
-		    spell_new = new_spell();
-		    spell_new->sn = sn;
-		    spell_new->level = level;
-
-		    spell_new->next = obj->spells;
-		    obj->spells = spell_new;
+			// Fix full desc field
+			free_string(obj->full_description);
+			sprintf(buf, obj->pIndexData->full_description, obj->owner);
+			obj->full_description = str_dup(buf);
 		}
-	    }
 
-	    break;
-	case ITEM_WAND:
-	case ITEM_STAFF:
-            if (obj->value[0] > 0)
-		level = obj->value[0];
-	    else
-		level = obj->level;
+		/* Syn - this is also in fread_obj so let's not do it twice unless there is some reason
+		   I am not seeing.
+		if (update_object(obj))
+		{
+		i = 0;
+		while (i <= 8)
+		{
+			obj->value[i] = obj->pIndexData->value[i];
+			i++;
+		}
 
-	    if ((sn = obj->value[3]) > 0 && sn < MAX_SKILL
-	    &&   skill_table[sn].spell_fun != spell_null)
-	    {
-		spell_new = new_spell();
-		spell_new->sn = sn;
-		spell_new->level = level;
+		obj->wear_flags = obj->pIndexData->wear_flags;
+		obj->extra_flags = obj->extra_flags | obj->pIndexData->extra_flags;
+		obj->extra2_flags = obj->extra2_flags | obj->pIndexData->extra2_flags;
+		obj->extra3_flags = obj->extra3_flags | obj->pIndexData->extra3_flags;
+		obj->extra4_flags = obj->extra4_flags | obj->pIndexData->extra4_flags;
+		free_string(obj->material);
+		obj->material = str_dup(obj->pIndexData->material);
+		}
+		 */
+		// Fix dual enchant affects
+		if (IS_SET(obj->extra2_flags, ITEM_ENCHANTED))
+		{
+			for (af = obj->affected; af != NULL; af = af_next)
+			{
+				af_next = af->next;
 
-		spell_new->next = obj->spells;
-		obj->spells = spell_new;
-	    }
+				if (af->type == gsn_enchant_weapon)
+				{
+					af_level = af->level;
 
-	    break;
+					if (af->location == APPLY_DAMROLL)
+						af_dr_mod += af->modifier;
+					else
+						af_hr_mod += af->modifier;
 
-	default:
-	    for (spell = obj->pIndexData->spells; spell != NULL; spell = spell->next)
-	    {
-		spell_new = new_spell();
-		*spell_new = *spell;
+					affect_remove_obj(obj, af);
+				}
+			}
 
-		spell_new->next = obj->spells;
-		obj->spells = spell_new;
-	    }
-    }
+			if (af_level > 0)
+			{
+				// HR mods
+				af = new_affect();
+				af->group = AFFGROUP_ENCHANT;
+				af->level = af_level;
+				af->duration = -1;
+				af->location = APPLY_HITROLL;
+				af->modifier = af_hr_mod;
+				af->type = gsn_enchant_weapon;
+				affect_to_obj(obj, af);
 
+				// DR mods
+				af = new_affect();
+				af->group = AFFGROUP_ENCHANT;
+				af->level = af_level;
+				af->duration = -1;
+				af->location = APPLY_DAMROLL;
+				af->modifier = af_dr_mod;
+				af->type = gsn_enchant_weapon;
+				affect_to_obj(obj, af);
+			}
+		}
 
-    // Fix magic items that haven't been scribed/brewed
-    if (obj->version == 2) {
-	switch (obj->item_type)
-	{
-	    case ITEM_PILL:
-	    case ITEM_POTION:
-	    case ITEM_SCROLL:
-	    case ITEM_WAND:
-	    case ITEM_STAFF:
-		if (obj->pIndexData->vnum != ITEM_SCROLL
-		&&  obj->pIndexData->vnum != ITEM_POTION
-		&&  obj->spells == NULL) {
-		    for (spell = obj->pIndexData->spells; spell != NULL; spell = spell->next)
-		    {
+		// Update spells to be done the correct way.
+		if (obj->spells == NULL)
+		switch (obj->item_type)
+		{
+		case ITEM_PILL:
+		case ITEM_POTION:
+		case ITEM_SCROLL:
+				if (obj->value[0] > 0)
+			level = obj->value[0];
+				else
+			level = obj->level;
+
+				for (i = 1; i < 4; i++)
+			{
+			if ((sn = obj->value[i]) > 0 && sn < MAX_SKILL
+			&&  skill_table[sn].spell_fun != spell_null)
+			{
+				spell_new = new_spell();
+				spell_new->sn = sn;
+				spell_new->level = level;
+
+				spell_new->next = obj->spells;
+				obj->spells = spell_new;
+			}
+			}
+
+			break;
+		case ITEM_WAND:
+		case ITEM_STAFF:
+				if (obj->value[0] > 0)
+			level = obj->value[0];
+			else
+			level = obj->level;
+
+			if ((sn = obj->value[3]) > 0 && sn < MAX_SKILL
+			&&   skill_table[sn].spell_fun != spell_null)
+			{
+			spell_new = new_spell();
+			spell_new->sn = sn;
+			spell_new->level = level;
+
+			spell_new->next = obj->spells;
+			obj->spells = spell_new;
+			}
+
+			break;
+
+		default:
+			for (spell = obj->pIndexData->spells; spell != NULL; spell = spell->next)
+			{
 			spell_new = new_spell();
 			*spell_new = *spell;
 
 			spell_new->next = obj->spells;
 			obj->spells = spell_new;
-		    }
+			}
 		}
 
-		break;
-	    default:
-		break;
+		obj->version = 2;
 	}
-	obj->version = 3; // latest version
+
+    // Fix magic items that haven't been scribed/brewed
+    if (obj->version == 2) {
+		switch (obj->item_type)
+		{
+			case ITEM_PILL:
+			case ITEM_POTION:
+			case ITEM_SCROLL:
+			case ITEM_WAND:
+			case ITEM_STAFF:
+			if (obj->pIndexData->vnum != ITEM_SCROLL
+			&&  obj->pIndexData->vnum != ITEM_POTION
+			&&  obj->spells == NULL) {
+				for (spell = obj->pIndexData->spells; spell != NULL; spell = spell->next)
+				{
+				spell_new = new_spell();
+				*spell_new = *spell;
+
+				spell_new->next = obj->spells;
+				obj->spells = spell_new;
+				}
+			}
+
+			break;
+			default:
+			break;
+		}
+		obj->version = 3;
     }
 
-    if (IS_SET(obj->extra_flags, ITEM_HIDDEN)) {
-	REMOVE_BIT(obj->extra_flags, ITEM_HIDDEN);
-	sprintf(buf, "fix_object: removing hidden flag from inventory object %s(%ld)",
-		obj->short_descr, obj->pIndexData->vnum);
-	log_string(buf);
-    }
+	if( obj->version == 3) {
+		if (IS_SET(obj->extra_flags, ITEM_HIDDEN)) {
+			REMOVE_BIT(obj->extra_flags, ITEM_HIDDEN);
+			sprintf(buf, "fix_object: removing hidden flag from inventory object %s(%ld)",
+				obj->short_descr, obj->pIndexData->vnum);
+			log_string(buf);
+		}
+		obj->version = 4;
+	}
+
+	/////////////////////////////////////////////////
+	// NEW UPDATES
+
+	if( obj->version < VERSION_OBJECT_002)
+	{
+		// Initializes objects to use the perm values for flags manipulated by affects
+
+		AFFECT_DATA *paf;
+		bool is_enchanted = FALSE;
+
+		if (IS_SET(obj->extra2_flags, ITEM_ENCHANTED))
+			is_enchanted = TRUE;
+
+
+		obj->extra_flags = obj->extra_flags_perm = obj->pIndexData->extra_flags;
+		obj->extra2_flags = obj->extra2_flags_perm = obj->pIndexData->extra2_flags;
+		obj->extra3_flags = obj->extra3_flags_perm = obj->pIndexData->extra3_flags;
+		obj->extra4_flags = obj->extra4_flags_perm = obj->pIndexData->extra4_flags;
+
+		if( obj->item_type == ITEM_WEAPON )
+		{
+			obj->value[4] = obj->weapon_flags_perm = obj->pIndexData->value[4];
+		}
+
+		for(paf = obj->affected; paf; paf = paf->next )
+		{
+			if (paf->bitvector)
+			{
+				switch (paf->where)
+				{
+				case TO_OBJECT:
+					SET_BIT(obj->extra_flags,paf->bitvector);
+					break;
+				case TO_OBJECT2:
+					SET_BIT(obj->extra2_flags,paf->bitvector);
+					break;
+				case TO_OBJECT3:
+					SET_BIT(obj->extra3_flags,paf->bitvector);
+					break;
+				case TO_OBJECT4:
+					SET_BIT(obj->extra4_flags,paf->bitvector);
+					break;
+				case TO_WEAPON:
+					if (obj->item_type == ITEM_WEAPON)
+						SET_BIT(obj->value[4],paf->bitvector);
+				break;
+				}
+			}
+		}
+
+		if( is_enchanted )
+			SET_BIT(obj->extra2_flags, ITEM_ENCHANTED);
+
+		obj->version = VERSION_OBJECT_002;
+	}
+
 }
 
 
@@ -3248,10 +3392,14 @@ void cleanup_affects(OBJ_DATA *obj)
 }
 
 
+
 void fix_character(CHAR_DATA *ch)
 {
     int i;
     char buf[MSL];
+    bool resetaffects = FALSE;
+	AFFECT_DATA *paf;
+	OBJ_DATA *obj;
 
     if (ch->race == 0)
 	ch->race = race_lookup("human");
@@ -3263,12 +3411,123 @@ void fix_character(CHAR_DATA *ch)
     for (i = 0; pc_race_table[ch->race].skills[i] != NULL; i++)
 	group_add(ch,pc_race_table[ch->race].skills[i],FALSE);
 
-    ch->affected_by     = ch->affected_by | race_table[ch->race].aff;
-    ch->imm_flags	= ch->imm_flags | race_table[ch->race].imm;
-    ch->res_flags	= ch->res_flags | race_table[ch->race].res;
-    ch->vuln_flags	= ch->vuln_flags | race_table[ch->race].vuln;
-    ch->form	        = race_table[ch->race].form;
-    ch->parts	        = race_table[ch->race].parts & ~ch->lostparts;
+	if( ch->affected_by_perm != race_table[ch->race].aff )
+	{
+		ch->affected_by_perm = race_table[ch->race].aff;
+		resetaffects = TRUE;
+	}
+
+	if( ch->affected_by2_perm != race_table[ch->race].aff2 )
+	{
+		ch->affected_by2_perm = race_table[ch->race].aff2;
+		resetaffects = TRUE;
+	}
+
+    if( ch->imm_flags_perm != race_table[ch->race].imm )
+    {
+		ch->imm_flags_perm = race_table[ch->race].imm;
+		resetaffects = TRUE;
+	}
+
+    if( ch->res_flags_perm != race_table[ch->race].res )
+    {
+		ch->res_flags_perm = race_table[ch->race].res;
+		resetaffects = TRUE;
+	}
+
+    if( ch->vuln_flags_perm != race_table[ch->race].vuln )
+    {
+		ch->vuln_flags_perm = race_table[ch->race].vuln;
+		resetaffects = TRUE;
+	}
+
+	if( resetaffects )
+	{
+		// Reset flags
+		ch->imm_flags = ch->imm_flags_perm;
+		ch->res_flags = ch->res_flags_perm;
+		ch->vuln_flags = ch->vuln_flags_perm;
+		ch->affected_by = ch->affected_by_perm;
+		ch->affected_by2 = ch->affected_by2_perm;
+
+		// Iterate through all affects
+		for(paf = ch->affected; paf; paf = paf->next)
+		{
+			switch (paf->where)
+			{
+				case TO_AFFECTS:
+					SET_BIT(ch->affected_by, paf->bitvector);
+					SET_BIT(ch->affected_by2, paf->bitvector2);
+
+					if( IS_SET(paf->bitvector2, AFF2_DEATHSIGHT) && (paf->level > ch->deathsight_vision) )
+						ch->deathsight_vision = paf->level;
+
+					break;
+				case TO_IMMUNE:
+					SET_BIT(ch->imm_flags,paf->bitvector);
+					break;
+				case TO_RESIST:
+					SET_BIT(ch->res_flags,paf->bitvector);
+					break;
+				case TO_VULN:
+					SET_BIT(ch->vuln_flags,paf->bitvector);
+					break;
+			}
+		}
+
+		// Iterate through all worn objects
+		for(obj = ch->carrying; obj; obj = obj->next_content)
+		{
+			if( !obj->locker && obj->wear_loc != WEAR_NONE )
+			{
+				for(paf = obj->affected; paf; paf = paf->next)
+				{
+					switch (paf->where)
+					{
+						case TO_AFFECTS:
+							SET_BIT(ch->affected_by, paf->bitvector);
+							SET_BIT(ch->affected_by2, paf->bitvector2);
+
+							if( IS_SET(paf->bitvector2, AFF2_DEATHSIGHT) && (paf->level > ch->deathsight_vision) )
+								ch->deathsight_vision = paf->level;
+
+							break;
+						case TO_IMMUNE:
+							SET_BIT(ch->imm_flags,paf->bitvector);
+							break;
+						case TO_RESIST:
+							SET_BIT(ch->res_flags,paf->bitvector);
+							break;
+						case TO_VULN:
+							SET_BIT(ch->vuln_flags,paf->bitvector);
+							break;
+					}
+				}
+			}
+		}
+	}
+
+	// Update deathsight vision
+	ch->deathsight_vision = ( IS_SET(ch->affected_by2_perm, AFF2_DEATHSIGHT) ) ? ch->tot_level : 0;
+	for(paf = ch->affected; paf; paf = paf->next)
+	{
+		if( (paf->where == TO_AFFECTS) && IS_SET(paf->bitvector2, AFF2_DEATHSIGHT) && (paf->level > ch->deathsight_vision) )
+			ch->deathsight_vision = paf->level;
+	}
+	for(obj = ch->carrying; obj; obj = obj->next_content)
+	{
+		if( !obj->locker && obj->wear_loc != WEAR_NONE )
+		{
+			for(paf = obj->affected; paf; paf = paf->next)
+			{
+				if( (paf->where == TO_AFFECTS) && IS_SET(paf->bitvector2, AFF2_DEATHSIGHT) && (paf->level > ch->deathsight_vision) )
+					ch->deathsight_vision = paf->level;
+			}
+		}
+	}
+
+    ch->form = race_table[ch->race].form;
+    ch->parts = race_table[ch->race].parts & ~ch->lostparts;
 
     if (ch->version < 2)
     {
@@ -3278,81 +3537,55 @@ void fix_character(CHAR_DATA *ch)
     }
 
     /* make sure they have any new skills that have been added */
-    if (ch->pcdata->class_mage != -1)
-	group_add(ch, class_table[ch->pcdata->class_mage].base_group, FALSE);
+    if (ch->pcdata->class_mage != -1)		group_add(ch, class_table[ch->pcdata->class_mage].base_group, FALSE);
+    if (ch->pcdata->class_cleric != -1)		group_add(ch, class_table[ch->pcdata->class_cleric].base_group, FALSE);
+    if (ch->pcdata->class_thief != -1)		group_add(ch, class_table[ch->pcdata->class_thief].base_group, FALSE);
+    if (ch->pcdata->class_warrior != -1)	group_add(ch, class_table[ch->pcdata->class_warrior].base_group, FALSE);
 
-    if (ch->pcdata->class_cleric != -1)
-	group_add(ch, class_table[ch->pcdata->class_cleric].base_group, FALSE);
-
-    if (ch->pcdata->class_thief != -1)
-	group_add(ch, class_table[ch->pcdata->class_thief].base_group, FALSE);
-
-    if (ch->pcdata->class_warrior != -1)
-	group_add(ch, class_table[ch->pcdata->class_warrior].base_group, FALSE);
-
-    if (ch->pcdata->second_sub_class_mage != -1)
-    {
-	group_add(ch,
-	sub_class_table[ch->pcdata->second_sub_class_mage].default_group, FALSE);
-    }
-
-    if (ch->pcdata->second_sub_class_cleric != -1)
-    {
-	group_add(ch,
-	sub_class_table[ch->pcdata->second_sub_class_cleric].default_group, FALSE);
-    }
-
-    if (ch->pcdata->second_sub_class_thief != -1)
-    {
-	group_add(ch,
-	sub_class_table[ch->pcdata->second_sub_class_thief].default_group, FALSE);
-    }
-
-    if (ch->pcdata->second_sub_class_warrior != -1)
-    {
-	group_add(ch,
-	sub_class_table[ch->pcdata->second_sub_class_warrior].default_group, FALSE);
-    }
+    if (ch->pcdata->second_sub_class_mage != -1)	group_add(ch, sub_class_table[ch->pcdata->second_sub_class_mage].default_group, FALSE);
+    if (ch->pcdata->second_sub_class_cleric != -1)	group_add(ch, sub_class_table[ch->pcdata->second_sub_class_cleric].default_group, FALSE);
+    if (ch->pcdata->second_sub_class_thief != -1)	group_add(ch, sub_class_table[ch->pcdata->second_sub_class_thief].default_group, FALSE);
+    if (ch->pcdata->second_sub_class_warrior != -1)	group_add(ch, sub_class_table[ch->pcdata->second_sub_class_warrior].default_group, FALSE);
 
     if (ch->version < 6)
-	ch->version = 6;
+		ch->version = 6;
 
     /* reset affects */
     if (ch->version < 7)
     {
-	if (IS_AFFECTED2(ch, AFF2_ENSNARE))
-	    REMOVE_BIT(ch->affected_by2, AFF2_ENSNARE);
+		if (IS_AFFECTED2(ch, AFF2_ENSNARE))
+			REMOVE_BIT(ch->affected_by2, AFF2_ENSNARE);
 
-	if (ch->pcdata->second_sub_class_thief == CLASS_THIEF_SAGE)
-	    SET_BIT(ch->affected_by, AFF_DETECT_HIDDEN);
+		if (ch->pcdata->second_sub_class_thief == CLASS_THIEF_SAGE)
+			SET_BIT(ch->affected_by, AFF_DETECT_HIDDEN);
 
-	ch->version = 7;
+		ch->version = 7;
     }
 
     if (ch->version < 8)
     {
-	REMOVE_BIT(ch->comm, COMM_NOAUTOWAR);
-	ch->version = 8;
+		REMOVE_BIT(ch->comm, COMM_NOAUTOWAR);
+		ch->version = 8;
     }
 
     if (ch->version < 10)
     {
-	REMOVE_BIT(ch->act, PLR_PK);
-	ch->version = 10;
+		REMOVE_BIT(ch->act, PLR_PK);
+		ch->version = 10;
     }
 
     if (IS_IMMORTAL(ch))
     {
-	i = 0;
-	while (wiznet_table[i].name != NULL)
-	{
-	    if (ch->tot_level < wiznet_table[i].level)
-	    {
-		REMOVE_BIT(ch->wiznet, wiznet_table[i].flag);
-	    }
+		i = 0;
+		while (wiznet_table[i].name != NULL)
+		{
+			if (ch->tot_level < wiznet_table[i].level)
+			{
+			REMOVE_BIT(ch->wiznet, wiznet_table[i].flag);
+			}
 
-	    i++;
-	}
+			i++;
+		}
     }
 
     for (i = 0; i < MAX_STATS; i++)
@@ -3397,11 +3630,36 @@ void fix_character(CHAR_DATA *ch)
     // Make sure non imms dont have builder flag!!
     if (!IS_IMMORTAL(ch) && IS_SET(ch->act, PLR_BUILDING))
     {
-	sprintf(buf, "fix_character: toggling off builder flag for non-immortal %s", ch->name);
-	log_string(buf);
-	REMOVE_BIT(ch->act, PLR_BUILDING);
+		sprintf(buf, "fix_character: toggling off builder flag for non-immortal %s", ch->name);
+		log_string(buf);
+		REMOVE_BIT(ch->act, PLR_BUILDING);
     }
+
+    // Everyone with an expired locker rent as of this login point will have their locker rent auto-forgiven.
+    if( ch->version < VERSION_PLAYER_003)
+	{
+		if( ch->locker_rent > 0 )
+		{
+			struct tm *now_time;
+			struct tm *rent_time;
+
+			now_time = (struct tm *)localtime(&current_time);
+			rent_time = (struct tm *)localtime(&ch->locker_rent);
+
+			if( now_time > rent_time )
+			{
+				ch->locker_rent = current_time;
+				rent_time = (struct tm *)localtime(&ch->locker_rent);
+				rent_time->tm_mon += 1;
+				ch->locker_rent = (time_t) mktime(rent_time);
+			}
+		}
+		ch->version = VERSION_PLAYER_003;
+	}
+
 }
+
+
 
 
 bool missing_class(CHAR_DATA *ch)
@@ -3638,14 +3896,17 @@ void fwrite_token(CHAR_DATA *ch, TOKEN_DATA *token, FILE *fp)
     if(token->progs && token->progs->vars) {
 	pVARIABLE var;
 
-	for(var = token->progs->vars; var; var = var->next) if(var->save) {
-		if(var->type == VAR_INTEGER)
-			fprintf(fp, "VarInt %s~ %d\n", var->name, var->_.i);
-		else if(var->type == VAR_STRING || var->type == VAR_STRING_S)
-			fprintf(fp, "VarStr %s~ %s~\n", var->name, var->_.s ? var->_.s : "");
-		else if(var->type == VAR_ROOM && var->_.r && var->_.r->vnum)
-			fprintf(fp, "VarRoom %s~ %d\n", var->name, (int)var->_.r->vnum);
-	}
+	for(var = token->progs->vars; var; var = var->next) {
+		if(IS_IMMORTAL(ch) && !IS_NPC(ch) && ch->desc)
+			printf_to_char(ch, "Checking variable '%s'...", var->name);
+		if(var->save) {
+			if(IS_IMMORTAL(ch) && !IS_NPC(ch) && ch->desc)
+				send_to_char("SAVING", ch);
+			variable_fwrite(var, fp);
+		}
+			if(IS_IMMORTAL(ch) && !IS_NPC(ch) && ch->desc)
+				send_to_char("\n\r", ch);
+		}
     }
 
     fprintf(fp, "End\n\n");
@@ -3661,6 +3922,7 @@ TOKEN_DATA *fread_token(FILE *fp)
     char buf[MSL];
     char *word;
     bool fMatch;
+    int vtype;
 
     vnum = fread_number(fp);
     if ((token_index = get_token_index(vnum)) == NULL) {
@@ -3679,6 +3941,8 @@ TOKEN_DATA *fread_token(FILE *fp)
     token->progs->progs = token_index->progs;
     token_index->loaded++;	// @@@NIB : 20070127 : for "tokenexists" ifcheck
     token->id[0] = token->id[1] = 0;
+	token->global_next = global_tokens;
+	global_tokens = token;
 
     variable_copylist(&token_index->index_vars,&token->progs->vars,FALSE);
 
@@ -3712,40 +3976,10 @@ TOKEN_DATA *fread_token(FILE *fp)
 		    token->value[i] = fread_number(fp);
 		    fMatch = TRUE;
 		}
-		if (!str_cmp(word, "VarInt")) {
-			char *name;
-			int value;
 
+		if( (vtype = variable_fread_type(word)) != VAR_UNKNOWN ) {
+			variable_fread(&token->progs->vars, vtype, fp);
 			fMatch = TRUE;
-
-			name = fread_string(fp);
-			value = fread_number(fp);
-
-			variables_setindex_integer (&token->progs->vars,name,value,TRUE);
-		}
-
-		if (!str_cmp(word, "VarStr")) {
-			char *name;
-			char *str;
-
-			fMatch = TRUE;
-
-			name = fread_string(fp);
-			str = fread_string(fp);
-
-			variables_setindex_string (&token->progs->vars,name,str,FALSE,TRUE);
-		}
-
-		if (!str_cmp(word, "VarRoom")) {
-			char *name;
-			int value;
-
-			fMatch = TRUE;
-
-			name = fread_string(fp);
-			value = fread_number(fp);
-
-			variables_setindex_room (&token->progs->vars,name,value,TRUE);
 		}
 
 		break;

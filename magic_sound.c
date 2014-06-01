@@ -15,8 +15,8 @@ SPELL_FUNC(spell_shriek)
 	CHAR_DATA *victim = (CHAR_DATA *) vo;
 	int dam;
 
-	act("$n fills your ears with high-pitched shriek!",ch,NULL,victim,TO_VICT);
-	act("You inflict $N with an ear-piercing shriek!",ch,NULL,victim,TO_CHAR);
+	act("$n fills your ears with high-pitched shriek!",ch,victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
+	act("You inflict $N with an ear-piercing shriek!",ch,victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
 	dam = level * 16;
 
@@ -25,7 +25,7 @@ SPELL_FUNC(spell_shriek)
 	if (saves_spell(level,victim,DAM_SOUND)) {
 		damage(ch,victim,dam/4,sn,DAM_SOUND,TRUE);
 	} else {
-		act("$N screams in pain, covering $S ears.",ch,NULL,victim,TO_NOTVICT);
+		act("$N screams in pain, covering $S ears.",ch,victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
 		damage(ch,victim,dam,sn,DAM_SOUND,TRUE);
 	}
 	return TRUE;
@@ -62,7 +62,7 @@ SPELL_FUNC(spell_silence)
 		if (victim == ch)
 			send_to_char("You are already silenced.\n\r",ch);
 		else
-			act("$N is already silenced.",ch,NULL,victim,TO_CHAR);
+			act("$N is already silenced.",ch,victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		return FALSE;
 	}
 
@@ -83,8 +83,8 @@ SPELL_FUNC(spell_silence)
 	affect_to_char(victim, &af);
 
 	send_to_char("You get the feeling there is a huge sock in your throat.\n\r", victim);
-	act("You have been silenced!",victim,NULL,NULL,TO_CHAR);
-	act("$n has been silenced!",victim,NULL,NULL,TO_ROOM);
+	act("You have been silenced!",victim, NULL, NULL, NULL, NULL,NULL,NULL,TO_CHAR);
+	act("$n has been silenced!",victim,NULL, NULL, NULL, NULL, NULL,NULL,TO_ROOM);
 	return TRUE;
 }
 

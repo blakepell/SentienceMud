@@ -43,29 +43,55 @@ extern  EXTRA_DESCR_DATA * extra_descr_free;
 extern  RESET_DATA  *reset_free;
 
 void free_room_index( ROOM_INDEX_DATA *pRoom );
+void persist_save_room(FILE *fp, ROOM_INDEX_DATA *room);
+ROOM_INDEX_DATA *persist_load_room(FILE *fp, char rtype);
+
 
 /* Reading of keys*/
 #if defined(KEY)
 #undef KEY
 #endif
 
-#define KEY(literal, field, value)                \
-                if (!str_cmp(word, literal))    \
-                {                                   \
-                    field  = value;                 \
-                    fMatch = TRUE;                  \
-                    break;                          \
-                                }
+#define IS_KEY(literal)		(!str_cmp(word,literal))
 
-#define SKEY(string, field)                       \
-                if (!str_cmp(word, string))     \
-                {                                   \
-                    free_string(field);           \
-                    field = fread_string(fp);     \
-                    fMatch = TRUE;                  \
-                    break;                          \
-                                }
+#define KEY(literal, field, value) \
+	if (IS_KEY(literal)) { \
+		field = value; \
+		fMatch = TRUE; \
+		break; \
+	}
 
+#define SKEY(literal, field) \
+	if (IS_KEY(literal)) { \
+		free_string(field); \
+		field = fread_string(fp); \
+		fMatch = TRUE; \
+		break; \
+	}
+
+#define FKEY(literal, field) \
+	if (IS_KEY(literal)) { \
+		field = TRUE; \
+		fMatch = TRUE; \
+		break; \
+	}
+
+#define FVKEY(literal, field, string, tbl) \
+	if (IS_KEY(literal)) { \
+		field = flag_value(tbl, string); \
+		fMatch = TRUE; \
+		break; \
+	}
+
+#define FVDKEY(literal, field, string, tbl, bad, def) \
+	if (!str_cmp(word, literal)) { \
+		field = flag_value(tbl, string); \
+		if( field == bad ) { \
+			field = def; \
+		} \
+		fMatch = TRUE; \
+		break; \
+	}
 
 /* externals for counting purposes */
 extern	OBJ_DATA	*obj_free;
@@ -95,6 +121,7 @@ CHAR_DATA *		char_list;
 CHAT_ROOM_DATA *	chat_room_list;
 CHURCH_DATA *		church_first;
 CHURCH_DATA * 		church_list;
+LIST *list_churches;
 GQ_DATA			global_quest;
 HELP_CATEGORY *		topHelpCat;
 HELP_DATA *		help_first;
@@ -394,7 +421,7 @@ sh_int	gsn_web;
 sh_int	gsn_whip;
 sh_int	gsn_wilderness_spear_style;
 sh_int	gsn_wind_of_confusion;
-sh_int	gsn_wither;
+sh_int	gsn_withering_cloud;
 sh_int	gsn_word_of_recall;
 
 sh_int	gsn_ice_shards;
@@ -562,6 +589,12 @@ long top_ship_crew;
 long top_vroom;
 long top_waypoint;
 
+LIST *persist_mobs;
+LIST *persist_objs;
+LIST *persist_rooms;
+
+TOKEN_DATA *global_tokens = NULL;
+
 /*
  * Memory management.
  */
@@ -606,12 +639,14 @@ void reset_npc_sailing_boats (void);
 void fix_tokenprogs(void);
 void check_area_versions(void);
 
+
+bool persist_load(void);
+
 /* Top-level booting function*/
 void boot_db(void)
 {
     int i;
     FILE *fp;
-    AREA_DATA *areaTmp;
 
     /*
      * Init some data space stuff.
@@ -731,62 +766,57 @@ void boot_db(void)
      * Read in all the area files.
      */
     {
-	FILE *fpList;
+		FILE *fpList;
         char log_buf[MAX_STRING_LENGTH];
 
         log_string("db.c, boot_db: Loading areas from area.lst file...");
 
-	if ((fpList = fopen(AREA_LIST, "r")) == NULL)
-	{
-	    perror(AREA_LIST);
-	    exit(1);
-	}
+		if ((fpList = fopen(AREA_LIST, "r")) == NULL) {
+			perror(AREA_LIST);
+			exit(1);
+		}
 
-	for (; ;)
-	{
-	    AREA_DATA *area;
-
-	    strcpy(strArea, fread_word(fpList));
-	    if (strArea[0] == '$')
-		break;
-
-	    if (!str_cmp(strArea, "help.are") || !str_cmp(strArea, "social.are"))
-		continue;
-
-	    if (strArea[0] == '-')
-	    {
-		fpArea = stdin;
-	    }
-	    else
-	    {
-		if ((fpArea = fopen(strArea, "r")) == NULL)
+		for (; ;)
 		{
-		    perror(strArea);
-		    exit(1);
+			AREA_DATA *area;
+			LIST_AREA_DATA *link;
+
+			strcpy(strArea, fread_word(fpList));
+			if (strArea[0] == '$')
+				break;
+
+			if (!str_cmp(strArea, "help.are") || !str_cmp(strArea, "social.are"))
+				continue;
+
+			if ((fpArea = fopen(strArea, "r")) == NULL) {
+				perror(strArea);
+				exit(1);
+			}
+
+			sprintf(log_buf, "Loading areafile '%s'", strArea);
+			log_string(log_buf);
+
+
+			area = read_area_new(fpArea);
+			area->next = NULL;
+
+			if (area_first == NULL)
+				area_first = area;
+			else
+				area_last->next = area;
+			area_last = area;
+
+			// Add to script usable list
+			link = alloc_mem(sizeof(LIST_AREA_DATA));
+			link->area = area;
+			link->uid = area->uid;
+			if( !list_appendlink(loaded_areas, link) ) {
+				bug("Failed to add area to loaded list due to memory issues with 'list_appendlink'.", 0);
+				abort();
+			}
 		}
 
-                sprintf(log_buf, "Loading areafile '%s'", strArea);
-                log_string(log_buf);
-
-
-		area = read_area_new(fpArea);
-		area->next = NULL;
-
-		if (area_first == NULL)
-		    area_first = area;
-		else {
-		    for (areaTmp = area_first; areaTmp->next != NULL; areaTmp = areaTmp->next)
-			;
-		    areaTmp->next = area;
-		}
-
-		area_last = area;
-	    }
-
-	    fpArea = NULL;
-	}
-
-	fclose(fpList);
+		fclose(fpList);
     }
 
     /*
@@ -799,8 +829,14 @@ void boot_db(void)
     fix_rooms();
     log_string("Doing fix_vlinks");
     fix_vlinks();
-    log_string("Doing variable_index_fix");
+    log_string("Loading persistance");
+    if(!persist_load()) {
+		perror("Persistance");
+	    exit(1);
+	}
+    log_string("Doing variable_fix");
     variable_index_fix();
+    variable_fix_global();
     log_string("Doing fix_mobprogs");
     fix_mobprogs();
     log_string("Doing fix_objprogs");
@@ -809,6 +845,10 @@ void boot_db(void)
     fix_roomprogs();
     log_string("Doing fix_tokenprogs");
     fix_tokenprogs();
+
+    log_string("Opening churches, new format");
+    read_churches_new();
+
     fBootDb	= FALSE;
     log_string("Doing generate_poa_resets");
     generate_poa_resets(-1);
@@ -821,8 +861,6 @@ void boot_db(void)
     //log_string("Doing load_reboot_objs");
     //load_reboot_objs();
 
-    log_string("Opening churches, new format");
-    read_churches_new();
 
     log_string("Opening projects");
     read_projects();
@@ -1017,19 +1055,22 @@ void fix_rooms(void)
 void fix_mobprogs(void)
 {
 	MOB_INDEX_DATA *mob;
-	PROG_LIST *list;
+	PROG_LIST *trigger;
+	ITERATOR it;
 	int iHash, slot;
 
 	for (iHash = 0; iHash < MAX_KEY_HASH; iHash++) {
 		for (mob = mob_index_hash[iHash]; mob != NULL; mob = mob->next) if(mob->progs) {
-			for (slot = 0; slot < TRIGSLOT_MAX; slot++) {
-				for (list = mob->progs[slot]; list != NULL; list = list->next) {
-					if (!(list->script = get_script_index(list->vnum, PRG_MPROG))) {
-						bug("Fix_mobprogs: code vnum %d not found.", list->vnum);
-						bug("Fix_mobprogs: on mob %ld", mob->vnum);
+			for (slot = 0; slot < TRIGSLOT_MAX; slot++) if( mob->progs[slot] ) {
+				iterator_start(&it, mob->progs[slot]);
+				while(( trigger = (PROG_LIST *)iterator_nextdata(&it))) {
+					if (!(trigger->script = get_script_index(trigger->vnum, PRG_MPROG))) {
+						bug("Fix_mobprogs: code vnum %d not found.", trigger->vnum);
+						bug("Fix_mobprogs: on mobile %ld", mob->vnum);
 						exit(1);
 					}
 				}
+				iterator_stop(&it);
 			}
 		}
 	}
@@ -1039,19 +1080,22 @@ void fix_mobprogs(void)
 void fix_objprogs(void)
 {
 	OBJ_INDEX_DATA *obj;
-	PROG_LIST *list;
+	PROG_LIST *trigger;
+	ITERATOR it;
 	int iHash, slot;
 
 	for (iHash = 0; iHash < MAX_KEY_HASH; iHash++) {
 		for (obj = obj_index_hash[iHash]; obj != NULL; obj = obj->next) if(obj->progs) {
-			for (slot = 0; slot < TRIGSLOT_MAX; slot++) {
-				for (list = obj->progs[slot]; list != NULL; list = list->next) {
-					if (!(list->script = get_script_index(list->vnum, PRG_OPROG))) {
-						bug("Fix_objprogs: code vnum %d not found.", list->vnum);
-						bug("Fix_objprogs: on obj %ld", obj->vnum);
+			for (slot = 0; slot < TRIGSLOT_MAX; slot++) if( obj->progs[slot] ) {
+				iterator_start(&it, obj->progs[slot]);
+				while(( trigger = (PROG_LIST *)iterator_nextdata(&it))) {
+					if (!(trigger->script = get_script_index(trigger->vnum, PRG_OPROG))) {
+						bug("Fix_objprogs: code vnum %d not found.", trigger->vnum);
+						bug("Fix_objprogs: on object %ld", obj->vnum);
 						exit(1);
 					}
 				}
+				iterator_stop(&it);
 			}
 		}
 	}
@@ -1060,20 +1104,24 @@ void fix_objprogs(void)
 void fix_roomprogs(void)
 {
 	ROOM_INDEX_DATA *room;
-	PROG_LIST *list;
+	PROG_LIST *trigger;
+	ITERATOR it;
 	int iHash, slot;
 
 	for (iHash = 0; iHash < MAX_KEY_HASH; iHash++) {
 		for (room = room_index_hash[iHash]; room != NULL; room = room->next) if(room->progs->progs) {
-			for (slot = 0; slot < TRIGSLOT_MAX; slot++) {
-				for (list = room->progs->progs[slot]; list != NULL; list = list->next) {
-					if (!(list->script = get_script_index(list->vnum, PRG_RPROG))) {
-						bug("Fix_roomprogs: code vnum %d not found.", list->vnum);
+			for (slot = 0; slot < TRIGSLOT_MAX; slot++) if( room->progs->progs[slot] ) {
+				iterator_start(&it, room->progs->progs[slot]);
+				while(( trigger = (PROG_LIST *)iterator_nextdata(&it))) {
+					if (!(trigger->script = get_script_index(trigger->vnum, PRG_RPROG))) {
+						bug("Fix_roomprogs: code vnum %d not found.", trigger->vnum);
 						bug("Fix_roomprogs: on room %ld", room->vnum);
 						exit(1);
 					}
 				}
+				iterator_stop(&it);
 			}
+
 		}
 	}
 }
@@ -1081,19 +1129,22 @@ void fix_roomprogs(void)
 void fix_tokenprogs(void)
 {
 	TOKEN_INDEX_DATA *token;
-	PROG_LIST *list;
+	PROG_LIST *trigger;
+	ITERATOR it;
 	int iHash, slot;
 
 	for (iHash = 0; iHash < MAX_KEY_HASH; iHash++) {
 		for (token = token_index_hash[iHash]; token != NULL; token = token->next) if(token->progs) {
-			for (slot = 0; slot < TRIGSLOT_MAX; slot++) {
-				for (list = token->progs[slot]; list != NULL; list = list->next) {
-					if (!(list->script = get_script_index(list->vnum, PRG_TPROG))) {
-						bug("Fix_tokenprogs: code vnum %d not found.", list->vnum);
+			for (slot = 0; slot < TRIGSLOT_MAX; slot++) if( token->progs[slot] ) {
+				iterator_start(&it, token->progs[slot]);
+				while(( trigger = (PROG_LIST *)iterator_nextdata(&it))) {
+					if (!(trigger->script = get_script_index(trigger->vnum, PRG_TPROG))) {
+						bug("Fix_tokenprogs: code vnum %d not found.", trigger->vnum);
 						bug("Fix_tokenprogs: on token %ld", token->vnum);
 						exit(1);
 					}
 				}
+				iterator_stop(&it);
 			}
 		}
 	}
@@ -1271,17 +1322,36 @@ void area_update(bool fBoot)
 
     for (hash = 0; hash < MAX_KEY_HASH; hash++)
     {
-	for (room = room_index_hash[hash]; room; room = room->next)
-	{
-	    if (room->area->empty)
-	    	continue;
+		for (room = room_index_hash[hash]; room; room = room->next)
+		{
+			TOKEN_DATA *token;
+			ITERATOR it;
+			if (!room->area->empty || IS_SET(room->room2_flags, ROOM_ALWAYS_UPDATE)) {
+				if (room->progs->delay > 0 && --room->progs->delay <= 0)
+					p_percent_trigger(NULL, NULL, room, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_DELAY, NULL);
 
-	    if (room->progs->delay > 0) {
-		if (--room->progs->delay <= 0)
-		    p_percent_trigger(NULL, NULL, room, NULL, NULL, NULL, NULL, TRIG_DELAY);
-	    } else
-		p_percent_trigger(NULL, NULL, room, NULL, NULL, NULL, NULL, TRIG_RANDOM);
-	}
+				p_percent_trigger(NULL, NULL, room, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RANDOM, NULL);
+
+				// Update tokens on room. Remove the one for which the timer has run out.
+				iterator_start(&it, room->ltokens);
+				while((token=(TOKEN_DATA*)iterator_nextdata(&it))) {
+					if (IS_SET(token->flags, TOKEN_REVERSETIMER)) {
+						++token->timer;
+					} else if (token->timer > 0) {
+						--token->timer;
+						if (token->timer <= 0) {
+							sprintf(buf, "area/room update: token %s(%ld) room %s(%ld) was extracted because of timer",
+								token->name, token->pIndexData->vnum, room->name, room->vnum);
+							log_string(buf);
+							p_percent_trigger(NULL, NULL, NULL, token, NULL, NULL, NULL, NULL, NULL, TRIG_EXPIRE, NULL);
+							token_from_room(token);
+							free_token(token);
+						}
+					}
+				}
+				iterator_stop(&it);
+			}
+		}
     }
 }
 
@@ -1447,7 +1517,7 @@ void reset_room(ROOM_INDEX_DATA *pRoom)
             level  = URANGE(0, pMob->level - 2, LEVEL_HERO - 1); /* -1 ROM */
             last = TRUE;
             objRepop = TRUE;
-	    p_percent_trigger(pMob, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_REPOP);
+	    p_percent_trigger(pMob, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_REPOP, NULL);
             break;
 
         case 'O':
@@ -1702,9 +1772,9 @@ CHAR_DATA *create_mobile(MOB_INDEX_DATA *pMobIndex)
 	    wealth = number_range(pMobIndex->wealth/2, 3 * pMobIndex->wealth/2);
 
 	/* make it easier on n00bs */
-	if (pMobIndex->area == find_area("Plith")
+/*	if (pMobIndex->area == find_area("Plith")
 	||   pMobIndex->area == find_area("Realm of Alendith"))
-	    wealth *= 2;
+	    wealth *= 2;*/
 
 	mob->gold = number_range(wealth/200,wealth/100);
 	mob->silver = wealth - (mob->gold * 100);
@@ -1763,6 +1833,12 @@ CHAR_DATA *create_mobile(MOB_INDEX_DATA *pMobIndex)
     mob->material		= str_dup(pMobIndex->material);
     mob->corpse_type	= pMobIndex->corpse_type;
     mob->corpse_vnum	= pMobIndex->corpse;
+
+    mob->affected_by_perm	= race->aff;
+    mob->affected_by2_perm	= race->aff2;
+    mob->imm_flags_perm		= pMobIndex->imm_flags;
+    mob->res_flags_perm		= pMobIndex->res_flags;
+    mob->vuln_flags_perm	= pMobIndex->vuln_flags;
 
 
     for (i = 0; i < MAX_STATS; i ++)
@@ -1843,6 +1919,7 @@ CHAR_DATA *create_mobile(MOB_INDEX_DATA *pMobIndex)
 	af.bitvector = AFF_DETECT_HIDDEN;
 	af.bitvector2 = 0;
 	affect_to_char(mob, &af);
+
     }
 
     if (IS_AFFECTED(mob,AFF_SANCTUARY))
@@ -2040,6 +2117,7 @@ CHAR_DATA *create_mobile(MOB_INDEX_DATA *pMobIndex)
 	af.bitvector = 0;
 	af.bitvector2 = AFF2_ELECTRICAL_BARRIER;
 	affect_to_char(mob,&af);
+	REMOVE_BIT(mob->affected_by2_perm, af.bitvector2);
     }
 
     if (IS_AFFECTED2(mob, AFF2_FIRE_BARRIER))
@@ -2116,17 +2194,25 @@ CHAR_DATA *create_mobile(MOB_INDEX_DATA *pMobIndex)
 	    gq_mob->count++;
     }
 
+    if(pMobIndex->persist)
+    	persist_addmobile(mob);
+
     return mob;
 }
 
 
-void clone_mobile(CHAR_DATA *parent, CHAR_DATA *clone)
+CHAR_DATA *clone_mobile(CHAR_DATA *parent)
 {
+	CHAR_DATA *clone;
     int i;
     AFFECT_DATA *paf;
 
-    if (parent == NULL || clone == NULL || !IS_NPC(parent))
-	return;
+    if (parent == NULL || !IS_NPC(parent))
+		return NULL;
+
+	clone = create_mobile(parent->pIndexData);
+	if(!clone)
+		return NULL;
 
     clone->name 	= str_dup(parent->name);
     clone->version	= parent->version;
@@ -2178,6 +2264,13 @@ void clone_mobile(CHAR_DATA *parent, CHAR_DATA *clone)
     clone->default_pos	= parent->default_pos;
     clone->spec_fun	= parent->spec_fun;
 
+    clone->affected_by_perm = parent->affected_by_perm;
+    clone->affected_by2_perm = parent->affected_by2_perm;
+	clone->imm_flags_perm = parent->imm_flags_perm;
+	clone->res_flags_perm = parent->res_flags_perm;
+	clone->vuln_flags_perm = parent->vuln_flags_perm;
+
+
     for (i = 0; i < 4; i++)
     	clone->armor[i]	= parent->armor[i];
 
@@ -2196,6 +2289,11 @@ void clone_mobile(CHAR_DATA *parent, CHAR_DATA *clone)
 
     variable_freelist(&clone->progs->vars);
     variable_copylist(&parent->progs->vars,&clone->progs->vars,FALSE);
+
+	if(parent->persist && !clone->persist)
+		persist_addmobile(clone);
+
+	return clone;
 }
 
 
@@ -2366,7 +2464,7 @@ OBJ_DATA *create_object_noid(OBJ_INDEX_DATA *pObjIndex, int level, bool affects)
     variable_copylist(&pObjIndex->index_vars,&obj->progs->vars,FALSE);
 
     obj->num_enchanted = 0;
-    obj->version = NEWEST_OBJ_VERSION;
+    obj->version = VERSION_OBJECT_000;
     obj->locker = FALSE;
 
     obj->next = object_list;
@@ -2395,6 +2493,11 @@ OBJ_DATA *create_object_noid(OBJ_INDEX_DATA *pObjIndex, int level, bool affects)
 	if (pObjIndex->vnum == gq_obj->vnum)
 	    gq_obj->count++;
     }
+
+    if(pObjIndex->persist) {
+		log_stringf("create_object_noid: Adding object %ld to persistance.", pObjIndex->vnum);
+    	persist_addobject(obj);
+	}
 
     return obj;
 }
@@ -2477,6 +2580,12 @@ void clone_object(OBJ_DATA *parent, OBJ_DATA *clone)
 
     variable_freelist(&clone->progs->vars);
     variable_copylist(&parent->progs->vars,&clone->progs->vars,FALSE);
+
+	if(parent->persist && !clone->persist) {
+		log_stringf("clone_object: Adding object %ld to persistance.", clone->pIndexData->vnum);
+
+		persist_addobject(clone);
+	}
 }
 
 
@@ -2571,6 +2680,18 @@ TOKEN_INDEX_DATA *get_token_index(long vnum)
     }
 
     return NULL;
+}
+
+bool is_singular_token(TOKEN_INDEX_DATA *index)
+{
+	if(!index) return FALSE;
+
+	// These can allow multiples
+	if(index->type == TOKEN_GENERAL || index->type == TOKEN_QUEST || index->type == TOKEN_AFFECT)
+		if(!IS_SET(index->flags, TOKEN_SINGULAR))
+			return FALSE;
+
+	return TRUE;
 }
 
 
@@ -4338,7 +4459,7 @@ char *fread_filename(char *filename)
 	return str;
 }
 
-ROOM_INDEX_DATA *create_virtual_room_nouid(ROOM_INDEX_DATA *source, bool links)
+ROOM_INDEX_DATA *create_virtual_room_nouid(ROOM_INDEX_DATA *source, bool objects, bool links)
 {
 	ROOM_INDEX_DATA *vroom;
 	EXTRA_DESCR_DATA *ed, *ed2;
@@ -4404,12 +4525,15 @@ ROOM_INDEX_DATA *create_virtual_room_nouid(ROOM_INDEX_DATA *source, bool links)
 	/* Copy index variables*/
 	variable_copylist(&source->index_vars,&vroom->progs->vars,false);
 
-	/* Clone non-takable objects, no contents though...*/
-	for(obj = source->contents; obj; obj = obj->next_content) if(!CAN_WEAR(obj,ITEM_TAKE)) {
-		obj2 = create_object(obj->pIndexData,0,FALSE);
-		clone_object(obj,obj2);
+	/* If enabled, copy all contents */
+	if(objects) {
+		/* Clone non-takable objects, no contents though...*/
+		for(obj = source->contents; obj; obj = obj->next_content) if(!CAN_WEAR(obj,ITEM_TAKE)) {
+			obj2 = create_object(obj->pIndexData,0,FALSE);
+			clone_object(obj,obj2);
 
-		obj_to_room(obj2,vroom);
+			obj_to_room(obj2,vroom);
+		}
 	}
 
 	/* Create the exit link assignments... this will ONLY ever be used by blueprints*/
@@ -4440,12 +4564,15 @@ ROOM_INDEX_DATA *create_virtual_room_nouid(ROOM_INDEX_DATA *source, bool links)
 
 	vroom->next = source->clones;
 	source->clones = vroom;
+
+	// Copy persistance
+	if(source->persist) persist_addroom(vroom);
 	return vroom;
 }
 
 ROOM_INDEX_DATA *create_virtual_room(ROOM_INDEX_DATA *source,bool links)
 {
-	ROOM_INDEX_DATA *vroom = create_virtual_room_nouid(source,links);
+	ROOM_INDEX_DATA *vroom = create_virtual_room_nouid(source, TRUE,links);
 
 	get_vroom_id(vroom);
 
@@ -4498,6 +4625,13 @@ bool extract_clone_room(ROOM_INDEX_DATA *room, unsigned long id1, unsigned long 
 	rlink = &room->clones;
 	for(clone = room->clones; clone; rlink = &clone->next, clone = clone->next) {
 		if(clone->id[0] == id1 && clone->id[1] == id2) {
+			if(clone->progs) {
+				if(clone->progs->script_ref > 0) {
+					clone->progs->extract_when_done = TRUE;
+					return false;
+				}
+			}
+
 			if(PROG_FLAG(clone,PROG_AT)) return false;
 			*rlink = clone->next;
 			break;
@@ -4522,7 +4656,7 @@ bool extract_clone_room(ROOM_INDEX_DATA *room, unsigned long id1, unsigned long 
 		sprintf(buf,"extract_clone_room(%lu, %lu, %lu) calling EXTRACT trigger", room->vnum, id1, id2);
 		wiznet(buf, NULL, NULL, WIZ_TESTING, 0, 0);
 		SET_BIT(clone->progs->entity_flags,PROG_NODESTRUCT);
-		p_percent_trigger(NULL, NULL, clone, NULL, NULL, NULL, NULL, TRIG_EXTRACT);
+		p_percent_trigger(NULL, NULL, clone, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_EXTRACT, NULL);
 	}
 
 	/* Destroy all exits*/
@@ -4792,3 +4926,2192 @@ void fwrite_persist_obj_new(OBJ_DATA *obj, FILE *fp, int iNest)
 
 }
 #endif
+
+void persist_addmobile(register CHAR_DATA *mob)
+{
+	// Players are NOT allowed
+	if( !IS_NPC(mob) ) return;
+
+	if( list_hasdata(persist_mobs, mob)) return;
+
+	if( !list_appendlink(persist_mobs, mob) ) {
+		bug("Failed to add mobile as persistant due to memory issues with 'list_appendlink'.",0);
+		if( fBootDb )
+			abort();
+	} else
+		mob->persist = TRUE;
+}
+
+void persist_addobject(register OBJ_DATA *obj)
+{
+	log_stringf("persist_addobject: Adding object %ld to persistance.", obj->pIndexData->vnum);
+
+	if( list_hasdata(persist_objs, obj)) {
+		log_stringf("persist_addobject: Object %ld already in persistance.", obj->pIndexData->vnum);
+		return;
+	}
+
+	if( !list_appendlink(persist_objs, obj) ) {
+		bug("Failed to add object as persistant due to memory issues with 'list_appendlink'.",0);
+		if( fBootDb )
+			abort();
+	} else {
+		obj->persist = TRUE;
+		log_stringf("persist_addobject: Object %ld flagged as persistant.", obj->pIndexData->vnum);
+	}
+}
+
+void persist_addroom(register ROOM_INDEX_DATA *room)
+{
+	// Chat rooms cannot be made persistant
+	if( room->chat_room || (room->area && room->area->area_who == AREA_CHAT) )
+		return;
+
+	// Clone rooms themselves cannot be made persistant, make the environment persistant
+	// However, wilderness rooms CAN (>.>)
+	if( room->source && !IS_SET(room->source->room2_flag, ROOM_CLONE_PERSIST))
+		return;
+
+	if( list_hasdata(persist_rooms, room)) return;
+
+	if( !list_appendlink(persist_rooms, room) ) {
+		bug("Failed to add room as persistant due to memory issues with 'list_appendlink'.",0);
+		if( fBootDb )
+			abort();
+	} else
+		room->persist = TRUE;
+}
+
+void persist_removemobile(register CHAR_DATA *mob)
+{
+	list_remlink(persist_mobs, mob);
+	mob->persist = FALSE;
+}
+
+void persist_removeobject(register OBJ_DATA *obj)
+{
+	list_remlink(persist_objs, obj);
+	obj->persist = FALSE;
+}
+
+void persist_removeroom(register ROOM_INDEX_DATA *room)
+{
+	list_remlink(persist_rooms, room);
+	room->persist = FALSE;
+}
+
+void persist_save_scriptdata(FILE *fp, PROG_DATA *prog)
+{
+	pVARIABLE var;
+
+	log_stringf("%s: Saving variables...", __FUNCTION__);
+	for( var = prog->vars; var; var = var->next) {
+		log_stringf("%s: Variable %s%s", __FUNCTION__, var->name, (var->save ? " - Saving...":""));
+		if(var->save)
+			variable_fwrite( var, fp );
+	}
+	log_stringf("%s: Saving variables... Done.", __FUNCTION__);
+}
+
+void persist_save_location(FILE *fp, LOCATION *loc, char *prefix)
+{
+	fprintf(fp, "%s %ld %ld %ld %ld\n", prefix, loc->wuid, loc->id[0], loc->id[1], loc->id[2]);
+}
+
+void persist_save_token(FILE *fp, TOKEN_DATA *token)
+{
+	int i;
+
+	/* recursion so that lists read in correct order instead of flipping */
+	if ( token->next )
+		persist_save_token (fp, token->next);
+
+	fprintf(fp, "#TOKEN %ld\n", token->pIndexData->vnum);
+
+	fprintf(fp, "UId %d\n", (int)token->id[0]);
+	fprintf(fp, "UId2 %d\n", (int)token->id[1]);
+	fprintf(fp, "Timer %d\n", token->timer);
+	for (i = 0; i < MAX_TOKEN_VALUES; i++)
+		fprintf(fp, "Value %d %ld\n", i, token->value[i]);
+
+	if( token->progs )
+		persist_save_scriptdata(fp,token->progs);
+
+	fprintf(fp, "#-TOKEN\n\n");
+
+}
+
+void persist_save_object(FILE *fp, OBJ_DATA *obj, bool multiple)
+{
+	EXTRA_DESCR_DATA *ed;
+	AFFECT_DATA *paf;
+	int i;
+
+	if (multiple && obj->next_content)
+		persist_save_object(fp, obj->next_content, multiple);
+
+	log_stringf("persist_save: saving object %08lX:%08lX.", obj->id[0], obj->id[1]);
+
+	// Save all object information, including persistance (in case it is saved elsewhere)
+	fprintf(fp, "#OBJECT %ld\n", obj->pIndexData->vnum);
+	fprintf(fp, "Version %d\n", VERSION_OBJECT);				// **
+	fprintf(fp, "UID %ld\n", obj->id[0]);					// **
+	fprintf(fp, "UID2 %ld\n", obj->id[1]);					// **
+	if(obj->persist) fprintf(fp, "Persist\n");				// **
+
+	/* these data are only used if they do not match the defaults */
+	fprintf(fp, "Name %s~\n", obj->name);					// **
+	fprintf(fp, "ShortDesc %s~\n", obj->short_descr);			// **
+	fprintf(fp, "LongDesc %s~\n", obj->description);			// **
+	fprintf(fp, "FullDesc %s~\n", fix_string(obj->full_description));	// **
+	fprintf(fp, "Extra %ld\n", obj->extra_flags);				// **
+	fprintf(fp, "Extra2 %ld\n", obj->extra2_flags);				// **
+	fprintf(fp, "Extra3 %ld\n", obj->extra3_flags);				// **
+	fprintf(fp, "Extra4 %ld\n", obj->extra4_flags);				// **
+	fprintf(fp, "WearFlags %d\n", obj->wear_flags);				// **
+	fprintf(fp, "ItemType %d\n", obj->item_type);				// **
+
+	fprintf(fp, "PermExtra %ld\n", obj->extra_flags_perm);				// **
+	fprintf(fp, "PermExtra2 %ld\n", obj->extra2_flags_perm);				// **
+	fprintf(fp, "PermExtra3 %ld\n", obj->extra3_flags_perm);				// **
+	fprintf(fp, "PermExtra4 %ld\n", obj->extra4_flags_perm);				// **
+
+	if( obj->item_type == ITEM_WEAPON )
+		fprintf(fp, "PermWeapon %ld\n", obj->weapon_flags_perm);
+
+	// Save location
+	if (obj->in_room) {	// **
+		ROOM_INDEX_DATA *deep = get_environment_deep(obj->in_room);	// Get the DEEPEST environment
+
+		if(obj->in_room->wilds)		fprintf(fp, "Vroom %ld %ld %ld\n", obj->in_room->wilds->uid, obj->in_room->x, obj->in_room->y);
+		else if(obj->in_room->source)	fprintf(fp, "CloneRoom %ld %ld %ld\n", obj->in_room->source->vnum, obj->in_room->id[0], obj->in_room->id[1]);
+		else				fprintf(fp, "Room %ld\n", obj->in_room->vnum);
+
+		// This is in case the prior room does NOT exist due to the chain of environments failing to exist upon next boot.
+		if( deep && deep != obj->in_room ) {
+			if(deep->wilds)		fprintf(fp, "DeepVroom %ld %ld %ld\n", deep->wilds->uid, deep->x, deep->y);
+			else if(deep->source)	fprintf(fp, "DeepCloneRoom %ld %ld %ld\n", deep->source->vnum, deep->id[0], deep->id[1]);
+			else			fprintf(fp, "DeepRoom %ld\n", deep->vnum);
+		}
+	}
+
+	fprintf(fp, "Enchanted %d\n", obj->num_enchanted);	// **
+	fprintf(fp, "Weight %d\n", obj->weight);		// **
+	fprintf(fp, "Cond %d\n", obj->condition);		// **
+	fprintf(fp, "Fixed %d\n", obj->times_fixed);		// **
+
+	if (obj->owner)			fprintf(fp, "Owner %s~\n", obj->owner);				// **
+	if (obj->old_short_descr)	fprintf(fp, "OldShort %s~\n", obj->old_short_descr);		// **
+	if (obj->old_description)	fprintf(fp, "OldDescr %s~\n", obj->old_description);		// **
+	if (obj->old_full_description)	fprintf(fp, "OldFullDescr %s~\n", obj->old_full_description);	// **
+	if (obj->loaded_by)		fprintf(fp, "LoadedBy %s~\n", obj->loaded_by);			// **
+
+	fprintf(fp, "Fragility %d\n", obj->fragility);				// **
+	fprintf(fp, "TimesAllowedFixed %d\n", obj->times_allowed_fixed);	// **
+	if (obj->locker) fprintf(fp, "Locker\n");				// **
+
+	fprintf(fp, "WearLoc %d\n", obj->wear_loc);				// **
+	fprintf(fp, "LastWearLoc %d\n", obj->last_wear_loc);			// **
+	fprintf(fp, "Level  %d\n", obj->level);					// **
+	fprintf(fp, "Timer %d\n", obj->timer);					// **
+	fprintf(fp, "Cost %ld\n", obj->cost);					// **
+
+	for(i = 0; i < 8; i++)
+		fprintf(fp, "Value %d %d\n", i, obj->value[i]);			// **
+
+
+	if (obj->spells)
+		save_spell(fp, obj->spells);		// SpellNew **
+
+	// This is for spells on the objects.
+	for (paf = obj->affected; paf != NULL; paf = paf->next) {
+		if (paf->type < 0 || paf->type >= MAX_SKILL || paf->custom_name)
+			continue;
+
+		if(paf->location >= APPLY_SKILL && paf->location < APPLY_SKILL_MAX) {
+			if(!skill_table[paf->location - APPLY_SKILL].name) continue;
+			fprintf(fp, "AffObjSk '%s' %3d %3d %3d %3d %3d %3d '%s' %10ld\n",
+				skill_table[paf->type].name,
+				paf->where,
+				paf->group,
+				paf->level,
+				paf->duration,
+				paf->modifier,
+				APPLY_SKILL,
+				skill_table[paf->location - APPLY_SKILL].name,
+				paf->bitvector);	// **
+		} else {
+			fprintf(fp, "AffObjSk '%s' %3d %3d %3d %3d %3d %3d %10ld\n",
+				skill_table[paf->type].name,
+				paf->where,
+				paf->group,
+				paf->level,
+				paf->duration,
+				paf->modifier,
+				paf->location,
+				paf->bitvector);	// **
+		}
+	}
+
+	for (paf = obj->affected; paf != NULL; paf = paf->next) {
+		if (!paf->custom_name) continue;
+
+		if(paf->location >= APPLY_SKILL && paf->location < APPLY_SKILL_MAX) {
+			if(!skill_table[paf->location - APPLY_SKILL].name) continue;
+			fprintf(fp, "AffObjNm '%s' %3d %3d %3d %3d %3d %3d '%s' %10ld\n",
+				paf->custom_name,
+				paf->where,
+				paf->group,
+				paf->level,
+				paf->duration,
+				paf->modifier,
+				APPLY_SKILL,
+				skill_table[paf->location - APPLY_SKILL].name,
+				paf->bitvector);	// **
+		} else {
+			fprintf(fp, "AffObjNm '%s' %3d %3d %3d %3d %3d %3d %10ld\n",
+				paf->custom_name,
+				paf->where,
+				paf->group,
+				paf->level,
+				paf->duration,
+				paf->modifier,
+				paf->location,
+				paf->bitvector);	// **
+		}
+	}
+
+	// for random affect eq
+	for (paf = obj->affected; paf != NULL; paf = paf->next) {
+		/* filter out "none" and "unknown" affects, as well as custom named affects */
+		if (paf->type != -1 || paf->custom_name != NULL
+			|| ((paf->location < APPLY_SKILL || paf->location >= APPLY_SKILL_MAX) && !str_cmp(flag_string(apply_flags, paf->location), "none")))
+			continue;
+
+		if(paf->location >= APPLY_SKILL && paf->location < APPLY_SKILL_MAX) {
+			if(!skill_table[paf->location - APPLY_SKILL].name) continue;
+				fprintf(fp, "AffMob %3d %3d %3d %3d %3d %3d '%s' %10ld\n",
+					paf->where,
+					paf->group,
+					paf->level,
+					paf->duration,
+					paf->modifier,
+					APPLY_SKILL,
+					skill_table[paf->location - APPLY_SKILL].name,
+					paf->bitvector);	// **
+			} else {
+				fprintf(fp, "AffMob %3d %3d %3d %3d %3d %3d %10ld\n",
+					paf->where,
+					paf->group,
+					paf->level,
+					paf->duration,
+					paf->modifier,
+					paf->location,
+					paf->bitvector);	// **
+		}
+	}
+
+	// for catalysts
+	for (paf = obj->catalyst; paf != NULL; paf = paf->next)
+	{
+		if( IS_NULLSTR(paf->custom_name) )
+		{
+			fprintf(fp, "%s '%s' %3d %3d %3d\n",
+				((paf->where == TO_CATALYST_ACTIVE) ? "CataA" : "Cata"),
+				flag_string( catalyst_types, paf->type ),
+				paf->level,
+				paf->modifier,
+				paf->duration);
+		}
+		else
+		{
+			fprintf(fp, "%s '%s' %3d %3d %3d\n",
+				((paf->where == TO_CATALYST_ACTIVE) ? "CataNA" : "CataN"),
+				flag_string( catalyst_types, paf->type ),
+				paf->level,
+				paf->modifier,
+				paf->duration,
+				paf->custom_name);
+		}
+	}
+
+	// Extra Descriptions
+	for (ed = obj->extra_descr; ed; ed = ed->next)
+		fprintf(fp, "ExDe %s~ %s~\n", ed->keyword, ed->description);	// **
+
+	// Original Mob Owner Information (for corpses so far)
+	if( !IS_NULLSTR(obj->owner_name) )
+		fprintf(fp, "OwnerName %s~\n", obj->owner_name);
+
+	if( !IS_NULLSTR(obj->owner_short) )
+		fprintf(fp, "OwnerShort %s~\n", obj->owner_short);
+
+
+	// Save Variables
+	if( obj->progs )
+		persist_save_scriptdata(fp,obj->progs);
+
+	// Save Tokens
+	if( obj->tokens )
+		persist_save_token(fp, obj->tokens);
+
+	// Save Clone Rooms
+	if( obj->clone_rooms )
+		persist_save_room(fp, obj->clone_rooms );
+
+	if( obj->contains )
+		persist_save_object(fp, obj->contains, true);
+
+	fprintf(fp, "#-OBJECT\n\n");
+}
+
+void persist_save_mobile(FILE *fp, CHAR_DATA *ch)
+{
+	AFFECT_DATA *paf;
+	int i = 0;
+
+	fprintf(fp, "#MOBILE %ld\n", ch->pIndexData->vnum);
+	fprintf(fp, "Version %d\n", VERSION_MOBILE);
+
+	// Save all mobile information, including persistance
+	// VERSION MUST ALWAYS BE THE FIRST FIELD!!!
+	fprintf(fp, "Name %s~\n", ch->name);
+	fprintf(fp, "UID   %ld\n", ch->id[0]);
+	fprintf(fp, "UID2  %ld\n", ch->id[1]);
+	if(ch->persist)
+		fprintf(fp, "Persist\n");
+
+	// Will eventually allow mobs to "die" like this instead of simply being extracted
+	if (ch->dead) {
+		fprintf(fp, "DeathTimeLeft %d\n", ch->time_left_death);
+		fprintf(fp, "Dead\n");
+		if(ch->recall.wuid)
+			fprintf(fp, "RepopRoomW %lu %lu %lu %lu\n", 	ch->recall.wuid, ch->recall.id[0], ch->recall.id[1], ch->recall.id[2]);
+		else if(ch->recall.id[1] || ch->recall.id[2])
+			fprintf(fp, "RepopRoomC %lu %lu %lu\n", 	ch->recall.id[0], ch->recall.id[1], ch->recall.id[2]);
+		else
+			fprintf(fp, "RepopRoom %ld\n", 	ch->recall.id[0]);
+	}
+
+	fprintf(fp, "Owner %s~\n", ch->owner);
+	fprintf(fp, "ShD  %s~\n", ch->short_descr);
+	fprintf(fp, "LnD  %s~\n", ch->long_descr);
+	fprintf(fp, "Desc %s~\n", fix_string(ch->description));
+	fprintf(fp, "Race %s~\n", race_table[ch->race].name);
+	fprintf(fp, "Sex  %d\n", ch->sex);
+	fprintf(fp, "Levl %d\n", ch->level);
+	fprintf(fp, "TLevl %d\n", ch->tot_level);
+
+
+	// Save location
+	if (ch->in_room) {	// **
+		ROOM_INDEX_DATA *deep = get_environment_deep(ch->in_room);	// Get the DEEPEST environment
+
+		if(ch->in_room->wilds)		fprintf(fp, "Vroom %ld %ld %ld\n", ch->in_room->wilds->uid, ch->in_room->x, ch->in_room->y);
+		else if(ch->in_room->source)	fprintf(fp, "CloneRoom %ld %ld %ld\n", ch->in_room->source->vnum, ch->in_room->id[0], ch->in_room->id[1]);
+		else				fprintf(fp, "Room %ld\n", ch->in_room->vnum);
+
+		// This is in case the prior room does NOT exist due to the chain of environments failing to exist upon next boot.
+		if( deep && deep != ch->in_room ) {
+			if(deep->wilds)		fprintf(fp, "DeepVroom %ld %ld %ld\n", deep->wilds->uid, deep->x, deep->y);
+			else if(deep->source)	fprintf(fp, "DeepCloneRoom %ld %ld %ld\n", deep->source->vnum, deep->id[0], deep->id[1]);
+			else			fprintf(fp, "DeepRoom %ld\n", deep->vnum);
+		}
+	} else
+		fprintf(fp, "Room %d\n", ROOM_VNUM_DEFAULT);
+
+	if (IS_SITH(ch)) {
+		for (i = 0; i < MAX_TOXIN; i++)
+			fprintf(fp, "Toxn%s %d\n", toxin_table[i].name, ch->toxin[i]);
+	}
+
+	fprintf(fp, "HMV  %ld %ld %ld %ld %ld %ld\n",
+		ch->hit, ch->max_hit, ch->mana, ch->max_mana, ch->move, ch->max_move);
+	fprintf(fp, "ManaStore  %d\n", ch->manastore);
+
+	fprintf(fp, "Gold %ld\n", UMAX(0,ch->gold));
+	fprintf(fp, "Silv %ld\n", UMAX(0,ch->silver));
+
+	fprintf(fp, "Pneuma %ld\n", ch->pneuma);
+	fprintf(fp, "Home %ld\n", ch->home);
+	fprintf(fp, "QuestPnts %d\n", ch->questpoints);
+	fprintf(fp, "DeityPnts %ld\n", ch->deitypoints);
+
+	fprintf(fp, "Exp  %ld\n", ch->exp);
+	fprintf(fp, "Act  %s\n", print_flags(ch->act));
+	fprintf(fp, "Act2 %s\n", print_flags(ch->act2));
+	fprintf(fp, "AfBy %s\n", print_flags(ch->affected_by));
+	fprintf(fp, "AfBy2 %s\n", print_flags(ch->affected_by2));
+	fprintf(fp, "OffFlags %s\n", print_flags(ch->off_flags));
+	fprintf(fp, "Immune %s\n", print_flags(ch->imm_flags));
+	fprintf(fp, "ImmunePerm %s\n", print_flags(ch->imm_flags_perm));
+	fprintf(fp, "Resist %s\n", print_flags(ch->res_flags));
+	fprintf(fp, "ResistPerm %s\n", print_flags(ch->res_flags_perm));
+	fprintf(fp, "Vuln %s\n", print_flags(ch->vuln_flags));
+	fprintf(fp, "VulnPerm %s\n", print_flags(ch->vuln_flags_perm));
+	fprintf(fp, "StartPos %d\n", ch->start_pos);
+	fprintf(fp, "DefaultPos %d\n", ch->default_pos);
+
+	fprintf(fp, "Parts %ld\n", ch->parts);
+	fprintf(fp, "Size %d\n", ch->size);
+	fprintf(fp, "Material %s~\n", (!ch->material[0] ? "Unknown" : ch->material));
+	if (ch->corpse_type)
+		fprintf(fp, "CorpseType %ld\n", (long int)ch->corpse_type);
+	if (ch->corpse_vnum)
+		fprintf(fp, "CorpseVnum %ld\n", ch->corpse_vnum);
+
+
+
+	fprintf(fp, "Comm %s\n", print_flags(ch->comm));
+	fprintf(fp, "Pos  %d\n", ch->position == POS_FIGHTING ? POS_STANDING : ch->position);
+	fprintf(fp, "Prac %d\n", UMAX(0,ch->practice));
+	fprintf(fp, "Trai %d\n", UMAX(0,ch->train));
+	fprintf(fp, "Save  %d\n", ch->saving_throw);
+	fprintf(fp, "Alig  %d\n", ch->alignment);
+	fprintf(fp, "Hit   %d\n", ch->hitroll);
+	fprintf(fp, "Dam   %d\n", ch->damroll);
+	fprintf(fp, "ACs %d %d %d %d\n", ch->armor[0],ch->armor[1],ch->armor[2],ch->armor[3]);
+	fprintf(fp, "Wimp  %d\n", UMAX(0,ch->wimpy));
+	fprintf(fp, "Attr %d %d %d %d %d\n",
+		ch->perm_stat[STAT_STR],
+		ch->perm_stat[STAT_INT],
+		ch->perm_stat[STAT_WIS],
+		ch->perm_stat[STAT_DEX],
+		ch->perm_stat[STAT_CON]);
+
+	fprintf (fp, "AMod %d %d %d %d %d\n",
+		ch->mod_stat[STAT_STR],
+		ch->mod_stat[STAT_INT],
+		ch->mod_stat[STAT_WIS],
+		ch->mod_stat[STAT_DEX],
+		ch->mod_stat[STAT_CON]);
+
+	fprintf(fp, "LostParts  %s\n", print_flags(ch->lostparts));
+
+	for (paf = ch->affected; paf != NULL; paf = paf->next) {
+		if (!paf->custom_name && (paf->type < 0 || paf->type>= MAX_SKILL))
+			continue;
+
+		fprintf(fp, "%s '%s' '%s' %3d %3d %3d %3d %3d %10ld %10ld\n",
+			(paf->custom_name?"Affcgn":"Affcg"),
+			(paf->custom_name?paf->custom_name:skill_table[paf->type].name),
+			flag_string(affgroup_mobile_flags,paf->group),
+			paf->where,
+			paf->level,
+			paf->duration,
+			paf->modifier,
+			paf->location,
+			paf->bitvector,
+			paf->bitvector2);
+	}
+
+	// Save Variables
+	if( ch->progs )
+		persist_save_scriptdata(fp,ch->progs);
+
+	// Save Tokens
+	if( ch->tokens )
+		persist_save_token(fp, ch->tokens);
+
+	// Save Clone Rooms
+	if( ch->clone_rooms )
+		persist_save_room(fp, ch->clone_rooms );
+
+	// Contents
+	if (ch->carrying)
+		persist_save_object(fp, ch->carrying, true);
+
+	fprintf(fp, "#-MOBILE\n\n");
+}
+
+void persist_save_exit(FILE *fp, EXIT_DATA *ex)
+{
+	LOCATION loc;
+
+	fprintf(fp, "#EXIT %s\n", dir_name[ex->orig_door]);
+
+	// Skip wilderness exits
+	if( IS_SET(ex->exit_info, EX_VLINK) )
+		return;
+
+	if( ex->u1.to_room ) {
+		location_from_room(&loc, ex->u1.to_room);
+		if( location_isset( &loc ) )
+			persist_save_location(fp, &loc, "DestRoom");
+	} else if(ex->wilds.wilds_uid > 0) {
+		fprintf(fp, "DestRoom %ld %d %d 0\n", ex->wilds.wilds_uid, ex->wilds.x, ex->wilds.y);
+	}
+
+	fprintf(fp, "Keyword %s~\n", ex->keyword);
+	fprintf(fp, "ShortDesc %s~\n", ex->short_desc);
+	fprintf(fp, "LongDesc %s~\n", ex->long_desc);
+
+	fprintf(fp, "Flags %s~\n", flag_string(exit_flags, ex->exit_info));
+	fprintf(fp, "ResetFlags %s~\n", flag_string(exit_flags, ex->rs_flags));
+
+	fprintf(fp, "Door %ld %d\n", ex->door.key_vnum, ex->door.strength);
+	if(!IS_NULLSTR(ex->door.material))
+		fprintf(fp, "DoorMat %s~\n", ex->door.material);
+
+	fprintf(fp, "#-EXIT\n\n");
+}
+
+void persist_save_room(FILE *fp, ROOM_INDEX_DATA *room)
+{
+	CHAR_DATA *ch;
+	int i;
+
+	if( room->source ) {
+		if( room->next_clone )
+			persist_save_room(fp, room->next_clone);
+
+		fprintf(fp, "#CROOM %ld %ld %ld\n", room->source->vnum, room->id[0], room->id[1]);		// **
+		fprintf(fp, "XYZ %ld %ld %ld\n", room->x, room->y, room->z);					// **
+	} else if( room->wilds )
+		fprintf(fp, "#VROOM %ld %ld %ld %ld\n", room->wilds->uid, room->x, room->y, room->z);		// **
+	else {
+		fprintf(fp, "#ROOM %ld\n", room->vnum);								// **
+		fprintf(fp, "XYZ %ld %ld %ld\n", room->x, room->y, room->z);					// **
+	}
+
+	if(room->viewwilds)
+		fprintf(fp, "ViewWilds %ld\n", room->viewwilds->uid);						// **
+
+	fprintf(fp, "Name %s~\n", room->name);									// **
+	fprintf(fp, "Desc %s~\n", fix_string(room->description));						// **
+	if( !IS_NULLSTR(room->owner) )
+		fprintf(fp, "Owner %s~\n", room->owner);					// **
+
+	fprintf(fp, "Locale %ld\n", room->locale);
+	fprintf(fp, "RoomFlags %s~\n", flag_string(room_flags, room->room_flags));
+	fprintf(fp, "RoomFlags2 %s~\n", flag_string(room2_flags, room->room2_flags));
+	fprintf(fp, "Sector %s~\n", flag_string(sector_flags, room->sector_type));
+
+	if (room->heal_rate != 100) fprintf(fp, "HealRate %d\n", room->heal_rate);
+	if (room->mana_rate != 100) fprintf(fp, "ManaRate %d\n", room->mana_rate);
+	if (room->move_rate != 100) fprintf(fp, "MoveRate %d\n", room->move_rate);
+
+	if (location_isset(&room->recall))
+		persist_save_location( fp, &room->recall, "RoomRecall" );
+
+	// Resets?
+
+	// Extra Descriptions?
+
+	// Conditional Descriptions?
+
+	// Save Exits
+	for( i=0; i < 10; i++)
+		if(room->exit[i])
+			persist_save_exit(fp,room->exit[i]);
+
+	// Save Variables
+	if( room->progs )
+		persist_save_scriptdata(fp,room->progs);
+
+	// Save Tokens
+	if( room->tokens )
+		persist_save_token(fp, room->tokens);
+
+	// Save Clone Rooms
+	if( room->clone_rooms )
+		persist_save_room(fp, room->clone_rooms );
+
+	// Save Objects
+	if( room->contents )
+		persist_save_object(fp, room->contents, true);
+
+	// Save NPCs
+	for( ch = room->people; ch; ch = ch->next_in_room )
+		if( IS_NPC(ch) )
+			persist_save_mobile(fp, ch);
+
+	fprintf(fp, "#-ROOM\n\n");
+}
+
+bool check_persist_environment( CHAR_DATA *ch, OBJ_DATA *obj, ROOM_INDEX_DATA *room )
+{
+	if( ch ) {
+		if( !IS_NPC(ch) ) return TRUE;	// It's a player
+
+		if( ch->in_room && ch->in_room->persist) return TRUE;
+
+		return check_persist_environment( NULL, NULL, ch->in_room );
+
+	} else if (obj) {
+		if( obj->locker )
+			return TRUE;	// They are in some player's locker, thus on a player, which is a persistant environment
+		else if( obj->in_room ) {
+			if( obj->in_room->persist) return TRUE;
+
+			return check_persist_environment( NULL, NULL, obj->in_room );
+		} else if( obj->carried_by ) {
+			if( !IS_NPC(obj->carried_by ) ) return TRUE;	// Players are a special kind of persistance
+			if( obj->carried_by->persist) return TRUE;
+
+			return check_persist_environment( obj->carried_by, NULL, NULL );
+		} else if( obj->in_obj ) {
+			if( obj->in_obj->persist) return TRUE;
+
+			return check_persist_environment( NULL, obj->in_obj, NULL );
+		}
+	} else if (room) {
+		if(room->environ_type == ENVIRON_ROOM) {
+			if( room->environ.room && room->environ.room->persist ) return TRUE;
+
+			return check_persist_environment( NULL, NULL, room->environ.room );
+		} else if(room->environ_type == ENVIRON_MOBILE) {
+			if( room->environ.mob && (!IS_NPC(room->environ.mob) || room->environ.mob->persist) ) return TRUE;
+
+			return check_persist_environment( room->environ.mob, NULL, NULL );
+		} else if(room->environ_type == ENVIRON_OBJECT) {
+			if( room->environ.obj && room->environ.obj->persist ) return TRUE;
+
+			return check_persist_environment( NULL, room->environ.obj, NULL );
+		}
+
+	}
+
+	return FALSE;
+}
+
+// Rules for when a persistant entity is saved:
+// * Persistant Entities are only saved if they are in a NON-PERSISTANT environment.
+// * Persistant Objects save everything.
+// * Persistant Mobiles save everything.
+// * Persistant Rooms only save scripting information as well as conditional elements, as well as contents (objects and mobiles)
+void persist_save(void)
+{
+	FILE *fp;
+	register CHAR_DATA *ch;
+	register OBJ_DATA *obj;
+	register ROOM_INDEX_DATA *room;
+	ITERATOR it;
+
+	log_stringf("persist_save: Saving persistance...");
+
+	if (!(fp = fopen(PERSIST_FILE, "w"))) {
+		bug("persist.save: Couldn't open file.",0);
+	} else {
+		// Save objects
+		iterator_start(&it, persist_objs);
+		while(( obj = (OBJ_DATA *)iterator_nextdata(&it) )) {
+			log_stringf("persist_save: checking to save persistant object %08lX:%08lX.", obj->id[0], obj->id[1]);
+			if( !check_persist_environment( NULL, obj, NULL) ) {
+				persist_save_object(fp, obj, false);
+			}
+		}
+		iterator_stop(&it);
+
+		// Save mobiles
+		iterator_start(&it, persist_mobs);
+		while(( ch = (CHAR_DATA *)iterator_nextdata(&it) )) {
+			if( !check_persist_environment( ch, NULL, NULL) )
+				persist_save_mobile(fp, ch);
+		}
+		iterator_stop(&it);
+
+		// Save rooms
+		iterator_start(&it, persist_rooms);
+		while(( room = (ROOM_INDEX_DATA *)iterator_nextdata(&it) )) {
+			if( !check_persist_environment( NULL, NULL, room) )
+				persist_save_room(fp, room);
+		}
+		iterator_stop(&it);
+
+
+		fprintf(fp, "#END\n");
+		fclose(fp);
+	}
+
+	log_stringf("persist_save: done.");
+}
+
+
+TOKEN_DATA *persist_load_token(FILE *fp)
+{
+	TOKEN_DATA *token;
+	TOKEN_INDEX_DATA *token_index;
+	int vtype;
+	long vnum;
+	char buf[MSL];
+	char *word;
+	bool fMatch;
+
+	log_string("persist_load: #TOKEN");
+
+	vnum = fread_number(fp);
+	if ((token_index = get_token_index(vnum)) == NULL) {
+		sprintf(buf, "persist_load_token: no token index found for vnum %ld", vnum);
+		bug(buf, 0);
+		return NULL;
+	}
+
+	token = new_token();
+	token->pIndexData = token_index;
+	token->name = str_dup(token_index->name);
+	token->description = str_dup(token_index->description);
+	token->type = token_index->type;
+	token->flags = token_index->flags;
+	token->progs = new_prog_data();
+	token->progs->progs = token_index->progs;
+	token_index->loaded++;
+	token->id[0] = token->id[1] = 0;
+	token->global_next = global_tokens;
+	global_tokens = token;
+
+	variable_copylist(&token_index->index_vars,&token->progs->vars,FALSE);
+
+	for (; ;) {
+		word   = feof(fp) ? "#-TOKEN" : fread_word(fp);
+		fMatch = FALSE;
+
+		if (!str_cmp(word, "#-TOKEN"))
+			break;
+
+		log_stringf("%s: %s", __FUNCTION__, word);
+
+		switch (UPPER(word[0])) {
+			case 'T':
+				KEY("Timer",	token->timer,		fread_number(fp));
+				break;
+
+			case 'U':
+				KEY("UId",	token->id[0],		fread_number(fp));
+				KEY("UId2",	token->id[1],		fread_number(fp));
+				break;
+
+			case 'V':
+				if (!str_cmp(word, "Value")) {
+					int i = fread_number(fp);
+					token->value[i] = fread_number(fp);
+					fMatch = TRUE;
+				}
+
+				if( (vtype = variable_fread_type(word)) != VAR_UNKNOWN ) {
+					variable_fread(&token->progs->vars, vtype, fp);
+					fMatch = TRUE;
+				}
+
+				break;
+		}
+
+		if (!fMatch) {
+			sprintf(buf, "persist_load_token: no match for word %s", word);
+			bug(buf, 0);
+			fread_to_eol(fp);
+		}
+	}
+
+	// Do loading cleanup
+
+	get_token_id(token);
+
+	log_string("persist_load: #-TOKEN");
+
+	return token;
+}
+
+OBJ_DATA *persist_load_object(FILE *fp)
+{
+	char buf[MIL];
+	ROOM_INDEX_DATA *here = NULL, *deep_here = NULL;
+	OBJ_INDEX_DATA *obj_index;
+	OBJ_DATA *obj;
+	char *word;
+	long vnum;
+	int vtype;
+	bool good = TRUE, fMatch;
+
+	log_string("persist_load: #OBJECT");
+
+	vnum = fread_number(fp);
+	obj_index = get_obj_index(vnum);
+	if( !obj_index )
+		return NULL;
+
+	obj = create_object_noid(obj_index, -1, FALSE);
+	if( !obj )
+		return NULL;
+	obj->version = VERSION_OBJECT_000;
+	obj->id[0] = obj->id[1] = 0;
+
+	for (;good;) {
+		word = feof(fp) ? "#-OBJECT" : fread_word(fp);
+		fMatch = FALSE;
+
+		if (!str_cmp(word, "#-OBJECT"))
+			break;
+
+		log_stringf("%s: %s", __FUNCTION__, word);
+
+		switch (UPPER(word[0])) {
+			case '*':
+				fMatch = TRUE;
+				fread_to_eol(fp);
+				break;
+
+			// Load up subentities
+			case '#':
+				if (!str_cmp(word,"#CROOM")) {
+					ROOM_INDEX_DATA *croom = persist_load_room(fp, 'C');
+
+					fMatch = TRUE;
+					if( croom )
+						room_to_environment( croom, NULL, obj, NULL );
+					else
+						good = FALSE;
+
+					break;
+				}
+				if (!str_cmp(word,"#OBJECT")) {
+					OBJ_DATA *item = persist_load_object(fp);
+
+					fMatch = TRUE;
+					if( item )
+						obj_to_obj(item, obj);
+					else
+						good = FALSE;
+
+					break;
+				}
+				if (!str_cmp(word,"#TOKEN")) {
+					TOKEN_DATA *token = persist_load_token(fp);
+
+					fMatch = TRUE;
+					if( token )
+						token_to_obj(token, obj);
+					else
+						good = FALSE;
+
+					break;
+				}
+				break;
+
+			case 'A':
+				// Mobile Affect
+				if (!str_cmp(word,"AffMob")) {
+					AFFECT_DATA *paf;
+
+					paf = new_affect();
+
+					paf->type = -1;
+
+					paf->where = fread_number(fp);
+					paf->group = fread_number(fp);
+					paf->level = fread_number(fp);
+					paf->duration = fread_number(fp);
+					paf->modifier = fread_number(fp);
+					paf->location = fread_number(fp);
+					if(paf->location == APPLY_SKILL) {
+						int sn = skill_lookup(fread_word(fp));
+						if(sn < 0) {
+							paf->location = APPLY_NONE;
+							paf->modifier = 0;
+						} else
+							paf->location += sn;
+					}
+					paf->bitvector = fread_number(fp);
+					paf->next = obj->affected;
+					obj->affected = paf;
+					fMatch = TRUE;
+					break;
+				}
+
+				// Object Affect (Skill Number)
+				if (!str_cmp(word,"AffObjSk")) {
+					AFFECT_DATA *paf;
+					int sn;
+
+					paf = new_affect();
+
+					sn = skill_lookup(fread_word(fp));
+					if (sn < 0)
+						bug("persist_load_object: unknown skill.",0);
+					else
+						paf->type = sn;
+
+					paf->where = fread_number(fp);
+					paf->group = fread_number(fp);
+					paf->level = fread_number(fp);
+					paf->duration = fread_number(fp);
+					paf->modifier = fread_number(fp);
+					paf->location = fread_number(fp);
+					if(paf->location == APPLY_SKILL) {
+						int sn = skill_lookup(fread_word(fp));
+						if(sn < 0) {
+							paf->location = APPLY_NONE;
+							paf->modifier = 0;
+						} else
+							paf->location += sn;
+					}
+					paf->bitvector = fread_number(fp);
+					paf->next = obj->affected;
+					obj->affected = paf;
+					fMatch = TRUE;
+					break;
+				}
+
+				// Object Affect (Custom Name)
+				if (!str_cmp(word, "AffObjNm")) {
+					AFFECT_DATA *paf;
+					char *name;
+
+					paf = new_affect();
+
+					name = create_affect_cname(fread_word(fp));
+					if (!name) {
+						log_string("persist_load_object: could not create affect name.");
+						free_affect(paf);
+					} else {
+						paf->custom_name = name;
+
+						paf->type = -1;
+						paf->where = fread_number(fp);
+						paf->group = fread_number(fp);
+						paf->level = fread_number(fp);
+						paf->duration = fread_number(fp);
+						paf->modifier = fread_number(fp);
+						paf->location = fread_number(fp);
+						if(paf->location == APPLY_SKILL) {
+							int sn = skill_lookup(fread_word(fp));
+							if(sn < 0) {
+								paf->location = APPLY_NONE;
+								paf->modifier = 0;
+							} else
+								paf->location += sn;
+						}
+						paf->bitvector = fread_number(fp);
+						paf->next = obj->affected;
+						obj->affected = paf;
+					}
+					fMatch = TRUE;
+					break;
+				}
+
+				break;
+			case 'B':
+				break;
+			case 'C':
+				if (!str_cmp(word, "Cata")) {
+					AFFECT_DATA *paf;
+
+					paf = new_affect();
+
+					paf->type = flag_value(catalyst_types,fread_word(fp));
+					if(paf->type == NO_FLAG) {
+						log_string("persist_load_object: invalid catalyst type.");
+						free_affect(paf);
+					} else {
+						paf->where = TO_CATALYST_DORMANT;
+						paf->level = fread_number(fp);
+						paf->modifier = fread_number(fp);
+						paf->duration = fread_number(fp);
+						paf->custom_name = NULL;
+						paf->next = obj->catalyst;
+						obj->catalyst = paf;
+					}
+					fMatch = TRUE;
+					break;
+				}
+				if (!str_cmp(word, "CataA")) {
+					AFFECT_DATA *paf;
+
+					paf = new_affect();
+
+					paf->type = flag_value(catalyst_types,fread_word(fp));
+					if(paf->type == NO_FLAG) {
+						log_string("persist_load_object: invalid catalyst type.");
+						free_affect(paf);
+					} else {
+						paf->where = TO_CATALYST_ACTIVE;
+						paf->level = fread_number(fp);
+						paf->modifier = fread_number(fp);
+						paf->duration = fread_number(fp);
+						paf->custom_name = NULL;
+						paf->next = obj->catalyst;
+						obj->catalyst = paf;
+					}
+					fMatch = TRUE;
+					break;
+				}
+				if (!str_cmp(word, "CataN")) {
+					AFFECT_DATA *paf;
+
+					paf = new_affect();
+
+					paf->type = flag_value(catalyst_types,fread_word(fp));
+					if(paf->type == NO_FLAG) {
+						log_string("persist_load_object: invalid catalyst type.");
+						free_affect(paf);
+					} else {
+						paf->where = TO_CATALYST_DORMANT;
+						paf->level = fread_number(fp);
+						paf->modifier = fread_number(fp);
+						paf->duration = fread_number(fp);
+						paf->custom_name = fread_string_eol(fp);
+						paf->next = obj->catalyst;
+						obj->catalyst = paf;
+					}
+					fMatch = TRUE;
+					break;
+				}
+				if (!str_cmp(word, "CataNA")) {
+					AFFECT_DATA *paf;
+
+					paf = new_affect();
+
+					paf->type = flag_value(catalyst_types,fread_word(fp));
+					if(paf->type == NO_FLAG) {
+						log_string("persist_load_object: invalid catalyst type.");
+						free_affect(paf);
+					} else {
+						paf->where = TO_CATALYST_ACTIVE;
+						paf->level = fread_number(fp);
+						paf->modifier = fread_number(fp);
+						paf->duration = fread_number(fp);
+						paf->custom_name = fread_string_eol(fp);
+						paf->next = obj->catalyst;
+						obj->catalyst = paf;
+					}
+					fMatch = TRUE;
+					break;
+				}
+
+				if( !str_cmp(word, "CloneRoom") ) {
+					ROOM_INDEX_DATA *src;
+					int v = fread_number(fp);
+					int a = fread_number(fp);
+					int b = fread_number(fp);
+
+					if( (src = get_room_index(v)) )
+						here = get_clone_room(src, a, b);
+
+					fMatch = TRUE;
+				}
+				KEY("Cond",	obj->condition,		fread_number(fp));
+				KEY("Cost",	obj->cost,		fread_number(fp));
+				break;
+			case 'D':
+				if( !str_cmp(word, "DeepCloneRoom") ) {
+					ROOM_INDEX_DATA *src;
+					int v = fread_number(fp);
+					int a = fread_number(fp);
+					int b = fread_number(fp);
+
+					if( (src = get_room_index(v)) )
+						deep_here = get_clone_room(src, a, b);
+
+					fMatch = TRUE;
+				}
+				if( !str_cmp(word, "DeepRoom") ) {
+					long rvnum = fread_number(fp);
+					deep_here = get_room_index(rvnum);
+					fMatch = TRUE;
+				}
+				if( !str_cmp(word, "DeepVroom") ) {
+					ROOM_INDEX_DATA *r;
+					WILDS_DATA *wilds;
+					int w = fread_number(fp);
+					int x = fread_number(fp);
+					int y = fread_number(fp);
+
+					if( (wilds = get_wilds_from_uid(NULL, w)) ) {
+						if( !(r = get_wilds_vroom(wilds, x, y)) )
+							r = create_wilds_vroom(wilds, x, y);
+
+						deep_here = r;
+					}
+
+					fMatch = TRUE;
+				}
+				break;
+			case 'E':
+				KEY("Enchanted",	obj->num_enchanted,	fread_number(fp));
+				KEY("Extra",		obj->extra_flags,	fread_number(fp));
+				KEY("Extra2",		obj->extra2_flags,	fread_number(fp));
+				KEY("Extra3",		obj->extra3_flags,	fread_number(fp));
+				KEY("Extra4",		obj->extra4_flags,	fread_number(fp));
+				if ( !str_cmp(word,"ExDe") ) {
+					EXTRA_DESCR_DATA *ed;
+
+					ed = new_extra_descr();
+					ed->keyword = fread_string(fp);
+					ed->description	= fread_string(fp);
+					ed->next = obj->extra_descr;
+					obj->extra_descr = ed;
+					fMatch = TRUE;
+				}
+				break;
+			case 'F':
+				KEY("Fixed",		obj->times_fixed,	fread_number(fp));
+				KEY("Fragility",	obj->fragility,		fread_number(fp));
+				KEY("FullDesc",		obj->full_description,	fread_string(fp));
+				break;
+			case 'G':
+				break;
+			case 'H':
+				break;
+			case 'I':
+				KEY("ItemType",		obj->item_type,		fread_number(fp));
+				break;
+			case 'J':
+				break;
+			case 'K':
+				break;
+			case 'L':
+				KEY("LastWearLoc",	obj->last_wear_loc,	fread_number(fp));
+				KEY("Level",		obj->level,		fread_number(fp));
+				KEY("LoadedBy",		obj->loaded_by,		fread_string(fp));
+				FKEY("Locker",		obj->locker);
+				KEY("LongDesc",		obj->description,	fread_string(fp));
+				break;
+			case 'M':
+				break;
+			case 'N':
+				KEY("Name",		obj->name,			fread_string(fp));
+				break;
+			case 'O':
+				KEY("OldDescr",		obj->old_description,		fread_string(fp));
+				KEY("OldFullDescr",	obj->old_full_description,	fread_string(fp));
+				KEY("OldShort",		obj->old_short_descr,		fread_string(fp));
+				KEY("Owner",		obj->owner,					fread_string(fp));
+				KEY("OwnerName",	obj->owner_name,			fread_string(fp));
+				KEY("OwnerShort",	obj->owner_short,			fread_string(fp));
+				break;
+			case 'P':
+				KEY("PermExtra",		obj->extra_flags_perm,	fread_number(fp));
+				KEY("PermExtra2",		obj->extra2_flags_perm,	fread_number(fp));
+				KEY("PermExtra3",		obj->extra3_flags_perm,	fread_number(fp));
+				KEY("PermExtra4",		obj->extra4_flags_perm,	fread_number(fp));
+				KEY("PermWeapon",		obj->weapon_flags_perm,	fread_number(fp));
+				FKEY("Persist",		obj->persist);
+				break;
+			case 'Q':
+				break;
+			case 'R':
+				if( !str_cmp(word, "Room") ) {
+					long rvnum = fread_number(fp);
+					here = get_room_index(rvnum);
+					fMatch = TRUE;
+				}
+				break;
+			case 'S':
+				KEY("ShortDesc",	obj->short_descr,	fread_string(fp));
+				if (!str_cmp(word, "SpellNew")) {
+					int sn;
+					SPELL_DATA *spell;
+
+					fMatch = TRUE;
+					if ( (sn = skill_lookup(fread_string(fp))) > 0 ) {
+						spell = new_spell();
+						spell->sn = sn;
+						spell->level = fread_number(fp);
+						spell->repop = fread_number(fp);
+
+						spell->next = obj->spells;
+						obj->spells = spell;
+					} else {
+						sprintf(buf, "Bad spell name for %s (%ld).", obj->short_descr, obj->pIndexData->vnum);
+						bug(buf,0);
+					}
+				}
+
+				break;
+			case 'T':
+				KEY("Timer",		obj->timer,			fread_number(fp));
+				KEY("TimesAllowedFixed",obj->times_allowed_fixed,	fread_number(fp));
+				break;
+			case 'U':
+				KEY("UID",		obj->id[0],		fread_number(fp));
+				KEY("UID2",		obj->id[1],		fread_number(fp));
+				break;
+			case 'V':
+				if( !str_cmp(word, "Value") ) {
+					int idx = fread_number(fp);
+					int val = fread_number(fp);
+
+					if( idx >= 0 && idx < 8 )
+						obj->value[idx] = val;
+
+					fMatch = TRUE;
+				}
+				KEY("Version",		obj->version,		fread_number(fp));
+				if( !str_cmp(word, "Vroom") ) {
+					ROOM_INDEX_DATA *r;
+					WILDS_DATA *wilds;
+					int w = fread_number(fp);
+					int x = fread_number(fp);
+					int y = fread_number(fp);
+
+					if( (wilds = get_wilds_from_uid(NULL, w)) ) {
+						if( !(r = get_wilds_vroom(wilds, x, y)) )
+							r = create_wilds_vroom(wilds, x, y);
+
+						here = r;
+					}
+
+					fMatch = TRUE;
+				}
+
+				if( (vtype = variable_fread_type(word)) != VAR_UNKNOWN ) {
+					variable_fread(&obj->progs->vars, vtype, fp);
+					fMatch = TRUE;
+				}
+				break;
+			case 'W':
+				KEY("WearFlags",	obj->wear_flags,	fread_number(fp));
+				KEY("WearLoc",		obj->wear_loc,		fread_number(fp));
+				KEY("Weight",		obj->weight,		fread_number(fp));
+				break;
+			case 'X':
+				break;
+			case 'Y':
+				break;
+			case 'Z':
+				break;
+		}
+
+		if (!fMatch)
+			fread_to_eol(fp);
+	}
+
+
+	get_obj_id(obj);
+	fix_object(obj);
+
+	if( !here ) here = deep_here;
+
+	if( here ) obj->in_room = here;
+
+	if(obj->persist) persist_addobject(obj);
+
+	log_string("persist_load: #-OBJECT");
+
+	return obj;
+}
+
+CHAR_DATA *persist_load_mobile(FILE *fp)
+{
+	char buf[MSL];
+	MOB_INDEX_DATA *index;
+	CHAR_DATA *ch;
+	ROOM_INDEX_DATA *here = NULL, *deep_here = NULL;
+	char *word;
+	long vnum;
+	int i, sn;
+	int vtype;
+	bool good = TRUE, fMatch;
+
+	log_string("persist_load: #MOBILE");
+
+	vnum = fread_number(fp);
+	index = get_mob_index(vnum);
+	if( !index )
+		return NULL;
+
+	ch = create_mobile(index);
+	if( !ch )
+		return NULL;
+	ch->version = VERSION_MOBILE_000;
+	ch->id[0] = ch->id[1] = 0;
+
+	for (;good;) {
+		word = feof(fp) ? "#-MOBILE" : fread_word(fp);
+		fMatch = FALSE;
+
+		if (!str_cmp(word, "#-MOBILE"))
+			break;
+
+		log_stringf("%s: %s", __FUNCTION__, word);
+
+		switch (UPPER(word[0])) {
+			case '*':
+				fMatch = TRUE;
+				fread_to_eol(fp);
+				break;
+
+			// Load up subentities
+			case '#':
+				if (!str_cmp(word,"#CROOM")) {
+					ROOM_INDEX_DATA *croom = persist_load_room(fp, 'C');
+
+					fMatch = TRUE;
+					if( croom )
+						room_to_environment( croom, ch, NULL, NULL );
+					else
+						good = FALSE;
+
+					break;
+				}
+				if (!str_cmp(word,"#OBJECT")) {
+					OBJ_DATA *item = persist_load_object(fp);
+
+					fMatch = TRUE;
+					if( item )
+						obj_to_char(item, ch);
+					else
+						good = FALSE;
+
+					break;
+				}
+				if (!str_cmp(word,"#TOKEN")) {
+					TOKEN_DATA *token = persist_load_token(fp);
+
+					fMatch = TRUE;
+					if( token )
+						token_to_char(token, ch);
+					else
+						good = FALSE;
+
+					break;
+				}
+				break;
+			case 'A':
+				if(IS_KEY("ACs")) {
+					for(i = 0; i < 4; ch->armor[i++] = fread_number(fp));
+
+					fMatch = TRUE;
+				}
+				KEY("Act",		ch->act,			fread_flag(fp));
+				KEY("Act2",		ch->act2,			fread_flag(fp));
+				KEY("AfBy",		ch->affected_by,	fread_flag(fp));
+				KEY("AfBy2",	ch->affected_by2,	fread_flag(fp));
+
+				if(IS_KEY("Affcg")) {
+					AFFECT_DATA *paf = new_affect();
+
+					if( paf ) {
+						sn = skill_lookup(fread_word(fp));
+						if (sn < 0)
+							log_string("fread_char: unknown skill.");
+						else
+		                    paf->type = sn;
+						paf->custom_name = NULL;
+						paf->group = flag_value(affgroup_mobile_flags, fread_word(fp));
+						if(paf->group == NO_FLAG) paf->group = AFFGROUP_MAGICAL;
+						paf->where  = fread_number(fp);
+						paf->level      = fread_number(fp);
+						paf->duration   = fread_number(fp);
+						paf->modifier   = fread_number(fp);
+						paf->location   = fread_number(fp);
+						if(paf->location == APPLY_SKILL) {
+							int sn = skill_lookup(fread_word(fp));
+							if(sn < 0) {
+								paf->location = APPLY_NONE;
+								paf->modifier = 0;
+							} else
+								paf->location += sn;
+						}
+						paf->bitvector = fread_number(fp);
+						paf->bitvector2 = fread_number(fp);
+						paf->next = ch->affected;
+						ch->affected = paf;
+					}
+					fMatch = TRUE;
+				}
+
+				if(IS_KEY("Affcgn")) {
+					AFFECT_DATA *paf = new_affect();
+
+					if( paf ) {
+						paf->custom_name = create_affect_cname(fread_word(fp));
+						if(!paf->custom_name) {
+							free_affect(paf);
+						} else {
+							paf->type = -1;
+							paf->group = flag_value(affgroup_mobile_flags, fread_word(fp));
+							if(paf->group == NO_FLAG) paf->group = AFFGROUP_MAGICAL;
+							paf->where  = fread_number(fp);
+							paf->level      = fread_number(fp);
+							paf->duration   = fread_number(fp);
+							paf->modifier   = fread_number(fp);
+							paf->location   = fread_number(fp);
+							if(paf->location == APPLY_SKILL) {
+								int sn = skill_lookup(fread_word(fp));
+								if(sn < 0) {
+									paf->location = APPLY_NONE;
+									paf->modifier = 0;
+								} else
+									paf->location += sn;
+							}
+							paf->bitvector = fread_number(fp);
+							paf->bitvector2 = fread_number(fp);
+							paf->next = ch->affected;
+							ch->affected = paf;
+						}
+					}
+					fMatch = TRUE;
+				}
+
+				KEY("Alig",		ch->alignment,		fread_number(fp));
+				if(IS_KEY("AMod")) {
+					ch->mod_stat[STAT_STR] = fread_number(fp);
+					ch->mod_stat[STAT_INT] = fread_number(fp);
+					ch->mod_stat[STAT_WIS] = fread_number(fp);
+					ch->mod_stat[STAT_DEX] = fread_number(fp);
+					ch->mod_stat[STAT_CON] = fread_number(fp);
+					fMatch = TRUE;
+				}
+
+				if(IS_KEY("Attr")) {
+					ch->perm_stat[STAT_STR] = fread_number(fp);
+					ch->perm_stat[STAT_INT] = fread_number(fp);
+					ch->perm_stat[STAT_WIS] = fread_number(fp);
+					ch->perm_stat[STAT_DEX] = fread_number(fp);
+					ch->perm_stat[STAT_CON] = fread_number(fp);
+					fMatch = TRUE;
+				}
+				break;
+			case 'B':
+				break;
+			case 'C':
+				if(IS_KEY("CloneRoom")) {
+					ROOM_INDEX_DATA *source = get_room_index(fread_number(fp));
+
+					here = get_clone_room(source, fread_number(fp), fread_number(fp));
+
+					fMatch = TRUE;
+				}
+				KEY("Comm",			ch->comm,			fread_flag(fp));
+				KEY("CorpseType",	ch->corpse_type,	fread_number(fp));
+				KEY("CorpseVnum",	ch->corpse_vnum,	fread_number(fp));
+//				KEY("CorpseZombie",	ch->zombie,		fread_number(fp));
+				break;
+			case 'D':
+				KEY("Dam",				ch->damroll,			fread_number(fp));
+				FKEY("Dead",			ch->dead);
+				KEY("DefaultPos",		ch->default_pos,		fread_number(fp));
+				SKEY("Desc",			ch->description);
+				KEY("DeathTimeLeft",	ch->time_left_death,	fread_number(fp));
+
+				if( !str_cmp(word, "DeepCloneRoom") ) {
+					ROOM_INDEX_DATA *src;
+					int v = fread_number(fp);
+					int a = fread_number(fp);
+					int b = fread_number(fp);
+
+					if( (src = get_room_index(v)) )
+						deep_here = get_clone_room(src, a, b);
+
+					fMatch = TRUE;
+				}
+				if( !str_cmp(word, "DeepRoom") ) {
+					long rvnum = fread_number(fp);
+					deep_here = get_room_index(rvnum);
+					fMatch = TRUE;
+				}
+				if( !str_cmp(word, "DeepVroom") ) {
+					ROOM_INDEX_DATA *r;
+					WILDS_DATA *wilds;
+					int w = fread_number(fp);
+					int x = fread_number(fp);
+					int y = fread_number(fp);
+
+					if( (wilds = get_wilds_from_uid(NULL, w)) ) {
+						if( !(r = get_wilds_vroom(wilds, x, y)) )
+							r = create_wilds_vroom(wilds, x, y);
+
+						deep_here = r;
+					}
+
+					fMatch = TRUE;
+				}
+
+				KEY("DeityPnts",		ch->deitypoints,		fread_number(fp));
+				break;
+			case 'E':
+				KEY("Exp",		ch->exp,		fread_number(fp));
+				break;
+			case 'F':
+				break;
+			case 'G':
+				KEY("Gold",		ch->gold,		fread_number(fp));
+				break;
+			case 'H':
+				if(IS_KEY("HMV")) {
+					ch->hit = fread_number(fp);
+					ch->max_hit = fread_number(fp);
+					ch->mana = fread_number(fp);
+					ch->max_mana = fread_number(fp);
+					ch->move = fread_number(fp);
+					ch->max_move = fread_number(fp);
+					fMatch = TRUE;
+				}
+				KEY("Hit",	ch->hitroll,	fread_number(fp));
+				KEY("Home",	ch->home,		fread_number(fp));
+				break;
+			case 'I':
+				KEY("Immune",	ch->imm_flags,	fread_flag(fp));
+				KEY("ImmunePerm",	ch->imm_flags_perm,	fread_flag(fp));
+				break;
+			case 'J':
+				break;
+			case 'K':
+				break;
+			case 'L':
+				KEY("Levl",			ch->level,		fread_number(fp));
+				SKEY("LnD",			ch->long_descr);
+				KEY("LostParts",	ch->lostparts,	fread_flag(fp));
+				break;
+			case 'M':
+				KEY("ManaStore",	ch->manastore,		fread_number(fp));
+				SKEY("Material",	ch->material);
+				break;
+			case 'N':
+				SKEY("Name",		ch->name);
+				break;
+			case 'O':
+				KEY("OffFlags",		ch->off_flags,	fread_flag(fp));
+				SKEY("Owner",		ch->owner);
+				break;
+			case 'P':
+				KEY("Parts",		ch->parts,		fread_number(fp));
+				FKEY("Persist",		ch->persist);
+				KEY("Pneuma",		ch->pneuma,		fread_number(fp));
+				KEY("Pos",			ch->position,	fread_number(fp));
+				KEY("Prac",			ch->practice,	fread_number(fp));
+				break;
+			case 'Q':
+				KEY("QuestPnts",	ch->questpoints,		fread_number(fp));
+				break;
+			case 'R':
+				if(IS_KEY("Race")) {
+					char *name = fread_string(fp);
+
+					// Default to Human if the race is not found.
+					if( !(ch->race = race_lookup(name)) )
+						ch->race = grn_human;
+
+					fMatch = TRUE;
+				}
+
+				if(IS_KEY("RepopRoom")) {
+					ch->recall.id[0] = fread_number(fp);
+					ch->recall.id[1] =
+					ch->recall.id[2] =
+					ch->recall.id[3] = 0;
+					fMatch = TRUE;
+				}
+
+				if(IS_KEY("RepopRoomC")) {
+					ch->recall.id[0] = fread_number(fp);
+					ch->recall.id[1] = fread_number(fp);
+					ch->recall.id[2] = fread_number(fp);
+					ch->recall.id[3] = 0;
+					fMatch = TRUE;
+				}
+
+				if(IS_KEY("RepopRoomW")) {
+					ch->recall.id[0] = fread_number(fp);
+					ch->recall.id[1] = fread_number(fp);
+					ch->recall.id[2] = fread_number(fp);
+					ch->recall.id[3] = fread_number(fp);
+					fMatch = TRUE;
+				}
+
+				KEY("Resist",	ch->res_flags,	fread_flag(fp));
+				KEY("ResistPerm",	ch->res_flags_perm,	fread_flag(fp));
+
+				if(IS_KEY("Room")) {
+					here = get_room_index(fread_number(fp));
+
+					fMatch = TRUE;
+				}
+				break;
+			case 'S':
+				KEY("Save",		ch->saving_throw,	fread_number(fp));
+				KEY("Sex",		ch->sex,		fread_number(fp));
+				SKEY("ShD",		ch->short_descr);
+				KEY("Silv",		ch->silver,		fread_number(fp));
+				KEY("Size",		ch->size,		fread_number(fp));
+				//SKEY("Skeywds",	ch->skeywds);
+				KEY("StartPos",	ch->start_pos,	fread_number(fp));
+				break;
+			case 'T':
+				KEY("TLevl",	ch->tot_level,		fread_number(fp));
+
+				if( !str_prefix("Toxn", word) ) {
+					int toxin;
+					for(toxin = 0; toxin < MAX_TOXIN && str_cmp(word+4, toxin_table[toxin].name); toxin++);
+
+					if( toxin < MAX_TOXIN)
+						ch->toxin[toxin] = fread_number(fp);
+					else {
+						sprintf(buf,"%s:%s bad toxin type", __FILE__, __FUNCTION__);
+						bug(buf, 0);
+						fread_to_eol(fp);
+					}
+					fMatch = TRUE;
+				}
+
+				KEY("Trai",		ch->train,	fread_number(fp));
+				break;
+			case 'U':
+				KEY("UID",		ch->id[0],		fread_number(fp));
+				KEY("UID2",		ch->id[1],		fread_number(fp));
+				break;
+			case 'V':
+				KEY("Version",	ch->version,	fread_number(fp));
+
+				if( !str_cmp(word, "Vroom") ) {
+					ROOM_INDEX_DATA *r;
+					WILDS_DATA *wilds;
+					int w = fread_number(fp);
+					int x = fread_number(fp);
+					int y = fread_number(fp);
+
+					if( (wilds = get_wilds_from_uid(NULL, w)) ) {
+						if( !(r = get_wilds_vroom(wilds, x, y)) )
+							r = create_wilds_vroom(wilds, x, y);
+
+						here = r;
+					}
+
+					fMatch = TRUE;
+				}
+
+				// Variables
+				if( (vtype = variable_fread_type(word)) != VAR_UNKNOWN ) {
+					variable_fread(&ch->progs->vars, vtype, fp);
+					fMatch = TRUE;
+				}
+
+				KEY("Vuln",	ch->vuln_flags,	fread_flag(fp));
+				KEY("VulnPerm",	ch->vuln_flags_perm,	fread_flag(fp));
+
+				break;
+			case 'W':
+				//KEY("Wealth",	ch->wealth,	fread_number(fp));
+				KEY("Wimp",		ch->wimpy,	fread_number(fp));
+				break;
+			case 'X':
+				break;
+			case 'Y':
+				break;
+			case 'Z':
+				break;
+		}
+
+		if (!fMatch)
+			fread_to_eol(fp);
+	}
+
+
+	get_mob_id(ch);
+
+	if( !here ) here = deep_here;
+
+	if( !here ) here = get_room_index(ROOM_VNUM_DEFAULT);
+
+	if( here ) ch->in_room = here;
+
+	if(ch->persist) persist_addmobile(ch);
+
+	log_string("persist_load: #-MOBILE");
+
+	return ch;
+}
+
+EXIT_DATA *persist_load_exit(FILE *fp)
+{
+//	char buf[MSL];
+	EXIT_DATA *ex;
+	char *word;
+	bool fMatch;
+
+	log_string("persist_load: #EXIT");
+
+	ex = new_exit();
+	if( !ex ) return NULL;
+
+	ex->orig_door = parse_direction(fread_word(fp));
+
+	for (;;) {
+		word = feof(fp) ? "#-EXIT" : fread_word(fp);
+		fMatch = FALSE;
+
+		if (!str_cmp(word, "#-EXIT"))
+			break;
+
+		log_stringf("%s: %s", __FUNCTION__, word);
+
+		switch (UPPER(word[0])) {
+			case '*':
+				fMatch = TRUE;
+				fread_to_eol(fp);
+				break;
+
+			// Load up subentities
+			case '#':
+				break;
+			case 'A':
+				break;
+			case 'B':
+				break;
+			case 'C':
+				break;
+			case 'D':
+				if( !str_cmp(word, "DestRoom") ) {
+					ROOM_INDEX_DATA *room = NULL, *clone;
+					int w = fread_number(fp);
+					int x = fread_number(fp);
+					int y = fread_number(fp);
+					int z = fread_number(fp);
+
+					if( w > 0 ) {	// By this point, ALL wilds should be loaded
+						ex->wilds.wilds_uid = w;
+						ex->wilds.x = x;
+						ex->wilds.y = y;
+					} else {
+						if( y > 0 || z > 0 ) {		// Not guaranteed that the clone room has been created
+							room = get_room_index( x );
+
+							if( room ) {
+								if( !(clone = get_clone_room( room, y, z )) ) {
+									// Create the room
+									if( (clone = create_virtual_room_nouid(room, FALSE, TRUE)) ) {
+										clone->id[0] = y;
+										clone->id[1] = z;
+									}
+								}
+								room = clone;
+							}
+						} else
+							room = get_room_index( x );
+						ex->u1.to_room = room;
+					}
+
+					fMatch = TRUE;
+					break;
+				}
+				if( !str_cmp(word, "Door") ) {
+					ex->door.key_vnum = fread_number(fp);
+					ex->door.strength = fread_number(fp);
+					fMatch = TRUE;
+					break;
+				}
+				SKEY("DoorMat", ex->door.material);
+				break;
+			case 'E':
+				break;
+			case 'F':
+				FVDKEY("Flags", ex->exit_info, fread_string(fp), exit_flags, NO_FLAG, 0);
+				break;
+			case 'G':
+				break;
+			case 'H':
+				break;
+			case 'I':
+				break;
+			case 'J':
+				break;
+			case 'K':
+				SKEY("Keyword",	ex->keyword);
+				break;
+			case 'L':
+				SKEY("LongDesc",	ex->long_desc);
+				break;
+			case 'M':
+				break;
+			case 'N':
+				break;
+			case 'O':
+				break;
+			case 'P':
+				break;
+			case 'Q':
+				break;
+			case 'R':
+				FVDKEY("ResetFlags", ex->rs_flags, fread_string(fp), exit_flags, NO_FLAG, 0);
+				break;
+			case 'S':
+				SKEY("ShortDesc",	ex->short_desc);
+				break;
+			case 'T':
+				break;
+			case 'U':
+				break;
+			case 'V':
+				break;
+			case 'W':
+				break;
+			case 'X':
+				break;
+			case 'Y':
+				break;
+			case 'Z':
+				break;
+		}
+
+		if (!fMatch)
+			fread_to_eol(fp);
+	}
+
+	// Forces it to be a VLINK exit if going to a wilderness room
+	if( ex->wilds.wilds_uid > 0 )
+		SET_BIT(ex->exit_info, EX_VLINK);
+
+	log_string("persist_load: #-EXIT");
+
+	return ex;
+}
+
+ROOM_INDEX_DATA *persist_load_room(FILE *fp, char rtype)
+{
+	char buf[MSL];
+	ROOM_INDEX_DATA *room;
+	WILDS_DATA *wilds;
+	long vnum;
+	int w, x, y, z;
+	char *word;
+	int vtype;
+	bool good = TRUE;
+	bool fMatch;
+
+	if( rtype == 'R' ) {
+		log_string("persist_load: #ROOM");
+		vnum = fread_number(fp);
+
+		room = get_room_index(vnum);
+
+		if( !room ) {
+			sprintf(buf, "persist_load_room: undefined room index at vnum %ld.", vnum);
+			bug(buf,0);
+			return NULL;
+		}
+	} else if( rtype == 'V' ) {
+		log_string("persist_load: #VROOM");
+		w = fread_number(fp);
+		x = fread_number(fp);
+		y = fread_number(fp);
+		z = fread_number(fp);
+		wilds = get_wilds_from_uid(NULL, w);
+
+		if( !wilds ) {
+			sprintf(buf, "persist_load_room: undefined wilds uid %d.", w);
+			bug(buf,0);
+			return NULL;
+		}
+
+		room = get_wilds_vroom(wilds, x, y);
+		if( !room ) {
+			room = create_wilds_vroom(wilds, x, y);
+
+			if( !room ) {
+				sprintf(buf, "persist_load_room: unable to create vroom for wilds %d at (%d,%d).", w, x, y);
+				bug(buf,0);
+				return NULL;
+			}
+		}
+
+		room->z = z;
+
+	} else if( rtype == 'C' ) {
+		ROOM_INDEX_DATA *source;
+
+		log_string("persist_load: #CROOM");
+
+		vnum = fread_number(fp);
+
+		source = get_room_index(vnum);
+
+		if( !source ) {
+			fread_to_eol(fp);
+			sprintf(buf, "persist_load_room: undefined room index at vnum %ld.", vnum);
+			bug(buf,0);
+			return NULL;
+		}
+
+		x = fread_number(fp);
+		y = fread_number(fp);
+
+		// Find the clone
+		room = get_clone_room(source,x,y);
+		if( !room ) {
+			room = create_virtual_room_nouid( source, FALSE, FALSE );
+			if( !room ) {
+				sprintf(buf, "persist_load_room: could not create clone room for %ld with uid %08X:%08X.", vnum, x, y);
+				bug(buf,0);
+				return NULL;
+			}
+
+			room->id[0] = x;
+			room->id[1] = y;
+		}
+
+	} else
+		return NULL;
+
+	room->version = VERSION_ROOM_000;
+
+	for (;good;) {
+		word = feof(fp) ? "#-ROOM" : fread_word(fp);
+		fMatch = FALSE;
+
+		if (!str_cmp(word, "#-ROOM"))
+			break;
+
+		log_stringf("%s: %s", __FUNCTION__, word);
+
+		switch (UPPER(word[0])) {
+			case '*':
+				fMatch = TRUE;
+				fread_to_eol(fp);
+				break;
+
+			// Load up subentities
+			case '#':
+				if (!str_cmp(word,"#CROOM")) {
+					ROOM_INDEX_DATA *croom = persist_load_room(fp, 'C');
+
+					fMatch = TRUE;
+					if( croom )
+						room_to_environment( croom, NULL, NULL, room );
+					else
+						good = FALSE;
+
+					break;
+				}
+				if (!str_cmp(word,"#EXIT")) {
+					EXIT_DATA *ex = persist_load_exit(fp);
+
+					fMatch = TRUE;
+					if( ex ) {
+						if( room->exit[ex->orig_door] )
+							free_exit(room->exit[ex->orig_door]);
+
+						room->exit[ex->orig_door] = ex;
+					} else
+						good = FALSE;
+
+					break;
+				}
+				if (!str_cmp(word,"#MOBILE")) {
+					CHAR_DATA *mob = persist_load_mobile(fp);
+
+					fMatch = TRUE;
+					if( mob )
+						char_to_room(mob, room);
+					else
+						good = FALSE;
+
+					break;
+				}
+				if (!str_cmp(word,"#OBJECT")) {
+					OBJ_DATA *item = persist_load_object(fp);
+
+					fMatch = TRUE;
+					if( item )
+						obj_to_room(item, room);
+					else
+						good = FALSE;
+
+					break;
+				}
+				if (!str_cmp(word,"#TOKEN")) {
+					TOKEN_DATA *token = persist_load_token(fp);
+
+					fMatch = TRUE;
+					if( token )
+						token_to_room(token, room);
+					else
+						good = FALSE;
+
+					break;
+				}
+				break;
+			case 'A':
+				break;
+			case 'B':
+				break;
+			case 'C':
+				break;
+			case 'D':
+				SKEY("Desc",	room->description);
+				break;
+			case 'E':
+				break;
+			case 'F':
+				break;
+			case 'G':
+				break;
+			case 'H':
+				KEY("HealRate",		room->heal_rate,	fread_number(fp));
+				break;
+			case 'I':
+				break;
+			case 'J':
+				break;
+			case 'K':
+				break;
+			case 'L':
+				KEY("Locale",		room->locale,	fread_number(fp));
+				break;
+			case 'M':
+				KEY("ManaRate",		room->mana_rate,	fread_number(fp));
+				KEY("MoveRate",		room->move_rate,	fread_number(fp));
+				break;
+			case 'N':
+				SKEY("Name",		room->name);
+				break;
+			case 'O':
+				SKEY("Owner",		room->owner);
+				break;
+			case 'P':
+				FKEY("Persist",		room->persist);
+				break;
+			case 'Q':
+				break;
+			case 'R':
+				FVDKEY("RoomFlags", room->room_flags, fread_string(fp), room_flags, NO_FLAG, 0);
+				FVDKEY("RoomFlags2", room->room2_flags, fread_string(fp), room2_flags, NO_FLAG, 0);
+				if( !str_cmp(word, "RoomRecall") ) {
+					room->recall.wuid = fread_number(fp);
+					room->recall.id[0] = fread_number(fp);
+					room->recall.id[1] = fread_number(fp);
+					room->recall.id[2] = fread_number(fp);
+					fMatch = TRUE;
+					break;
+				}
+				break;
+			case 'S':
+				FVDKEY("Sector", room->sector_type, fread_string(fp), sector_flags, NO_FLAG, SECT_INSIDE);
+				break;
+			case 'T':
+				break;
+			case 'U':
+				break;
+			case 'V':
+				if( (vtype = variable_fread_type(word)) != VAR_UNKNOWN ) {
+					variable_fread(&room->progs->vars, vtype, fp);
+					fMatch = TRUE;
+				}
+				if( !str_cmp(word, "ViewWilds") ) {
+					w = fread_number(fp);
+
+					wilds = get_wilds_from_uid(NULL, w);
+
+					// This is non-fatal if non-existant.  It will just clear it.
+					if( !wilds ) {
+						sprintf(buf, "persist_load_room: undefined wilds UID for viewwilds %d.", w);
+						bug(buf,0);
+					}
+
+					room->viewwilds = wilds;
+
+					fMatch = TRUE;
+					break;
+				}
+				break;
+			case 'W':
+				break;
+			case 'X':
+				if( !str_cmp(word, "XYZ") ) {
+					if( room->wilds ) {
+						fread_to_eol(fp);
+						sprintf(buf, "persist_load_room: XYZ coordinates found for wilds room %ld @ (%ld, %ld).", room->wilds->uid, room->x, room->y);
+						bug(buf,0);
+					} else {
+						room->x = fread_number(fp);
+						room->y = fread_number(fp);
+						room->z = fread_number(fp);
+					}
+					fMatch = TRUE;
+					break;
+				}
+				break;
+			case 'Y':
+				break;
+			case 'Z':
+				break;
+		}
+
+		if (!fMatch)
+			fread_to_eol(fp);
+	}
+
+	if(room->persist) persist_addroom(room);
+
+	log_string("persist_load: #-ROOM");
+
+	return room;
+}
+
+bool persist_load(void)
+{
+	FILE *fp;
+	char *word;
+	CHAR_DATA *ch;
+	OBJ_DATA *obj;
+	ROOM_INDEX_DATA *room;
+	bool good = TRUE;
+
+	log_string("persist_load: loading persist entities...");
+
+	if (!(fp = fopen(PERSIST_FILE, "r"))) {
+		bug("persist.dat: Couldn't open file.",0);
+		return TRUE;
+	} else {
+		while(good) {
+			word = fread_word(fp);
+
+			if(!str_cmp(word,"#ROOM")) {
+				room = persist_load_room(fp, 'R');
+				if(!room) good = FALSE;
+
+			} else if(!str_cmp(word,"#VROOM")) {
+				room = persist_load_room(fp, 'V');
+				if(!room) good = FALSE;
+
+
+			} else if(!str_cmp(word,"#CROOM")) {
+				room = persist_load_room(fp, 'C');
+				if(room)
+					variable_dynamic_fix_clone_room(room);
+				else
+					good = FALSE;
+
+			} else if(!str_cmp(word,"#MOBILE")) {
+				ch = persist_load_mobile(fp);
+
+				if( ch ) {
+					if( ch->in_room ) {
+						char_to_room(ch, ch->in_room);
+						variable_dynamic_fix_mobile(ch);
+					} else {
+						extract_char(ch,TRUE);
+						good = FALSE;
+					}
+				} else
+					good = FALSE;
+			} else if(!str_cmp(word,"#OBJECT")) {
+				obj = persist_load_object(fp);
+
+				if( obj ) {
+					obj->locker = FALSE;
+					if( obj->in_room ) {
+						obj_to_room(obj, obj->in_room);
+						variable_dynamic_fix_object(obj);
+					} else {
+						extract_obj(obj);
+						good = FALSE;
+					}
+				} else
+					good = FALSE;
+
+			} else if(!str_cmp(word,"#END"))
+				break;
+		}
+
+		fclose(fp);
+	}
+
+	if(good)
+		log_string("persist_load: done...");
+	else
+		log_string("persist_load: error...");
+
+
+	return good;
+}

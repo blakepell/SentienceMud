@@ -137,6 +137,7 @@ void do_asave_new(CHAR_DATA *ch, char *argument)
 	send_to_char("  asave help     - saves the help files\n\r", ch);
 	send_to_char("  asave mail     - saves the mail\n\r", ch);
 	send_to_char("  asave projects - saves the project database\n\r", ch);
+	send_to_char("  asave persist  - saves all persistant entities\n\r", ch);
 
 	if (ch->tot_level == MAX_LEVEL)
 	    send_to_char("  asave staff    - saves the immortal staff information\n\r", ch);
@@ -162,11 +163,6 @@ void do_asave_new(CHAR_DATA *ch, char *argument)
 
 	for (pArea = area_first; pArea; pArea = pArea->next)
 	{
-	    if (!str_cmp(pArea->name, "Eden")
-	    || !str_cmp(pArea->name, "Netherworld")
-	    || pArea == (AREA_DATA *)-1 /*get_sailing_boat_area()*/)
-	        continue;
-	    else
 	    {
 	        sprintf(log_buf,"olc_save.c, do_asave: saving %s", pArea->name);
 	        log_string(log_buf);
@@ -217,7 +213,7 @@ void do_asave_new(CHAR_DATA *ch, char *argument)
                 else
 		if (IS_SET(pArea->area_flags, AREA_TESTPORT))
 		{
-		    if (port != PORT_TEST)
+		    if (!is_test_port)
 		    {
 			if (ch->tot_level < MAX_LEVEL)
 			{
@@ -276,7 +272,7 @@ void do_asave_new(CHAR_DATA *ch, char *argument)
 
 	save_area_list();
 	save_area_new(ch->in_room->area);
-	act("Saved $t.", ch, ch->in_room->area->name, NULL, TO_CHAR);
+	act("Saved $t.", ch, NULL, NULL, NULL, NULL, ch->in_room->area->name, NULL, TO_CHAR);
 	return;
     }
 
@@ -309,6 +305,13 @@ void do_asave_new(CHAR_DATA *ch, char *argument)
     {
 	write_mail();
 	send_to_char("Mail saved.\n\r", ch);
+	return;
+    }
+
+    if (!str_cmp(arg1, "persist"))
+    {
+	persist_save();
+	send_to_char("Persistant entities saved.\n\r", ch);
 	return;
     }
 
@@ -355,11 +358,14 @@ void save_area_new(AREA_DATA *area)
     FILE *fp;
     char filename[MSL];
 
+/*
+	// 20140521 NIB - allowing these to be saved
     if (!str_cmp(area->name, "Netherworld")
 	|| !str_cmp(area->name, "Eden")) {
 	log_string("save_area_new: not saving wilderness file");
 	return;
     }
+    */
 
     // There are some areas which should be saved specially
     if (!str_cmp(area->name, "Geldoff's Maze"))
@@ -374,7 +380,7 @@ void save_area_new(AREA_DATA *area)
 	sprintf(filename, "../maze/template.poa4");
     else if (!str_cmp(area->name, "Maze-Level5"))
 	sprintf(filename, "../maze/template.poa5");
-    else if (IS_SET(area->area_flags, AREA_TESTPORT) && port == PORT_TEST)
+    else if (IS_SET(area->area_flags, AREA_TESTPORT) && is_test_port)
     {
 	sprintf(filename, "../../backups/%s", area->file_name);
 	REMOVE_BIT(area->area_flags, AREA_TESTPORT);
@@ -428,7 +434,7 @@ void save_area_new(AREA_DATA *area)
     /* Whisp - write this function */
     save_area_trade(fp, area);
 
-    if (str_prefix("Maze-Level", area->name) && str_cmp("Geldoff's Maze", area->name))
+    if (!IS_SET(area->area_flags, AREA_NO_ROOMS)/*str_prefix("Maze-Level", area->name) && str_cmp("Geldoff's Maze", area->name)*/)
 	save_rooms_new(fp, area);
 
 // VIZZWILDS
@@ -556,7 +562,8 @@ void save_tokens(FILE *fp, AREA_DATA *area)
 /* save one token */
 void save_token(FILE *fp, TOKEN_INDEX_DATA *token)
 {
-    PROG_LIST *tpr;
+	ITERATOR it;
+    PROG_LIST *trigger;
     EXTRA_DESCR_DATA *ed;
     pVARIABLE var;
     int i;
@@ -581,9 +588,12 @@ void save_token(FILE *fp, TOKEN_INDEX_DATA *token)
 	fprintf(fp, "ValueName %d %s~\n", i, token->value_name[i]);
 
     if(token->progs) {
-	for (i=0; i<TRIGSLOT_MAX; i++)
-	    for (tpr = token->progs[i]; tpr != NULL; tpr = tpr->next)
-		fprintf(fp, "TokProg %ld %s~ %s~\n", tpr->vnum, trigger_name(tpr->trig_type), trigger_phrase(tpr->trig_type,tpr->trig_phrase));
+		for(i = 0; i < TRIGSLOT_MAX; i++) if(list_size(token->progs[i]) > 0) {
+			iterator_start(&it, token->progs[i]);
+			while((trigger = (PROG_LIST *)iterator_nextdata(&it)))
+				fprintf(fp, "TokProg %ld %s~ %s~\n", trigger->vnum, trigger_name(trigger->trig_type), trigger_phrase(trigger->trig_type,trigger->trig_phrase));
+			iterator_stop(&it);
+		}
     }
 
 	if(token->index_vars) {
@@ -609,7 +619,8 @@ void save_room_new(FILE *fp, ROOM_INDEX_DATA *room, int recordtype)
     CONDITIONAL_DESCR_DATA *cd;
     int door, i;
     EXIT_DATA *ex;
-    PROG_LIST *rpr;
+    ITERATOR it;
+    PROG_LIST *trigger;
     RESET_DATA *reset;
     pVARIABLE var;
 
@@ -625,6 +636,8 @@ void save_room_new(FILE *fp, ROOM_INDEX_DATA *room, int recordtype)
         fprintf(fp, "#ROOM\n");
     fprintf(fp, "Name %s~\n", room->name);
     fprintf(fp, "Description %s~\n", fix_string(room->description));
+    if(room->persist)
+    	fprintf(fp, "Persist\n");
 
     if (room->home_owner != NULL)
 	fprintf(fp, "Home_owner %s~\n", room->home_owner);
@@ -667,7 +680,7 @@ void save_room_new(FILE *fp, ROOM_INDEX_DATA *room, int recordtype)
 	char kwd[MSL];
 
 	if ((ex = room->exit[door]) != NULL && ex->u1.to_room != NULL) {
-	    fprintf(fp, "#X %d\n", ex->orig_door);
+	    fprintf(fp, "#X '%s'\n", dir_name[ex->orig_door]);	// FIX IF SPACES ARE NEEDED IN NAMES!
 
             if (ex->keyword[0] == ' ') {
 		sprintf(kwd, " ");
@@ -684,10 +697,13 @@ void save_room_new(FILE *fp, ROOM_INDEX_DATA *room, int recordtype)
     }
 
     if(room->progs->progs) {
-	for (i=0; i<TRIGSLOT_MAX; i++)
-	    for (rpr = room->progs->progs[i]; rpr != NULL; rpr = rpr->next)
-		fprintf(fp, "RoomProg %ld %s~ %s~\n", rpr->vnum, trigger_name(rpr->trig_type), trigger_phrase(rpr->trig_type,rpr->trig_phrase));
-    }
+		for(i = 0; i < TRIGSLOT_MAX; i++) if(list_size(room->progs->progs[i]) > 0) {
+			iterator_start(&it, room->progs->progs[i]);
+			while((trigger = (PROG_LIST *)iterator_nextdata(&it)))
+				fprintf(fp, "RoomProg %ld %s~ %s~\n", trigger->vnum, trigger_name(trigger->trig_type), trigger_phrase(trigger->trig_type,trigger->trig_phrase));
+			iterator_stop(&it);
+		}
+	}
 
 	if(room->index_vars) {
 		for(var = room->index_vars; var; var = var->next) {
@@ -715,7 +731,8 @@ void save_room_new(FILE *fp, ROOM_INDEX_DATA *room, int recordtype)
 /* save one mobile */
 void save_mobile_new(FILE *fp, MOB_INDEX_DATA *mob)
 {
-    PROG_LIST *mpr;
+	ITERATOR it;
+    PROG_LIST *trigger;
     pVARIABLE var;
     int race, i;
 
@@ -729,6 +746,8 @@ void save_mobile_new(FILE *fp, MOB_INDEX_DATA *mob)
     fprintf(fp, "Owner %s~\n", mob->owner);
     fprintf(fp, "ImpSig %s~\n", mob->sig);
     fprintf(fp, "CreatorSig %s~\n", mob->creator_sig);
+    if(mob->persist)
+ 	   fprintf(fp, "Persist\n");
     fprintf(fp, "Skeywds %s~\n", mob->skeywds);
     fprintf(fp, "Race %s~\n", race_table[mob->race].name);
     if (mob->act != 0)
@@ -771,10 +790,14 @@ void save_mobile_new(FILE *fp, MOB_INDEX_DATA *mob)
 	save_shop_new(fp, mob->pShop);
 
     if(mob->progs) {
-	for (i=0; i<TRIGSLOT_MAX; i++)
-	    for (mpr = mob->progs[i]; mpr != NULL; mpr = mpr->next)
-		fprintf(fp, "MobProg %ld %s~ %s~\n", mpr->vnum, trigger_name(mpr->trig_type), trigger_phrase(mpr->trig_type,mpr->trig_phrase));
-    }
+		for(i = 0; i < TRIGSLOT_MAX; i++) if(list_size(mob->progs[i]) > 0) {
+			iterator_start(&it, mob->progs[i]);
+			while((trigger = (PROG_LIST *)iterator_nextdata(&it)))
+				fprintf(fp, "MobProg %ld %s~ %s~\n", trigger->vnum, trigger_name(trigger->trig_type), trigger_phrase(trigger->trig_type,trigger->trig_phrase));
+			iterator_stop(&it);
+		}
+	}
+
 	if(mob->index_vars) {
 		for(var = mob->index_vars; var; var = var->next) {
 			if(var->type == VAR_INTEGER)
@@ -797,88 +820,97 @@ void save_mobile_new(FILE *fp, MOB_INDEX_DATA *mob)
 /* save one object */
 void save_object_new(FILE *fp, OBJ_INDEX_DATA *obj)
 {
-    AFFECT_DATA *af;
-    EXTRA_DESCR_DATA *ed;
-    PROG_LIST *opr;
-    pVARIABLE var;
-    int i;
+	AFFECT_DATA *af;
+	EXTRA_DESCR_DATA *ed;
+	ITERATOR it;
+	PROG_LIST *trigger;
+	pVARIABLE var;
+	int i;
 
-    /* hack to not save maps in the abyss as they are generated each reboot */
-    if (!str_prefix("Maze-Level", obj->area->name) && obj->vnum == obj->area->max_vnum)
-	return;
+	/* hack to not save maps in the abyss as they are generated each reboot */
+	if (!str_prefix("Maze-Level", obj->area->name) && obj->vnum == obj->area->max_vnum)
+		return;
 
-    fprintf(fp, "#OBJECT %ld\n", obj->vnum);
-    fprintf(fp, "Name %s~\n", obj->name);
-    fprintf(fp, "ShortDesc %s~\n", obj->short_descr);
-    fprintf(fp, "LongDesc %s~\n", obj->description);
-    fprintf(fp, "Description %s~\n", fix_string(obj->full_description));
-    fprintf(fp, "Material %s~\n", obj->material);
-    fprintf(fp, "ImpSig %s~\n", obj->imp_sig);
-    fprintf(fp, "CreatorSig %s~\n", obj->creator_sig);
-    fprintf(fp, "SKeywds %s~\n", obj->skeywds);
-    fprintf(fp, "TimesAllowedFixed %d Fragility %d Points %d Update %d Timer %d\n",
-        obj->times_allowed_fixed, obj->fragility, obj->points, obj->update, obj->timer);
-    fprintf(fp, "ItemType %s~\n", item_name(obj->item_type));
-    fprintf(fp, "ExtraFlags %ld\n", obj->extra_flags);
-    fprintf(fp, "Extra2Flags %ld\n", obj->extra2_flags);
-    fprintf(fp, "Extra3Flags %ld\n", obj->extra3_flags);
-    fprintf(fp, "Extra4Flags %ld\n", obj->extra4_flags);
-    fprintf(fp, "WearFlags %ld\n", obj->wear_flags);
+	fprintf(fp, "#OBJECT %ld\n", obj->vnum);
+	fprintf(fp, "Name %s~\n", obj->name);
+	fprintf(fp, "ShortDesc %s~\n", obj->short_descr);
+	fprintf(fp, "LongDesc %s~\n", obj->description);
+	fprintf(fp, "Description %s~\n", fix_string(obj->full_description));
+	fprintf(fp, "Material %s~\n", obj->material);
+	fprintf(fp, "ImpSig %s~\n", obj->imp_sig);
+	if(obj->persist)
+		fprintf(fp, "Persist\n");
+	fprintf(fp, "CreatorSig %s~\n", obj->creator_sig);
+	fprintf(fp, "SKeywds %s~\n", obj->skeywds);
+	fprintf(fp, "TimesAllowedFixed %d Fragility %d Points %d Update %d Timer %d\n", obj->times_allowed_fixed, obj->fragility, obj->points, obj->update, obj->timer);
+	fprintf(fp, "ItemType %s~\n", item_name(obj->item_type));
+	fprintf(fp, "ExtraFlags %ld\n", obj->extra_flags);
+	fprintf(fp, "Extra2Flags %ld\n", obj->extra2_flags);
+	fprintf(fp, "Extra3Flags %ld\n", obj->extra3_flags);
+	fprintf(fp, "Extra4Flags %ld\n", obj->extra4_flags);
+	fprintf(fp, "WearFlags %ld\n", obj->wear_flags);
 
-    fprintf(fp, "Values");
-    for (i = 0; i < 8; i++)
-	fprintf(fp, " %ld", obj->value[i]);
+	fprintf(fp, "Values");
+	for (i = 0; i < 8; i++) fprintf(fp, " %ld", obj->value[i]);
+	fprintf(fp, "\n");
 
-    fprintf(fp, "\n");
+	fprintf(fp, "Level %d\n", obj->level);
+	fprintf(fp, "Weight %d\n", obj->weight);
+	fprintf(fp, "Cost %ld\n", obj->cost);
+	fprintf(fp, "Condition %d\n", obj->condition);
 
-    fprintf(fp, "Level %d\n", obj->level);
-    fprintf(fp, "Weight %d\n", obj->weight);
-    fprintf(fp, "Cost %ld\n", obj->cost);
-    fprintf(fp, "Condition %d\n", obj->condition);
+	// Affects
+	for (af = obj->affected; af != NULL; af = af->next) {
+		fprintf(fp, "#AFFECT %d\n", af->where);
 
-    // Affects
-    for (af = obj->affected; af != NULL; af = af->next) {
-	fprintf(fp, "#AFFECT %d\n", af->where);
+		fprintf(fp, "Location %d\n", af->location);
+		fprintf(fp, "Modifier %d\n", af->modifier);
 
-	fprintf(fp, "Location %d\n", af->location);
-	fprintf(fp, "Modifier %d\n", af->modifier);
+		fprintf(fp, "Level %d\n", af->level);
+		fprintf(fp, "Type %d\n", af->type);
+		fprintf(fp, "Duration %d\n", af->duration);
 
-	fprintf(fp, "Level %d\n", af->level);
-	fprintf(fp, "Type %d\n", af->type);
-	fprintf(fp, "Duration %d\n", af->duration);
+		if (af->bitvector != 0)		fprintf(fp, "BitVector %ld\n", af->bitvector);
+		if (af->bitvector2 != 0)	fprintf(fp, "BitVector2 %ld\n", af->bitvector2);
 
-	if (af->bitvector != 0)
-	    fprintf(fp, "BitVector %ld\n", af->bitvector);
-	if (af->bitvector2 != 0)
-	    fprintf(fp, "BitVector2 %ld\n", af->bitvector2);
+		fprintf(fp, "Random %d\n", af->random);
+		fprintf(fp, "#-AFFECT\n");
+	}
 
-	fprintf(fp, "Random %d\n", af->random);
-	fprintf(fp, "#-AFFECT\n");
-    }
+	// Catalysts
+	for (af = obj->catalyst; af != NULL; af = af->next) {
+		fprintf(fp, "#CATALYST %s\n", flag_string(catalyst_types,af->type));
 
-    // Catalysts
-    for (af = obj->catalyst; af != NULL; af = af->next) {
-	fprintf(fp, "#CATALYST %s\n", flag_string(catalyst_types,af->type));
+		if( af->where == TO_CATALYST_ACTIVE )
+			fprintf(fp, "Active 1\n");
 
-	fprintf(fp, "Charges %d\n", af->modifier);
+		if( !IS_NULLSTR(af->custom_name) )
+			fprintf(fp, "Name %s\n", af->custom_name);
 
-	fprintf(fp, "Strength %d\n", af->level);
+		fprintf(fp, "Charges %d\n", af->modifier);
 
-	fprintf(fp, "Random %d\n", af->random);
-	fprintf(fp, "#-CATALYST\n");
-    }
+		fprintf(fp, "Strength %d\n", af->level);
 
-    for (ed = obj->extra_descr; ed != NULL; ed = ed->next) {
-	fprintf(fp, "#EXTRA_DESCR %s~\n", ed->keyword);
-	fprintf(fp, "Description %s~\n", fix_string(ed->description));
-	fprintf(fp, "#-EXTRA_DESCR\n");
-    }
+		fprintf(fp, "Random %d\n", af->random);
+		fprintf(fp, "#-CATALYST\n");
+	}
 
-    if(obj->progs) {
-	for (i=0; i<TRIGSLOT_MAX; i++)
-	    for (opr = obj->progs[i]; opr != NULL; opr = opr->next)
-		fprintf(fp, "ObjProg %ld %s~ %s~\n", opr->vnum, trigger_name(opr->trig_type), trigger_phrase(opr->trig_type,opr->trig_phrase));
-    }
+	for (ed = obj->extra_descr; ed != NULL; ed = ed->next) {
+		fprintf(fp, "#EXTRA_DESCR %s~\n", ed->keyword);
+		fprintf(fp, "Description %s~\n", fix_string(ed->description));
+		fprintf(fp, "#-EXTRA_DESCR\n");
+	}
+
+	if(obj->progs) {
+		for(i = 0; i < TRIGSLOT_MAX; i++) {
+			if(list_size(obj->progs[i]) > 0) {
+				iterator_start(&it, obj->progs[i]);
+				while((trigger = (PROG_LIST *)iterator_nextdata(&it)))
+				fprintf(fp, "ObjProg %ld %s~ %s~\n", trigger->vnum, trigger_name(trigger->trig_type), trigger_phrase(trigger->trig_type,trigger->trig_phrase));
+				iterator_stop(&it);
+			}
+		}
+	}
 
 	if(obj->index_vars) {
 		for(var = obj->index_vars; var; var = var->next) {
@@ -888,142 +920,124 @@ void save_object_new(FILE *fp, OBJ_INDEX_DATA *obj)
 				fprintf(fp, "VarStr %s~ %d %s~\n", var->name, var->save, var->_.s ? var->_.s : "");
 			else if(var->type == VAR_ROOM && var->_.r && var->_.r->vnum)
 				fprintf(fp, "VarRoom %s~ %d %d\n", var->name, var->save, (int)var->_.r->vnum);
-
 		}
 	}
 
-    // Save item spells here.
-    if (obj->spells != NULL)
-	save_spell(fp, obj->spells);
+	// Save item spells here.
+	if (obj->spells != NULL)
+		save_spell(fp, obj->spells);
 
-    // Save objects with old spell format here.
-    if (obj->spells == NULL)
-    switch (obj->item_type)
-    {
-	case ITEM_ARMOR:
-	case ITEM_WEAPON:
-        case ITEM_RANGED_WEAPON:
-	    if (obj->value[5] > 0)
-	    {
-		if (obj->value[6] > 0 && obj->value[6] < MAX_SKILL)
-		{
-		    fprintf(fp, "SpellNew %s~ %ld %d\n",
-			skill_table[obj->value[6]].name, obj->value[5], 100);
-		}
+	// Save objects with old spell format here.
+	if (obj->spells == NULL)
+		switch (obj->item_type) {
+		case ITEM_ARMOR:
+		case ITEM_WEAPON:
+		case ITEM_RANGED_WEAPON:
+			if (obj->value[5] > 0) {
+				if (obj->value[6] > 0 && obj->value[6] < MAX_SKILL) {
+					fprintf(fp, "SpellNew %s~ %ld %d\n",
+					skill_table[obj->value[6]].name, obj->value[5], 100);
+				}
 
-		if (obj->value[7] > 0 && obj->value[7] < MAX_SKILL)
-		{
-		    fprintf(fp, "SpellNew %s~ %ld %d\n",
-			skill_table[obj->value[7]].name, obj->value[5], 100);
-		}
+				if (obj->value[7] > 0 && obj->value[7] < MAX_SKILL) {
+					fprintf(fp, "SpellNew %s~ %ld %d\n",
+					skill_table[obj->value[7]].name, obj->value[5], 100);
+				}
 
-		obj->value[5] = 0;
-		obj->value[6] = 0;
-		obj->value[7] = 0;
-	    }
-	    break;
+				obj->value[5] = 0;
+				obj->value[6] = 0;
+				obj->value[7] = 0;
+			}
+			break;
 
-	case ITEM_LIGHT:
-	    if (obj->value[3] > 0)
-	    {
-		if (obj->value[4] > 0 && obj->value[4] < MAX_SKILL)
-		{
-		    fprintf(fp, "SpellNew %s~ %ld %d\n",
-			skill_table[obj->value[4]].name, obj->value[3], 100);
-		}
+		case ITEM_LIGHT:
+			if (obj->value[3] > 0) {
+				if (obj->value[4] > 0 && obj->value[4] < MAX_SKILL) {
+					fprintf(fp, "SpellNew %s~ %ld %d\n",
+					skill_table[obj->value[4]].name, obj->value[3], 100);
+				}
 
-		if (obj->value[5] > 0 && obj->value[5] < MAX_SKILL)
-		{
-		    fprintf(fp, "SpellNew %s~ %ld %d\n",
-			skill_table[obj->value[5]].name, obj->value[3], 100);
-		}
+				if (obj->value[5] > 0 && obj->value[5] < MAX_SKILL) {
+					fprintf(fp, "SpellNew %s~ %ld %d\n",
+					skill_table[obj->value[5]].name, obj->value[3], 100);
+				}
 
-		obj->value[3] = 0;
-		obj->value[4] = 0;
-		obj->value[5] = 0;
-	    }
-	    break;
+				obj->value[3] = 0;
+				obj->value[4] = 0;
+				obj->value[5] = 0;
+			}
+			break;
 
-	case ITEM_ARTIFACT:
-	    if (obj->value[0] > 0)
-	    {
-		if (obj->value[1] > 0 && obj->value[1] < MAX_SKILL)
-		{
-		    fprintf(fp, "SpellNew %s~ %ld %d\n",
-			skill_table[obj->value[1]].name, obj->value[0], 100);
-		}
+		case ITEM_ARTIFACT:
+			if (obj->value[0] > 0) {
+				if (obj->value[1] > 0 && obj->value[1] < MAX_SKILL) {
+					fprintf(fp, "SpellNew %s~ %ld %d\n",
+					skill_table[obj->value[1]].name, obj->value[0], 100);
+				}
 
-		if (obj->value[2] > 0 && obj->value[2] < MAX_SKILL)
-		{
-		    fprintf(fp, "SpellNew %s~ %ld %d\n",
-			skill_table[obj->value[2]].name, obj->value[0], 100);
-		}
+				if (obj->value[2] > 0 && obj->value[2] < MAX_SKILL) {
+					fprintf(fp, "SpellNew %s~ %ld %d\n",
+					skill_table[obj->value[2]].name, obj->value[0], 100);
+				}
 
-		obj->value[0] = 0;
-		obj->value[1] = 0;
-		obj->value[2] = 0;
-	    }
-	    break;
+				obj->value[0] = 0;
+				obj->value[1] = 0;
+				obj->value[2] = 0;
+			}
+			break;
 
-	case ITEM_SCROLL:
-	case ITEM_PILL:
-	case ITEM_POTION:
-	    if (obj->value[0] > 0)
-	    {
-		if (obj->value[1] > 0 && obj->value[1] < MAX_SKILL)
-		{
-		    fprintf(fp, "SpellNew %s~ %ld %d\n",
-			skill_table[obj->value[1]].name, obj->value[0], 100);
-		}
+		case ITEM_SCROLL:
+		case ITEM_PILL:
+		case ITEM_POTION:
+			if (obj->value[0] > 0) {
+				if (obj->value[1] > 0 && obj->value[1] < MAX_SKILL) {
+					fprintf(fp, "SpellNew %s~ %ld %d\n",
+					skill_table[obj->value[1]].name, obj->value[0], 100);
+				}
 
-		if (obj->value[2] > 0 && obj->value[2] < MAX_SKILL)
-		{
-		    fprintf(fp, "SpellNew %s~ %ld %d\n",
-			skill_table[obj->value[2]].name, obj->value[0], 100);
-		}
+				if (obj->value[2] > 0 && obj->value[2] < MAX_SKILL) {
+					fprintf(fp, "SpellNew %s~ %ld %d\n",
+					skill_table[obj->value[2]].name, obj->value[0], 100);
+				}
 
-		if (obj->value[3] > 0 && obj->value[3] < MAX_SKILL)
-		{
-		    fprintf(fp, "SpellNew %s~ %ld %d\n",
-			skill_table[obj->value[3]].name, obj->value[0], 100);
-		}
+				if (obj->value[3] > 0 && obj->value[3] < MAX_SKILL) {
+					fprintf(fp, "SpellNew %s~ %ld %d\n",
+					skill_table[obj->value[3]].name, obj->value[0], 100);
+				}
 
-		if (obj->value[4] > 0 && obj->value[4] < MAX_SKILL)
-		{
-		    fprintf(fp, "SpellNew %s~ %ld %d\n",
-			skill_table[obj->value[4]].name, obj->value[0], 100);
-		}
+				if (obj->value[4] > 0 && obj->value[4] < MAX_SKILL) {
+					fprintf(fp, "SpellNew %s~ %ld %d\n",
+					skill_table[obj->value[4]].name, obj->value[0], 100);
+				}
 
-		obj->value[0] = 0;
-		obj->value[1] = 0;
-		obj->value[2] = 0;
-		obj->value[3] = 0;
-		obj->value[4] = 0;
-	    }
+				obj->value[0] = 0;
+				obj->value[1] = 0;
+				obj->value[2] = 0;
+				obj->value[3] = 0;
+				obj->value[4] = 0;
+			}
 
-	    break;
+			break;
 
-        case ITEM_WAND:
-	case ITEM_STAFF:
-	    if (obj->value[0] > 0)
-	    {
-		if (obj->value[3] > 0 && obj->value[3] < MAX_SKILL)
-		{
-		    fprintf(fp, "SpellNew %s~ %ld %d\n",
-			skill_table[obj->value[3]].name, obj->value[0], 100);
-		}
+		case ITEM_WAND:
+		case ITEM_STAFF:
+			if (obj->value[0] > 0) {
+				if (obj->value[3] > 0 && obj->value[3] < MAX_SKILL) {
+					fprintf(fp, "SpellNew %s~ %ld %d\n",
+					skill_table[obj->value[3]].name, obj->value[0], 100);
+				}
 
-		obj->value[0] = 0;
-		obj->value[3] = 0;
-	    }
+				obj->value[0] = 0;
+				obj->value[3] = 0;
+			}
 
-	    break;
+			break;
 
-	case ITEM_PORTAL:
-	    break;
-    }
+		case ITEM_PORTAL:
+			break;
+	}
 
-    fprintf(fp, "#-OBJECT\n");
+	fprintf(fp, "#-OBJECT\n");
 }
 
 
@@ -1145,6 +1159,7 @@ AREA_DATA *read_area_new(FILE *fp)
 		    iHash                   = vnum % MAX_KEY_HASH;
 		    room->next        = room_index_hash[iHash];
 		    room->area = area;
+		    list_appendlink(area->room_list, room);	// Add to the area room list
 		    room_index_hash[iHash]  = room;
 		    top_room++;
 		    top_vnum_room = top_vnum_room < vnum ? vnum : top_vnum_room; /* OLC */
@@ -1314,12 +1329,21 @@ AREA_DATA *read_area_new(FILE *fp)
     }
 
     if (IS_SET(area->area_flags, AREA_CHANGED))
-	REMOVE_BIT(area->area_flags, AREA_CHANGED);
+		REMOVE_BIT(area->area_flags, AREA_CHANGED);
+
+	if( area->version_area < VERSION_AREA_002 )
+	{
+		if( !str_cmp(area->name, "Realm of Alendith") )
+			SET_BIT(area->area_flags, AREA_NEWBIE);
+
+
+		area->version_area = VERSION_AREA_002;
+	}
 
     if (area->uid == 0)
     {
         area->uid = gconfig.next_area_uid++;
-	gconfig_write();
+		gconfig_write();
     }
 
 
@@ -1789,6 +1813,7 @@ ROOM_INDEX_DATA *read_room_new(FILE *fp, AREA_DATA *area, int recordtype)
     {
         room->vnum = fread_number(fp);
     }
+    room->persist = FALSE;
 
     while (str_cmp((word = fread_word(fp)), "#-ROOM")
            && str_cmp(word, "#-TERRAIN")) {
@@ -1838,6 +1863,13 @@ ROOM_INDEX_DATA *read_room_new(FILE *fp, AREA_DATA *area, int recordtype)
 	    case 'O':
 	        KEYS("Owner",	room->owner,	fread_string(fp));
 		break;
+		case 'P':
+			if(!str_cmp(word, "Persist")) {
+				room->persist = TRUE;
+
+				fMatch = TRUE;
+			}
+			break;
 
 	    case 'R':
 		KEY("Room_flags", 	room->room_flags, 	fread_number(fp));
@@ -1860,12 +1892,13 @@ ROOM_INDEX_DATA *read_room_new(FILE *fp, AREA_DATA *area, int recordtype)
 			    rpr->vnum = vnum;
 			    rpr->trig_type = tindex;
 			    rpr->trig_phrase = fread_string(fp);
+			    rpr->trig_number = atoi(rpr->trig_phrase);
+				rpr->numeric = is_number(rpr->trig_phrase);
 			    //SET_BIT(room->rprog_flags, rpr->trig_type);
 
 			    if(!room->progs->progs) room->progs->progs = new_prog_bank();
 
-			    rpr->next = room->progs->progs[trigger_table[tindex].slot];
-			    room->progs->progs[trigger_table[tindex].slot] = rpr;
+				list_appendlink(room->progs->progs[trigger_table[tindex].slot], rpr);
 		    }
 		    fMatch = TRUE;
 		}
@@ -1941,6 +1974,9 @@ ROOM_INDEX_DATA *read_room_new(FILE *fp, AREA_DATA *area, int recordtype)
 	if (recordtype != ROOMTYPE_TERRAIN)
 		variable_copylist(&room->index_vars,&room->progs->vars,FALSE);
 
+	if( room->persist )
+		persist_addroom(room);
+
     return room;
 }
 
@@ -1959,6 +1995,7 @@ MOB_INDEX_DATA *read_mobile_new(FILE *fp, AREA_DATA *area)
 
     mob = new_mob_index();
     mob->vnum = fread_number(fp);
+    mob->persist = FALSE;
 
     while (str_cmp((word = fread_word(fp)), "#-MOBILE")) {
 	fMatch = FALSE;
@@ -2056,12 +2093,13 @@ MOB_INDEX_DATA *read_mobile_new(FILE *fp, AREA_DATA *area)
 			    mpr->vnum = vnum;
 			    mpr->trig_type = tindex;
 			    mpr->trig_phrase = fread_string(fp);
+			    mpr->trig_number = atoi(mpr->trig_phrase);
+				mpr->numeric = is_number(mpr->trig_phrase);
 			    //SET_BIT(room->rprog_flags, rpr->trig_type);
 
 			    if(!mob->progs) mob->progs = new_prog_bank();
 
-			    mpr->next = mob->progs[trigger_table[tindex].slot];
-			    mob->progs[trigger_table[tindex].slot] = mpr;
+				list_appendlink(mob->progs[trigger_table[tindex].slot], mpr);
 		    }
 		    fMatch = TRUE;
 		}
@@ -2077,6 +2115,10 @@ MOB_INDEX_DATA *read_mobile_new(FILE *fp, AREA_DATA *area)
 		break;
 	    case 'P':
 	        KEY("Parts",	mob->parts,	fread_number(fp));
+			if(!str_cmp(word, "Persist")) {
+				mob->persist = TRUE;
+				fMatch = TRUE;
+			}
 		break;
 
 	    case 'R':
@@ -2211,6 +2253,7 @@ OBJ_INDEX_DATA *read_object_new(FILE *fp, AREA_DATA *area)
 
     obj = new_obj_index();
     obj->vnum = fread_number(fp);
+    obj->persist = FALSE;
 
     while (str_cmp((word = fread_word(fp)), "#-OBJECT")) {
 	fMatch = FALSE;
@@ -2301,18 +2344,23 @@ OBJ_INDEX_DATA *read_object_new(FILE *fp, AREA_DATA *area)
 			    opr->vnum = vnum;
 			    opr->trig_type = tindex;
 			    opr->trig_phrase = fread_string(fp);
+			    opr->trig_number = atoi(opr->trig_phrase);
+				opr->numeric = is_number(opr->trig_phrase);
 			    //SET_BIT(room->rprog_flags, rpr->trig_type);
 
 			    if(!obj->progs) obj->progs = new_prog_bank();
 
-			    opr->next = obj->progs[trigger_table[tindex].slot];
-			    obj->progs[trigger_table[tindex].slot] = opr;
+				list_appendlink(obj->progs[trigger_table[tindex].slot], opr);
 		    }
 		    fMatch = TRUE;
 		}
 		break;
 
 	    case 'P':
+			if(!str_cmp(word, "Persist")) {
+				obj->persist = TRUE;
+				fMatch = TRUE;
+			}
 	        KEY("Points",	obj->points, fread_number(fp));
 		break;
 
@@ -2644,7 +2692,11 @@ EXIT_DATA *read_exit_new(FILE *fp)
     char buf[MSL];
 
     ex = new_exit();
-    ex->orig_door = fread_number(fp);
+    word = fread_word(fp);
+    if( is_number(word) )
+    	ex->orig_door = atoi(word);
+    else
+    	ex->orig_door = parse_direction(word);
     while (str_cmp((word = fread_word(fp)), "#-X")) {
 	fMatch = FALSE;
 
@@ -2789,13 +2841,25 @@ AFFECT_DATA *read_obj_catalyst_new(FILE *fp)
 
     af = new_affect();
     af->type = flag_value(catalyst_types,fread_string_eol(fp));
+    af->where = TO_CATALYST_DORMANT;
 
     while (str_cmp((word = fread_word(fp)), "#-CATALYST")) {
 	fMatch = FALSE;
 	switch (word[0]) {
+		case 'A':
+			if (!str_cmp(word, "Active")) {
+				fread_to_eol(fp);
+				fMatch = TRUE;
+				af->where = TO_CATALYST_ACTIVE;
+			}
+			break;
+
 	    case 'C':
 	        KEY("Charges",	af->modifier,	fread_number(fp));
 		break;
+
+		case 'N':
+			KEYS("Name",	af->custom_name,	fread_string_eol(fp));
 
 	    case 'R':
 		KEY("Random",		af->random,	fread_number(fp));
@@ -2921,11 +2985,12 @@ TOKEN_INDEX_DATA *read_token(FILE *fp)
 			    tpr->vnum = vnum;
 			    tpr->trig_type = tindex;
 			    tpr->trig_phrase = fread_string(fp);
+			    tpr->trig_number = atoi(tpr->trig_phrase);
+				tpr->numeric = is_number(tpr->trig_phrase);
 
 			    if(!token->progs) token->progs = new_prog_bank();
 
-			    tpr->next = token->progs[trigger_table[tindex].slot];
-			    token->progs[trigger_table[tindex].slot] = tpr;
+				list_appendlink(token->progs[trigger_table[tindex].slot], tpr);
 		    }
 		    fMatch = TRUE;
 		}

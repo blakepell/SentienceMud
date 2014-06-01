@@ -68,7 +68,7 @@ void do_deposit(CHAR_DATA *ch, char *argument)
 
 	    sprintf(buf, "$N hands you %d silver coins and %d gold coins.",
 		    silver, gold);
-	    act(buf, ch, NULL, mob, TO_CHAR);
+	    act(buf, ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
 	    ch->questpoints += qp;
 	    ch->practice += prac;
@@ -119,9 +119,9 @@ void do_deposit(CHAR_DATA *ch, char *argument)
     {
 	sprintf(buf, "You have deposited {Y%d{x bottled souls with %s!", i,
 		mob->short_descr);
-	act(buf, ch, NULL, NULL, TO_CHAR);
+	act(buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	sprintf(buf, "$n deposits %d bottled souls.", i);
-	act(buf, ch, NULL, NULL, TO_ROOM);
+	act(buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
 	if (boost_table[BOOST_PNEUMA].boost != 100)
 	{
@@ -309,7 +309,7 @@ void do_strike(CHAR_DATA *ch, char *argument)
 	if (obj->pIndexData->vnum != OBJ_VNUM_GLASS_HAMMER)
 	{
 	    act("You can't accomplish anything with $p.",
-	    	ch, obj, NULL, TO_CHAR);
+	    	ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 	    return;
 	}
     }
@@ -340,22 +340,22 @@ void do_strike(CHAR_DATA *ch, char *argument)
 
     if (obj_struck->fragility == OBJ_FRAGILE_SOLID)
     {
-	act("That would be pointless as $p does not decay.", ch, obj_struck, NULL, TO_CHAR);
+	act("That would be pointless as $p does not decay.", ch, NULL, NULL, obj_struck, NULL, NULL, NULL, TO_CHAR);
 	return;
     }
 
     sprintf(buf, "{YYou strike $p{Y with %s and it flashes with a bright light!{x",
     	obj->short_descr);
-    act(buf, ch, obj_struck, NULL, TO_CHAR);
+    act(buf, ch, NULL, NULL, obj_struck, NULL, NULL, NULL, TO_CHAR);
     sprintf(buf, "{Y$n strikes $p{Y with %s and it flashes with a bright light!{x",
         obj->short_descr);
-    act(buf, ch, obj_struck, NULL, TO_ROOM);
+    act(buf, ch, NULL, NULL, obj_struck, NULL, NULL, NULL, TO_ROOM);
 
     obj_struck->condition = 100;
     obj_struck->times_fixed = 0;
 
-    act("$p shatters into a million pieces!", ch, obj, NULL, TO_CHAR);
-    act("$n's $p shatters into a million pieces!", ch, obj, NULL, TO_ROOM);
+    act("$p shatters into a million pieces!", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+    act("$n's $p shatters into a million pieces!", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
     extract_obj(obj);
 }
 
@@ -402,9 +402,8 @@ void do_lore(CHAR_DATA *ch, char *argument)
     if (arg[0] == '\0' || arg2[0] == '\0'
     || !is_number(arg) || !is_number(arg2))
     {
-	act("{R$N tells you 'To look up information on an item type 'lore <minimum level> <maximum level> <item type> <wear location/weapon class>'{x", ch, NULL, mob, TO_CHAR);
-	act("{R$N tells you 'The item type and wear location/weapon class are optional.'{x",
-	ch, NULL, mob, TO_CHAR);
+	act("{R$N tells you 'To look up information on an item type 'lore <minimum level> <maximum level> <item type> <wear location/weapon class>'{x", ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+	act("{R$N tells you 'The item type and wear location/weapon class are optional.'{x", ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	return;
     }
 
@@ -413,7 +412,7 @@ void do_lore(CHAR_DATA *ch, char *argument)
     if (min < 1 || max > 120 || min > max)
     {
 	act("{R$N tells you 'There is no such item. The level range is 1-120.'{x",
-		ch, NULL, mob, TO_CHAR);
+		ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	return;
     }
 
@@ -422,13 +421,13 @@ void do_lore(CHAR_DATA *ch, char *argument)
     {
 	sprintf(buf,
 	"{R$N tells you 'You don't have enough money for my services. You need %d silver.'{x", cost);
-	act(buf, ch, NULL, mob, TO_CHAR);
+	act(buf, ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	return;
     }
 
     if ((max - min) > 15)
     {
-	act("{R$N tells you, 'Sorry $n, that's too wide a range! I would be up digging through the books all night!'{x", ch, NULL, mob, TO_CHAR);
+	act("{R$N tells you, 'Sorry $n, that's too wide a range! I would be up digging through the books all night!'{x", ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	return;
     }
 
@@ -436,8 +435,8 @@ void do_lore(CHAR_DATA *ch, char *argument)
     if (arg3[0] != '\0' && type == NO_FLAG)
     {
 	act("{R$N tells you, 'I've never heard of that type of item.'{x",
-	    ch, NULL, mob, TO_CHAR);
-	act("{R$N tells you, 'I mainly know about armor, weapons, ranged weapons, lights, containers, artifacts, and musical instruments.'{x", ch, NULL, mob, TO_CHAR);
+	    ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+	act("{R$N tells you, 'I mainly know about armor, weapons, ranged weapons, lights, containers, artifacts, and musical instruments.'{x", ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	return;
     }
 
@@ -446,9 +445,9 @@ void do_lore(CHAR_DATA *ch, char *argument)
     &&   flag_value(wear_flags, arg4) == NO_FLAG)
     {
 	act("{R$N tells you, 'I've never heard of such a place to wear an item.'{x",
-	    ch, NULL, mob, TO_CHAR);
+	    ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	act("{R$N tells you, 'The valid arguments are: finger, neck, body, head, legs, feet, hands, arms, shield, about, waist, wrist, wield, and hold.{x",
-	    ch, NULL, mob, TO_CHAR);
+	    ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	return;
     }
 
@@ -463,20 +462,20 @@ void do_lore(CHAR_DATA *ch, char *argument)
          &&   ranged_weapon_type(arg4) == RANGED_WEAPON_EXOTIC)))
     {
 	act("{R$N tells you, 'I've never heard of such a type of weapon.'{x",
-	    ch, NULL, mob, TO_CHAR);
+	    ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	return;
     }
 
     deduct_cost(ch, cost);
-    act("You hand $N some coins.", ch, NULL, mob, TO_CHAR);
-    act("$n hands $N some coins.", ch, NULL, mob, TO_ROOM);
+    act("You hand $N some coins.", ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+    act("$n hands $N some coins.", ch, mob, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
     act("$n wanders to the back of the room.",
-        mob, NULL, NULL, TO_ROOM);
+        mob, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
     act("$n digs through some books for a moment.",
-    	mob, NULL, NULL, TO_ROOM);
+    	mob, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
     act("$n thinks, then scribbles something down on a scroll.",
-        mob, NULL, NULL, TO_ROOM);
+        mob, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
     iHash = 0;
     i = 0;
@@ -577,8 +576,8 @@ void do_lore(CHAR_DATA *ch, char *argument)
 
     SET_BIT(scroll->extra_flags, ITEM_GLOW);
 
-    act("$N gives you $p.", ch, scroll, mob, TO_CHAR);
-    act("$N gives $n $p.", ch, scroll, mob, TO_ROOM);
+    act("$N gives you $p.", ch, mob, NULL, scroll, NULL, NULL, NULL, TO_CHAR);
+    act("$N gives $n $p.", ch, mob, NULL, scroll, NULL, NULL, NULL, TO_ROOM);
     obj_to_char(scroll, ch);
 }
 
@@ -628,13 +627,13 @@ void do_combine(CHAR_DATA *ch, char *argument)
     /* setup objects*/
     if ((obj1 = get_obj_list(ch, arg, ch->carrying)) == NULL)
     {
-	act("You aren't carrying any $t.", ch, arg, NULL, TO_CHAR);
+	act("You aren't carrying any $t.", ch, NULL, NULL, NULL, NULL, arg, NULL, TO_CHAR);
 	return;
     }
 
     if ((obj2 = get_obj_list(ch, arg2, ch->carrying)) == NULL)
     {
-	act("You aren't carrying any $t.", ch, arg2, NULL, TO_CHAR);
+	act("You aren't carrying any $t.", ch, NULL, NULL, NULL, NULL, arg2, NULL, TO_CHAR);
 	return;
     }
 
@@ -648,7 +647,7 @@ void do_combine(CHAR_DATA *ch, char *argument)
 	    potions = TRUE;
 	    break;
 	default:
-	    act("$p is not a scroll or a potion.", ch, obj1, NULL, TO_CHAR);
+	    act("$p is not a scroll or a potion.", ch, NULL, NULL, obj1, NULL, NULL, NULL, TO_CHAR);
 	    return;
     }
 
@@ -656,7 +655,7 @@ void do_combine(CHAR_DATA *ch, char *argument)
     {
 	if (obj2->item_type != ITEM_SCROLL)
 	{
-	    act("$p and $P are not the same type of item.", ch, obj1, obj2, TO_CHAR);
+	    act("$p and $P are not the same type of item.", ch, NULL, NULL, obj1, obj2, NULL, NULL, TO_CHAR);
 	    return;
 	}
     }
@@ -665,7 +664,7 @@ void do_combine(CHAR_DATA *ch, char *argument)
     {
 	if (obj2->item_type != ITEM_POTION)
 	{
-	    act("$p and $P are not the same type of item.", ch, obj1, obj2, TO_CHAR);
+	    act("$p and $P are not the same type of item.", ch, NULL, NULL, obj1, obj2, NULL, NULL, TO_CHAR);
 	    return;
 	}
     }
@@ -723,9 +722,9 @@ void do_combine(CHAR_DATA *ch, char *argument)
     if (number_percent() > chance + 7)
     {
 	act("You make a slight mistake and $p and $P vanish in a mist!",
-	    ch, obj1, obj2, TO_CHAR);
+	    ch, NULL, NULL, obj1, obj2, NULL, NULL, TO_CHAR);
 	act("$n makes a slight mistake and $p and $P vanish in a mist!",
-	    ch, obj1, obj2, TO_ROOM);
+	    ch, NULL, NULL, obj1, obj2, NULL, NULL, TO_ROOM);
 	extract_obj(obj1);
 	extract_obj(obj2);
 	check_improve(ch, gsn_combine, 1, FALSE);
@@ -736,9 +735,9 @@ void do_combine(CHAR_DATA *ch, char *argument)
     obj1->value[0] = UMIN(obj1->value[0], ch->tot_level * 2);
 
     sprintf(buf, "You combine $p and $P.");
-    act(buf, ch, obj1, obj2, TO_CHAR);
+    act(buf, ch, NULL, NULL, obj1, obj2, NULL, NULL, TO_CHAR);
     sprintf(buf, "$n combines $p and $P.");
-    act(buf, ch, obj1, obj2, TO_ROOM);
+    act(buf, ch, NULL, NULL, obj1, obj2, NULL, NULL, TO_ROOM);
 
     extract_obj(obj2);
     check_improve(ch, gsn_combine, 1, TRUE);
@@ -759,19 +758,19 @@ void do_keep(CHAR_DATA *ch, char *argument)
 
     if ((obj = get_obj_list(ch, arg, ch->carrying)) == NULL)
     {
-	act("You aren't carrying any $t.", ch, arg, NULL, TO_CHAR);
+	act("You aren't carrying any $t.", ch, NULL, NULL, NULL, NULL, arg, NULL, TO_CHAR);
 	return;
     }
 
     if (IS_SET(obj->extra2_flags, ITEM_KEPT))
     {
 	REMOVE_BIT(obj->extra2_flags, ITEM_KEPT);
-	act("You will no longer keep $p.", ch, obj, NULL, TO_CHAR);
+	act("You will no longer keep $p.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
     }
     else
     {
 	SET_BIT(obj->extra2_flags, ITEM_KEPT);
-	act("You will now keep $p.", ch, obj, NULL, TO_CHAR);
+	act("You will now keep $p.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
     }
 }
 
@@ -830,8 +829,8 @@ void do_consume(CHAR_DATA *ch, char *argument)
         return;
     }
 
-    act("$n savagely consumes $p.", ch, corpse, NULL, TO_ROOM);
-    act("You savagely consume $p.", ch, corpse, NULL, TO_CHAR);
+    act("$n savagely consumes $p.", ch, NULL, NULL, corpse, NULL, NULL, NULL, TO_ROOM);
+    act("You savagely consume $p.", ch, NULL, NULL, corpse, NULL, NULL, NULL, TO_CHAR);
 
     extract_obj(corpse);
 
@@ -880,7 +879,7 @@ void do_touch(CHAR_DATA *ch, char *argument)
 	return;
     }
 
-	if(p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, TRIG_TOUCH))
+	if(p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_TOUCH, NULL))
 		return;
 
     if (!obj->value[0])
@@ -889,8 +888,8 @@ void do_touch(CHAR_DATA *ch, char *argument)
     }
     else
     {
-	act("$n touches $p briefly.", ch, obj, NULL, TO_ROOM);
-	act("You touch $p briefly.", ch, obj, NULL, TO_CHAR);
+	act("$n touches $p briefly.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
+	act("You touch $p briefly.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 
 	for (spell = obj->spells; spell != NULL; spell = spell->next)
 		obj_cast_spell(spell->sn, spell->level, ch, ch, NULL);
@@ -898,7 +897,7 @@ void do_touch(CHAR_DATA *ch, char *argument)
 	if(obj->value[0] > 0) --obj->value[0];
 
 	if(number_percent() < obj->value[1]) {
-		act("$p fades away as the ink dries.", ch, obj, NULL, TO_ALL);
+		act("$p fades away as the ink dries.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ALL);
 		extract_obj(obj);
 	}
 	WAIT_STATE(ch, 8);
@@ -937,12 +936,12 @@ void do_ruboff(CHAR_DATA *ch, char *argument)
 	return;
     }
 
-	if(p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, TRIG_PREREMOVE))
+	if(p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_PREREMOVE, NULL))
 		return;
 
-	if(!p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, TRIG_REMOVE)) {
-		act("$n rubs $p vigorously until it fades away..", ch, obj, NULL, TO_ROOM);
-		act("You rub $p vigorously until it fades away.", ch, obj, NULL, TO_CHAR);
+	if(!p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_REMOVE, NULL)) {
+		act("$n rubs $p vigorously until it fades away..", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
+		act("You rub $p vigorously until it fades away.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 	}
 
 	extract_obj(obj);
@@ -1055,8 +1054,8 @@ void do_ink(CHAR_DATA *ch, char *argument)
 		}
 	}
 
-	act("{Y$n lays out the necessary inks and begins tattooing...{x", ch, NULL, NULL, TO_ROOM);
-	act("{YYou lay out the necessary inks and begin tattooing...{x", ch, NULL, NULL, TO_CHAR);
+	act("{Y$n lays out the necessary inks and begins tattooing...{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+	act("{YYou lay out the necessary inks and begin tattooing...{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
 	for (obj = ch->carrying; obj != NULL; obj = next) {
 		next = obj->next_content;
@@ -1101,8 +1100,8 @@ void ink_end( CHAR_DATA *ch, CHAR_DATA *victim, sh_int loc, sh_int sn, sh_int sn
 
     if (number_percent() >= chance)
     {
-	act("{Y$n's attempt to ink a tattoo fails miserably.{x", ch, NULL, NULL, TO_ROOM);
-	act("{YYou fail to coalesce the ink into a tattoo, dispersing them on the wind.{x", ch, NULL, NULL, TO_CHAR);
+	act("{Y$n's attempt to ink a tattoo fails miserably.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+	act("{YYou fail to coalesce the ink into a tattoo, dispersing them on the wind.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	check_improve(ch, gsn_tattoo, FALSE, 2);
 	return;
     }
@@ -1113,16 +1112,16 @@ void ink_end( CHAR_DATA *ch, CHAR_DATA *victim, sh_int loc, sh_int sn, sh_int sn
 
 	if(victim != ch) {
 		sprintf(buf, "You coalesce the ink into a tattoo of %s onto $N's skin.", tattoo_name);
-		act(buf, ch, NULL, victim, TO_CHAR);
+		act(buf, ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		sprintf(buf, "$n coalesces the ink into a tattoo of %s onto your skin.", tattoo_name);
-		act(buf, ch, NULL, victim, TO_VICT);
+		act(buf, ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
 		sprintf(buf, "$n coalesces the ink into a tattoo of %s onto $N's skin.", tattoo_name);
-		act(buf, ch, NULL, victim, TO_NOTVICT);
+		act(buf, ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
 	} else {
 		sprintf(buf, "You coalesce the ink into a tattoo of %s onto your skin.", tattoo_name);
-		act(buf, ch, NULL, NULL, TO_CHAR);
+		act(buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		sprintf(buf, "$n coalesces the ink into a tattoo of %s onto $s skin.", tattoo_name);
-		act(buf, ch, NULL, NULL, TO_ROOM);
+		act(buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	}
 
     check_improve(ch, gsn_tattoo, TRUE, 2);
@@ -1240,7 +1239,7 @@ void do_affix(CHAR_DATA *ch, char *argument)
 		return;
 	}
 
-	if(p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, victim, TRIG_PREWEAR))
+	if(p_percent_trigger(NULL, obj, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_PREWEAR, NULL))
 		return;
 
 	if(victim != ch) {
@@ -1252,13 +1251,13 @@ void do_affix(CHAR_DATA *ch, char *argument)
 
 	if(!silent) {
 		if(victim != ch) {
-			act("$n affixes $p on $N's skin.", ch, obj, victim, TO_NOTVICT);
-			act("$n affixes $p on your skin.", ch, obj, victim, TO_VICT);
-			act("You affix $p on $N's skin.", ch, obj, victim, TO_CHAR);
+			act("$n affixes $p on $N's skin.", ch, victim, NULL, obj, NULL, NULL, NULL, TO_NOTVICT);
+			act("$n affixes $p on your skin.", ch, victim, NULL, obj, NULL, NULL, NULL, TO_VICT);
+			act("You affix $p on $N's skin.", ch,  victim, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 		} else {
-			act("$n affixes $p to $s skin.", ch, obj, NULL, TO_ROOM);
-			act("You affix $p to your skin.", ch, obj, NULL, TO_CHAR);
+			act("$n affixes $p to $s skin.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
+			act("You affix $p to your skin.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 		}
-		p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, victim, TRIG_WEAR);
+		p_percent_trigger(NULL, obj, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_WEAR, NULL);
 	}
 }

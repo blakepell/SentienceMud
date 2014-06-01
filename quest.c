@@ -207,10 +207,8 @@ void do_quest(CHAR_DATA *ch, char *argument)
 	    return;
 	}
 
-        act("$n asks $N for a list of quest items.",
-			ch, NULL, mob, TO_ROOM);
-        act ("You ask $N for a list of quest items.",
-			ch, NULL, mob, TO_CHAR);
+        act("$n asks $N for a list of quest items.",  ch, mob, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+        act ("You ask $N for a list of quest items.", ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
 	sprintf(buf, "{YNum Cost   Name{x\n\r");
 	send_to_char(buf, ch);
@@ -291,8 +289,8 @@ void do_quest(CHAR_DATA *ch, char *argument)
 		return;
 	    }
 
-	    act("$n buys 15 practices.", ch, NULL, NULL, TO_ROOM);
-	    act("You buy 15 practices.", ch, NULL, NULL, TO_CHAR);
+//	    act("$n buys 15 practices.", ch, NULL, NULL, TO_ROOM);
+	    act("You buy 15 practices.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	    ch->questpoints -= 300;
 	    ch->practice += 15;
 	    return;
@@ -350,8 +348,8 @@ void do_quest(CHAR_DATA *ch, char *argument)
 		set_armor_obj(obj);
 	    }
 
-            act("$N gives $p to $n.", ch, obj, mob, TO_ROOM);
-            act("$N gives you $p.",   ch, obj, mob, TO_CHAR);
+            act("$N gives $p to $n.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_ROOM);
+            act("$N gives you $p.",   ch, mob, NULL, obj, NULL, NULL, NULL, TO_CHAR);
             obj_to_char(obj, ch);
         }
         return;
@@ -421,11 +419,10 @@ void do_quest(CHAR_DATA *ch, char *argument)
 	}
 
 	sprintf(buf, "You renew $p to $N for %d quest points.", cost);
-	act(buf, ch, obj, mob, TO_CHAR);
+	act(buf, ch, mob, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 
-	act("$n shows $p to $N.", ch, obj, mob, TO_ROOM);
-	act("$N chants a mantra over $p, then hands it back to $n.",
-	    ch, obj, mob, TO_ROOM);
+	act("$n shows $p to $N.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_ROOM);
+	act("$N chants a mantra over $p, then hands it back to $n.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 
 	obj->level = ch->tot_level;
 	if (obj->item_type == ITEM_ARMOR)
@@ -499,7 +496,7 @@ void do_quest(CHAR_DATA *ch, char *argument)
 	roll = number_percent();
 	if (roll < get_skill(ch,gsn_haggle))
 	{
-	    act("You haggle with $N.", ch, NULL, mob, TO_CHAR);
+	    act("You haggle with $N.", ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	    cost += obj->cost/5 * roll/100;
 	    check_improve(ch,gsn_haggle,TRUE,4);
 	}
@@ -507,9 +504,9 @@ void do_quest(CHAR_DATA *ch, char *argument)
 	cost = UMAX(cost, 1);
 
 	sprintf(buf, "You sell $p to $N for %d quest points.", cost);
-	act(buf, ch, obj, mob, TO_CHAR);
+	act(buf, ch, mob, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 
-	act("$n sells $p to $N.", ch, obj, mob, TO_ROOM);
+	act("$n sells $p to $N.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 
 	ch->questpoints += cost;
 	extract_obj(obj);
@@ -557,10 +554,8 @@ void do_quest(CHAR_DATA *ch, char *argument)
 
 	an_obj = create_object(pObj, 0, TRUE);
 
-	act("You ask $N for some information about $p.",
-		ch, an_obj, mob, TO_CHAR);
-	act("$n asks $N for some information about $p.",
-		ch, an_obj, mob, TO_ROOM);
+	act("You ask $N for some information about $p.", ch, mob, NULL, an_obj, NULL, NULL, NULL, TO_CHAR);
+	act("$n asks $N for some information about $p.", ch, mob, NULL, an_obj, NULL, NULL, NULL, TO_ROOM);
 
 	obj_to_char(an_obj, ch);
 
@@ -580,8 +575,8 @@ void do_quest(CHAR_DATA *ch, char *argument)
 	    return;
 	}
 
-        act("$n asks $N for a quest.", ch, NULL, mob, TO_ROOM);
-        act ("You ask $N for a quest.",ch, NULL, mob, TO_CHAR);
+        act("$n asks $N for a quest.", ch, mob, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+        act ("You ask $N for a quest.",ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
 	if (IS_QUESTING(ch))
         {
@@ -672,10 +667,8 @@ void do_quest(CHAR_DATA *ch, char *argument)
             return;
         }
 
-	act("$n informs $N $e has completed $s quest.",
-			ch, NULL, mob, TO_ROOM);
-        act ("You inform $N you have completed $s quest.",
-			ch, NULL, mob, TO_CHAR);
+	act("$n informs $N $e has completed $s quest.", ch, mob, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+        act ("You inform $N you have completed $s quest.", ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
         found = FALSE;
 	incomplete = FALSE;
@@ -742,8 +735,8 @@ void do_quest(CHAR_DATA *ch, char *argument)
 	    {
 		if (ch == part->pObj->carried_by)
 		{
-		    act("You hand $p to $N.",ch, part->pObj, mob, TO_CHAR);
-		    act("$n hands $p to $N.",ch, part->pObj, mob, TO_ROOM);
+		    act("You hand $p to $N.",ch, mob, NULL, part->pObj, NULL, NULL, NULL, TO_CHAR);
+		    act("$n hands $p to $N.",ch, mob, NULL, part->pObj, NULL, NULL, NULL, TO_ROOM);
 
 		    extract_obj(part->pObj);
 
@@ -865,8 +858,8 @@ bool generate_quest(CHAR_DATA *ch, CHAR_DATA *questman)
 	    return FALSE;
     }
 
-    act("$N gives $p to $n.", ch, scroll, questman, TO_ROOM);
-    act("$N gives you $p.",   ch, scroll, questman, TO_CHAR);
+    act("$N gives $p to $n.", ch, questman, NULL, scroll, NULL, NULL, NULL, TO_ROOM);
+    act("$N gives you $p.",   ch, questman, NULL, scroll, NULL, NULL, NULL, TO_CHAR);
     obj_to_char(scroll, ch);
     return TRUE;
 }

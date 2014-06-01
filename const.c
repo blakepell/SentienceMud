@@ -769,7 +769,7 @@ const 	struct	race_type	race_table	[] =
 		PART_HEAD | PART_ARMS | PART_LEGS | PART_HEART | PART_BRAINS | PART_GUTS | PART_HANDS | PART_FEET | PART_FINGERS | PART_EAR | PART_EYE
 	}, {
 		"fiend",
-		FALSE,
+		TRUE,
 		&grn_fiend,&gprn_fiend,
 		0,
 		0,
@@ -825,7 +825,7 @@ const 	struct	race_type	race_table	[] =
 		PART_HEAD | PART_LEGS | PART_HEART | PART_BRAINS | PART_GUTS | PART_HANDS | PART_FEET | PART_FINGERS | PART_EAR | PART_EYE | PART_WINGS | PART_TAIL | PART_CLAWS | PART_FANGS | PART_SCALES
 	}, {
 		"changeling",
-		FALSE,
+		TRUE,
 		&grn_changeling,&gprn_changeling,
 		0,
 		0,
@@ -853,7 +853,7 @@ const 	struct	race_type	race_table	[] =
 		PART_HEAD | PART_ARMS | PART_LEGS | PART_HEART | PART_BRAINS | PART_GUTS | PART_HANDS | PART_FEET | PART_FINGERS | PART_EAR | PART_EYE | PART_TAIL | PART_HORNS
 	}, {
 		"wraith",
-		FALSE,
+		TRUE,
 		&grn_wraith,&gprn_wraith,
 		0,
 		0,
@@ -4434,11 +4434,11 @@ const struct skill_type	skill_table [MAX_SKILL]	=
 		"wind of confusion", "", "", "",
 		{ { CATALYST_NONE, 0 },{ CATALYST_NONE, 0 },{ CATALYST_NONE, 0 } }
 	}, {
-		"wither",
+		"withering cloud",
 		{ 14, 31, 31, 31 }, { 8, 6, 2, 2},
-		spell_wither, TAR_IGNORE, POS_STANDING, &gsn_wither,
+		spell_withering_cloud, TAR_IGNORE, POS_STANDING, &gsn_withering_cloud,
 		-1, 50, 12,
-		"wither", "!Wither!", "", "",
+		"withering cloud", "!Withering Cloud!", "", "",
 		{ { CATALYST_NONE, 0 },{ CATALYST_NONE, 0 },{ CATALYST_NONE, 0 } }
 	}, {
 		"word of recall",

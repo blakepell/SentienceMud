@@ -40,6 +40,9 @@ extern long mobile_count;
 #define BUFFER_OVERFLOW	1
 #define BUFFER_FREED 	2
 
+SKILL_ENTRY *new_skill_entry();
+void free_skill_entry(SKILL_ENTRY *entry);
+
 /* note recycling */
 #define ND NOTE_DATA
 ND	*new_note args( (void) );

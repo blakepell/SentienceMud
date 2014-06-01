@@ -20,7 +20,7 @@ SPELL_FUNC(spell_chill_touch)
 
 	dam = level + UMIN(victim->max_hit/15, 100);
 	if (!saves_spell(level, victim,DAM_COLD)) {
-		act("{C$n turns blue and shivers.{x",victim,NULL,NULL,TO_ROOM);
+		act("{C$n turns blue and shivers.{x",victim, NULL, NULL, NULL, NULL,NULL,NULL,TO_ROOM);
 		af.where = TO_AFFECTS;
 		af.group = AFFGROUP_MAGICAL;
 		af.type = sn;
@@ -56,7 +56,7 @@ SPELL_FUNC(spell_frost_barrier)
 		if (victim == ch)
 			send_to_char("You are already surrounded by a frost barrier.\n\r",ch);
 		else
-			act("$N is already surrounded by a frost barrier.", ch, NULL, victim, TO_CHAR);
+			act("$N is already surrounded by a frost barrier.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		return FALSE;
 	}
 
@@ -70,7 +70,7 @@ SPELL_FUNC(spell_frost_barrier)
 	af.bitvector = 0;
 	af.bitvector2 = AFF2_FROST_BARRIER;
 	affect_to_char(victim, &af);
-	act("{BYou hear a low-pitched humming sound as the temperature around $n drops.{x", victim, NULL, NULL, TO_ROOM);
+	act("{BYou hear a low-pitched humming sound as the temperature around $n drops.{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	send_to_char("{BThe temperature of the air around you drops rapidly, forming a frost barrier.{x\n\r", victim);
 	return TRUE;
 }
@@ -82,13 +82,13 @@ SPELL_FUNC(spell_frost_breath)
 	CHAR_DATA *vch, *vch_next;
 	int dam;
 
-	act("$n breathes out a freezing cone of frost!",ch,NULL,victim,TO_NOTVICT);
-	act("You breath out a cone of frost.",ch,NULL,NULL,TO_CHAR);
+	act("$n breathes out a freezing cone of frost!",ch,victim, NULL, NULL, NULL, NULL, NULL,TO_NOTVICT);
+	act("You breath out a cone of frost.",ch,NULL,NULL,NULL,NULL,NULL,NULL,TO_CHAR);
 
 	if (check_shield_block_projectile(ch, victim, "freezing cone of frost", NULL))
 		return FALSE;
 
-	act("$n breathes a freezing cone of frost over you!", ch,NULL,victim,TO_VICT);
+	act("$n breathes a freezing cone of frost over you!", ch,victim, NULL, NULL, NULL, NULL, NULL,TO_VICT);
 
 	dam = level * 13;
 
@@ -134,24 +134,24 @@ SPELL_FUNC(spell_ice_shards)
 	int dam;
 
 	if(both_hands_full(ch)) {
-		act("{CThe air before you freezes in a flash.{x", ch, NULL, NULL, TO_CHAR);
-		act("{CThe air before $n freezes in a flash.{x", ch, NULL, NULL, TO_ROOM);
+		act("{CThe air before you freezes in a flash.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		act("{CThe air before $n freezes in a flash.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
-		act("{WYou hurl shards of ice at $N!{x", ch, NULL, victim, TO_CHAR);
-		act("{W$n hurls shards of ice at you!{x", ch, NULL, victim, TO_VICT);
-		act("{W$n hurls shards of ice at $N!{x", ch, NULL, victim, TO_NOTVICT);
+		act("{WYou hurl shards of ice at $N!{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		act("{W$n hurls shards of ice at you!{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
+		act("{W$n hurls shards of ice at $N!{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
 	} else {
 
-		act("{CThe air around your hand freezes in a flash.{x", ch, NULL, NULL, TO_CHAR);
-		act("{CThe air around $n's hand freezes in a flash.{x", ch, NULL, NULL, TO_ROOM);
+		act("{CThe air around your hand freezes in a flash.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		act("{CThe air around $n's hand freezes in a flash.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
-		act("{WYou throw out your hand, hurling shards of ice at $N!{x", ch, NULL, victim, TO_CHAR);
-		act("{W$n throw out $s hand, hurling shards of ice at you!{x", ch, NULL, victim, TO_VICT);
-		act("{W$n throw out $s hand, hurling shards of ice at $N!{x", ch, NULL, victim, TO_NOTVICT);
+		act("{WYou throw out your hand, hurling shards of ice at $N!{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		act("{W$n throw out $s hand, hurling shards of ice at you!{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
+		act("{W$n throw out $s hand, hurling shards of ice at $N!{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
 	}
 
 	if (IS_SET(ch->in_room->room2_flags, ROOM_FIRE) || ch->in_room->sector_type == SECT_LAVA) {
-		act("{RThe intense heat in the area melts the shards with a sizzle.{x", ch, NULL, NULL, TO_ALL);
+		act("{RThe intense heat in the area melts the shards with a sizzle.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ALL);
 		return FALSE;
 	}
 
@@ -243,7 +243,7 @@ SPELL_FUNC(spell_glacial_wave)
 			do_ice = FALSE;
 		}
 
-		act("{BA great cold envelops the hands of $n as the air rapidly cools to well past freezing.{x", ch, NULL, NULL, TO_ROOM);
+		act("{BA great cold envelops the hands of $n as the air rapidly cools to well past freezing.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		send_to_char("{BA great cold envelops your hands as the air rapidly cools to well past freezing.{x\n\r", ch);
 
 		// Affect all eq at these locations
@@ -253,8 +253,8 @@ SPELL_FUNC(spell_glacial_wave)
 		if((obj = get_eq_char(ch, WEAR_SHIELD))) cold_effect(obj,level,level,TARGET_OBJ);
 		if((obj = get_eq_char(ch, WEAR_SECONDARY))) cold_effect(obj,level,level,TARGET_OBJ);
 
-		act("{C$n gathers cold energy until $e hurls it $tward as a glacial wave.{x", ch, dir_name[door], NULL, TO_ROOM);
-		act("{CYou gather cold energy until you hurl it $tward as a glacial wave.{x", ch, dir_name[door], NULL, TO_CHAR);
+		act("{C$n gathers cold energy until $e hurls it $tward as a glacial wave.{x", ch, NULL, NULL, NULL, NULL, dir_name[door], NULL, TO_ROOM);
+		act("{CYou gather cold energy until you hurl it $tward as a glacial wave.{x", ch, NULL, NULL, NULL, NULL, dir_name[door], NULL, TO_CHAR);
 	}
 
 	to_room = ch->in_room;
@@ -274,7 +274,7 @@ SPELL_FUNC(spell_glacial_wave)
 	if (do_ice && number_range(0,24) < heat) do_ice = FALSE;	// It takes little to prevent ice storms
 
 	if (number_percent() < heat) {
-		act("{RThe intense heat in the area absorbs the glacial wave.{x", ch, NULL, NULL, TO_ALL);
+		act("{RThe intense heat in the area absorbs the glacial wave.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ALL);
 		return FALSE;
 	}
 
@@ -352,7 +352,7 @@ SPELL_FUNC(spell_ice_storm)
 
 	if (IS_SET(ch->in_room->room2_flags, ROOM_FIRE)) {
 		send_to_char("The intense heat in the area melts your ice storm as soon as it appears.\n\r", ch);
-		act("$n summons an ice storm, but it melts instantly.", ch, NULL, NULL, TO_ROOM);
+		act("$n summons an ice storm, but it melts instantly.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		return FALSE;
 	}
 
@@ -363,8 +363,8 @@ SPELL_FUNC(spell_ice_storm)
 	}
 
 	obj = create_object(get_obj_index(OBJ_VNUM_ICE_STORM), 0, TRUE);
-	act("{BYou summon a huge ice storm!{x", ch, NULL, NULL, TO_CHAR);
-	act("{B$n summons a huge ice storm!{x", ch, NULL, NULL, TO_ROOM);
+	act("{BYou summon a huge ice storm!{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+	act("{B$n summons a huge ice storm!{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	obj_to_room(obj, ch->in_room);
 	cold_effect(ch->in_room, level, dice(4,8), TARGET_ROOM);
 	for (vch = ch->in_room->people; vch != NULL; vch = vch->next_in_room) {

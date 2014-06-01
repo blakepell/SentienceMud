@@ -41,28 +41,28 @@ SPELL_FUNC(spell_gate)
 	else
 		gate_pet = FALSE;
 
-	act("{M$n steps through a gate and vanishes.{x",ch,NULL,NULL,TO_ROOM);
+	act("{M$n steps through a gate and vanishes.{x",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
 	send_to_char("{MYou step through a gate and vanish.\n\r{x",ch);
 	char_from_room(ch);
 	char_to_room(ch,victim->in_room);
 
-	act("{M$n has arrived through a gate.{x",ch,NULL,NULL,TO_ROOM);
+	act("{M$n has arrived through a gate.{x",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
 	do_function(ch, &do_look, "auto");
 
 	if (gate_pet) {
-		act("{M$n steps through a gate and vanishes.{x",ch->pet,NULL,NULL,TO_ROOM);
+		act("{M$n steps through a gate and vanishes.{x",ch->pet, NULL, NULL, NULL, NULL,NULL,NULL,TO_ROOM);
 		send_to_char("{MYou step through a gate and vanish.{x\n\r",ch->pet);
 		char_from_room(ch->pet);
 		char_to_room(ch->pet,victim->in_room);
-		act("{M$n has arrived through a gate.{x",ch->pet,NULL,NULL,TO_ROOM);
+		act("{M$n has arrived through a gate.{x",ch->pet,NULL, NULL, NULL, NULL, NULL,NULL,TO_ROOM);
 		do_function(ch->pet, &do_look, "auto");
 	}
 
 	if(MOUNTED(ch)) {
-		act("{M$n steps through a gate and vanishes.{x",MOUNTED(ch),NULL,NULL,TO_ROOM);
+		act("{M$n steps through a gate and vanishes.{x",MOUNTED(ch),NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
 		send_to_char("{MYou step through a gate and vanish.{x\n\r",MOUNTED(ch));
 
-		act("{M$n has arrived through a gate.{x",MOUNTED(ch),NULL,NULL,TO_ROOM);
+		act("{M$n has arrived through a gate.{x",MOUNTED(ch),NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
 		do_look(MOUNTED(ch),"auto");
 	}
 
@@ -71,6 +71,7 @@ SPELL_FUNC(spell_gate)
 
 SPELL_FUNC(spell_maze)
 {
+	int skill;
 	CHAR_DATA *victim = NULL;
 	OBJ_DATA *stone;
 	ROOM_INDEX_DATA *room;
@@ -80,8 +81,8 @@ SPELL_FUNC(spell_maze)
 
 	stone = get_warp_stone(ch);
 	if (stone) {
-		act("You draw upon the power of $p.",ch,stone,NULL,TO_CHAR);
-		act("$p flares brightly and vanishes!",ch,stone,NULL,TO_CHAR);
+		act("You draw upon the power of $p.",ch, NULL, NULL,stone,NULL, NULL, NULL,TO_CHAR);
+		act("$p flares brightly and vanishes!",ch, NULL, NULL,stone,NULL, NULL, NULL,TO_CHAR);
 		extract_obj(stone);
 	} else {
 		send_to_char("You appear to be missing a required reagent.\n\r", ch);
@@ -93,8 +94,10 @@ SPELL_FUNC(spell_maze)
 		return FALSE;
 	}
 
-	if (!(area = find_area("Geldoff's Maze"))) {
-		send_to_char("Something seems to be missing...\n\r", ch);
+	skill = get_skill(ch, gsn_maze);
+	if (!(area = find_area("Geldoff's Maze")) || (number_percent() >= skill)) {
+		send_to_char("Your mind seems to have gotten lost in its own maze...\n\r", ch);
+		ch->daze += 10 - number_range(0, skill/10);
 		return FALSE;
 	}
 
@@ -102,14 +105,14 @@ SPELL_FUNC(spell_maze)
 
 	if (victim->fighting) stop_fighting(victim, TRUE);
 
-	act("{WA phantasmal maze encapsulates $n!{x", victim, NULL, NULL, TO_ROOM);
-	act("{WA phantasmal maze appears about you!{x", victim, NULL, NULL, TO_CHAR);
+	act("{WA phantasmal maze encapsulates $n!{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+	act("{WA phantasmal maze appears about you!{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
-	act("{M$n has been banished!!!{x", victim, NULL, NULL, TO_ROOM);
-	if (victim != ch) act("{M$N has banished you!!!{x", victim, NULL, ch, TO_CHAR);
+	act("{M$n has been banished!!!{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+	if (victim != ch) act("{M$N has banished you!!!{x", victim, ch, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
-	act("{D$n disappears in a puff of smoke!{x", victim, NULL, NULL, TO_ROOM);
-	act("{DYou disappear in a puff of smoke!{x", victim, NULL, NULL, TO_CHAR);
+	act("{D$n disappears in a puff of smoke!{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+	act("{DYou disappear in a puff of smoke!{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
 	victim->maze_time_left = 3;
 
@@ -124,8 +127,9 @@ SPELL_FUNC(spell_maze)
 SPELL_FUNC(spell_nexus)
 {
 	CHAR_DATA *victim = (CHAR_DATA *) vo;
-	OBJ_DATA *portal, *stone;
+	OBJ_DATA *portal;
 	ROOM_INDEX_DATA *to_room, *from_room;
+	int distance, catalyst;
 
 	from_room = ch->in_room;
 
@@ -137,38 +141,77 @@ SPELL_FUNC(spell_nexus)
 	if (!can_gate(ch, victim))
 		return FALSE;
 
-	to_room = victim->in_room;
-
-	stone = get_warp_stone(ch);
-	if (stone) {
-		act("You draw upon the power of $p.",ch,stone,NULL,TO_CHAR);
-		act("$p flares brightly and vanishes!",ch,stone,NULL,TO_CHAR);
-		extract_obj(stone);
-	} else {
-		send_to_char("You appear to be missing a required reagent.\n\r", ch);
+	if (victim->in_room == ch->in_room ) {
+		send_to_char("What would be the point?\n\r", ch);
 		return FALSE;
 	}
+
+
+	to_room = victim->in_room;
+
+	// getdistance... ln(distance)+1
+	distance = 1;
+
+	catalyst = has_catalyst(ch,NULL,CATALYST_ASTRAL,CATALYST_INVENTORY,1,CATALYST_MAXSTRENGTH);
+	if(catalyst >= 0 && catalyst < distance) {
+		send_to_char("You appear to be missing a required astral catalyst.\n\r", ch);
+		return TRUE;
+	}
+
+	catalyst = use_catalyst(ch,NULL,CATALYST_ASTRAL,CATALYST_INVENTORY,distance,1,CATALYST_MAXSTRENGTH,TRUE);
 
 	/* portal one */
 	portal = create_object(get_obj_index(OBJ_VNUM_PORTAL),0, TRUE);
 	portal->timer = 1 + level / 10;
-	portal->value[3] = to_room->vnum;
+
+	if( to_room->wilds && IS_SET(to_room->room2_flags, ROOM_VIRTUAL_ROOM) )
+	{
+		portal->value[3] = 0;
+		portal->value[4] = 0;
+		portal->value[5] = to_room->wilds->uid;
+		portal->value[6] = to_room->x;
+		portal->value[7] = to_room->y;
+	}
+	else
+	{
+		portal->value[3] = to_room->vnum;
+		portal->value[4] = 0;
+		portal->value[5] = 0;
+		portal->value[6] = 0;
+		portal->value[7] = 0;
+	}
 
 	obj_to_room(portal,from_room);
 
-	act("{B$p rises up from the ground.{x",ch,portal,NULL,TO_ROOM);
-	act("{B$p rises up before you.{x",ch,portal,NULL,TO_CHAR);
+	act("{B$p rises up from the ground.{x",ch, NULL, NULL,portal,NULL, NULL, NULL,TO_ROOM);
+	act("{B$p rises up before you.{x",ch, NULL, NULL,portal,NULL, NULL, NULL,TO_CHAR);
 
 	if (to_room != from_room) {
 
 		/* portal two */
 		portal = create_object(get_obj_index(OBJ_VNUM_PORTAL),0, TRUE);
 		portal->timer = 1 + level/10;
-		portal->value[3] = from_room->vnum;
+
+		if( to_room->wilds && IS_SET(to_room->room2_flags, ROOM_VIRTUAL_ROOM) )
+		{
+			portal->value[3] = 0;
+			portal->value[4] = 0;
+			portal->value[5] = from_room->wilds->uid;
+			portal->value[6] = from_room->x;
+			portal->value[7] = from_room->y;
+		}
+		else
+		{
+			portal->value[3] = from_room->vnum;
+			portal->value[4] = 0;
+			portal->value[5] = 0;
+			portal->value[6] = 0;
+			portal->value[7] = 0;
+		}
 
 		obj_to_room(portal,to_room);
 
-		act("{B$p rises from the ground.{x",to_room->people,portal,NULL,TO_ALL);
+		act("{B$p rises from the ground.{x",to_room->people, NULL, NULL,portal, NULL, NULL,NULL,TO_ALL);
 	}
 
 /*
@@ -218,7 +261,7 @@ SPELL_FUNC(spell_reflection)
 	send_to_char("{WYou feel different as you assume the form of your shadow.{x\n\r", reflection);
 	send_to_char("Type 'return' to return to your normal body.\n\r", ch);
 
-	act("The shadow of $n bends and warps, then detaches itself from $s body!", ch, NULL, NULL, TO_CHAR);
+	act("The shadow of $n bends and warps, then detaches itself from $s body!", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	return TRUE;
 }
 
@@ -234,7 +277,7 @@ SPELL_FUNC(spell_summon)
 	}
 
 	if (IS_SET(victim->act, PLR_NOSUMMON)) {
-		act("$N isn't allowing summons.", ch, NULL, victim, TO_CHAR);
+		act("$N isn't allowing summons.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		return FALSE;
 	}
 
@@ -265,21 +308,21 @@ SPELL_FUNC(spell_summon)
 
 	if (victim->tot_level < ch->tot_level - 20 && !is_pk(victim)) {
 		if (is_pk_safe_range(ch->in_room, 5, -1) > -1) {
-			act("You have to be at least 5 rooms away from a PK area to summon $N.", ch, NULL, victim, TO_CHAR);
+			act("You have to be at least 5 rooms away from a PK area to summon $N.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 			return FALSE;
 		}
 	}
 
 	if (victim->pulled_cart) {
-		act("$N must first drop what $E is pulling.", ch, NULL, victim, TO_CHAR);
+		act("$N must first drop what $E is pulling.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		return FALSE;
 	}
 
-	act("{R$n disappears suddenly.{x", victim, NULL, NULL, TO_ROOM);
+	act("{R$n disappears suddenly.{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	char_from_room(victim);
 	char_to_room(victim, ch->in_room);
-	act("{R$n arrives suddenly.{x", victim, NULL, NULL, TO_ROOM);
-	act("{M$n has summoned you!{x", ch, NULL, victim,   TO_VICT);
+	act("{R$n arrives suddenly.{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+	act("{M$n has summoned you!{x", ch, victim, NULL, NULL, NULL, NULL, NULL,   TO_VICT);
 	do_function(victim, &do_look, "auto");
 	return TRUE;
 }

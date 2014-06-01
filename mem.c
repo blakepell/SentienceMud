@@ -84,7 +84,27 @@ INVASION_QUEST *invasion_quest_free;
 STORM_DATA *storm_data_free;
 COMMAND_DATA *command_free;
 IMMORTAL_DATA *immortal_free;
+SKILL_ENTRY *skill_entry_free;
 
+SKILL_ENTRY *new_skill_entry()
+{
+	SKILL_ENTRY *entry;
+
+	if( skill_entry_free == NULL )
+		entry = alloc_perm(sizeof(SKILL_ENTRY));
+	else {
+		entry = skill_entry_free;
+		skill_entry_free = skill_entry_free->next;
+	}
+
+	return entry;
+}
+
+void free_skill_entry(SKILL_ENTRY *entry)
+{
+	entry->next = skill_entry_free;
+	skill_entry_free = entry;
+}
 
 NOTE_DATA *new_note()
 {
@@ -313,7 +333,12 @@ OBJ_DATA *new_obj(void)
 
     *obj = obj_zero;
 
+    SET_MEMTYPE(obj,MEMTYPE_OBJ);
     obj->in_mail = NULL;
+	obj->ltokens = list_create(FALSE);
+	obj->lcontains = list_create(FALSE);
+	obj->lclonerooms = list_create(FALSE);
+
 
     VALIDATE(obj);
     return obj;
@@ -385,6 +410,15 @@ void free_obj(OBJ_DATA *obj)
     obj->events = NULL;
     obj->id[0] = obj->id[1] = 0;
 
+	if( obj->persist ) persist_removeobject(obj);
+
+	list_destroy(obj->ltokens);
+	list_destroy(obj->lcontains);
+	list_destroy(obj->lclonerooms);
+
+	if(obj->owner_name != NULL)		free_string(obj->owner_name);
+	if(obj->owner_short != NULL)	free_string(obj->owner_short);
+
     INVALIDATE(obj);
 
     obj->next   = obj_free;
@@ -408,6 +442,7 @@ CHAR_DATA *new_char( void )
 
     *ch = char_zero;
 
+    SET_MEMTYPE(ch,MEMTYPE_MOB);
     VALIDATE(ch);
 
     ch->morphed = FALSE;
@@ -431,6 +466,15 @@ CHAR_DATA *new_char( void )
     ch->manastore		= 0;
     ch->affected_by 		= 0;
     ch->affected_by2		= 0;
+    ch->affected_by_perm		= 0;
+    ch->affected_by2_perm		= 0;
+    ch->imm_flags     =   0;
+    ch->res_flags     =   0;
+    ch->vuln_flags    =   0;
+    ch->imm_flags_perm     =   0;
+    ch->res_flags_perm     =   0;
+    ch->vuln_flags_perm    =   0;
+
     ch->cast_target_name 	= NULL;
     ch->projectile_victim	= NULL;
     ch->cast_sn = 0;
@@ -490,6 +534,16 @@ CHAR_DATA *new_char( void )
     ch->hit_damage		= 0;
     ch->hit_type		= TYPE_UNDEFINED;
 
+    ch->sorted_skills		= NULL;
+    ch->sorted_spells		= NULL;
+
+    ch->llocker			= list_create(FALSE);
+    ch->lcarrying		= list_create(FALSE);
+    ch->ltokens			= list_create(FALSE);
+    ch->lclonerooms		= list_create(FALSE);
+
+    ch->deathsight_vision = 0;
+
     return ch;
 }
 
@@ -502,6 +556,7 @@ void free_char( CHAR_DATA *ch )
     AFFECT_DATA *paf_next;
     TOKEN_DATA *token,*tnext;
     EVENT_DATA *ev, *ev_next;
+    SKILL_ENTRY *se, *se_next;
 
     if (!IS_VALID(ch))
 	return;
@@ -510,6 +565,16 @@ void free_char( CHAR_DATA *ch )
 	mobile_count--;
 
     // Free data structures unique to the character
+
+ 	for(se = ch->sorted_skills; se; se = se_next) {
+		se_next = se->next;
+		free_skill_entry(se);
+	}
+
+ 	for(se = ch->sorted_spells; se; se = se_next) {
+		se_next = se->next;
+		free_skill_entry(se);
+	}
 
     // Inventory
     for (obj = ch->carrying; obj != NULL; obj = obj_next)
@@ -539,6 +604,7 @@ void free_char( CHAR_DATA *ch )
 
     if (ch->church != NULL)
     {
+		list_remlink(ch->church->online_players, ch);
 	if (ch->church_member != NULL)
 		ch->church_member->ch = NULL;
 	ch->church = NULL;
@@ -555,6 +621,11 @@ void free_char( CHAR_DATA *ch )
     free_ambush(ch->ambush);
     free_string(ch->cast_target_name);
     free_string(ch->projectile_victim);
+
+    list_destroy(ch->llocker);
+    list_destroy(ch->lcarrying);
+    list_destroy(ch->ltokens);
+    list_destroy(ch->lclonerooms);
 
 	#ifdef IMC
 	imc_freechardata( ch );
@@ -577,6 +648,8 @@ void free_char( CHAR_DATA *ch )
 
     ch->events = NULL;
     ch->id[0] = ch->id[1] = 0;
+
+	if( ch->persist ) persist_removemobile(ch);
 
     ch->next = char_free;
     char_free = ch;
@@ -606,6 +679,7 @@ PC_DATA *new_pcdata(void)
 	pcdata->alias_sub[alias] = NULL;
     }
 
+	pcdata->quit_on_input = FALSE;
     pcdata->email = NULL;
     pcdata->afk_message = NULL;
     //pcdata->imm_title = NULL;
@@ -783,6 +857,14 @@ void get_obj_id(OBJ_DATA *obj)
 }
 
 
+void get_church_id(CHURCH_DATA *church)
+{
+	if(!church->uid) {
+		church->uid = gconfig.next_church_uid++;
+		gconfig_write();
+	}
+}
+
 /* buffer sizes */
 const int buf_size[MAX_BUF_LIST] =
 {
@@ -949,10 +1031,13 @@ PROG_DATA *new_prog_data(void)
     return pr_dat;
 }
 
-PROG_LIST **new_prog_bank(void)
+LIST **new_prog_bank(void)
 {
-	PROG_LIST **data = alloc_perm(TRIGSLOT_MAX *sizeof(PROG_LIST *));
-	memset(data,0,TRIGSLOT_MAX *sizeof(PROG_LIST *));
+	int i;
+	LIST **data = alloc_mem(TRIGSLOT_MAX *sizeof(LIST *));
+	for(i = 0; i < TRIGSLOT_MAX; i++)
+		data[i] = list_create(FALSE);
+
 	return data;
 }
 
@@ -977,16 +1062,21 @@ void free_trigger(PROG_LIST *trigger)
 	trigger_free = trigger;
 }
 
-void free_prog_list(PROG_LIST **pr_list)
+void free_prog_list(LIST **pr_list)
 {
-	PROG_LIST *list, *next;
+	PROG_LIST *trigger;
+	ITERATOR it;
 	int i;
 
 	if(pr_list) {
-		for(i=0;i<TRIGSLOT_MAX;i++) for (list = pr_list[i]; list ; list = next) {
-			next = list->next;
-			free_trigger(list);
+		for(i=0;i<TRIGSLOT_MAX;i++) if( pr_list[i] ) {
+			iterator_start(&it, pr_list[i]);
+			while((trigger = (PROG_LIST *)iterator_nextdata(&it)))
+				free_trigger(trigger);
+			iterator_stop(&it);
+			list_destroy(pr_list[i]);
 		}
+		free_mem(pr_list,TRIGSLOT_MAX *sizeof(LIST *));
 	}
 }
 
@@ -1059,6 +1149,7 @@ CHURCH_DATA *new_church( void )
 	church_free = church_free->next;
     }
 
+	pChurch->uid = 0;
     pChurch->next = NULL;
     pChurch->name = NULL;
     pChurch->flag = NULL;
@@ -1076,7 +1167,7 @@ CHURCH_DATA *new_church( void )
     pChurch->founder_last_login = 0;
     pChurch->pk = 0;
     pChurch->settings = 0;
-    pChurch->treasure_room = 0;
+    pChurch->treasure_rooms = list_create(FALSE);
     pChurch->key = 0;
 
     pChurch->pk_wins = 0;
@@ -1087,6 +1178,8 @@ CHURCH_DATA *new_church( void )
     pChurch->created = 0;
     pChurch->color1 = 'C';
     pChurch->color2 = 'B';
+    pChurch->online_players = list_create(FALSE);
+    pChurch->roster = list_create(FALSE);
 
     top_church++;
 
@@ -1113,6 +1206,11 @@ void free_church( CHURCH_DATA *pChurch )
         free_church_player( people );
 	people = next_person;
     }
+
+	variable_clearfield(VAR_CHURCH, pChurch);
+
+    list_destroy(pChurch->online_players);
+    list_destroy(pChurch->roster);
 
     pChurch->next         =   church_free;
     church_free             =   pChurch;
@@ -1198,6 +1296,7 @@ AREA_DATA *new_area( void )
         area_free   =   area_free->next;
     }
 
+    SET_MEMTYPE(pArea,MEMTYPE_AREA);
     pArea->next             =   NULL;
     pArea->name             =   str_dup( "New area" );
     pArea->area_flags       =   AREA_ADDED;
@@ -1219,6 +1318,7 @@ AREA_DATA *new_area( void )
     pArea->y		    =   -1;
     pArea->land_x	    =   -1;
     pArea->land_y	    =   -1;
+    pArea->room_list = list_create(FALSE);
 
     return pArea;
 }
@@ -1231,7 +1331,7 @@ void free_area( AREA_DATA *pArea )
     free_string( pArea->builders );
     free_string( pArea->credits );
     free_string( pArea->map);
-
+	list_destroy(pArea->room_list);
 
     pArea->next         =   area_free->next;
     area_free           =   pArea;
@@ -1271,8 +1371,6 @@ void free_exit( EXIT_DATA *pExit )
     free_string( pExit->keyword );
     free_string( pExit->short_desc );
 
-    variable_clearfield(VAR_EXIT, pExit);
-
     --top_exit;
 
     pExit->next         =   exit_free;
@@ -1297,6 +1395,7 @@ ROOM_INDEX_DATA *new_room_index( void )
         room_index_free =   room_index_free->next;
     }
 
+    SET_MEMTYPE(pRoom,MEMTYPE_ROOM);
     pRoom->next             =   NULL;
     pRoom->people           =   NULL;
     pRoom->contents         =   NULL;
@@ -1330,6 +1429,13 @@ ROOM_INDEX_DATA *new_room_index( void )
     pRoom->heal_rate	    =   100;
     pRoom->mana_rate	    =   100;
     pRoom->visited = 0;
+
+    pRoom->lentity = list_create(FALSE);
+    pRoom->lpeople = list_create(FALSE);
+    pRoom->lcontents = list_create(FALSE);
+    pRoom->levents = list_create(FALSE);
+    pRoom->ltokens = list_create(FALSE);
+    pRoom->lclonerooms = list_create(FALSE);
 
     return pRoom;
 }
@@ -1397,6 +1503,15 @@ void free_room_index( ROOM_INDEX_DATA *pRoom )
 		clone_next = clone->next;
 		free_room_index(clone);
 	}
+
+    list_destroy(pRoom->lentity);
+    list_destroy(pRoom->lpeople);
+    list_destroy(pRoom->lcontents);
+    list_destroy(pRoom->levents);
+    list_destroy(pRoom->ltokens);
+    list_destroy(pRoom->lclonerooms);
+
+	if( pRoom->persist ) persist_removeroom(pRoom);
 
     pRoom->next     =   room_index_free;
     room_index_free =   pRoom;
@@ -2139,8 +2254,8 @@ void free_auto_war( AUTO_WAR *m_auto_war )
     while( m_auto_war->team_players != NULL )
     {
 	stop_fighting( m_auto_war->team_players, FALSE);
-	act( "{D$n disappears in puff of smoke.{x", m_auto_war->team_players, NULL, NULL, TO_ROOM );
-	act( "You have been transported to Plith.", m_auto_war->team_players, NULL, NULL, TO_CHAR );
+	act( "{D$n disappears in puff of smoke.{x", m_auto_war->team_players, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM );
+	act( "You have been transported to Plith.", m_auto_war->team_players, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR );
 	char_from_room( m_auto_war->team_players );
 	char_to_room( m_auto_war->team_players, get_room_index( ROOM_VNUM_TEMPLE ) );
 	do_function( m_auto_war->team_players, &do_look, "auto");
@@ -2555,6 +2670,7 @@ TOKEN_DATA *new_token()
     }
 
     token->progs = NULL;
+    SET_MEMTYPE(token,MEMTYPE_TOKEN);
     VALIDATE(token);
 
     return token;
@@ -2563,6 +2679,8 @@ TOKEN_DATA *new_token()
 
 void free_token(TOKEN_DATA *token)
 {
+	TOKEN_DATA *prev, *cur;
+
     free_string(token->name);
     if(token->pIndexData)	// @@@NIB : 20070127 : for "tokenexists" ifcheck
 	token->pIndexData->loaded--;
@@ -2573,6 +2691,18 @@ void free_token(TOKEN_DATA *token)
     wipe_clearinfo_token(token);
 
     token->id[0] = token->id[1] = 0;
+
+	for( prev = NULL, cur = global_tokens; cur; prev = cur, cur = cur->global_next)
+		if( cur == token )
+			break;
+
+	if( cur ) {
+		if( prev )
+			prev->global_next = cur->global_next;
+		else
+			global_tokens = cur->global_next;
+		cur->global_next = NULL;
+	}
 
     INVALIDATE(token);
     token->next = token_free;

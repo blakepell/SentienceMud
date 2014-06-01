@@ -12,6 +12,7 @@ int script_lastreturn = PRET_EXECUTED;
 bool script_remotecall = FALSE;
 bool script_destructed = FALSE;
 bool wiznet_script = FALSE;
+bool script_force_execute = FALSE;	// Executes the script even if disabled
 SCRIPT_CB *script_call_stack = NULL;
 
 ROOM_INDEX_DATA room_used_for_wilderness;
@@ -148,11 +149,126 @@ void script_clear_list(register void *owner)
 	}
 }
 
+void script_mobile_addref(CHAR_DATA *ch)
+{
+	if(IS_VALID(ch) && IS_NPC(ch) && ch->progs)
+		ch->progs->script_ref++;
+}
+
+bool script_mobile_remref(CHAR_DATA *ch)
+{
+	if(IS_VALID(ch) && IS_NPC(ch) && ch->progs) {
+		if( ch->progs->script_ref > 0 && !--ch->progs->script_ref ) {
+			if( ch->progs->extract_when_done ) {
+				// Remove!
+				ch->progs->extract_when_done = FALSE;
+				extract_char(ch, ch->progs->extract_fPull);
+				return TRUE;
+			}
+		}
+	}
+
+	return FALSE;
+}
+
+void script_object_addref(OBJ_DATA *obj)
+{
+	if(IS_VALID(obj) && obj->progs)
+		obj->progs->script_ref++;
+}
+
+bool script_object_remref(OBJ_DATA *obj)
+{
+	if(IS_VALID(obj) && obj->progs) {
+		if( obj->progs->script_ref > 0 && !--obj->progs->script_ref ) {
+			if( obj->progs->extract_when_done ) {
+				// Remove!
+				obj->progs->extract_when_done = FALSE;
+				extract_obj(obj);
+				return TRUE;
+			}
+		}
+	}
+
+	return FALSE;
+}
+
+void script_room_addref(ROOM_INDEX_DATA *room)
+{
+	if((room->source || IS_SET(room->room2_flags, ROOM_VIRTUAL_ROOM)) && room->progs)
+		room->progs->script_ref++;
+}
+
+bool script_room_remref(ROOM_INDEX_DATA *room)
+{
+	if((room->source || IS_SET(room->room2_flags, ROOM_VIRTUAL_ROOM)) && room->progs) {
+		if( room->progs->script_ref > 0 && !--room->progs->script_ref ) {
+			if( room->progs->extract_when_done ) {
+				// Remove!
+				room->progs->extract_when_done = FALSE;
+				if(room->source)
+					extract_clone_room(room, room->id[0], room->id[1]);
+				else	// Is a WILDS room
+					destroy_wilds_vroom(room);
+				return TRUE;
+			}
+		}
+	}
+
+	return FALSE;
+}
+
+void script_token_addref(TOKEN_DATA *token)
+{
+	if(IS_VALID(token) && token->progs)
+		token->progs->script_ref++;
+}
+
+bool script_token_remref(TOKEN_DATA *token)
+{
+	if(IS_VALID(token) && token->progs) {
+		if( token->progs->script_ref > 0 && !--token->progs->script_ref ) {
+			if( token->progs->extract_when_done ) {
+				// Remove!
+				token->progs->extract_when_done = FALSE;
+				extract_token(token);
+				return TRUE;
+			}
+		}
+	}
+
+	return FALSE;
+}
+
+ENT_FIELD *script_entity_fields(int type)
+{
+	int i;
+
+	for(i=0; entity_type_info[i].type_min < ENT_MAX; i++)
+		if( (type >= entity_type_info[i].type_min) && (type <= entity_type_info[i].type_max))
+			return entity_type_info[i].fields;
+
+	return NULL;
+}
+
+bool script_entity_allow_vars(int type)
+{
+	int i;
+
+	for(i=0; entity_type_info[i].type_min < ENT_MAX; i++)
+		if( (type >= entity_type_info[i].type_min) && (type <= entity_type_info[i].type_max))
+			return entity_type_info[i].allow_vars;
+
+	return FALSE;
+}
+
 //void compile_error_show(char *msg);
-const ENT_FIELD *entity_type_lookup(char *name,const ENT_FIELD *list)
+ENT_FIELD *entity_type_lookup(char *name, ENT_FIELD *list)
 {
 	int i;
 //	char buf[MSL];
+
+	if(!list) return NULL;
 
 	for(i=0;list[i].name;i++) {
 //		compile_error_show(buf);
@@ -238,7 +354,7 @@ char *ifcheck_get_value(SCRIPT_VARINFO *info,IFCHECK_DATA *ifc,char *text,int *r
 //		sprintf(buf,"args = %d", i);
 //		wiznet(buf,NULL,NULL,WIZ_SCRIPTS,0,0);
 //	}
-	(ifc->func)(info->mob,info->obj,info->room,info->token,ret,i,argv);
+	(ifc->func)(info,info->mob,info->obj,info->room,info->token,ret,i,argv);
 		*valid = TRUE;
 
 //	if(wiznet_script) {
@@ -761,9 +877,20 @@ DECL_OPC_FUN(opc_list)
 {
 	bool skip = FALSE;
 	int lp, i;
-	char *str1,*str2;
+	char *str1,*str2, *str;
+	LIST_UID_DATA *uid;
+	LIST_ROOM_DATA *lrd;
+	LIST_EXIT_DATA *led;
+	LIST_SKILL_DATA *lsk;
+	LIST_AREA_DATA *lar;
+	LIST_WILDS_DATA *lwd;
+	DESCRIPTOR_DATA *conn;
+	CHAR_DATA *ch;
+	OBJ_DATA *obj;
+	TOKEN_DATA *tok;
 	ROOM_INDEX_DATA *here;
 	EXIT_DATA *ex;
+	CHURCH_DATA *church;
 	SCRIPT_PARAM arg;
 
 	if(block->cur_line->level > 0 && !block->cond[block->cur_line->level-1])
@@ -780,6 +907,8 @@ DECL_OPC_FUN(opc_list)
 		// Variable Name
 		str1 = one_argument(block->cur_line->rest,block->loops[lp].var_name);
 
+		log_stringf("opc_list: initializing for loop variable '%s'", block->loops[lp].var_name);
+
 		if(!block->loops[lp].var_name[0]) {
 			block->ret_val = PRET_BADSYNTAX;
 			return FALSE;
@@ -794,23 +923,39 @@ DECL_OPC_FUN(opc_list)
 
 		switch(arg.type) {
 		case ENT_EXIT:
-			if(!arg.d.exit)
+			log_stringf("opc_list: list type ENT_EXIT");
+			if(!arg.d.door.r)
 				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+
+			here = arg.d.door.r;
+			ex = here->exit[arg.d.door.door];
 			block->loops[lp].d.l.type = ENT_EXIT;
-			block->loops[lp].d.l.cur.x = arg.d.exit;
-			block->loops[lp].d.l.next.x = NULL;
-			block->loops[lp].d.l.owner = arg.d.exit ? arg.d.exit->from_room : NULL;
-			if(arg.d.exit) {
-				here = arg.d.exit->from_room;
-				for(i=arg.d.exit->orig_door + 1; i < MAX_DIR && !here->exit[i]; i++);
-				if(i < MAX_DIR)
-					block->loops[lp].d.l.next.x = here->exit[i];
+			block->loops[lp].d.l.cur.door = arg.d.door.door;
+			block->loops[lp].d.l.next.door = MAX_DIR;
+			block->loops[lp].d.l.owner = arg.d.door.r;
+
+			if(ex) {
+				if(here->wilds)
+					log_stringf("opc_list: %s(%ld,%ld,%ld)", dir_name[arg.d.door.door], here->wilds->uid, here->x, here->y);
+				else if(here->source)
+					log_stringf("opc_list: %s(%ld,%s,%ld,%ld)", dir_name[arg.d.door.door], here->vnum, here->name, here->id[0], here->id[1]);
+				else
+					log_stringf("opc_list: %s(%ld,%s)", dir_name[arg.d.door.door], here->vnum, here->name);
+			} else
+				log_stringf("opc_list: exit(<END>)");
+
+
+			if(ex) {
+				here = arg.d.door.r;
+				for(i=arg.d.door.door + 1; i < MAX_DIR && !here->exit[i]; i++);
+				block->loops[lp].d.l.next.door = i;
 			}
 			// Set the variable
-			variables_set_exit(block->info.var,block->loops[lp].var_name,arg.d.exit);
+			variables_set_exit(block->info.var,block->loops[lp].var_name,ex);
 			break;
 
-		case ENT_LIST_MOB:
+		case ENT_OLIST_MOB:
+			log_stringf("opc_list: list type ENT_MOBILE");
 			if(!arg.d.list.ptr.mob || !*arg.d.list.ptr.mob)
 				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
 
@@ -818,11 +963,22 @@ DECL_OPC_FUN(opc_list)
 			block->loops[lp].d.l.cur.m = *arg.d.list.ptr.mob;
 			block->loops[lp].d.l.next.m = block->loops[lp].d.l.cur.m->next_in_room;
 			block->loops[lp].d.l.owner = arg.d.list.owner;
+
+			if(block->loops[lp].d.l.cur.m) {
+				ch = block->loops[lp].d.l.cur.m;
+				if(!IS_NPC(ch))
+					log_stringf("opc_list: player(%s,%ld,%ld)", ch->name, ch->id[0], ch->id[1]);
+				else
+					log_stringf("opc_list: mobile(%ld,%ld,%ld)", ch->pIndexData->vnum, ch->id[0], ch->id[1]);
+			} else
+				log_stringf("opc_list: mobile(<END>)");
+
 			// Set the variable
 			variables_set_mobile(block->info.var,block->loops[lp].var_name,*arg.d.list.ptr.mob);
 			break;
 
-		case ENT_LIST_OBJ:
+		case ENT_OLIST_OBJ:
+			log_stringf("opc_list: list type ENT_OBJECT");
 			if(!arg.d.list.ptr.obj || !*arg.d.list.ptr.obj)
 				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
 
@@ -830,11 +986,18 @@ DECL_OPC_FUN(opc_list)
 			block->loops[lp].d.l.cur.o = *arg.d.list.ptr.obj;
 			block->loops[lp].d.l.next.o = block->loops[lp].d.l.cur.o->next_content;
 			block->loops[lp].d.l.owner = arg.d.list.owner;
+
+			if(block->loops[lp].d.l.cur.o)
+				log_stringf("opc_list: object(%ld,%ld,%ld)", block->loops[lp].d.l.cur.o->pIndexData->vnum, block->loops[lp].d.l.cur.o->id[0], block->loops[lp].d.l.cur.o->id[1]);
+			else
+				log_stringf("opc_list: object(<END>)");
+
 			// Set the variable
 			variables_set_object(block->info.var,block->loops[lp].var_name,*arg.d.list.ptr.obj);
 			break;
 
-		case ENT_LIST_TOK:
+		case ENT_OLIST_TOK:
+			log_stringf("opc_list: list type ENT_TOKEN");
 			if(!arg.d.list.ptr.tok || !*arg.d.list.ptr.tok)
 				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
 
@@ -842,11 +1005,18 @@ DECL_OPC_FUN(opc_list)
 			block->loops[lp].d.l.cur.t = *arg.d.list.ptr.tok;
 			block->loops[lp].d.l.next.t = block->loops[lp].d.l.cur.t->next;
 			block->loops[lp].d.l.owner = arg.d.list.owner;
+
+			if(block->loops[lp].d.l.cur.t)
+				log_stringf("opc_list: token(%ld,%ld,%ld)", block->loops[lp].d.l.cur.t->pIndexData->vnum, block->loops[lp].d.l.cur.t->id[0], block->loops[lp].d.l.cur.t->id[1]);
+			else
+				log_stringf("opc_list: token(<END>)");
+
 			// Set the variable
 			variables_set_token(block->info.var,block->loops[lp].var_name,*arg.d.list.ptr.tok);
 			break;
 
-		case ENT_LIST_AFF:
+		case ENT_OLIST_AFF:
+			log_stringf("opc_list: list type ENT_AFFECT");
 			if(!arg.d.list.ptr.aff || !*arg.d.list.ptr.aff)
 				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
 
@@ -854,12 +1024,452 @@ DECL_OPC_FUN(opc_list)
 			block->loops[lp].d.l.cur.aff = *arg.d.list.ptr.aff;
 			block->loops[lp].d.l.next.aff = block->loops[lp].d.l.cur.aff->next;
 			block->loops[lp].d.l.owner = arg.d.list.owner;
+
+			if(block->loops[lp].d.l.cur.aff) {
+				if(block->loops[lp].d.l.cur.aff->custom_name)
+					log_stringf("opc_list: affect(%s)", block->loops[lp].d.l.cur.aff->custom_name);
+				else
+					log_stringf("opc_list: affect(%s)", skill_table[block->loops[lp].d.l.cur.aff->type].name);
+			} else
+				log_stringf("opc_list: affect(<END>)");
+
 			// Set the variable
 			variables_set_affect(block->info.var,block->loops[lp].var_name,*arg.d.list.ptr.aff);
 			break;
 
+		case ENT_PLIST_STR:
+			log_stringf("opc_list: list type ENT_PLIST_STR");
+			if(!arg.d.blist || !arg.d.blist->valid)
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+
+			block->loops[lp].d.l.type = ENT_PLIST_STR;
+			block->loops[lp].d.l.list.lp = arg.d.blist;
+			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
+			block->loops[lp].d.l.owner = NULL;
+
+			str = (char *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+
+			if(str)
+				log_stringf("opc_list: string(%s)",str);
+			else
+				log_stringf("opc_list: string(<END>)");
+
+			if( !str ) {
+				iterator_stop(&block->loops[lp].d.l.list.it);
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+			}
+
+			// Set the variable
+			variables_set_string(block->info.var,block->loops[lp].var_name,str,FALSE);
+			break;
+
+		case ENT_BLIST_MOB:
+			log_stringf("opc_list: list type ENT_BLIST_MOB");
+			if(!arg.d.blist || !arg.d.blist->valid)
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+
+			block->loops[lp].d.l.type = ENT_BLIST_MOB;
+			block->loops[lp].d.l.list.lp = arg.d.blist;
+			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
+			block->loops[lp].d.l.owner = NULL;
+
+			do {
+				uid = (LIST_UID_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+				if( !uid ) {
+					log_stringf("opc_list: mobile(<END>)");
+					iterator_stop(&block->loops[lp].d.l.list.it);
+					return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+				}
+
+				// Set the variable
+				if( IS_VALID((CHAR_DATA *)uid->ptr) )
+					variables_set_mobile(block->info.var,block->loops[lp].var_name,(CHAR_DATA *)uid->ptr);
+
+			} while( !IS_VALID((CHAR_DATA *)uid->ptr) );
+
+			ch = (CHAR_DATA *)(uid->ptr);
+			if(!IS_NPC(ch))
+				log_stringf("opc_list: player(%s,%ld,%ld)", ch->name, ch->id[0], ch->id[1]);
+			else
+				log_stringf("opc_list: mobile(%ld,%ld,%ld)", ch->pIndexData->vnum, ch->id[0], ch->id[1]);
+			break;
+
+		case ENT_BLIST_OBJ:
+			log_stringf("opc_list: list type ENT_BLIST_OBJ");
+			if(!arg.d.blist || !arg.d.blist->valid)
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+
+			block->loops[lp].d.l.type = ENT_BLIST_OBJ;
+			block->loops[lp].d.l.list.lp = arg.d.blist;
+			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
+			block->loops[lp].d.l.owner = NULL;
+
+			do {
+				uid = (LIST_UID_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+				if( !uid ) {
+					log_stringf("opc_list: object(<END>)");
+					iterator_stop(&block->loops[lp].d.l.list.it);
+					return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+				}
+
+				// Set the variable
+				if( IS_VALID((OBJ_DATA *)uid->ptr) )
+					variables_set_object(block->info.var,block->loops[lp].var_name,(OBJ_DATA *)uid->ptr);
+
+			} while( !IS_VALID((OBJ_DATA *)uid->ptr) );
+
+			obj = (OBJ_DATA *)(uid->ptr);
+			log_stringf("opc_list: object(%ld,%ld,%ld)", obj->pIndexData->vnum, obj->id[0], obj->id[1]);
+
+			break;
+
+		case ENT_BLIST_TOK:
+			log_stringf("opc_list: list type ENT_BLIST_TOK");
+			if(!arg.d.blist || !arg.d.blist->valid)
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+
+			block->loops[lp].d.l.type = ENT_BLIST_TOK;
+			block->loops[lp].d.l.list.lp = arg.d.blist;
+			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
+			block->loops[lp].d.l.owner = NULL;
+
+			do {
+				uid = (LIST_UID_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+				if( !uid ) {
+					log_stringf("opc_list: token(<END>)");
+					iterator_stop(&block->loops[lp].d.l.list.it);
+					return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+				}
+
+				// Set the variable
+				if( IS_VALID((TOKEN_DATA *)uid->ptr) )
+					variables_set_token(block->info.var,block->loops[lp].var_name,(TOKEN_DATA *)uid->ptr);
+			} while( !IS_VALID((TOKEN_DATA *)uid->ptr) );
+			tok = (TOKEN_DATA *)(uid->ptr);
+			log_stringf("opc_list: token(%ld,%ld,%ld)", tok->pIndexData->vnum, tok->id[0], tok->id[1]);
+			break;
+
+		case ENT_BLIST_ROOM:
+			log_stringf("opc_list: list type ENT_BLIST_ROOM");
+			if(!arg.d.blist || !arg.d.blist->valid)
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+
+			block->loops[lp].d.l.type = ENT_BLIST_ROOM;
+			block->loops[lp].d.l.list.lp = arg.d.blist;
+			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
+			block->loops[lp].d.l.owner = NULL;
+
+			do {
+				lrd = (LIST_ROOM_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+				log_stringf("opc_list: lrd = %016lX", lrd);
+				if( !lrd ) {
+					log_stringf("opc_list: room(<END>)");
+					iterator_stop(&block->loops[lp].d.l.list.it);
+					return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+				}
+
+				// Set the variable
+				if( lrd->room )
+					variables_set_room(block->info.var,block->loops[lp].var_name,lrd->room);
+
+			} while( !lrd->room );
+
+			log_stringf("opc_list: lrd->room = %016lX", lrd->room);
+			if(lrd->room->wilds)
+				log_stringf("opc_list: room(%ld,%ld,%ld)", lrd->room->wilds->uid, lrd->room->x, lrd->room->y);
+			else if(lrd->room->source)
+				log_stringf("opc_list: room(%ld,%s,%ld,%ld)", lrd->room->vnum, lrd->room->name, lrd->room->id[0], lrd->room->id[1]);
+			else
+				log_stringf("opc_list: room(%ld,%s)", lrd->room->vnum, lrd->room->name);
+
+			break;
+
+		case ENT_BLIST_EXIT:
+			log_stringf("opc_list: list type ENT_BLIST_EXIT");
+			if(!arg.d.blist || !arg.d.blist->valid)
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+
+			block->loops[lp].d.l.type = ENT_BLIST_EXIT;
+			block->loops[lp].d.l.list.lp = arg.d.blist;
+			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
+			block->loops[lp].d.l.owner = NULL;
+
+			do {
+				led = (LIST_EXIT_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+				if( !led ) {
+					log_stringf("opc_list: exit(<END>)");
+					iterator_stop(&block->loops[lp].d.l.list.it);
+					return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+				}
+
+				// Set the variable
+				if( led->room && led->door >= 0 && led->door < MAX_DIR && led->room->exit[led->door])
+					variables_set_door(block->info.var,block->loops[lp].var_name,led->room, led->door, FALSE);
+
+			} while( !led->room || led->door < 0 || led->door >= MAX_DIR || !led->room->exit[led->door] );
+
+			if(led->room->wilds)
+				log_stringf("opc_list: %s(%ld,%ld,%ld)", dir_name[led->door], led->room->wilds->uid, led->room->x, led->room->y);
+			else if(led->room->source)
+				log_stringf("opc_list: %s(%ld,%s,%ld,%ld)", dir_name[led->door], led->room->vnum, led->room->name, led->room->id[0], led->room->id[1]);
+			else
+				log_stringf("opc_list: %s(%ld,%s)", dir_name[led->door], led->room->vnum, led->room->name);
+
+			break;
+
+		case ENT_BLIST_SKILL:
+			log_stringf("opc_list: list type ENT_BLIST_SKILL");
+			if(!arg.d.blist || !arg.d.blist->valid)
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+
+			block->loops[lp].d.l.type = ENT_BLIST_SKILL;
+			block->loops[lp].d.l.list.lp = arg.d.blist;
+			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
+			block->loops[lp].d.l.owner = NULL;
+
+			do {
+				lsk = (LIST_SKILL_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+				if( !lsk ) {
+					log_stringf("opc_list: skill(<END>)");
+					iterator_stop(&block->loops[lp].d.l.list.it);
+					return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+				}
+
+				// Set the variable
+				if( IS_VALID(lsk->mob) && (IS_VALID(lsk->tok) || ( lsk->sn > 0 && lsk->sn < MAX_SKILL )) )
+					variables_setsave_skillinfo(block->info.var,block->loops[lp].var_name, lsk->mob, lsk->sn, lsk->tok, FALSE);
+
+			} while( !IS_VALID(lsk->mob) || (!IS_VALID(lsk->tok) && ( lsk->sn < 1 || lsk->sn >= MAX_SKILL )) );
+
+			if(lsk->tok)
+				log_stringf("opc_list: skill(%ld,%ld,TOKEN,%s)", lsk->mob->id[0], lsk->mob->id[1], lsk->tok->name);
+			else
+				log_stringf("opc_list: skill(%ld,%ld,SKILL,%s)", lsk->mob->id[0], lsk->mob->id[1], skill_table[lsk->sn].name);
+
+			break;
+
+		case ENT_BLIST_AREA:
+			log_stringf("opc_list: list type ENT_BLIST_AREA");
+			if(!arg.d.blist || !arg.d.blist->valid)
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+
+			block->loops[lp].d.l.type = ENT_BLIST_AREA;
+			block->loops[lp].d.l.list.lp = arg.d.blist;
+			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
+			block->loops[lp].d.l.owner = NULL;
+
+			do {
+				lar = (LIST_AREA_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+				if( !lar ) {
+					log_stringf("opc_list: area(<END>)");
+					iterator_stop(&block->loops[lp].d.l.list.it);
+					return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+				}
+
+				// Set the variable
+				if( lar->area )
+					variables_setsave_area(block->info.var,block->loops[lp].var_name, lar->area, FALSE);
+
+			} while( !lar->area );
+
+			log_stringf("opc_list: area(%ld,%s)", lar->area->uid, lar->area->name);
+
+			break;
+
+		case ENT_BLIST_WILDS:
+			log_stringf("opc_list: list type ENT_BLIST_WILDS");
+			if(!arg.d.blist || !arg.d.blist->valid)
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+
+			block->loops[lp].d.l.type = ENT_BLIST_WILDS;
+			block->loops[lp].d.l.list.lp = arg.d.blist;
+			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
+			block->loops[lp].d.l.owner = NULL;
+
+			do {
+				lwd = (LIST_WILDS_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+				if( !lwd ) {
+					log_stringf("opc_list: wilds(<END>)");
+					iterator_stop(&block->loops[lp].d.l.list.it);
+					return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+				}
+
+				// Set the variable
+				if( lwd->wilds )
+					variables_setsave_wilds(block->info.var,block->loops[lp].var_name, lwd->wilds, FALSE);
+
+			} while( !lwd->wilds );
+
+			log_stringf("opc_list: wilds(%ld,%s)", lwd->wilds->uid, lwd->wilds->name);
+
+			break;
+
+		case ENT_PLIST_CONN:
+			log_stringf("opc_list: list type ENT_PLIST_CONN");
+			if(!arg.d.blist || !arg.d.blist->valid)
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+
+			block->loops[lp].d.l.type = ENT_PLIST_CONN;
+			block->loops[lp].d.l.list.lp = arg.d.blist;
+			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
+			block->loops[lp].d.l.owner = NULL;
+
+			conn = (DESCRIPTOR_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+
+			if(conn) {
+				if(conn->original)
+					log_stringf("opc_list: connection(%s,%d) [SWITCHED]", conn->original->name, conn->original->tot_level);
+				else
+					log_stringf("opc_list: connection(%s,%d)", conn->character->name, conn->character->tot_level);
+			} else
+				log_stringf("opc_list: connection(<END>)");
+
+			if( !conn ) {
+				iterator_stop(&block->loops[lp].d.l.list.it);
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+			}
+
+			// Set the variable
+			variables_set_connection(block->info.var,block->loops[lp].var_name,conn);
+			break;
+
+		case ENT_PLIST_MOB:
+			log_stringf("opc_list: list type ENT_PLIST_MOB");
+			if(!arg.d.blist || !arg.d.blist->valid)
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+
+			block->loops[lp].d.l.type = ENT_PLIST_MOB;
+			block->loops[lp].d.l.list.lp = arg.d.blist;
+			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
+			block->loops[lp].d.l.owner = NULL;
+
+			ch = (CHAR_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+
+			if(ch) {
+				if(!IS_NPC(ch))
+					log_stringf("opc_list: player(%s,%ld,%ld)", ch->name, ch->id[0], ch->id[1]);
+				else
+					log_stringf("opc_list: mobile(%ld,%ld,%ld)", ch->pIndexData->vnum, ch->id[0], ch->id[1]);
+			} else
+				log_stringf("opc_list: mobile(<END>)");
+
+			if( !ch ) {
+				iterator_stop(&block->loops[lp].d.l.list.it);
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+			}
+
+			// Set the variable
+			variables_set_mobile(block->info.var,block->loops[lp].var_name,ch);
+			break;
+
+		case ENT_PLIST_OBJ:
+			log_stringf("opc_list: list type ENT_PLIST_OBJ");
+			if(!arg.d.blist || !arg.d.blist->valid)
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+
+			block->loops[lp].d.l.type = ENT_PLIST_OBJ;
+			block->loops[lp].d.l.list.lp = arg.d.blist;
+			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
+			block->loops[lp].d.l.owner = NULL;
+
+			obj = (OBJ_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+
+			if(obj)
+				log_stringf("opc_list: object(%ld,%ld,%ld)", obj->pIndexData->vnum, obj->id[0], obj->id[1]);
+			else
+				log_stringf("opc_list: object(<END>)");
+
+			if( !obj ) {
+				iterator_stop(&block->loops[lp].d.l.list.it);
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+			}
+
+			// Set the variable
+			variables_set_object(block->info.var,block->loops[lp].var_name,obj);
+			break;
+
+		case ENT_PLIST_ROOM:
+			log_stringf("opc_list: list type ENT_PLIST_ROOM");
+			if(!arg.d.blist || !arg.d.blist->valid)
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+
+			block->loops[lp].d.l.type = ENT_PLIST_ROOM;
+			block->loops[lp].d.l.list.lp = arg.d.blist;
+			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
+			block->loops[lp].d.l.owner = NULL;
+
+			here = (ROOM_INDEX_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+
+			if(here) {
+				if(here->wilds)
+					log_stringf("opc_list: room(%ld,%ld,%ld)", here->wilds->uid, here->x, here->y);
+				else if(here->source)
+					log_stringf("opc_list: room(%ld,%s,%ld,%ld)", here->vnum, here->name, here->id[0], here->id[1]);
+				else
+					log_stringf("opc_list: room(%ld,%s)", here->vnum, here->name);
+			} else
+				log_stringf("opc_list: room(<END>)");
+
+			if( !here ) {
+				iterator_stop(&block->loops[lp].d.l.list.it);
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+			}
+
+			// Set the variable
+			variables_set_room(block->info.var,block->loops[lp].var_name,here);
+			break;
+
+		case ENT_PLIST_TOK:
+			log_stringf("opc_list: list type ENT_PLIST_TOK");
+			if(!arg.d.blist || !arg.d.blist->valid)
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+
+			block->loops[lp].d.l.type = ENT_PLIST_TOK;
+			block->loops[lp].d.l.list.lp = arg.d.blist;
+			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
+			block->loops[lp].d.l.owner = NULL;
+
+			tok = (TOKEN_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+
+			if(tok)
+				log_stringf("opc_list: token(%ld,%ld,%ld)", tok->pIndexData->vnum, tok->id[0], tok->id[1]);
+			else
+				log_stringf("opc_list: token(<END>)");
+
+			if( !tok ) {
+				iterator_stop(&block->loops[lp].d.l.list.it);
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+			}
+
+			// Set the variable
+			variables_set_token(block->info.var,block->loops[lp].var_name,tok);
+			break;
+
+		case ENT_PLIST_CHURCH:
+			log_stringf("opc_list: list type ENT_PLIST_CHURCH");
+			if(!arg.d.blist || !arg.d.blist->valid)
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+
+			block->loops[lp].d.l.type = ENT_PLIST_CHURCH;
+			block->loops[lp].d.l.list.lp = arg.d.blist;
+			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
+			block->loops[lp].d.l.owner = NULL;
+
+			church = (CHURCH_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+
+			log_stringf("opc_list: church(%s)", church ? church->name : "<END>");
+
+			if( !church ) {
+				iterator_stop(&block->loops[lp].d.l.list.it);
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+			}
+
+			// Set the variable
+			variables_set_church(block->info.var,block->loops[lp].var_name,church);
+			break;
 
 		default:
+			log_stringf("opc_list: list_type INVALID");
 			block->ret_val = PRET_BADSYNTAX;
 			return FALSE;
 		}
@@ -868,10 +1478,32 @@ DECL_OPC_FUN(opc_list)
 		block->loop++;
 		block->cond[block->cur_line->level] = TRUE;
 	} else {
+		log_stringf("opc_list: next loop variable '%s'", block->loops[lp].var_name);
+
 		// Continue loop
 		switch(block->loops[lp].d.l.type) {
 		case ENT_EXIT:
-			block->loops[lp].d.l.cur.x = ex = block->loops[lp].d.l.next.x;
+			log_stringf("opc_list: list type ENT_EXIT");
+			i = block->loops[lp].d.l.cur.door = block->loops[lp].d.l.next.door;
+
+			if( i >= MAX_DIR ) {
+				skip = TRUE;
+				break;
+			}
+
+			here = (ROOM_INDEX_DATA *)block->loops[lp].d.l.owner;
+			ex = here->exit[i];
+
+			if(ex) {
+				if(here->wilds)
+					log_stringf("opc_list: %s(%ld,%ld,%ld)", dir_name[i], here->wilds->uid, here->x, here->y);
+				else if(here->source)
+					log_stringf("opc_list: %s(%ld,%s,%ld,%ld)", dir_name[i], here->vnum, here->name, here->id[0], here->id[1]);
+				else
+					log_stringf("opc_list: %s(%ld,%s)", dir_name[i], here->vnum, here->name);
+			} else
+				log_stringf("opc_list: exit(<END>)");
+
 
 			// Set the variable
 			variables_set_exit(block->info.var,block->loops[lp].var_name,ex);
@@ -881,15 +1513,25 @@ DECL_OPC_FUN(opc_list)
 				break;
 			}
 
-			here = ex->from_room;
-			for(i=ex->orig_door + 1; i < MAX_DIR && !here->exit[i]; i++);
-			if(i < MAX_DIR) block->loops[lp].d.l.next.x = here->exit[i];
+			for(i++; i < MAX_DIR && !here->exit[i]; i++);
+
+			block->loops[lp].d.l.next.door = i;
 			break;
 
 		case ENT_MOBILE:
+			log_stringf("opc_list: list type ENT_MOBILE");
 			block->loops[lp].d.l.cur.m = block->loops[lp].d.l.next.m;
 			// Set the variable
 			variables_set_mobile(block->info.var,block->loops[lp].var_name,block->loops[lp].d.l.cur.m);
+
+			if(block->loops[lp].d.l.cur.m) {
+				ch = block->loops[lp].d.l.cur.m;
+				if(!IS_NPC(ch))
+					log_stringf("opc_list: player(%s,%ld,%ld)", ch->name, ch->id[0], ch->id[1]);
+				else
+					log_stringf("opc_list: mobile(%ld,%ld,%ld)", ch->pIndexData->vnum, ch->id[0], ch->id[1]);
+			} else
+				log_stringf("opc_list: mobile(<END>)");
 
 			if(!block->loops[lp].d.l.cur.m) {
 				skip = TRUE;
@@ -900,9 +1542,15 @@ DECL_OPC_FUN(opc_list)
 			break;
 
 		case ENT_OBJECT:
+			log_stringf("opc_list: list type ENT_OBJECT");
 			block->loops[lp].d.l.cur.o = block->loops[lp].d.l.next.o;
 			// Set the variable
 			variables_set_object(block->info.var,block->loops[lp].var_name,block->loops[lp].d.l.cur.o);
+
+			if(block->loops[lp].d.l.cur.o)
+				log_stringf("opc_list: object(%ld,%ld,%ld)", block->loops[lp].d.l.cur.o->pIndexData->vnum, block->loops[lp].d.l.cur.o->id[0], block->loops[lp].d.l.cur.o->id[1]);
+			else
+				log_stringf("opc_list: object(<END>)");
 
 			if(!block->loops[lp].d.l.cur.o) {
 				skip = TRUE;
@@ -913,9 +1561,15 @@ DECL_OPC_FUN(opc_list)
 			break;
 
 		case ENT_TOKEN:
+			log_stringf("opc_list: list type ENT_TOKEN");
 			block->loops[lp].d.l.cur.t = block->loops[lp].d.l.next.t;
 			// Set the variable
 			variables_set_token(block->info.var,block->loops[lp].var_name,block->loops[lp].d.l.cur.t);
+
+			if(block->loops[lp].d.l.cur.t)
+				log_stringf("opc_list: token(%ld,%ld,%ld)", block->loops[lp].d.l.cur.t->pIndexData->vnum, block->loops[lp].d.l.cur.t->id[0], block->loops[lp].d.l.cur.t->id[1]);
+			else
+				log_stringf("opc_list: token(<END>)");
 
 			if(!block->loops[lp].d.l.cur.t) {
 				skip = TRUE;
@@ -926,9 +1580,18 @@ DECL_OPC_FUN(opc_list)
 			break;
 
 		case ENT_AFFECT:
+			log_stringf("opc_list: list type ENT_AFFECT");
 			block->loops[lp].d.l.cur.aff = block->loops[lp].d.l.next.aff;
 			// Set the variable
 			variables_set_affect(block->info.var,block->loops[lp].var_name,block->loops[lp].d.l.cur.aff);
+
+			if(block->loops[lp].d.l.cur.aff) {
+				if(block->loops[lp].d.l.cur.aff->custom_name)
+					log_stringf("opc_list: affect(%s)", block->loops[lp].d.l.cur.aff->custom_name);
+				else
+					log_stringf("opc_list: affect(%s)", skill_table[block->loops[lp].d.l.cur.aff->type].name);
+			} else
+				log_stringf("opc_list: affect(<END>)");
 
 			if(!block->loops[lp].d.l.cur.aff) {
 				skip = TRUE;
@@ -938,6 +1601,310 @@ DECL_OPC_FUN(opc_list)
 			block->loops[lp].d.l.next.aff = block->loops[lp].d.l.cur.aff->next;
 			break;
 
+		case ENT_PLIST_STR:
+			log_stringf("opc_list: list type ENT_PLIST_STR");
+			str = (char *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+
+			if(str)
+				log_stringf("opc_list: string(%s)",str);
+			else
+				log_stringf("opc_list: string(<END>)");
+
+			// Set the variable
+			variables_set_string(block->info.var,block->loops[lp].var_name,str,FALSE);
+
+			if( !str ) {
+				iterator_stop(&block->loops[lp].d.l.list.it);
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+			}
+
+			break;
+
+		case ENT_BLIST_MOB:
+			log_stringf("opc_list: list type ENT_BLIST_MOB");
+			while( (uid = (LIST_UID_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it)) && !IS_VALID((CHAR_DATA *)uid->ptr) );
+			if(uid) {
+				ch = (CHAR_DATA *)(uid->ptr);
+				if(!IS_NPC(ch))
+					log_stringf("opc_list: player(%s,%ld,%ld)", ch->name, ch->id[0], ch->id[1]);
+				else
+					log_stringf("opc_list: mobile(%ld,%ld,%ld)", ch->pIndexData->vnum, ch->id[0], ch->id[1]);
+			} else
+				log_stringf("opc_list: mobile(<END>)");
+
+			variables_set_mobile(block->info.var,block->loops[lp].var_name,(CHAR_DATA *)(uid?uid->ptr:NULL));
+
+			if( !uid ) {
+				iterator_stop(&block->loops[lp].d.l.list.it);
+				skip = TRUE;
+				break;
+			}
+
+			break;
+
+		case ENT_BLIST_OBJ:
+			log_stringf("opc_list: list type ENT_BLIST_OBJ");
+			while( (uid = (LIST_UID_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it)) && !IS_VALID((OBJ_DATA *)uid->ptr) );
+			if(uid) {
+				obj = (OBJ_DATA *)(uid->ptr);
+				log_stringf("opc_list: object(%ld,%ld,%ld)", obj->pIndexData->vnum, obj->id[0], obj->id[1]);
+			} else
+				log_stringf("opc_list: object(<END>)");
+
+			variables_set_object(block->info.var,block->loops[lp].var_name,(OBJ_DATA *)(uid?uid->ptr:NULL));
+
+			if( !uid ) {
+				iterator_stop(&block->loops[lp].d.l.list.it);
+				skip = TRUE;
+				break;
+			}
+
+			break;
+
+		case ENT_BLIST_TOK:
+			log_stringf("opc_list: list type ENT_BLIST_TOK");
+			while( (uid = (LIST_UID_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it)) && !IS_VALID((TOKEN_DATA *)uid->ptr) );
+
+			if(uid) {
+				tok = (TOKEN_DATA *)(uid->ptr);
+				log_stringf("opc_list: token(%ld,%ld,%ld)", tok->pIndexData->vnum, tok->id[0], tok->id[1]);
+			} else
+				log_stringf("opc_list: token(<END>)");
+
+			variables_set_token(block->info.var,block->loops[lp].var_name,(TOKEN_DATA *)(uid?uid->ptr:NULL));
+
+			if( !uid ) {
+				iterator_stop(&block->loops[lp].d.l.list.it);
+				skip = TRUE;
+				break;
+			}
+
+			break;
+
+		case ENT_BLIST_ROOM:
+			log_stringf("opc_list: list type ENT_BLIST_ROOM");
+			while( (lrd = (LIST_ROOM_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it)) && !lrd->room );
+			if(lrd) {
+				if(lrd->room->wilds)
+					log_stringf("opc_list: room(%ld,%ld,%ld)", lrd->room->wilds->uid, lrd->room->x, lrd->room->y);
+				else if(lrd->room->source)
+					log_stringf("opc_list: room(%ld,%s,%ld,%ld)", lrd->room->vnum, lrd->room->name, lrd->room->id[0], lrd->room->id[1]);
+				else
+					log_stringf("opc_list: room(%ld,%s)", lrd->room->vnum, lrd->room->name);
+			} else
+				log_stringf("opc_list: room(<END>)");
+
+			variables_set_room(block->info.var,block->loops[lp].var_name,lrd?lrd->room:NULL);
+
+			if( !lrd ) {
+				iterator_stop(&block->loops[lp].d.l.list.it);
+				skip = TRUE;
+				break;
+			}
+			break;
+
+		case ENT_BLIST_EXIT:
+			log_stringf("opc_list: list type ENT_BLIST_EXIT");
+			while( (led = (LIST_EXIT_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it)) &&
+				(!led->room || led->door < 0 || led->door >= MAX_DIR || !led->room->exit[led->door]));
+
+			if(led) {
+				if(led->room->wilds)
+					log_stringf("opc_list: %s(%ld,%ld,%ld)", dir_name[led->door], led->room->wilds->uid, led->room->x, led->room->y);
+				else if(led->room->source)
+					log_stringf("opc_list: %s(%ld,%s,%ld,%ld)", dir_name[led->door], led->room->vnum, led->room->name, led->room->id[0], led->room->id[1]);
+				else
+					log_stringf("opc_list: %s(%ld,%s)", dir_name[led->door], led->room->vnum, led->room->name);
+			} else
+				log_stringf("opc_list: exit(<END>)");
+
+			if( !led ) {
+				variables_set_door(block->info.var,block->loops[lp].var_name,NULL, DIR_NORTH, FALSE);
+				iterator_stop(&block->loops[lp].d.l.list.it);
+				skip = TRUE;
+				break;
+			}
+
+			variables_set_door(block->info.var,block->loops[lp].var_name,led->room, led->door, FALSE);
+			break;
+
+		case ENT_BLIST_SKILL:
+			log_stringf("opc_list: list type ENT_BLIST_SKILL");
+			while( (lsk = (LIST_SKILL_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it)) &&
+				(!IS_VALID(lsk->mob) || (!IS_VALID(lsk->tok) && ( lsk->sn < 1 || lsk->sn >= MAX_SKILL ))) );
+			if(lsk) {
+				if(lsk->tok)
+					log_stringf("opc_list: skill(%ld,%ld,TOKEN,%s)", lsk->mob->id[0], lsk->mob->id[1], lsk->tok->name);
+				else
+					log_stringf("opc_list: skill(%ld,%ld,SKILL,%s)", lsk->mob->id[0], lsk->mob->id[1], skill_table[lsk->sn].name);
+			} else
+				log_stringf("opc_list: skill(<END>)");
+
+
+			if( !lsk ) {
+				variables_setsave_skillinfo(block->info.var,block->loops[lp].var_name, NULL, 0, NULL, FALSE);
+				iterator_stop(&block->loops[lp].d.l.list.it);
+				skip = TRUE;
+				break;
+			}
+
+			variables_setsave_skillinfo(block->info.var,block->loops[lp].var_name, lsk->mob, lsk->sn, lsk->tok, FALSE);
+			break;
+
+		case ENT_BLIST_AREA:
+			log_stringf("opc_list: list type ENT_BLIST_AREA");
+			while( (lar = (LIST_AREA_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it)) && !lar->area );
+			if(lar) {
+				log_stringf("opc_list: area(%ld,%s)", lar->area->uid, lar->area->name);
+			} else
+				log_stringf("opc_list: area(<END>)");
+
+			variables_set_area(block->info.var,block->loops[lp].var_name,lar?lar->area:NULL);
+
+			if( !lar ) {
+				iterator_stop(&block->loops[lp].d.l.list.it);
+				skip = TRUE;
+				break;
+			}
+			break;
+
+		case ENT_BLIST_WILDS:
+			log_stringf("opc_list: list type ENT_BLIST_WILDS");
+			while( (lwd = (LIST_WILDS_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it)) && !lwd->wilds );
+			if(lwd) {
+				log_stringf("opc_list: wilds(%ld,%s)", lwd->wilds->uid, lwd->wilds->name);
+			} else
+				log_stringf("opc_list: wilds(<END>)");
+
+			variables_set_wilds(block->info.var,block->loops[lp].var_name,lwd?lwd->wilds:NULL);
+
+			if( !lwd ) {
+				iterator_stop(&block->loops[lp].d.l.list.it);
+				skip = TRUE;
+				break;
+			}
+			break;
+
+		case ENT_PLIST_CONN:
+			log_stringf("opc_list: list type ENT_PLIST_CONN");
+			conn = (DESCRIPTOR_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+			if(conn) {
+				if(conn->original)
+					log_stringf("opc_list: connection(%s,%d) [SWITCHED]", conn->original->name, conn->original->tot_level);
+				else
+					log_stringf("opc_list: connection(%s,%d)", conn->character->name, conn->character->tot_level);
+			} else
+				log_stringf("opc_list: connection(<END>)");
+
+			// Set the variable
+			variables_set_connection(block->info.var,block->loops[lp].var_name,conn);
+
+			if( !conn ) {
+				iterator_stop(&block->loops[lp].d.l.list.it);
+				skip = TRUE;
+				break;
+			}
+
+			break;
+
+		case ENT_PLIST_MOB:
+			log_stringf("opc_list: list type ENT_PLIST_MOB");
+			ch = (CHAR_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+			if(ch) {
+				if(!IS_NPC(ch))
+					log_stringf("opc_list: player(%s,%ld,%ld)", ch->name, ch->id[0], ch->id[1]);
+				else
+					log_stringf("opc_list: mobile(%ld,%ld,%ld)", ch->pIndexData->vnum, ch->id[0], ch->id[1]);
+			} else
+				log_stringf("opc_list: mobile(<END>)");
+
+			// Set the variable
+			variables_set_mobile(block->info.var,block->loops[lp].var_name,ch);
+
+			if( !ch ) {
+				iterator_stop(&block->loops[lp].d.l.list.it);
+				skip = TRUE;
+				break;
+			}
+
+			break;
+
+		case ENT_PLIST_OBJ:
+			log_stringf("opc_list: list type ENT_PLIST_OBJ");
+			obj = (OBJ_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+			if(obj)
+				log_stringf("opc_list: object(%ld,%ld,%ld)", obj->pIndexData->vnum, obj->id[0], obj->id[1]);
+			else
+				log_stringf("opc_list: object(<END>)");
+
+			// Set the variable
+			variables_set_object(block->info.var,block->loops[lp].var_name,obj);
+
+			if( !obj ) {
+				iterator_stop(&block->loops[lp].d.l.list.it);
+				skip = TRUE;
+				break;
+			}
+
+			break;
+
+		case ENT_PLIST_ROOM:
+			log_stringf("opc_list: list type ENT_PLIST_ROOM");
+			here = (ROOM_INDEX_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+			if(here) {
+				if(here->wilds)
+					log_stringf("opc_list: room(%ld,%ld,%ld)", here->wilds->uid, here->x, here->y);
+				else if(here->source)
+					log_stringf("opc_list: room(%ld,%s,%ld,%ld)", here->vnum, here->name, here->id[0], here->id[1]);
+				else
+					log_stringf("opc_list: room(%ld,%s)", here->vnum, here->name);
+			} else
+				log_stringf("opc_list: room(<END>)");
+
+			// Set the variable
+			variables_set_room(block->info.var,block->loops[lp].var_name,here);
+
+			if( !here ) {
+				iterator_stop(&block->loops[lp].d.l.list.it);
+				skip = TRUE;
+				break;
+			}
+
+			break;
+
+		case ENT_PLIST_TOK:
+			log_stringf("opc_list: list type ENT_PLIST_TOK");
+			tok = (TOKEN_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+			if(tok)
+				log_stringf("opc_list: token(%ld,%ld,%ld)", tok->pIndexData->vnum, tok->id[0], tok->id[1]);
+			else
+				log_stringf("opc_list: token(<END>)");
+
+			// Set the variable
+			variables_set_token(block->info.var,block->loops[lp].var_name,tok);
+
+			if( !tok ) {
+				iterator_stop(&block->loops[lp].d.l.list.it);
+				skip = TRUE;
+				break;
+			}
+			break;
+
+		case ENT_PLIST_CHURCH:
+			log_stringf("opc_list: list type ENT_PLIST_CHURCH");
+			church = (CHURCH_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+			log_stringf("opc_list: church(%s)", church ? church->name : "<END>");
+
+			// Set the variable
+			variables_set_church(block->info.var,block->loops[lp].var_name,church);
+
+			if( !church ) {
+				iterator_stop(&block->loops[lp].d.l.list.it);
+				skip = TRUE;
+				break;
+			}
+
+			break;
 		}
 
 		if(skip) {
@@ -1154,8 +2121,9 @@ void script_dump_wiznet(SCRIPT_DATA *script)
 
 int execute_script(long pvnum, SCRIPT_DATA *script, CHAR_DATA *mob, OBJ_DATA *obj,
 	ROOM_INDEX_DATA *room, TOKEN_DATA *token, CHAR_DATA *ch,
-	OBJ_DATA *obj1,OBJ_DATA *obj2,CHAR_DATA *vch,CHAR_DATA *rch,
-	char *phrase, char *trigger)
+	OBJ_DATA *obj1,OBJ_DATA *obj2,CHAR_DATA *vch,CHAR_DATA *vch2,CHAR_DATA *rch,
+	char *phrase, char *trigger,
+	int number1, int number2, int number3, int number4, int number5)
 {
 	char buf[MSL];
 	SCRIPT_CB block;	// Control block
@@ -1179,7 +2147,11 @@ int execute_script(long pvnum, SCRIPT_DATA *script, CHAR_DATA *mob, OBJ_DATA *ob
 	}
 
 	// Silently return.  Disabled scripts should just pretend they don't exist.
-	if (IS_SET(script->flags,SCRIPT_DISABLED))
+	if (!script_force_execute && IS_SET(script->flags,SCRIPT_DISABLED))
+		return PRET_NOSCRIPT;
+
+	// System scripts require system level security, only set at specific times!
+	if(IS_SET(script->flags, SCRIPT_SYSTEM) && script_security < SYSTEM_SCRIPT_SECURITY)
 		return PRET_NOSCRIPT;
 
 
@@ -1248,16 +2220,24 @@ int execute_script(long pvnum, SCRIPT_DATA *script, CHAR_DATA *mob, OBJ_DATA *ob
 	block.info.obj1 = obj1;
 	block.info.obj2 = obj2;
 	block.info.vch = vch;
+	block.info.vch2 = vch2;
 	block.info.rch = rch;
+	block.info.registers[0] = number1;
+	block.info.registers[1] = number2;
+	block.info.registers[2] = number3;
+	block.info.registers[3] = number4;
+	block.info.registers[4] = number5;
 	block.script = script;
 
 	saved_security = script_security;
-//	if(script_security == INIT_SCRIPT_SECURITY)
-//		script_security = (port == PORT_NORMAL) ? script->security : MAX_SCRIPT_SECURITY;
-	if(script_security == INIT_SCRIPT_SECURITY ||
-		(IS_SET(script->flags,SCRIPT_SECURED) && (script->security > script_security)) ||
-		script->security < script_security)
-		script_security = script->security;
+
+	// Non-system scripts modify the security
+	if(!IS_SET(script->flags, SCRIPT_SYSTEM)) {
+		if(script_security == INIT_SCRIPT_SECURITY ||
+			(IS_SET(script->flags,SCRIPT_SECURED) && (script->security >= script_security)) ||
+			script->security < script_security)
+			script_security = script->security;
+	}
 
 	// Call depth code
 	saved_call_depth = script_call_depth;
@@ -1548,7 +2528,7 @@ OBJ_DATA *script_get_obj_list(OBJ_DATA *objs, CHAR_DATA *viewer, int worn, int v
 TOKEN_DATA *token_find_match(SCRIPT_VARINFO *info, TOKEN_DATA *tokens,char *argument)
 {
 	char *rest;
-	int i, nth = 1, vnum = 0;
+	int i, nth = 1, vnum = 0, matches;
 	int values[MAX_TOKEN_VALUES];
 	bool match[MAX_TOKEN_VALUES];
 	char buf[MSL];
@@ -1588,13 +2568,14 @@ TOKEN_DATA *token_find_match(SCRIPT_VARINFO *info, TOKEN_DATA *tokens,char *argu
 	for(;i < MAX_TOKEN_VALUES; i++) match[i] = FALSE;
 
 	for(;tokens;tokens = tokens->next) {
-		if(tokens->pIndexData->vnum == vnum &&
-			(!match[0] || tokens->value[0] == values[0]) &&
-			(!match[1] || tokens->value[1] == values[1]) &&
-			(!match[2] || tokens->value[2] == values[2]) &&
-			(!match[3] || tokens->value[3] == values[3]) &&
-			(!--nth))
-			break;
+		if(tokens->pIndexData->vnum == vnum) {
+			for(matches = 0, i = 0; i < MAX_TOKEN_VALUES; i++)
+				if( !match[i] || tokens->value[i] == values[i] )
+					matches++;
+
+			if( matches == MAX_TOKEN_VALUES && !--nth )
+				break;
+		}
 	}
 
 	return tokens;
@@ -1712,10 +2693,11 @@ void do_mob_transfer(CHAR_DATA *ch,ROOM_INDEX_DATA *room,bool quiet)
 }
 
 
-bool has_trigger(PROG_LIST **bank, int trigger)
+bool has_trigger(LIST **bank, int trigger)
 {
 	int slot;
-	PROG_LIST *prog;
+	PROG_LIST *trig;
+	ITERATOR it;
 
 //	DBG2ENTRY2(PTR,bank,NUM,trigger);
 
@@ -1724,11 +2706,15 @@ bool has_trigger(PROG_LIST **bank, int trigger)
 	slot = trigger_slots[trigger];
 
 	if(bank) {
-		for (prog = bank[slot]; prog; prog = prog->next)
-			if (is_trigger_type(prog->trig_type,trigger)) {
-//				DBG2EXITVALUE2(TRUE);
-				return TRUE;
-			}
+		iterator_start(&it, bank[slot]);
+		while((trig = (PROG_LIST *)iterator_nextdata(&it))) {
+			if (is_trigger_type(trig->trig_type,trigger))
+				break;
+		}
+		iterator_stop(&it);
+
+		if(trig)
+			return TRUE;
 	}
 
 //	DBG2EXITVALUE2(FALSE);
@@ -1737,19 +2723,22 @@ bool has_trigger(PROG_LIST **bank, int trigger)
 
 int trigger_index(char *name, int type)
 {
-	int i;
-//	char buf[MSL];
+	register int i;
 
+	// Check Cannonical names first, so aliases don't override
 	for (i = 0; trigger_table[i].name; i++) {
-//		sprintf(buf,"trigger[%d]: '%s', '%s', %d, %d, %d, %d, %d",
-//			i,trigger_table[i].name,name,type,
-//			trigger_table[i].mob,
-//			trigger_table[i].obj,
-//			trigger_table[i].room,
-//			trigger_table[i].token);
-//		log_string(buf);
-
 		if (!str_cmp(trigger_table[i].name, name))
+			switch (type) {
+			case PRG_MPROG: if (trigger_table[i].mob) return i;
+			case PRG_OPROG: if (trigger_table[i].obj) return i;
+			case PRG_RPROG: if (trigger_table[i].room) return i;
+			case PRG_TPROG: if (trigger_table[i].token) return i;
+			}
+	}
+
+	// Check Aliases
+	for (i = 0; trigger_table[i].name; i++) {
+		if (trigger_table[i].alias && is_exact_name(trigger_table[i].alias, name))
 			switch (type) {
 			case PRG_MPROG: if (trigger_table[i].mob) return i;
 			case PRG_OPROG: if (trigger_table[i].obj) return i;
@@ -1765,9 +2754,9 @@ bool is_trigger_type(int tindex, int type)
 {
 	if(tindex < 0) return FALSE;
 
-//	plogf("is_trigger_type: %d, %s, %d, %d\n\r", tindex, trigger_table[tindex].name, trigger_table[tindex].value, type);
+//	log_stringf("is_trigger_type: %d, %s, %d", tindex, trigger_table[tindex].name, type);
 
-	return (trigger_table[tindex].value == type);
+	return (tindex == type);
 }
 
 bool mp_same_group(CHAR_DATA *ch,CHAR_DATA *vch,CHAR_DATA *to)
@@ -1905,7 +2894,7 @@ char *trigger_phrase(int type, char *phrase)
 {
 	int sn;
 	if(type >= 0 && type < trigger_table_size && trigger_table[type].name) {
-		if(trigger_table[type].value == TRIG_SPELLCAST) {
+		if(type == TRIG_SPELLCAST) {
 			sn = atoi(phrase);
 			if(sn < 0) return "reserved";
 			return skill_table[sn].name;
@@ -1953,891 +2942,1047 @@ void script_interpret(SCRIPT_VARINFO *info, char *command)
 	// Complain
 }
 
+typedef bool (*MATCH_STRING)(char *a, char *b);
+typedef bool (*MATCH_NUMBER)(int a, int b);
+typedef bool (*MATCH_RANGE)(int a, int b, int c);
+
+
+// MATCH_STRING
+static bool __attribute__ ((unused)) match_substr(register char *a, register char *b)
+{
+	register char *a2;
+	register char *b2;
+
+	if(!a || !b) return FALSE;
+
+	if(!*b) return TRUE;
+
+	if(!*a) return FALSE;
+
+	while(*a) {
+		for(a2 = a, b2 = b;(*a2 && *b2 && LOWER(*a2) == LOWER(*b2)); ++a2, ++b2);
+
+		if(!*b2) return TRUE;
+
+		a++;
+	}
+
+	return FALSE;
+}
+
+// MATCH_STRING
+static bool __attribute__ ((unused)) match_exact_name(char *a, char *b)
+{
+	return !str_cmp(a, b);
+}
+
+// MATCH_STRING
+static bool __attribute__ ((unused)) match_name(char *a, char *b)
+{
+	return is_name(b, a);
+}
+
+// MATCH_NUMBER
+static bool __attribute__ ((unused)) match_random(int a, int b)
+{
+	return number_range(0, b-1) < a;
+}
+
+// MATCH_NUMBER
+static bool __attribute__ ((unused)) match_percent(int a, int b)
+{
+	return number_percent() < a;
+}
+
+// MATCH_NUMBER
+static bool __attribute__ ((unused)) match_equal(int a, int b)
+{
+	return a == b;
+}
+
+// MATCH_NUMBER
+static bool __attribute__ ((unused)) match_lt(int a, int b)
+{
+	return b < a;
+}
+
+// MATCH_NUMBER
+static bool __attribute__ ((unused)) match_gt(int a, int b)
+{
+	return b > a;
+}
+
+// MATCH_NUMBER
+static bool __attribute__ ((unused)) match_not_equal(int a, int b)
+{
+	return a != b;
+}
+
+// MATCH_NUMBER
+static bool __attribute__ ((unused)) match_lte(int a, int b)
+{
+	return b <= a;
+}
+
+// MATCH_NUMBER
+static bool __attribute__ ((unused)) match_gte(int a, int b)
+{
+	return b >= a;
+}
+
+// STRING TRIGGER
+int test_string_trigger(char *string, MATCH_STRING match, int type,
+			CHAR_DATA *mob, OBJ_DATA *obj, ROOM_INDEX_DATA *room,
+			CHAR_DATA *enactor, CHAR_DATA *victim, CHAR_DATA *victim2,
+			OBJ_DATA *obj1, OBJ_DATA *obj2)
+{
+	ITERATOR tit;	// Token iterator
+	ITERATOR pit;	// Prog iterator
+	PROG_LIST *prg;
+	TOKEN_DATA *token;
+	unsigned long uid[2];
+	int slot;
+	int ret_val = PRET_NOSCRIPT, ret;
+
+	if ((mob && obj) || (mob && room) || (obj && room)) {
+		bug("test_string_trigger: Multiple program types in trigger %d.", type);
+		PRETURN;
+	}
+
+	slot = trigger_slots[type];
+
+
+	if (mob) {
+		script_mobile_addref(mob);
+
+		// Save the UID
+		uid[0] = mob->id[0];
+		uid[1] = mob->id[1];
+
+		// Check for tokens FIRST
+		iterator_start(&tit, mob->ltokens);
+		// Loop Level 1
+		while((token = (TOKEN_DATA *)iterator_nextdata(&tit))) {
+			if( token->pIndexData->progs ) {
+				script_token_addref(token);
+				script_destructed = FALSE;
+				iterator_start(&pit, token->pIndexData->progs[slot]);
+				// Loop Level 2
+				while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+					if (is_trigger_type(prg->trig_type,type)) {
+						if ((*match)(prg->trig_phrase, string)) {
+							ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, enactor, obj1, obj2, victim, victim2,NULL,string,prg->trig_phrase,0,0,0,0,0);
+							if( ret != PRET_NOSCRIPT ) {
+								ret_val = ret;
+								break; // Exit: Level 2
+							}
+						}
+					}
+				}
+				iterator_stop(&pit);
+				script_token_remref(token);
+				BREAKPRET;
+			}
+		}
+		iterator_stop(&tit);
+
+		if(ret_val == PRET_NOSCRIPT && !script_destructed && IS_VALID(mob) && mob->id[0] == uid[0] && mob->id[1] == uid[1] && IS_NPC(mob) && mob->pIndexData->progs) {
+			iterator_start(&pit, mob->pIndexData->progs[slot]);
+			// Loop Level 1:
+			while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+				if (is_trigger_type(prg->trig_type,type)) {
+					if ((*match)(prg->trig_phrase, string)) {
+						ret = execute_script(prg->vnum, prg->script, mob, NULL, NULL, NULL, enactor, obj1, obj2, victim, victim2,NULL,string,prg->trig_phrase,0,0,0,0,0);
+						if( ret != PRET_NOSCRIPT ) {
+							ret_val = ret;
+							break; // Exit: Level 1
+						}
+					}
+				}
+				BREAKPRET;
+			}
+			iterator_stop(&pit);
+		}
+		script_mobile_remref(mob);
+
+	} else if (obj && obj_room(obj) ) {
+		// Save the UID
+		uid[0] = obj->id[0];
+		uid[1] = obj->id[1];
+		script_object_addref(obj);
+
+		// Check for tokens FIRST
+		iterator_start(&tit, obj->ltokens);
+		while((token = (TOKEN_DATA *)iterator_nextdata(&tit))) {
+			if( token->pIndexData->progs ) {
+				script_token_addref(token);
+				script_destructed = FALSE;
+				iterator_start(&pit, token->pIndexData->progs[slot]);
+				while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+					if (is_trigger_type(prg->trig_type,type)) {
+						if ((*match)(prg->trig_phrase, string)) {
+							ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, enactor, obj1, obj2, victim, victim2,NULL,string,prg->trig_phrase,0,0,0,0,0);
+							if( ret != PRET_NOSCRIPT ) {
+								ret_val = ret;
+								break; // Exit: while((prg = ... )))
+							}
+						}
+					}
+				}
+				iterator_stop(&pit);
+
+				script_token_remref(token);
+				BREAKPRET;
+			}
+		}
+		iterator_stop(&tit);
+
+		if(ret_val == PRET_NOSCRIPT && !script_destructed && IS_VALID(obj) && obj->id[0] == uid[0] && obj->id[1] == uid[1] && obj->pIndexData->progs) {
+			script_destructed = FALSE;
+			iterator_start(&pit, obj->pIndexData->progs[slot]);
+			while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+				if (is_trigger_type(prg->trig_type,type)) {
+					if ((*match)(prg->trig_phrase, string)) {
+						ret = execute_script(prg->vnum, prg->script, NULL, obj, NULL, NULL, enactor, obj1, obj2, victim, victim2,NULL,string,prg->trig_phrase,0,0,0,0,0);
+						if( ret != PRET_NOSCRIPT ) {
+							ret_val = ret;
+							break; // Exit: while((prg = ... )))
+						}
+					}
+				}
+				BREAKPRET;
+			}
+			iterator_stop(&pit);
+		}
+
+		script_object_remref(obj);
+
+	} else if (room) {
+		ROOM_INDEX_DATA *source;
+		bool isclone;
+
+		if(room->source) {
+			source = room->source;
+			isclone = TRUE;
+			uid[0] = room->id[0];
+			uid[1] = room->id[1];
+		} else {
+			source = room;
+			isclone = FALSE;
+		}
+
+		script_room_addref(room);
+
+		// Check for tokens FIRST
+		iterator_start(&tit, room->ltokens);
+		while((token = (TOKEN_DATA *)iterator_nextdata(&tit))) {
+			if( token->pIndexData->progs ) {
+				script_token_addref(token);
+				script_destructed = FALSE;
+				iterator_start(&pit, token->pIndexData->progs[slot]);
+				while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+					if (is_trigger_type(prg->trig_type,type)) {
+						if ((*match)(prg->trig_phrase, string)) {
+							ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, enactor, obj1, obj2, victim, victim2,NULL,string,prg->trig_phrase,0,0,0,0,0);
+							if( ret != PRET_NOSCRIPT ) {
+								ret_val = ret;
+								break; // Exit: while((prg = ... )))
+							}
+						}
+					}
+				}
+				iterator_stop(&pit);
+				script_token_remref(token);
+
+				BREAKPRET;
+			}
+		}
+		iterator_stop(&tit);
+
+		if(ret_val == PRET_NOSCRIPT && source->progs->progs) {
+			script_destructed = FALSE;
+			iterator_start(&pit, source->progs->progs[slot]);
+			while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+				if (is_trigger_type(prg->trig_type,type)) {
+					if ((*match)(prg->trig_phrase, string)) {
+						ret = execute_script(prg->vnum, prg->script, NULL, NULL, room, NULL, enactor, obj1, obj2, victim, victim2,NULL,string,prg->trig_phrase,0,0,0,0,0);
+						if( ret != PRET_NOSCRIPT ) {
+							ret_val = ret;
+							break; // Exit: while((prg = ... )))
+						}
+					}
+				}
+				BREAKPRET;
+			}
+			iterator_stop(&pit);
+
+		}
+		script_room_remref(room);
+
+	} else
+		bug("test_string_trigger: no program type for trigger %d.", type);
+
+	PRETURN;
+}
+
 
 /*
  * A general purpose string trigger. Matches argument to a string trigger
  * phrase.
  */
 int p_act_trigger(char *argument, CHAR_DATA *mob, OBJ_DATA *obj, ROOM_INDEX_DATA *room,
-	CHAR_DATA *ch, const void *arg1, const void *arg2, int type)
+	CHAR_DATA *ch, CHAR_DATA *victim, CHAR_DATA *victim2, OBJ_DATA *obj1, OBJ_DATA *obj2, int type)
 {
-	PROG_LIST *prg;
-	TOKEN_DATA *token, *tnext;
-	char string1[MSL];
-	char string2[MSL];
-	int slot;
-	int ret_val = PRET_NOSCRIPT, ret; // @@@NIB Default for a trigger loop is NO SCRIPT
-
-//	DBG2ENTRY8(STR,argument,PTR,mob,PTR,obj,PTR,room,PTR,ch,PTR,arg1,PTR,arg2,NUM,type);
-
-	if ((mob && obj) || (mob && room) || (obj && room)) {
-		bug("Multiple program types in ACT trigger.", 0);
-		PRETURN;
-	}
-
-	slot = trigger_slots[type];
-	str_lower(argument,string1);
-
-//	sprintf(buf,"ACT(%s,%d): %s",trigger_table[type].name, slot, argument);
-//	wiznet(buf, NULL, NULL,WIZ_SCRIPTS,0,0);
-
-
-	if (mob) {
-		// Check for tokens FIRST
-		for(token = mob->tokens; token; token = tnext) {
-			tnext = token->next;
-			if(token->pIndexData->progs) {
-				script_destructed = FALSE;
-				for (prg = token->pIndexData->progs[slot]; prg && !script_destructed; prg = prg->next) {
-					if (is_trigger_type(prg->trig_type,type)) {
-						str_lower(prg->trig_phrase,string2);
-						if (strstr(string1, string2)) {
-							ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, ch, (void *)arg1, (void *)arg2, (void *)arg2, NULL,argument,prg->trig_phrase);
-							SETPRETX;
-						}
-					}
-				}
-				// Since the token didn't destruct, this is valid
-				if(!script_destructed) tnext = token->next;
-			}
-		}
-
-		if(IS_NPC(mob) && mob->pIndexData->progs) {
-			script_destructed = FALSE;
-			for (prg = mob->pIndexData->progs[slot]; prg && !script_destructed; prg = prg->next) {
-				if (is_trigger_type(prg->trig_type,type)) {
-					str_lower(prg->trig_phrase,string2);
-					if (strstr(string1, string2)) {
-						ret = execute_script(prg->vnum, prg->script, mob, NULL, NULL, NULL, ch, (void *)arg1, (void *)arg2, (void *)arg2, NULL,argument,prg->trig_phrase);
-						SETPRETX;
-					}
-				}
-			}
-		}
-	} else if (obj) {
-		if(obj_room(obj) && obj->pIndexData->progs) {
-			script_destructed = FALSE;
-			for (prg = obj->pIndexData->progs[slot]; prg && !script_destructed; prg = prg->next) {
-				if (is_trigger_type(prg->trig_type,type)) {
-					str_lower(prg->trig_phrase,string2);
-					if (strstr(string1, string2)) {
-						ret = execute_script(prg->vnum, prg->script, NULL, obj, NULL, NULL, ch, (void *)arg1, (void *)arg2, (void *)arg2, NULL,argument,prg->trig_phrase);
-						SETPRETX;
-					}
-				}
-			}
-		}
-	} else if (room) {
-		if (room->source) {
-			if(room->source->progs->progs) {
-				script_destructed = FALSE;
-				for (prg = room->source->progs->progs[slot]; prg && !script_destructed; prg = prg->next) {
-					if (is_trigger_type(prg->trig_type,type)) {
-						str_lower(prg->trig_phrase,string2);
-						if (strstr(string1, string2)) {
-							ret = execute_script(prg->vnum, prg->script, NULL, NULL, room, NULL, ch, (void *)arg1, (void *)arg2, (void *)arg2, NULL,argument,prg->trig_phrase);
-							SETPRETX; // @@@NIB
-						}
-					}
-				}
-			}
-		} else if(room->progs->progs) {
-			script_destructed = FALSE;
-			for (prg = room->progs->progs[slot]; prg && !script_destructed; prg = prg->next) {
-				if (is_trigger_type(prg->trig_type,type)) {
-					str_lower(prg->trig_phrase,string2);
-					if (strstr(string1, string2)) {
-						ret = execute_script(prg->vnum, prg->script, NULL, NULL, room, NULL, ch, (void *)arg1, (void *)arg2, (void *)arg2, NULL,argument,prg->trig_phrase);
-						SETPRETX; // @@@NIB
-					}
-				}
-			}
-		}
-	} else
-		bug("ACT trigger with no program type.", 0);
-	PRETURN;
+	return test_string_trigger(argument, match_substr, type, mob, obj, room, ch, victim, victim2, obj1, obj1);
 }
-
-
 
 // Similar to p_act_trigger, except it does EXACT match
 int p_exact_trigger(char *argument, CHAR_DATA *mob, OBJ_DATA *obj, ROOM_INDEX_DATA *room,
-	CHAR_DATA *ch, const void *arg1, const void *arg2, int type)
+	CHAR_DATA *ch, CHAR_DATA *victim, CHAR_DATA *victim2, OBJ_DATA *obj1, OBJ_DATA *obj2, int type)
 {
-	PROG_LIST *prg;
-	TOKEN_DATA *token, *tnext;
-	int slot;
-	int ret_val = PRET_NOSCRIPT, ret; // @@@NIB Default for a trigger loop is NO SCRIPT
-
-	if ((mob && obj) || (mob && room) || (obj && room)) {
-		bug("Multiple program types in EXACT trigger.", 0);
-		PRETURN;
-	}
-
-	slot = trigger_slots[type];
-
-	if (mob) {
-		// Check for tokens FIRST
-		for(token = mob->tokens; token; token = tnext) {
-			tnext = token->next;
-			if(token->pIndexData->progs) {
-				script_destructed = FALSE;
-				for (prg = token->pIndexData->progs[slot]; prg && !script_destructed; prg = prg->next) {
-					if (is_trigger_type(prg->trig_type,type)) {
-						if (!str_cmp(argument, prg->trig_phrase)) {
-							ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, ch, (void *)arg1, (void *)arg2, (void *)arg2, NULL,argument,prg->trig_phrase);
-							SETPRETX;
-						}
-					}
-				}
-				// Since the token didn't destruct, this is valid
-				if(!script_destructed) tnext = token->next;
-			}
-		}
-
-		if(IS_NPC(mob) && mob->pIndexData->progs) {
-			script_destructed = FALSE;
-			for (prg = mob->pIndexData->progs[slot]; prg && !script_destructed; prg = prg->next) {
-				if (is_trigger_type(prg->trig_type,type)) {
-					if (!str_cmp(argument, prg->trig_phrase)) {
-						ret = execute_script(prg->vnum, prg->script, mob, NULL, NULL, NULL, ch, (void *)arg1, (void *)arg2, (void *)arg2, NULL,argument,prg->trig_phrase);
-						SETPRETX;
-					}
-				}
-			}
-		}
-	} else if (obj) {
-		if(obj_room(obj) && obj->pIndexData->progs) {
-			script_destructed = FALSE;
-			for (prg = obj->pIndexData->progs[slot]; prg && !script_destructed; prg = prg->next) {
-				if (is_trigger_type(prg->trig_type,type)) {
-					if (!str_cmp(argument, prg->trig_phrase)) {
-						ret = execute_script(prg->vnum, prg->script, NULL, obj, NULL, NULL, ch, (void *)arg1, (void *)arg2, (void *)arg2, NULL,argument,prg->trig_phrase);
-						SETPRETX;
-					}
-				}
-			}
-		}
-	} else if (room) {
-		if (room->source) {
-			if(room->source->progs->progs) {
-				script_destructed = FALSE;
-				for (prg = room->source->progs->progs[slot]; prg && !script_destructed; prg = prg->next) {
-					if (is_trigger_type(prg->trig_type,type)) {
-						if (!str_cmp(argument, prg->trig_phrase)) {
-							ret = execute_script(prg->vnum, prg->script, NULL, NULL, room, NULL, ch, (void *)arg1, (void *)arg2, (void *)arg2, NULL,argument,prg->trig_phrase);
-							SETPRETX; // @@@NIB
-						}
-					}
-				}
-			}
-		} else if(room->progs->progs) {
-			script_destructed = FALSE;
-			for (prg = room->progs->progs[slot]; prg && !script_destructed; prg = prg->next) {
-				if (is_trigger_type(prg->trig_type,type)) {
-					if (!str_cmp(argument, prg->trig_phrase)) {
-						ret = execute_script(prg->vnum, prg->script, NULL, NULL, room, NULL, ch, (void *)arg1, (void *)arg2, (void *)arg2, NULL,argument,prg->trig_phrase);
-						SETPRETX; // @@@NIB
-					}
-				}
-			}
-		}
-	} else
-		bug("EXACT trigger with no program type.", 0);
-	PRETURN;
+	return test_string_trigger(argument, match_exact_name, type, mob, obj, room, ch, victim, victim2, obj1, obj1);
 }
 
 // Similar to p_act_trigger, except it uses is_name
 int p_name_trigger(char *argument, CHAR_DATA *mob, OBJ_DATA *obj, ROOM_INDEX_DATA *room,
-	CHAR_DATA *ch, const void *arg1, const void *arg2, int type)
+	CHAR_DATA *ch, CHAR_DATA *victim, CHAR_DATA *victim2, OBJ_DATA *obj1, OBJ_DATA *obj2, int type)
 {
-	PROG_LIST *prg;
-	TOKEN_DATA *token, *tnext;
-	int slot;
-	int ret_val = PRET_NOSCRIPT, ret; // @@@NIB Default for a trigger loop is NO SCRIPT
+	return test_string_trigger(argument, match_name, type, mob, obj, room, ch, victim, victim2, obj1, obj1);
+}
 
-	if ((mob && obj) || (mob && room) || (obj && room)) {
-		bug("Multiple program types in EXACT trigger.", 0);
+
+
+
+int test_number_trigger(int number, MATCH_NUMBER match, int type,
+			CHAR_DATA *mob, OBJ_DATA *obj, ROOM_INDEX_DATA *room, TOKEN_DATA *token,
+			CHAR_DATA *enactor, CHAR_DATA *victim, CHAR_DATA *victim2,
+			OBJ_DATA *obj1, OBJ_DATA *obj2,
+			char *phrase)
+{
+	ITERATOR tit;	// Token iterator
+	ITERATOR pit;	// Prog iterator
+	PROG_LIST *prg;
+	unsigned long uid[2];
+	int slot;
+	int ret_val = PRET_NOSCRIPT, ret;
+
+	if ((mob && obj) || (mob && room) || (mob && token) || (obj && room) || (obj && token) || (room && token)) {
+		bug("test_number_trigger: Multiple program types in trigger %d.", type);
 		PRETURN;
 	}
 
 	slot = trigger_slots[type];
 
+
 	if (mob) {
+		script_mobile_addref(mob);
+
+		// Save the UID
+		uid[0] = mob->id[0];
+		uid[1] = mob->id[1];
+
 		// Check for tokens FIRST
-		for(token = mob->tokens; token; token = tnext) {
-			tnext = token->next;
-			if(token->pIndexData->progs) {
+		iterator_start(&tit, mob->ltokens);
+		// Loop Level 1
+		while((token = (TOKEN_DATA *)iterator_nextdata(&tit))) {
+			if( token->pIndexData->progs ) {
+				script_token_addref(token);
 				script_destructed = FALSE;
-				for (prg = token->pIndexData->progs[slot]; prg && !script_destructed; prg = prg->next) {
+				iterator_start(&pit, token->pIndexData->progs[slot]);
+				// Loop Level 2
+				while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
 					if (is_trigger_type(prg->trig_type,type)) {
-						if (is_name(argument, prg->trig_phrase)) {
-							ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, ch, (void *)arg1, (void *)arg2, (void *)arg2, NULL,argument,prg->trig_phrase);
-							SETPRETX;
+						if ((*match)(prg->trig_number, number)) {
+							ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, enactor, obj1, obj2, victim, victim2,NULL, phrase, prg->trig_phrase,0,0,0,0,0);
+							if( ret != PRET_NOSCRIPT ) {
+								ret_val = ret;
+								break; // Exit: Level 2
+							}
 						}
 					}
 				}
-				// Since the token didn't destruct, this is valid
-				if(!script_destructed) tnext = token->next;
+				iterator_stop(&pit);
+				script_token_remref(token);
+				BREAKPRET;
 			}
+		}
+		iterator_stop(&tit);
+
+		if(ret_val == PRET_NOSCRIPT && !script_destructed && IS_VALID(mob) && mob->id[0] == uid[0] && mob->id[1] == uid[1] && IS_NPC(mob) && mob->pIndexData->progs) {
+			iterator_start(&pit, mob->pIndexData->progs[slot]);
+			// Loop Level 1:
+			while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+				if (is_trigger_type(prg->trig_type,type)) {
+					if ((*match)(prg->trig_number, number)) {
+						ret = execute_script(prg->vnum, prg->script, mob, NULL, NULL, NULL, enactor, obj1, obj2, victim, victim2,NULL,phrase,prg->trig_phrase,0,0,0,0,0);
+						if( ret != PRET_NOSCRIPT ) {
+							ret_val = ret;
+							break; // Exit: Level 1
+						}
+					}
+				}
+				BREAKPRET;
+			}
+			iterator_stop(&pit);
+		}
+		script_mobile_remref(mob);
+
+	} else if (obj && obj_room(obj) ) {
+		// Save the UID
+		uid[0] = obj->id[0];
+		uid[1] = obj->id[1];
+		script_object_addref(obj);
+
+		// Check for tokens FIRST
+		iterator_start(&tit, obj->ltokens);
+		while((token = (TOKEN_DATA *)iterator_nextdata(&tit))) {
+			if( token->pIndexData->progs ) {
+				script_token_addref(token);
+				script_destructed = FALSE;
+				iterator_start(&pit, token->pIndexData->progs[slot]);
+				while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+					if (is_trigger_type(prg->trig_type,type)) {
+						if ((*match)(prg->trig_number, number)) {
+							ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, enactor, obj1, obj2, victim, victim2,NULL,phrase,prg->trig_phrase,0,0,0,0,0);
+							if( ret != PRET_NOSCRIPT ) {
+								ret_val = ret;
+								break; // Exit: while((prg = ... )))
+							}
+						}
+					}
+				}
+				iterator_stop(&pit);
+
+				script_token_remref(token);
+				BREAKPRET;
+			}
+		}
+		iterator_stop(&tit);
+
+		if(ret_val == PRET_NOSCRIPT && !script_destructed && IS_VALID(obj) && obj->id[0] == uid[0] && obj->id[1] == uid[1] && obj->pIndexData->progs) {
+			script_destructed = FALSE;
+			iterator_start(&pit, obj->pIndexData->progs[slot]);
+			while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+				if (is_trigger_type(prg->trig_type,type)) {
+					if ((*match)(prg->trig_number, number)) {
+						ret = execute_script(prg->vnum, prg->script, NULL, obj, NULL, NULL, enactor, obj1, obj2, victim, victim2,NULL,phrase,prg->trig_phrase,0,0,0,0,0);
+						if( ret != PRET_NOSCRIPT ) {
+							ret_val = ret;
+							break; // Exit: while((prg = ... )))
+						}
+					}
+				}
+				BREAKPRET;
+			}
+			iterator_stop(&pit);
 		}
 
-		if(IS_NPC(mob) && mob->pIndexData->progs) {
-			script_destructed = FALSE;
-			for (prg = mob->pIndexData->progs[slot]; prg && !script_destructed; prg = prg->next) {
-				if (is_trigger_type(prg->trig_type,type)) {
-					if (is_name(argument, prg->trig_phrase)) {
-						ret = execute_script(prg->vnum, prg->script, mob, NULL, NULL, NULL, ch, (void *)arg1, (void *)arg2, (void *)arg2, NULL,argument,prg->trig_phrase);
-						SETPRETX;
-					}
-				}
-			}
-		}
-	} else if (obj) {
-		if(obj_room(obj) && obj->pIndexData->progs) {
-			script_destructed = FALSE;
-			for (prg = obj->pIndexData->progs[slot]; prg && !script_destructed; prg = prg->next) {
-				if (is_trigger_type(prg->trig_type,type)) {
-					if (is_name(argument, prg->trig_phrase)) {
-						ret = execute_script(prg->vnum, prg->script, NULL, obj, NULL, NULL, ch, (void *)arg1, (void *)arg2, (void *)arg2, NULL,argument,prg->trig_phrase);
-						SETPRETX;
-					}
-				}
-			}
-		}
+		script_object_remref(obj);
+
 	} else if (room) {
-		if (room->source) {
-			if(room->source->progs->progs) {
+		ROOM_INDEX_DATA *source;
+		bool isclone;
+
+		if(room->source) {
+			source = room->source;
+			isclone = TRUE;
+			uid[0] = room->id[0];
+			uid[1] = room->id[1];
+		} else {
+			source = room;
+			isclone = FALSE;
+		}
+
+		script_room_addref(room);
+
+		// Check for tokens FIRST
+		iterator_start(&tit, room->ltokens);
+		while((token = (TOKEN_DATA *)iterator_nextdata(&tit))) {
+			if( token->pIndexData->progs ) {
+				script_token_addref(token);
 				script_destructed = FALSE;
-				for (prg = room->source->progs->progs[slot]; prg && !script_destructed; prg = prg->next) {
+				iterator_start(&pit, token->pIndexData->progs[slot]);
+				while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
 					if (is_trigger_type(prg->trig_type,type)) {
-						if (is_name(argument, prg->trig_phrase)) {
-							ret = execute_script(prg->vnum, prg->script, NULL, NULL, room, NULL, ch, (void *)arg1, (void *)arg2, (void *)arg2, NULL,argument,prg->trig_phrase);
-							SETPRETX; // @@@NIB
+						if ((*match)(prg->trig_number, number)) {
+							ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, enactor, obj1, obj2, victim, victim2,NULL,phrase,prg->trig_phrase,0,0,0,0,0);
+							if( ret != PRET_NOSCRIPT ) {
+								ret_val = ret;
+								break; // Exit: while((prg = ... )))
+							}
+						}
+					}
+				}
+				iterator_stop(&pit);
+				script_token_remref(token);
+
+				BREAKPRET;
+			}
+		}
+		iterator_stop(&tit);
+
+		if(ret_val == PRET_NOSCRIPT && source->progs->progs) {
+			script_destructed = FALSE;
+			iterator_start(&pit, source->progs->progs[slot]);
+			while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+				if (is_trigger_type(prg->trig_type,type)) {
+					if ((*match)(prg->trig_number, number)) {
+						ret = execute_script(prg->vnum, prg->script, NULL, NULL, room, NULL, enactor, obj1, obj2, victim, victim2,NULL,phrase,prg->trig_phrase,0,0,0,0,0);
+						if( ret != PRET_NOSCRIPT ) {
+							ret_val = ret;
+							break; // Exit: while((prg = ... )))
+						}
+					}
+				}
+				BREAKPRET;
+			}
+			iterator_stop(&pit);
+
+		}
+		script_room_remref(room);
+	} else if(token) {
+		if( token->pIndexData->progs ) {
+			script_token_addref(token);
+			script_destructed = FALSE;
+			iterator_start(&pit, token->pIndexData->progs[slot]);
+			// Loop Level 2
+			while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+				if (is_trigger_type(prg->trig_type,type)) {
+					if ((*match)(prg->trig_number, number)) {
+						ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, enactor, obj1, obj2, victim, victim2,NULL, phrase, prg->trig_phrase,0,0,0,0,0);
+						if( ret != PRET_NOSCRIPT ) {
+							ret_val = ret;
+							break; // Exit: Level 2
 						}
 					}
 				}
 			}
-		} else if(room->progs->progs) {
-			script_destructed = FALSE;
-			for (prg = room->progs->progs[slot]; prg && !script_destructed; prg = prg->next) {
-				if (is_trigger_type(prg->trig_type,type)) {
-					if (is_name(argument, prg->trig_phrase)) {
-						ret = execute_script(prg->vnum, prg->script, NULL, NULL, room, NULL, ch, (void *)arg1, (void *)arg2, (void *)arg2, NULL,argument,prg->trig_phrase);
-						SETPRETX; // @@@NIB
-					}
-				}
-			}
+			iterator_stop(&pit);
+			script_token_remref(token);
 		}
+
 	} else
-		bug("EXACT trigger with no program type.", 0);
+		bug("test_number_trigger: no program type for trigger %d.", type);
+
 	PRETURN;
 }
 
 
-/*
- * A general purpose percentage trigger. Checks if a random percentage
- * number is less than trigger phrase
- */
-int p_percent_trigger_phrase(CHAR_DATA *mob, OBJ_DATA *obj, ROOM_INDEX_DATA *room,
-	TOKEN_DATA *token, CHAR_DATA *ch, const void *arg1, const void *arg2, int type, char *phrase)
+int p_percent_trigger(CHAR_DATA *mob, OBJ_DATA *obj, ROOM_INDEX_DATA *room, TOKEN_DATA *token,
+	CHAR_DATA *ch, CHAR_DATA *victim, CHAR_DATA *victim2, OBJ_DATA *obj1, OBJ_DATA *obj2, int type, char *phrase)
 {
-	PROG_LIST *prg;
-	TOKEN_DATA *tnext;
-	int slot;
-	int ret_val = PRET_NOSCRIPT, ret; // @@@NIB Default for a trigger loop is NO SCRIPT
-
-
-//	DBG2ENTRY8(PTR,mob,PTR,obj,PTR,room,PTR,token,PTR,ch,PTR,arg1,PTR,arg2,NUM,type);
-
-	if ((mob && obj) || (mob && room) || (obj && room) ||
-		(mob && token) || (obj && token) || (room && token)) {
-		bug("Multiple program types in PERCENT trigger.", 0);
-		return PRET_BADTYPE;
-	}
-
-//	DBG3MSG3("Trigger = %d(%s), Slot = %d\n", type, trigger_table[type].name, trigger_slots[type]);
-
-	if(0 && ch && type == TRIG_PRESPELL) {
-		char buf[MSL];
-
-		sprintf(buf,"PRESPELL: %d, %d\n\r", TRIGSLOT_SPELL, trigger_slots[TRIG_PRESPELL]);
-		send_to_char(buf,ch);
-	}
-
-	slot = trigger_slots[type];
-
-	if (mob) {
-		// Check for tokens FIRST
-		for(token = mob->tokens; token; token = tnext) {
-			tnext = token->next;
-			if(token->pIndexData->progs) {
-				script_destructed = FALSE;
-				for (prg = token->pIndexData->progs[slot]; prg && !script_destructed; prg = prg->next) {
-					if (is_trigger_type(prg->trig_type,type) && number_percent() < atoi(prg->trig_phrase)) {
-						ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, ch, (void *)arg1, (void *)arg2, (void *)arg2, NULL,phrase,NULL);
-						SETPRET;
-					}
-				}
-
-				// Since the token didn't destruct, this is valid
-				if(!script_destructed) tnext = token->next;
-			}
-		}
-
-
-		if(IS_NPC(mob) && mob->pIndexData->progs) {
-			script_destructed = FALSE;
-			for (prg = mob->pIndexData->progs[slot]; prg && !script_destructed; prg = prg->next) {
-				if (is_trigger_type(prg->trig_type,type) && number_percent() < atoi(prg->trig_phrase)) {
-					ret = execute_script(prg->vnum, prg->script, mob, NULL, NULL, NULL, ch, (void *)arg1, (void *)arg2, (void *)arg2, NULL,phrase,NULL);
-					SETPRET;
-				}
-			}
-		}
-	} else if (obj) {
-		if(obj_room(obj) && obj->pIndexData->progs) {
-			script_destructed = FALSE;
-			for (prg = obj->pIndexData->progs[slot]; prg && !script_destructed; prg = prg->next) {
-				if (is_trigger_type(prg->trig_type,type) && number_percent() < atoi(prg->trig_phrase)) {
-					ret = execute_script(prg->vnum, prg->script, NULL, obj, NULL, NULL, ch, (void *)arg1, (void *)arg2, (void *)arg2, NULL,phrase,NULL);
-					SETPRET;
-				}
-			}
-		}
-	} else if (room) {
-		script_destructed = FALSE;
-		if(room->source) {
-			if (room->source->progs->progs) {
-				for (prg = room->source->progs->progs[slot]; prg && !script_destructed; prg = prg->next) {
-					if (is_trigger_type(prg->trig_type,type) && number_percent() < atoi(prg->trig_phrase)) {
-						ret = execute_script(prg->vnum, prg->script, NULL, NULL, room, NULL, ch, (void *)arg1, (void *)arg2, (void *)arg2, NULL,phrase,NULL);
-						SETPRET;
-					}
-				}
-			}
-		} else if(room->progs->progs) {
-			for (prg = room->progs->progs[slot]; prg && !script_destructed; prg = prg->next) {
-				if (is_trigger_type(prg->trig_type,type) && number_percent() < atoi(prg->trig_phrase)) {
-					ret = execute_script(prg->vnum, prg->script, NULL, NULL, room, NULL, ch, (void *)arg1, (void *)arg2, (void *)arg2, NULL,phrase,NULL);
-					SETPRET;
-				}
-			}
-		}
-
-	} else if(token) {
-		if(token->pIndexData->progs && trigger_table[type].token) {
-			script_destructed = FALSE;
-			for (prg = token->pIndexData->progs[slot]; prg && !script_destructed; prg = prg->next) {
-				if (is_trigger_type(prg->trig_type,type) && number_percent() < atoi(prg->trig_phrase)) {
-					ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, ch, (void *)arg1, (void *)arg2, (void *)arg2, NULL,phrase,NULL);
-					SETPRET;
-				}
-			}
-		}
-	} else
-		bug("PERCENT trigger missing program type.", 0);
-
-	PRETURN;
+	return test_number_trigger(0, match_percent, type, mob, obj, room, token, ch, victim, victim2, obj1, obj1, phrase);
 }
 
 
-int p_number_trigger_phrase(CHAR_DATA *mob, OBJ_DATA *obj, ROOM_INDEX_DATA *room,
-	TOKEN_DATA *token, CHAR_DATA *ch, const void *arg1, const void *arg2, int type, int number, char *phrase)
+int p_number_trigger(int number, CHAR_DATA *mob, OBJ_DATA *obj, ROOM_INDEX_DATA *room, TOKEN_DATA *token,
+	CHAR_DATA *ch, CHAR_DATA *victim, CHAR_DATA *victim2, OBJ_DATA *obj1, OBJ_DATA *obj2, int type, char *phrase)
 {
-	PROG_LIST *prg;
-	TOKEN_DATA *tnext;
-	int slot;
-	int ret_val = PRET_NOSCRIPT, ret; // @@@NIB Default for a trigger loop is NO SCRIPT
-
-
-//	DBG2ENTRY8(PTR,mob,PTR,obj,PTR,room,PTR,token,PTR,ch,PTR,arg1,PTR,arg2,NUM,type);
-
-	if ((mob && obj) || (mob && room) || (obj && room) ||
-		(mob && token) || (obj && token) || (room && token)) {
-		bug("Multiple program types in NUMBER trigger.", 0);
-		return PRET_BADTYPE;
-	}
-
-//	DBG3MSG3("Trigger = %d(%s), Slot = %d\n", type, trigger_table[type].name, trigger_slots[type]);
-
-	slot = trigger_slots[type];
-
-	if (mob) {
-		// Check for tokens FIRST
-		for(token = mob->tokens; token; token = tnext) {
-			tnext = token->next;
-			if(token->pIndexData->progs) {
-				script_destructed = FALSE;
-				for (prg = token->pIndexData->progs[slot]; prg && !script_destructed; prg = prg->next) {
-					if (is_trigger_type(prg->trig_type,type) && number == atoi(prg->trig_phrase)) {
-						ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, ch, (void *)arg1, (void *)arg2, (void *)arg2, NULL,phrase,NULL);
-						SETPRET;
-					}
-				}
-
-				// Since the token didn't destruct, this is valid
-				if(!script_destructed) tnext = token->next;
-			}
-		}
-
-
-		if(IS_NPC(mob) && mob->pIndexData->progs) {
-			script_destructed = FALSE;
-			for (prg = mob->pIndexData->progs[slot]; prg && !script_destructed; prg = prg->next) {
-				if (is_trigger_type(prg->trig_type,type) && number == atoi(prg->trig_phrase)) {
-					ret = execute_script(prg->vnum, prg->script, mob, NULL, NULL, NULL, ch, (void *)arg1, (void *)arg2, (void *)arg2, NULL,phrase,NULL);
-					SETPRET;
-				}
-			}
-		}
-	} else if (obj) {
-		if(obj_room(obj) && obj->pIndexData->progs) {
-			script_destructed = FALSE;
-			for (prg = obj->pIndexData->progs[slot]; prg && !script_destructed; prg = prg->next) {
-				if (is_trigger_type(prg->trig_type,type) && number == atoi(prg->trig_phrase)) {
-					ret = execute_script(prg->vnum, prg->script, NULL, obj, NULL, NULL, ch, (void *)arg1, (void *)arg2, (void *)arg2, NULL,phrase,NULL);
-					SETPRET;
-				}
-			}
-		}
-	} else if (room) {
-		script_destructed = FALSE;
-		if(room->source) {
-			if(room->source->progs->progs) {
-				for (prg = room->source->progs->progs[slot]; prg && !script_destructed; prg = prg->next) {
-					if (is_trigger_type(prg->trig_type,type) && number == atoi(prg->trig_phrase)) {
-						ret = execute_script(prg->vnum, prg->script, NULL, NULL, room, NULL, ch, (void *)arg1, (void *)arg2, (void *)arg2, NULL,phrase,NULL);
-						SETPRET;
-					}
-				}
-			}
-		} else if(room->progs->progs) {
-			for (prg = room->progs->progs[slot]; prg && !script_destructed; prg = prg->next) {
-				if (is_trigger_type(prg->trig_type,type) && number == atoi(prg->trig_phrase)) {
-					ret = execute_script(prg->vnum, prg->script, NULL, NULL, room, NULL, ch, (void *)arg1, (void *)arg2, (void *)arg2, NULL,phrase,NULL);
-					SETPRET;
-				}
-			}
-		}
-
-	} else if(token) {
-		if(token->pIndexData->progs && trigger_table[type].token) {
-			script_destructed = FALSE;
-			for (prg = token->pIndexData->progs[slot]; prg && !script_destructed; prg = prg->next) {
-				if (is_trigger_type(prg->trig_type,type) && number == atoi(prg->trig_phrase)) {
-					ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, ch, (void *)arg1, (void *)arg2, (void *)arg2, NULL,phrase,NULL);
-					SETPRET;
-				}
-			}
-		}
-	} else
-		bug("PERCENT trigger missing program type.", 0);
-
-	PRETURN;
+	return test_number_trigger(number, match_equal, type, mob, obj, room, token, ch, victim, victim2, obj1, obj1, phrase);
 }
-
-
 
 int p_bribe_trigger(CHAR_DATA *mob, CHAR_DATA *ch, int amount)
 {
+	return test_number_trigger(amount, match_gte, TRIG_BRIBE, mob, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, NULL);
+}
+
+
+int test_number_sight_trigger(int number, MATCH_NUMBER match, int type, int typeall,
+			CHAR_DATA *mob, OBJ_DATA *obj, ROOM_INDEX_DATA *room,
+			CHAR_DATA *enactor, CHAR_DATA *victim, CHAR_DATA *victim2,
+			OBJ_DATA *obj1, OBJ_DATA *obj2,
+			char *phrase)
+{
+	ITERATOR tit;	// Token iterator
+	ITERATOR pit;	// Prog iterator
 	PROG_LIST *prg;
-	int slot, ret_val = PRET_NOSCRIPT, ret; // @@@NIB Default for a trigger loop is NO SCRIPT
+	TOKEN_DATA *token;
+	unsigned long uid[2];
+	int slot;
+	int ret_val = PRET_NOSCRIPT, ret;
 
-	slot = trigger_slots[TRIG_BRIBE];
+	if ((mob && obj) || (mob && room) || (obj && room)) {
+		bug("test_number_sight_trigger: Multiple program types in trigger %d.", type);
+		PRETURN;
+	}
 
-	if(IS_NPC(mob) && mob->pIndexData->progs) {
-		script_destructed = FALSE;
-		for (prg = mob->pIndexData->progs[slot]; prg && !script_destructed; prg = prg->next) {
-			if (is_trigger_type(prg->trig_type,TRIG_BRIBE) && amount >= atoi(prg->trig_phrase)) {
-				if((ret = execute_script(prg->vnum, prg->script, mob, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL,NULL,NULL)) != PRET_NOSCRIPT) {
-					ret_val = ret;
-					break;
+	// They must be in the same slot
+	if( trigger_slots[type] != trigger_slots[typeall] )
+	{
+		bug("test_number_sight_trigger: slot mismatch for sighted trigger %d.", type);
+		PRETURN;
+	}
+
+	slot = trigger_slots[typeall];
+
+	if (mob) {
+		script_mobile_addref(mob);
+
+		// Save the UID
+		uid[0] = mob->id[0];
+		uid[1] = mob->id[1];
+
+		// Check for tokens FIRST
+		iterator_start(&tit, mob->ltokens);
+		// Loop Level 1
+		while((token = (TOKEN_DATA *)iterator_nextdata(&tit))) {
+			if( token->pIndexData->progs ) {
+				script_token_addref(token);
+				script_destructed = FALSE;
+				iterator_start(&pit, token->pIndexData->progs[slot]);
+				// Loop Level 2
+				while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+					if (type != typeall && is_trigger_type(prg->trig_type,type) &&
+						(IS_SET(token->flags, TOKEN_SEE_ALL) ||
+							(mob->position == mob->pIndexData->default_pos && can_see(mob, enactor))) &&
+						(*match)(prg->trig_number, number)) {
+						ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, enactor, obj1, obj2, victim, victim2,NULL, phrase, prg->trig_phrase,0,0,0,0,0);
+					} else if (is_trigger_type(prg->trig_type,typeall) &&
+						(*match)(prg->trig_number, number)) {
+						ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, enactor, obj1, obj2, victim, victim2,NULL, phrase, prg->trig_phrase,0,0,0,0,0);
+					}
+					BREAKPRET;
 				}
+				iterator_stop(&pit);
+				script_token_remref(token);
+				BREAKPRET;
 			}
 		}
-	}
+		iterator_stop(&tit);
+
+		if(ret_val == PRET_NOSCRIPT && !script_destructed && IS_VALID(mob) && mob->id[0] == uid[0] && mob->id[1] == uid[1] && IS_NPC(mob) && mob->pIndexData->progs) {
+			iterator_start(&pit, mob->pIndexData->progs[slot]);
+			// Loop Level 1:
+			while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+				if (type != typeall && is_trigger_type(prg->trig_type,type) &&
+					mob->position == mob->pIndexData->default_pos &&
+					can_see(mob, enactor) &&
+					(*match)(prg->trig_number, number)) {
+					ret = execute_script(prg->vnum, prg->script, mob, NULL, NULL, NULL, enactor, obj1, obj2, victim, victim2,NULL, phrase, prg->trig_phrase,0,0,0,0,0);
+				} else if (is_trigger_type(prg->trig_type,typeall) &&
+					(*match)(prg->trig_number, number)) {
+					ret = execute_script(prg->vnum, prg->script, mob, NULL, NULL, NULL, enactor, obj1, obj2, victim, victim2,NULL, phrase, prg->trig_phrase,0,0,0,0,0);
+				}
+				BREAKPRET;
+			}
+			iterator_stop(&pit);
+		}
+		script_mobile_remref(mob);
+
+	} else if (obj && obj_room(obj) ) {
+		// Save the UID
+		uid[0] = obj->id[0];
+		uid[1] = obj->id[1];
+		script_object_addref(obj);
+
+		// Check for tokens FIRST
+		iterator_start(&tit, obj->ltokens);
+		while((token = (TOKEN_DATA *)iterator_nextdata(&tit))) {
+			if( token->pIndexData->progs ) {
+				script_token_addref(token);
+				script_destructed = FALSE;
+				iterator_start(&pit, token->pIndexData->progs[slot]);
+				while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+					if (is_trigger_type(prg->trig_type,typeall)) {
+						if ((*match)(prg->trig_number, number)) {
+							ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, enactor, obj1, obj2, victim, victim2,NULL,phrase,prg->trig_phrase,0,0,0,0,0);
+							if( ret != PRET_NOSCRIPT ) {
+								ret_val = ret;
+								break; // Exit: while((prg = ... )))
+							}
+						}
+					}
+				}
+				iterator_stop(&pit);
+
+				script_token_remref(token);
+				BREAKPRET;
+			}
+		}
+		iterator_stop(&tit);
+
+		if(ret_val == PRET_NOSCRIPT && !script_destructed && IS_VALID(obj) && obj->id[0] == uid[0] && obj->id[1] == uid[1] && obj->pIndexData->progs) {
+			script_destructed = FALSE;
+			iterator_start(&pit, obj->pIndexData->progs[slot]);
+			while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+				if (is_trigger_type(prg->trig_type,typeall)) {
+					if ((*match)(prg->trig_number, number)) {
+						ret = execute_script(prg->vnum, prg->script, NULL, obj, NULL, NULL, enactor, obj1, obj2, victim, victim2,NULL,phrase,prg->trig_phrase,0,0,0,0,0);
+					}
+				}
+				BREAKPRET;
+			}
+			iterator_stop(&pit);
+		}
+
+		script_object_remref(obj);
+
+	} else if (room) {
+		ROOM_INDEX_DATA *source;
+		bool isclone;
+
+		if(room->source) {
+			source = room->source;
+			isclone = TRUE;
+			uid[0] = room->id[0];
+			uid[1] = room->id[1];
+		} else {
+			source = room;
+			isclone = FALSE;
+		}
+
+		script_room_addref(room);
+
+		// Check for tokens FIRST
+		iterator_start(&tit, room->ltokens);
+		while((token = (TOKEN_DATA *)iterator_nextdata(&tit))) {
+			if( token->pIndexData->progs ) {
+				script_token_addref(token);
+				script_destructed = FALSE;
+				iterator_start(&pit, token->pIndexData->progs[slot]);
+				while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+					if (is_trigger_type(prg->trig_type,typeall)) {
+						if ((*match)(prg->trig_number, number)) {
+							ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, enactor, obj1, obj2, victim, victim2,NULL,phrase,prg->trig_phrase,0,0,0,0,0);
+						}
+					}
+					BREAKPRET;
+				}
+				iterator_stop(&pit);
+				script_token_remref(token);
+
+				BREAKPRET;
+			}
+		}
+		iterator_stop(&tit);
+
+		if(ret_val == PRET_NOSCRIPT && source->progs->progs) {
+			script_destructed = FALSE;
+			iterator_start(&pit, source->progs->progs[slot]);
+			while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+				if (is_trigger_type(prg->trig_type,typeall)) {
+					if ((*match)(prg->trig_number, number)) {
+						ret = execute_script(prg->vnum, prg->script, NULL, NULL, room, NULL, enactor, obj1, obj2, victim, victim2,NULL,phrase,prg->trig_phrase,0,0,0,0,0);
+						if( ret != PRET_NOSCRIPT ) {
+							ret_val = ret;
+							break; // Exit: while((prg = ... )))
+						}
+					}
+				}
+				BREAKPRET;
+			}
+			iterator_stop(&pit);
+
+		}
+		script_room_remref(room);
+
+	} else
+		bug("test_number_trigger: no program type for trigger %d.", type);
+
 	PRETURN;
 }
 
 
+int p_location_trigger(CHAR_DATA *ch, ROOM_INDEX_DATA *room, int number, MATCH_NUMBER match, int type, int trig, int trigall)
+{
+	ITERATOR oit, mit;
+
+	CHAR_DATA *mob;
+	OBJ_DATA *obj;
+	//TOKEN_DATA *token;
+	//PROG_LIST *prg;
+	//unsigned long uid[2];
+	int ret_val = PRET_NOSCRIPT; // Default for a trigger loop is NO SCRIPT
+
+	// If not in a valid room, there's nothing to check!
+	if (!ch || !room)
+		PRETURN;
+
+	if (type == PRG_MPROG) {
+		iterator_start(&mit, room->lpeople);
+		while((ret_val == PRET_NOSCRIPT) && (mob = (CHAR_DATA *)iterator_nextdata(&mit))) {
+			ret_val = test_number_sight_trigger(number, match, trig, trigall,
+						mob, NULL, NULL, ch, NULL, NULL, NULL, NULL, NULL);
+		}
+
+		iterator_stop(&mit);
+
+	} else if (type == PRG_OPROG) {
+		// Check carrying inventory
+		iterator_start(&oit, ch->lcarrying);
+		while((ret_val == PRET_NOSCRIPT) && (obj = (OBJ_DATA *)iterator_nextdata(&oit))) {
+			ret_val = test_number_sight_trigger(number, match, trig, trigall,
+						NULL, obj, NULL, ch, NULL, NULL, NULL, NULL, NULL);
+		}
+
+		iterator_stop(&oit);
+		ISSETPRET;
+
+		// Check room contents
+		iterator_start(&oit, room->lcontents);
+		while((ret_val == PRET_NOSCRIPT) && (obj = (OBJ_DATA *)iterator_nextdata(&oit))) {
+			ret_val = test_number_sight_trigger(number, match, trig, trigall,
+						NULL, obj, NULL, ch, NULL, NULL, NULL, NULL, NULL);
+		}
+
+		iterator_stop(&oit);
+		ISSETPRET;
+
+		iterator_start(&mit, room->lpeople);
+		while((ret_val == PRET_NOSCRIPT) && (mob = (CHAR_DATA *)iterator_nextdata(&mit))) {
+			// Check every other mobile
+			if( mob != ch ) {
+				iterator_start(&oit, mob->lcarrying);
+				while((ret_val == PRET_NOSCRIPT) && (obj = (OBJ_DATA *)iterator_nextdata(&oit))) {
+					ret_val = test_number_sight_trigger(number, match, trig, trigall,
+								NULL, obj, NULL, ch, NULL, NULL, NULL, NULL, NULL);
+				}
+				iterator_stop(&oit);
+			}
+		}
+		iterator_stop(&mit);
+
+	} else if (type == PRG_RPROG) {
+		ret_val = test_number_sight_trigger(number, match, trig, trigall,
+					NULL, NULL, room, ch, NULL, NULL, NULL, NULL, NULL);
+	}
+
+	PRETURN;
+}
+
 int p_exit_trigger(CHAR_DATA *ch, int dir, int type)
 {
-	CHAR_DATA *mob, *mnext;
-	OBJ_DATA *obj, *onext;
-	ROOM_INDEX_DATA *room;
-	TOKEN_DATA *token, *tnext;
-	PROG_LIST *prg;
-	int ret_val = PRET_NOSCRIPT, ret; // @@@NIB Default for a trigger loop is NO SCRIPT
-
-	// If not in a valid room, there's nothing to check!
-	if (!ch || !ch->in_room)
-		PRETURN; // @@@NIB
-
-	if (type == PRG_MPROG) {
-		for (mob = ch->in_room->people; mob != NULL; mob = mnext) {
-			mnext = mob->next_in_room;
-
-			// Check for tokens FIRST
-			for(token = mob->tokens; token; token = tnext) {
-				tnext = token->next;
-				if(token->pIndexData->progs) {
-					script_destructed = FALSE;
-					for (prg = token->pIndexData->progs[TRIGSLOT_MOVE]; prg && !script_destructed; prg = prg->next) {
-						if (is_trigger_type(prg->trig_type,TRIG_EXIT) &&
-							dir == atoi(prg->trig_phrase) &&
-							mob->position == mob->pIndexData->default_pos &&
-							can_see(mob, ch)) {
-							ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, ch, NULL, NULL, NULL, NULL,NULL,NULL);
-							SETPRETX;
-						} else if (is_trigger_type(prg->trig_type,TRIG_EXALL) && dir == atoi(prg->trig_phrase)) {
-							ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, ch, NULL, NULL, NULL, NULL,NULL,NULL);
-							SETPRETX;
-						}
-					}
-
-					// Since the token didn't destruct, this is valid
-					if(!script_destructed) tnext = token->next;
-
-				}
-			}
-
-			if (IS_NPC(mob) && mob->pIndexData->progs) {
-				script_destructed = FALSE;
-				for (prg = mob->pIndexData->progs[TRIGSLOT_MOVE]; prg && !script_destructed; prg = prg->next) {
-					/*
-					 * Exit trigger works only if the mobile is not busy
-					 * (fighting etc.). If you want to be sure all players
-					 * are caught, use ExAll trigger
-					 */
-					if (is_trigger_type(prg->trig_type,TRIG_EXIT) &&
-						dir == atoi(prg->trig_phrase) &&
-						mob->position == mob->pIndexData->default_pos &&
-						can_see(mob, ch)) {
-						ret = execute_script(prg->vnum, prg->script, mob, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL,NULL,NULL);
-						SETPRETX; // @@@NIB
-					} else if (is_trigger_type(prg->trig_type,TRIG_EXALL) && dir == atoi(prg->trig_phrase)) {
-						ret = execute_script(prg->vnum, prg->script, mob, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL,NULL,NULL);
-						SETPRETX; // @@@NIB
-					}
-				}
-
-				// Since the mob didn't destruct, this is valid
-				if(!script_destructed) mnext = mob->next_in_room;
-			}
-
-		}
-	} else if (type == PRG_OPROG) {
-		for (obj = ch->in_room->contents; obj != NULL; obj = onext) {
-			onext = obj->next_content;
-			if (obj->pIndexData->progs) {
-				script_destructed = FALSE;
-				for (prg = obj->pIndexData->progs[TRIGSLOT_MOVE]; prg && !script_destructed; prg = prg->next) {
-					if (is_trigger_type(prg->trig_type,TRIG_EXALL) && dir == atoi(prg->trig_phrase)) {
-						ret = execute_script(prg->vnum, prg->script, NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL,NULL,NULL);
-						SETPRETX; // @@@NIB
-					}
-				}
-
-				// Since the object didn't destruct, this is valid
-				if(!script_destructed) onext = obj->next_content;
-			}
-		}
-
-		for (mob = ch->in_room->people; mob; mob = mnext) {
-			mnext = mob->next_in_room;
-			for (obj = mob->carrying; obj; obj = onext) {
-				onext = obj->next_content;
-				if (obj->pIndexData->progs) {
-					script_destructed = FALSE;
-					for (prg = obj->pIndexData->progs[TRIGSLOT_MOVE]; prg && !script_destructed; prg = prg->next) {
-						if (is_trigger_type(prg->trig_type,TRIG_EXALL) && dir == atoi(prg->trig_phrase)) {
-							ret = execute_script(prg->vnum, prg->script, NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL,NULL,NULL);
-							SETPRETX; // @@@NIB
-						}
-					}
-
-					// Since the object didn't destruct, this is valid
-					if(!script_destructed) onext = obj->next_content;
-				}
-			}
-		}
-	} else if (type == PRG_RPROG) {
-		room = ch->in_room;
-
-		if (room->source) {
-			if (room->source->progs->progs) {
-				script_destructed = FALSE;
-				for (prg = room->source->progs->progs[TRIGSLOT_MOVE]; prg && !script_destructed; prg = prg->next) {
-					if (is_trigger_type(prg->trig_type,TRIG_EXALL) && dir == atoi(prg->trig_phrase)) {
-						ret = execute_script(prg->vnum, prg->script, NULL, NULL, room, NULL, ch, NULL, NULL, NULL, NULL,NULL,NULL);
-						SETPRETX; // @@@NIB
-					}
-				}
-			}
-		} else if (room->progs->progs) {
-			script_destructed = FALSE;
-			for (prg = room->progs->progs[TRIGSLOT_MOVE]; prg && !script_destructed; prg = prg->next) {
-				if (is_trigger_type(prg->trig_type,TRIG_EXALL) && dir == atoi(prg->trig_phrase)) {
-					ret = execute_script(prg->vnum, prg->script, NULL, NULL, room, NULL, ch, NULL, NULL, NULL, NULL,NULL,NULL);
-					SETPRETX; // @@@NIB
-				}
-			}
-		}
-	}
-
-	PRETURN; // @@@NIB
+	return p_location_trigger(ch, ch ? ch->in_room : NULL, dir, match_equal, type, TRIG_EXIT, TRIG_EXALL);
 }
 
-
-/* A new type, p_direction_trigger that is almost identical to p_exit_trigger.
-   This one just allows different types of trigs (open/close) as the caller */
 int p_direction_trigger(CHAR_DATA *ch, ROOM_INDEX_DATA *here, int dir, int type, int trigger)
 {
-	CHAR_DATA *mob, *mnext;
-	OBJ_DATA *obj, *onext;
-	ROOM_INDEX_DATA *room;
-	TOKEN_DATA *token, *tnext;
-	PROG_LIST *prg;
-	int slot, ret_val = PRET_NOSCRIPT, ret; // @@@NIB Default for a trigger loop is NO SCRIPT
+	return p_location_trigger(ch, here, dir, match_equal, type, trigger, trigger);
+}
 
-	// If not in a valid room, there's nothing to check!
-	if(!ch || !here)
-		PRETURN; // @@@NIB
 
-	slot = trigger_slots[trigger];
+static bool __attribute__ ((unused)) match_target_name(register char *a, register char *b)
+{
+	char buf[MIL];
 
-	if (type == PRG_MPROG) {
-		for (mob = here->people; mob != NULL; mob = mnext) {
-			mnext = mob->next_in_room;
-
-			for(token = mob->tokens; token; token = tnext) {
-				tnext = token->next;
-				if(token->pIndexData->progs) {
-					script_destructed = FALSE;
-					for (prg = token->pIndexData->progs[slot]; prg && !script_destructed; prg = prg->next) {
-						if (is_trigger_type(prg->trig_type,trigger) &&
-							dir == atoi(prg->trig_phrase)) {
-							ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, ch, NULL, NULL, NULL, NULL,NULL,NULL);
-							SETPRETX;
-						}
-					}
-
-					// Since the token didn't destruct, this is valid
-					if(!script_destructed) tnext = token->next;
-				}
-			}
-
-			if (IS_NPC(mob) && mob->pIndexData->progs) {
-				script_destructed = FALSE;
-				for (prg = mob->pIndexData->progs[slot]; prg && !script_destructed; prg = prg->next) {
-					if (is_trigger_type(prg->trig_type,trigger) &&
-						dir == atoi(prg->trig_phrase) &&
-						mob->position == mob->pIndexData->default_pos &&
-						can_see(mob, ch)) {
-						ret = execute_script(prg->vnum, prg->script, mob, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL,NULL,NULL);
-						SETPRETX; // @@@NIB
-					}
-				}
-				// Since the mobile didn't destruct, this is valid
-				if(!script_destructed) mnext = mob->next_in_room;
-			}
-		}
-
-	} else if (type == PRG_OPROG) {
-		for (obj = here->contents; obj != NULL; obj = onext) {
-			onext = obj->next_content;
-			if (obj->pIndexData->progs) {
-				script_destructed = FALSE;
-				for (prg = obj->pIndexData->progs[slot]; prg && !script_destructed; prg = prg->next) {
-					if (is_trigger_type(prg->trig_type,trigger) && dir == atoi(prg->trig_phrase)) {
-						ret = execute_script(prg->vnum, prg->script, NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL,NULL,NULL);
-						SETPRETX; // @@@NIB
-					}
-				}
-
-				// Since the object didn't destruct, this is valid
-				if(!script_destructed) onext = obj->next_content;
-			}
-		}
-
-		for (mob = ch->in_room->people; mob; mob = mnext) {
-			mnext = mob->next_in_room;
-			for (obj = mob->carrying; obj; obj = onext) {
-				onext = obj->next_content;
-				if (obj->pIndexData->progs) {
-					script_destructed = FALSE;
-					for (prg = obj->pIndexData->progs[slot]; prg && !script_destructed; prg = prg->next) {
-						if (is_trigger_type(prg->trig_type,trigger) && dir == atoi(prg->trig_phrase)) {
-							ret = execute_script(prg->vnum, prg->script, NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL,NULL,NULL);
-							SETPRETX; // @@@NIB
-						}
-					}
-
-					// Since the object didn't destruct, this is valid
-					if(!script_destructed) onext = obj->next_content;
-				}
-			}
-		}
-	} else if (type == PRG_RPROG) {
-		room = here;
-
-		if (room->source) {
-			if (room->source->progs->progs) {
-				script_destructed = FALSE;
-				for (prg = room->source->progs->progs[slot]; prg && !script_destructed; prg = prg->next) {
-					if (is_trigger_type(prg->trig_type,trigger) && dir == atoi(prg->trig_phrase)) {
-						ret = execute_script(prg->vnum, prg->script, NULL, NULL, room, NULL, ch, NULL, NULL, NULL, NULL,NULL,NULL);
-						SETPRETX; // @@@NIB
-					}
-				}
-			}
-		} else if (room->progs->progs) {
-			script_destructed = FALSE;
-			for (prg = room->progs->progs[slot]; prg && !script_destructed; prg = prg->next) {
-				if (is_trigger_type(prg->trig_type,trigger) && dir == atoi(prg->trig_phrase)) {
-					ret = execute_script(prg->vnum, prg->script, NULL, NULL, room, NULL, ch, NULL, NULL, NULL, NULL,NULL,NULL);
-					SETPRETX; // @@@NIB
-				}
-			}
-		}
+	while(*a) {
+		a = one_argument(a, buf);
+		if( is_name(buf, b) || !str_cmp("all", buf) )
+			return TRUE;
 	}
 
-	PRETURN; // @@@NIB
+	return FALSE;
 }
+
+
+int test_vnumname_trigger(char *name, int vnum, int type,
+			CHAR_DATA *mob, OBJ_DATA *obj, ROOM_INDEX_DATA *room,
+			CHAR_DATA *enactor, CHAR_DATA *victim, CHAR_DATA *victim2,
+			OBJ_DATA *obj1, OBJ_DATA *obj2,
+			char *phrase)
+{
+	ITERATOR tit;	// Token iterator
+	ITERATOR pit;	// Prog iterator
+	PROG_LIST *prg;
+	TOKEN_DATA *token;
+	unsigned long uid[2];
+	int slot;
+	int ret_val = PRET_NOSCRIPT, ret;
+
+	if ((mob && obj) || (mob && room) || (obj && room)) {
+		bug("test_vnumname_trigger: Multiple program types in trigger %d.", type);
+		PRETURN;
+	}
+
+	slot = trigger_slots[type];
+
+
+	if (mob) {
+		script_mobile_addref(mob);
+
+		// Save the UID
+		uid[0] = mob->id[0];
+		uid[1] = mob->id[1];
+
+		// Check for tokens FIRST
+		iterator_start(&tit, mob->ltokens);
+		// Loop Level 1
+		while((token = (TOKEN_DATA *)iterator_nextdata(&tit))) {
+			if( token->pIndexData->progs ) {
+				script_token_addref(token);
+				script_destructed = FALSE;
+				iterator_start(&pit, token->pIndexData->progs[slot]);
+				// Loop Level 2
+				while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+					if (is_trigger_type(prg->trig_type,type)) {
+						if ( (prg->numeric && match_equal(prg->trig_number, vnum)) ||
+							(!prg->numeric && match_target_name(prg->trig_phrase, name)) ) {
+							ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, enactor, obj1, obj2, victim, victim2,NULL, phrase, prg->trig_phrase,0,0,0,0,0);
+							if( ret != PRET_NOSCRIPT ) {
+								ret_val = ret;
+								break; // Exit: Level 2
+							}
+						}
+					}
+				}
+				iterator_stop(&pit);
+				script_token_remref(token);
+				BREAKPRET;
+			}
+		}
+		iterator_stop(&tit);
+
+		if(ret_val == PRET_NOSCRIPT && !script_destructed && IS_VALID(mob) && mob->id[0] == uid[0] && mob->id[1] == uid[1] && IS_NPC(mob) && mob->pIndexData->progs) {
+			iterator_start(&pit, mob->pIndexData->progs[slot]);
+			// Loop Level 1:
+			while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+				if (is_trigger_type(prg->trig_type,type)) {
+					if ( (prg->numeric && match_equal(prg->trig_number, vnum)) ||
+						(!prg->numeric && match_target_name(prg->trig_phrase, name)) ) {
+						ret = execute_script(prg->vnum, prg->script, mob, NULL, NULL, NULL, enactor, obj1, obj2, victim, victim2,NULL,phrase,prg->trig_phrase,0,0,0,0,0);
+						if( ret != PRET_NOSCRIPT ) {
+							ret_val = ret;
+							break; // Exit: Level 1
+						}
+					}
+				}
+				BREAKPRET;
+			}
+			iterator_stop(&pit);
+		}
+		script_mobile_remref(mob);
+
+	} else if (obj && obj_room(obj) ) {
+		// Save the UID
+		uid[0] = obj->id[0];
+		uid[1] = obj->id[1];
+		script_object_addref(obj);
+
+		// Check for tokens FIRST
+		iterator_start(&tit, obj->ltokens);
+		while((token = (TOKEN_DATA *)iterator_nextdata(&tit))) {
+			if( token->pIndexData->progs ) {
+				script_token_addref(token);
+				script_destructed = FALSE;
+				iterator_start(&pit, token->pIndexData->progs[slot]);
+				while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+					if (is_trigger_type(prg->trig_type,type)) {
+						if ( (prg->numeric && match_equal(prg->trig_number, vnum)) ||
+							(!prg->numeric && match_target_name(prg->trig_phrase, name)) ) {
+							ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, enactor, obj1, obj2, victim, victim2,NULL,phrase,prg->trig_phrase,0,0,0,0,0);
+							if( ret != PRET_NOSCRIPT ) {
+								ret_val = ret;
+								break; // Exit: while((prg = ... )))
+							}
+						}
+					}
+				}
+				iterator_stop(&pit);
+
+				script_token_remref(token);
+				BREAKPRET;
+			}
+		}
+		iterator_stop(&tit);
+
+		if(ret_val == PRET_NOSCRIPT && !script_destructed && IS_VALID(obj) && obj->id[0] == uid[0] && obj->id[1] == uid[1] && obj->pIndexData->progs) {
+			script_destructed = FALSE;
+			iterator_start(&pit, obj->pIndexData->progs[slot]);
+			while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+				if (is_trigger_type(prg->trig_type,type)) {
+					if ( (prg->numeric && match_equal(prg->trig_number, vnum)) ||
+						(!prg->numeric && match_target_name(prg->trig_phrase, name)) ) {
+						ret = execute_script(prg->vnum, prg->script, NULL, obj, NULL, NULL, enactor, obj1, obj2, victim, victim2,NULL,phrase,prg->trig_phrase,0,0,0,0,0);
+						if( ret != PRET_NOSCRIPT ) {
+							ret_val = ret;
+							break; // Exit: while((prg = ... )))
+						}
+					}
+				}
+				BREAKPRET;
+			}
+			iterator_stop(&pit);
+		}
+
+		script_object_remref(obj);
+
+	} else if (room) {
+		ROOM_INDEX_DATA *source;
+		bool isclone;
+
+		if(room->source) {
+			source = room->source;
+			isclone = TRUE;
+			uid[0] = room->id[0];
+			uid[1] = room->id[1];
+		} else {
+			source = room;
+			isclone = FALSE;
+		}
+
+		script_room_addref(room);
+
+		// Check for tokens FIRST
+		iterator_start(&tit, room->ltokens);
+		while((token = (TOKEN_DATA *)iterator_nextdata(&tit))) {
+			if( token->pIndexData->progs ) {
+				script_token_addref(token);
+				script_destructed = FALSE;
+				iterator_start(&pit, token->pIndexData->progs[slot]);
+				while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+					if (is_trigger_type(prg->trig_type,type)) {
+						if ( (prg->numeric && match_equal(prg->trig_number, vnum)) ||
+							(!prg->numeric && match_target_name(prg->trig_phrase, name)) ) {
+							ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, enactor, obj1, obj2, victim, victim2,NULL,phrase,prg->trig_phrase,0,0,0,0,0);
+							if( ret != PRET_NOSCRIPT ) {
+								ret_val = ret;
+								break; // Exit: while((prg = ... )))
+							}
+						}
+					}
+				}
+				iterator_stop(&pit);
+				script_token_remref(token);
+
+				BREAKPRET;
+			}
+		}
+		iterator_stop(&tit);
+
+		if(ret_val == PRET_NOSCRIPT && source->progs->progs) {
+			script_destructed = FALSE;
+			iterator_start(&pit, source->progs->progs[slot]);
+			while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+				if (is_trigger_type(prg->trig_type,type)) {
+					if ( (prg->numeric && match_equal(prg->trig_number, vnum)) ||
+						(!prg->numeric && match_target_name(prg->trig_phrase, name)) ) {
+						ret = execute_script(prg->vnum, prg->script, NULL, NULL, room, NULL, enactor, obj1, obj2, victim, victim2,NULL,phrase,prg->trig_phrase,0,0,0,0,0);
+						if( ret != PRET_NOSCRIPT ) {
+							ret_val = ret;
+							break; // Exit: while((prg = ... )))
+						}
+					}
+				}
+				BREAKPRET;
+			}
+			iterator_stop(&pit);
+
+		}
+		script_room_remref(room);
+
+	} else
+		bug("test_number_trigger: no program type for trigger %d.", type);
+
+	PRETURN;
+}
+
 
 
 int p_give_trigger(CHAR_DATA *mob, OBJ_DATA *obj, ROOM_INDEX_DATA *room,
 			CHAR_DATA *ch, OBJ_DATA *dropped, int type)
 {
-	TOKEN_DATA *token, *tnext;
-	char buf[MIL], *p;
-	PROG_LIST  *prg;
-	int slot;
-	int ret_val = PRET_NOSCRIPT, ret; // @@@NIB Default for a trigger loop is NO SCRIPT
-
-	if ((mob && obj) || (mob && room) || (obj && room)) {
-		bug("Multiple program types in GIVE trigger.", 0);
-		PRETURN; // @@@NIB
-	}
-
-	slot = trigger_slots[type];
-
-	if (mob) {
-		for(token = mob->tokens; token; token = tnext) {
-			tnext = token->next;
-			if(token->pIndexData->progs) {
-				script_destructed = FALSE;
-				for (prg = token->pIndexData->progs[slot]; prg && !script_destructed; prg = prg->next) {
-					if (is_trigger_type(prg->trig_type,type)) {
-						p = prg->trig_phrase;
-						if (is_number(p)) {
-							if (dropped->pIndexData->vnum == atol(p)) {
-								ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, ch, dropped, NULL, NULL, NULL,NULL,NULL);
-								SETPRETX; // @@@NIB
-							}
-						} else {
-							// Dropped object name argument, e.g. 'sword'
-							while(*p && !script_destructed) {
-								p = one_argument(p, buf);
-								if (is_name(buf, dropped->name) || !str_cmp("all", buf)) {
-									ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, ch, dropped, NULL, NULL, NULL,NULL,NULL);
-									SETPRETX; // @@@NIB
-								}
-							}
-						}
-					}
-				}
-
-				// Since the token didn't destruct, this is valid
-				if(!script_destructed) tnext = token->next;
-			}
-		}
-
-		if (IS_NPC(mob) && mob->pIndexData->progs) {
-			script_destructed = FALSE;
-			for (prg = mob->pIndexData->progs[slot]; prg && !script_destructed; prg = prg->next) {
-				if (is_trigger_type(prg->trig_type,type)) {
-					p = prg->trig_phrase;
-					if (is_number(p)) {
-						if (dropped->pIndexData->vnum == atol(p)) {
-							ret = execute_script(prg->vnum, prg->script, mob, NULL, NULL, NULL, ch, dropped, NULL, NULL, NULL,NULL,NULL);
-							SETPRETX; // @@@NIB
-						}
-					} else {
-						// Dropped object name argument, e.g. 'sword'
-						while(*p && !script_destructed) {
-							p = one_argument(p, buf);
-							if (is_name(buf, dropped->name) || !str_cmp("all", buf)) {
-								ret = execute_script(prg->vnum, prg->script, mob, NULL, NULL, NULL, ch, dropped, NULL, NULL, NULL,NULL,NULL);
-								SETPRETX; // @@@NIB
-							}
-						}
-					}
-				}
-			}
-		}
-	} else if (obj) {
-		if (!obj_room(obj)) return PRET_NOSCRIPT; // @@@NIB
-
-		if(obj->pIndexData->progs) {
-			script_destructed = FALSE;
-			for (prg = obj->pIndexData->progs[slot]; prg && !script_destructed; prg = prg->next) {
-				if (is_trigger_type(prg->trig_type,type)) {
-					ret = execute_script(prg->vnum, prg->script, NULL, obj, NULL, NULL, ch, obj, NULL, NULL, NULL,NULL,NULL);
-					SETPRETX; // @@@NIB
-				}
-			}
-		}
-	} else if (room) {
-		if(room->source) {
-			if(room->source->progs->progs) {
-				script_destructed = FALSE;
-				for (prg = room->source->progs->progs[slot]; prg && !script_destructed; prg = prg->next)
-					if (is_trigger_type(prg->trig_type,type)) {
-						p = prg->trig_phrase;
-						if (is_number(p)) {
-							if (dropped->pIndexData->vnum == atol(p)) {
-								ret = execute_script(prg->vnum, prg->script, NULL, NULL, room, NULL, ch, dropped, NULL, NULL, NULL,NULL,NULL);
-								SETPRETX; // @@@NIB
-							}
-						} else {
-							// Dropped object name argument, e.g. 'sword'
-							while(*p && !script_destructed) {
-							p = one_argument(p, buf);
-							if (is_name(buf, dropped->name) || !str_cmp("all", buf)) {
-								ret = execute_script(prg->vnum, prg->script, NULL, NULL, room, NULL, ch, dropped, NULL, NULL, NULL,NULL,NULL);
-								SETPRETX; // @@@NIB
-							}
-						}
-					}
-				}
-			}
-		} else if(room->progs->progs) {
-			script_destructed = FALSE;
-			for (prg = room->progs->progs[slot]; prg && !script_destructed; prg = prg->next)
-				if (is_trigger_type(prg->trig_type,type)) {
-					p = prg->trig_phrase;
-					if (is_number(p)) {
-						if (dropped->pIndexData->vnum == atol(p)) {
-							ret = execute_script(prg->vnum, prg->script, NULL, NULL, room, NULL, ch, dropped, NULL, NULL, NULL,NULL,NULL);
-							SETPRETX; // @@@NIB
-						}
-					} else {
-						// Dropped object name argument, e.g. 'sword'
-						while(*p && !script_destructed) {
-						p = one_argument(p, buf);
-						if (is_name(buf, dropped->name) || !str_cmp("all", buf)) {
-							ret = execute_script(prg->vnum, prg->script, NULL, NULL, room, NULL, ch, dropped, NULL, NULL, NULL,NULL,NULL);
-							SETPRETX; // @@@NIB
-						}
-					}
-				}
-			}
-		}
-	}
-
-	PRETURN; // @@@NIB
+	return test_vnumname_trigger(dropped->name, dropped->pIndexData->vnum, type,
+					mob, obj, room, ch, NULL, NULL, NULL, NULL, NULL);
 }
 
 
@@ -2850,14 +3995,9 @@ int p_use_trigger(CHAR_DATA *ch, OBJ_DATA *obj, int type)
 
 	if (!obj_room(obj)) return PRET_NOSCRIPT;
 
-	if (type == TRIG_PUSH)
-		return p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, TRIG_PUSH);
-	else if (type == TRIG_TURN)
-		return p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, TRIG_TURN);
-	else if (type == TRIG_PULL)
-		return p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, TRIG_PULL);
-	else if (type == TRIG_USE)
-		return p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, TRIG_USE);
+
+	if (type == TRIG_PUSH || type == TRIG_TURN || type == TRIG_PULL || type == TRIG_USE)
+		return test_number_trigger(0, match_percent, type, NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, NULL);
 
 	return PRET_NOSCRIPT;
 }
@@ -2871,17 +4011,13 @@ int p_use_on_trigger(CHAR_DATA *ch, OBJ_DATA *obj, int type, char *argument)
 
 	if (!obj_room(obj)) return PRET_NOSCRIPT;
 
-	if (type == TRIG_PUSH_ON)
-		return p_act_trigger(argument, NULL, obj, NULL, ch, NULL, NULL, TRIG_PUSH_ON);
-	else if (type == TRIG_TURN_ON)
-		return p_act_trigger(argument, NULL, obj, NULL, ch, NULL, NULL, TRIG_TURN_ON);
-	else if (type == TRIG_PULL_ON)
-		return p_act_trigger(argument, NULL, obj, NULL, ch, NULL, NULL, TRIG_PULL_ON);
+	if (type == TRIG_PUSH_ON || type == TRIG_TURN_ON || type == TRIG_PULL_ON)
+		return test_string_trigger(argument, match_substr, type, NULL, obj, NULL, ch, NULL, NULL, NULL, NULL);
 
 	return PRET_NOSCRIPT;
 }
 
-int p_use_with_trigger(CHAR_DATA *ch, OBJ_DATA *obj, int type, void *arg1, void *arg2)
+int p_use_with_trigger(CHAR_DATA *ch, OBJ_DATA *obj, int type, OBJ_DATA *obj1, OBJ_DATA *obj2, CHAR_DATA *victim, CHAR_DATA *victim2)
 {
 	if (obj == NULL) {
 		bug("p_use_with_trigger: received null obj!", 0);
@@ -2891,7 +4027,7 @@ int p_use_with_trigger(CHAR_DATA *ch, OBJ_DATA *obj, int type, void *arg1, void 
 	if (!obj_room(obj)) return PRET_NOSCRIPT;
 
 	if (type == TRIG_USEWITH)
-		return p_percent_trigger(NULL, obj, NULL, NULL, ch, arg1, arg2, TRIG_USEWITH);
+		return test_number_trigger(0, match_percent, type, NULL, obj, NULL, NULL, ch, victim, victim2, obj1, obj2, NULL);
 
 	return PRET_NOSCRIPT;
 }
@@ -2899,171 +4035,149 @@ int p_use_with_trigger(CHAR_DATA *ch, OBJ_DATA *obj, int type, void *arg1, void 
 
 int p_greet_trigger(CHAR_DATA *ch, int type)
 {
-	CHAR_DATA *mob, *mnext;
-	OBJ_DATA *obj, *onext;
-	ROOM_INDEX_DATA *room;
-	TOKEN_DATA *token, *tnext;
-	PROG_LIST *prg;
-	int ret_val = PRET_NOSCRIPT, ret; // @@@NIB Default for a trigger loop is NO SCRIPT
-
-	// If not in a valid room, there's nothing to check!
-	if (!ch || !ch->in_room)
-		PRETURN; // @@@NIB
-
-	if (type == PRG_MPROG) {
-		for (mob = ch->in_room->people; mob != NULL; mob = mnext) {
-			mnext = mob->next_in_room;
-
-			// Check for tokens FIRST
-			for(token = mob->tokens; token; token = tnext) {
-				tnext = token->next;
-				if(token->pIndexData->progs) {
-					script_destructed = FALSE;
-					for (prg = token->pIndexData->progs[TRIGSLOT_MOVE]; prg && !script_destructed; prg = prg->next) {
-						if (is_trigger_type(prg->trig_type,TRIG_GREET) &&
-							number_percent() < atoi(prg->trig_phrase) &&
-							mob->position == mob->pIndexData->default_pos &&
-							can_see(mob, ch)) {
-							ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, ch, NULL, NULL, NULL, NULL,NULL,NULL);
-							SETPRETX;
-						} else if (is_trigger_type(prg->trig_type,TRIG_GRALL) && number_percent() < atoi(prg->trig_phrase)) {
-							ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, ch, NULL, NULL, NULL, NULL,NULL,NULL);
-							SETPRETX;
-						}
-					}
-
-					// Since the object didn't destruct, this is valid
-					if(!script_destructed) tnext = token->next;
-				}
-			}
-
-			if (IS_NPC(mob) && mob->pIndexData->progs) {
-				script_destructed = FALSE;
-				for (prg = mob->pIndexData->progs[TRIGSLOT_MOVE]; prg && !script_destructed; prg = prg->next) {
-					/*
-					 * Exit trigger works only if the mobile is not busy
-					 * (fighting etc.). If you want to be sure all players
-					 * are caught, use ExAll trigger
-					 */
-					if (is_trigger_type(prg->trig_type,TRIG_GREET) &&
-						number_percent() < atoi(prg->trig_phrase) &&
-						mob->position == mob->pIndexData->default_pos &&
-						can_see(mob, ch)) {
-						ret = execute_script(prg->vnum, prg->script, mob, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL,NULL,NULL);
-						SETPRETX; // @@@NIB
-					} else if (is_trigger_type(prg->trig_type,TRIG_GRALL) && number_percent() < atoi(prg->trig_phrase)) {
-						ret = execute_script(prg->vnum, prg->script, mob, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL,NULL,NULL);
-						SETPRETX; // @@@NIB
-					}
-				}
-				// Since the object didn't destruct, this is valid
-				if(!script_destructed) mnext = mob->next_in_room;
-			}
-		}
-	} else if (type == PRG_OPROG) {
-		for (obj = ch->in_room->contents; obj != NULL; obj = onext) {
-			onext = obj->next_content;
-			if (obj->pIndexData->progs) {
-				script_destructed = FALSE;
-				for (prg = obj->pIndexData->progs[TRIGSLOT_MOVE]; prg && !script_destructed; prg = prg->next) {
-					if (is_trigger_type(prg->trig_type,TRIG_GRALL) && number_percent() < atoi(prg->trig_phrase)) {
-						ret = execute_script(prg->vnum, prg->script, NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL,NULL,NULL);
-						SETPRETX; // @@@NIB
-					}
-				}
-				// Since the object didn't destruct, this is valid
-				if(!script_destructed) onext = obj->next_content;
-			}
-		}
-
-		for (mob = ch->in_room->people; mob; mob = mnext) {
-			mnext = mob->next_in_room;
-			for (obj = mob->carrying; obj; obj = onext) {
-				onext = obj->next_content;
-				if (obj->pIndexData->progs) {
-					script_destructed = FALSE;
-					for (prg = obj->pIndexData->progs[TRIGSLOT_MOVE]; prg && !script_destructed; prg = prg->next) {
-						if (is_trigger_type(prg->trig_type,TRIG_GRALL) && number_percent() < atoi(prg->trig_phrase)) {
-							ret = execute_script(prg->vnum, prg->script, NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL,NULL,NULL);
-							SETPRETX; // @@@NIB
-						}
-					}
-					// Since the object didn't destruct, this is valid
-					if(!script_destructed) onext = obj->next_content;
-				}
-			}
-		}
-	} else if (type == PRG_RPROG) {
-		room = ch->in_room;
-
-		if (room->source) {
-			if (room->source->progs->progs) {
-				script_destructed = FALSE;
-				for (prg = room->source->progs->progs[TRIGSLOT_MOVE]; prg && !script_destructed; prg = prg->next) {
-					if (is_trigger_type(prg->trig_type,TRIG_GRALL) && number_percent() < atoi(prg->trig_phrase)) {
-						ret = execute_script(prg->vnum, prg->script, NULL, NULL, room, NULL, ch, NULL, NULL, NULL, NULL,NULL,NULL);
-						SETPRETX; // @@@NIB
-					}
-				}
-			}
-		} else if (room->progs->progs) {
-			script_destructed = FALSE;
-			for (prg = room->progs->progs[TRIGSLOT_MOVE]; prg && !script_destructed; prg = prg->next) {
-				if (is_trigger_type(prg->trig_type,TRIG_GRALL) && number_percent() < atoi(prg->trig_phrase)) {
-					ret = execute_script(prg->vnum, prg->script, NULL, NULL, room, NULL, ch, NULL, NULL, NULL, NULL,NULL,NULL);
-					SETPRETX; // @@@NIB
-				}
-			}
-		}
-	}
-
-	PRETURN; // @@@NIB
+	return p_location_trigger(ch, ch ? ch->in_room : NULL, 0, match_percent, type, TRIG_GREET, TRIG_GRALL);
 }
 
 
 int p_hprct_trigger(CHAR_DATA *mob, CHAR_DATA *ch) // @@@NIB
 {
-	TOKEN_DATA *token, *tnext;
-	PROG_LIST *prg;
-	int percent, slot;
-	int ret_val = PRET_NOSCRIPT, ret; // @@@NIB Default for a trigger loop is NO SCRIPT
+	return test_number_trigger((100 * mob->hit / mob->max_hit), match_lt, TRIG_HPCNT, mob, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, NULL);
+}
 
-	slot = trigger_slots[TRIG_HPCNT];
-	percent = (100 * mob->hit / mob->max_hit);
+int p_emote_trigger(CHAR_DATA *ch, char *emote)
+{
+	int ret_val = PRET_NOSCRIPT, ret;
+	// Check tokens on player
 
-	// Check for tokens FIRST
-	for(token = mob->tokens; token; token = tnext) {
-		tnext = token->next;
-		if(token->pIndexData->progs) {
-			script_destructed = FALSE;
-			for (prg = token->pIndexData->progs[slot]; prg && !script_destructed; prg = prg->next) {
-				if (is_trigger_type(prg->trig_type,TRIG_HPCNT) &&
-					percent < atoi(prg->trig_phrase) &&
-					((ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, ch, NULL, NULL, NULL, NULL,NULL,NULL)) != PRET_NOSCRIPT)) {
+	ret_val = test_string_trigger(emote, match_exact_name, TRIG_EMOTE, ch, NULL, NULL, ch, NULL, NULL, NULL, NULL);
+
+
+	if( ret_val == PRET_NOSCRIPT && ch->in_room != NULL) {
+		CHAR_DATA *mob, *mob_next;
+
+		// Check all mobs in the room
+		for (mob = ch->in_room->people; mob != NULL; mob = mob_next) {
+			mob_next = mob->next_in_room;
+
+			if (!IS_NPC(mob) || mob->position == mob->pIndexData->default_pos)
+			{
+				ret = test_string_trigger(emote, match_exact_name, TRIG_EMOTE, mob, NULL, NULL, ch, NULL, NULL, NULL, NULL);
+
+				if( ret != PRET_NOSCRIPT ) {
 					ret_val = ret;
 					break;
 				}
 			}
-			// Since the object didn't destruct, this is valid
-			if(!script_destructed) tnext = token->next;
 		}
 	}
 
-	if(ret_val == PRET_NOSCRIPT && IS_NPC(mob) && mob->pIndexData->progs) {
-		script_destructed = FALSE;
-		for (prg = mob->pIndexData->progs[slot]; prg && !script_destructed; prg = prg->next) {
-			if ((is_trigger_type(prg->trig_type,TRIG_HPCNT)) &&
-				(percent < atoi(prg->trig_phrase)) &&
-				((ret = execute_script(prg->vnum, prg->script, mob, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL,NULL,NULL)) != PRET_NOSCRIPT)) {
-				ret_val = ret;
-				break; // @@@NIB break only on NON-ZERO, instead of continuing
+	PRETURN;
+}
+
+int p_emoteat_trigger(CHAR_DATA *mob, CHAR_DATA *ch, char *emote)
+{
+	int trig = (mob != ch) ? TRIG_EMOTEAT : TRIG_EMOTESELF;
+	return test_string_trigger(emote, match_exact_name, trig, mob, NULL, NULL, ch, NULL, NULL, NULL, NULL);
+}
+
+int script_login(CHAR_DATA *ch) // @@@NIB
+{
+	ITERATOR tit, oit, pit;
+	TOKEN_DATA *token;
+	OBJ_DATA *obj;
+	PROG_LIST *prg;
+	SCRIPT_DATA *script;
+	unsigned long uid[2];
+	//unsigned long ouid[2];
+	int slot;
+	int ret_val = PRET_NOSCRIPT, ret; // @@@NIB Default for a trigger loop is NO SCRIPT
+
+	variable_dynamic_fix_mobile(ch);
+
+	// Run the SYSTEM LOGIN ROOM SCRIPT
+	script = get_script_index(RPROG_VNUM_PLAYER_INIT,PRG_RPROG);
+	if(script) {
+		script_force_execute = TRUE;
+		script_security = SYSTEM_SCRIPT_SECURITY;
+		execute_script(RPROG_VNUM_PLAYER_INIT, script, NULL, NULL, get_room_index(1), NULL, ch, NULL, NULL, NULL, NULL,NULL,NULL,NULL,0,0,0,0,0);
+		script_security = INIT_SCRIPT_SECURITY;
+		script_force_execute = FALSE;
+	}
+
+	// Run the TRIG_LOGIN
+	slot = trigger_slots[TRIG_LOGIN];
+
+	// Save the UID
+	uid[0] = ch->id[0];
+	uid[1] = ch->id[1];
+
+	// Check for tokens FIRST
+	iterator_start(&tit, ch->ltokens);
+	while(( token = (TOKEN_DATA *)iterator_nextdata(&tit))) {
+		if(token->pIndexData->progs) {
+			script_token_addref(token);
+			script_destructed = FALSE;
+			iterator_start(&pit, token->pIndexData->progs[slot]);
+			while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+				if (is_trigger_type(prg->trig_type,TRIG_LOGIN) && number_percent() < prg->trig_number) {
+					ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, ch, NULL, NULL, NULL, NULL,NULL,NULL,NULL,0,0,0,0,0);
+					SETPRET;
+				}
+			}
+			script_token_remref(token);
+			iterator_stop(&pit);
+		}
+	}
+	iterator_stop(&tit);
+
+	// Check objects SECOND
+	iterator_start(&oit, ch->lcarrying);
+	while(( obj = (OBJ_DATA *)iterator_nextdata(&oit))) {
+		iterator_start(&tit, obj->ltokens);
+		while(( token = (TOKEN_DATA *)iterator_nextdata(&tit))) {
+			if(token->pIndexData->progs) {
+				script_destructed = FALSE;
+				iterator_start(&pit, token->pIndexData->progs[slot]);
+				while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+					if (is_trigger_type(prg->trig_type,TRIG_LOGIN) && number_percent() < prg->trig_number) {
+						ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, ch, NULL, NULL, NULL,NULL, NULL,NULL,NULL,0,0,0,0,0);
+						SETPRET;
+					}
+				}
+				iterator_stop(&pit);
 			}
 		}
+		iterator_stop(&tit);
+
+		if(obj->pIndexData->progs) {
+			script_destructed = FALSE;
+			iterator_start(&pit, obj->pIndexData->progs[slot]);
+			while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+				if (is_trigger_type(prg->trig_type,TRIG_LOGIN) && number_percent() < prg->trig_number) {
+					ret = execute_script(prg->vnum, prg->script, NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL,NULL,NULL,NULL,0,0,0,0,0);
+					SETPRET;
+				}
+			}
+			iterator_stop(&pit);
+		}
+	}
+	iterator_stop(&oit);
+
+	if(ret_val == PRET_NOSCRIPT && IS_VALID(ch) && ch->id[0] == uid[0] && ch->id[0] == uid[1] && IS_NPC(ch) && ch->pIndexData->progs) {
+		script_destructed = FALSE;
+		iterator_start(&pit, ch->pIndexData->progs[slot]);
+		while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
+			if (is_trigger_type(prg->trig_type,TRIG_LOGIN) && number_percent() < prg->trig_number &&
+				((ret = execute_script(prg->vnum, prg->script, ch, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL,NULL,NULL,NULL,0,0,0,0,0)) != PRET_NOSCRIPT)) {
+				ret_val = ret;
+				break;
+			}
+		}
+		iterator_stop(&pit);
 	}
 
 	PRETURN; // @@@NIB
 }
-
 
 void do_ifchecks( CHAR_DATA *ch, char *argument)
 {
@@ -3136,8 +4250,8 @@ bool script_spell_deflection(CHAR_DATA *ch, CHAR_DATA *victim, TOKEN_DATA *token
 	if (!IS_AFFECTED2(victim, AFF2_SPELL_DEFLECTION))
 		return TRUE;
 
-	act("{MThe crimson aura around you pulses!{x", victim, NULL, NULL, TO_CHAR);
-	act("{MThe crimson aura around $n pulses!{x", victim, NULL, NULL, TO_ROOM);
+	act("{MThe crimson aura around you pulses!{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+	act("{MThe crimson aura around $n pulses!{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
 	// Find spell deflection
 	for (af = victim->affected; af; af = af->next) {
@@ -3155,9 +4269,9 @@ bool script_spell_deflection(CHAR_DATA *ch, CHAR_DATA *victim, TOKEN_DATA *token
 			if (ch == victim)
 				send_to_char("Your spell gets through your protective crimson aura!\n\r", ch);
 			else {
-				act("Your spell gets through $N's protective crimson aura!", ch, NULL, victim, TO_CHAR);
-				act("$n's spell gets through your protective crimson aura!", ch, NULL, victim, TO_VICT);
-				act("$n's spell gets through $N's protective crimson aura!", ch, NULL, victim, TO_NOTVICT);
+				act("Your spell gets through $N's protective crimson aura!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+				act("$n's spell gets through your protective crimson aura!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
+				act("$n's spell gets through $N's protective crimson aura!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
 			}
 		}
 
@@ -3180,24 +4294,24 @@ bool script_spell_deflection(CHAR_DATA *ch, CHAR_DATA *victim, TOKEN_DATA *token
 	af->level -= 10;
 	if (af->level <= 0) {
 		send_to_char("{MThe crimson aura around you vanishes.{x\n\r", victim);
-		act("{MThe crimson aura around $n vanishes.{x", victim, NULL, NULL, TO_ROOM);
+		act("{MThe crimson aura around $n vanishes.{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		affect_remove(victim, af);
 		return TRUE;
 	}
 
 	if (rch) {
 		if (ch) {
-			act("{YYour spell bounces off onto $N!{x", ch, NULL, rch, TO_CHAR);
-			act("{Y$n's spell bounces off onto you!{x", ch, NULL, rch, TO_VICT);
-			act("{Y$n's spell bounces off onto $N!{x", ch, NULL, rch, TO_NOTVICT);
+			act("{YYour spell bounces off onto $N!{x",  ch, rch, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+			act("{Y$n's spell bounces off onto you!{x", ch, rch, NULL, NULL, NULL, NULL, NULL, TO_VICT);
+			act("{Y$n's spell bounces off onto $N!{x",  ch, rch, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
 		}
 
 		token->value[3] = ch ? ch->tot_level : af->level;
 
-		execute_script(script->vnum, script, NULL, NULL, NULL, token, ch ? ch : rch, NULL, NULL, rch, NULL,"deflection",NULL);
+		execute_script(script->vnum, script, NULL, NULL, NULL, token, ch ? ch : rch, NULL, NULL, rch, NULL,NULL,"deflection",NULL,0,0,0,0,0);
 	} else if (ch) {
-		act("{YYour spell bounces around for a while, then dies out.{x", ch, NULL, NULL, TO_CHAR);
-		act("{Y$n's spell bounces around for a while, then dies out.{x", ch, NULL, NULL, TO_ROOM);
+		act("{YYour spell bounces around for a while, then dies out.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		act("{Y$n's spell bounces around for a while, then dies out.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	}
 
 	return FALSE;
@@ -3265,7 +4379,684 @@ SCRIPT_VARINFO *script_get_prior(SCRIPT_VARINFO *info)
 
 int interrupt_script( CHAR_DATA *ch, bool silent )
 {
-	return p_percent_trigger_phrase(ch, NULL, NULL, NULL, ch, NULL, NULL, TRIG_INTERRUPT, silent?"silent":NULL);
+	return p_percent_trigger(ch, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_INTERRUPT, silent?"silent":NULL);
 }
 
+
+void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument)
+{
+	char buf[MIL], name[MIL], *rest, *str = NULL;
+	CHAR_DATA *vch = NULL, *mobs = NULL, *viewer = NULL;
+	OBJ_DATA *obj = NULL, *objs = NULL;
+	TOKEN_DATA *token = NULL, *tokens = NULL;
+	ROOM_INDEX_DATA *here = NULL;
+	EXIT_DATA *ex = NULL;
+	LIST *blist;
+	ITERATOR it;
+	int vnum = 0, i, idx;
+	unsigned long id1/*, id2*/;
+	SCRIPT_PARAM arg;
+
+	if(!info) return;
+	viewer = info->mob;
+
+	if(info->mob) here = info->mob->in_room;
+	else if(info->obj) here = obj_room(info->obj);
+	else if(info->room) here = info->room;
+	else if(info->token) here = token_room(info->token);
+
+	if(!viewer && !here) return;
+
+	if(!vars) return;
+
+	// Get name
+	argument = one_argument(argument,name);
+	if(!name[0]) return;
+
+	// Get type
+	argument = one_argument(argument,buf);
+	if(!buf[0]) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	// Saves a number
+	// Format: INTEGER <number>
+	// Format: INTEGER <numerical string>
+	if(!str_cmp(buf,"integer") || !str_cmp(buf,"number")) {
+		switch(arg.type) {
+		case ENT_NUMBER: variables_set_integer(vars,name,arg.d.num); break;
+		case ENT_STRING:
+			if(is_number(arg.d.str))
+				variables_set_integer(vars,name,atoi(arg.d.str)); break;
+		}
+
+	// Format: STRING <string>[ <word index>]
+	} else if(!str_cmp(buf,"string")) {
+		char tmp[MSL],*p;
+
+		switch(arg.type) {
+		case ENT_NUMBER:
+			sprintf(tmp,"%d",arg.d.num);
+			break;
+		case ENT_STRING:
+			strcpy(tmp,arg.d.str);
+			break;
+		default:return;
+		}
+
+		if(!(rest = expand_argument(info,rest,&arg)))
+			return;
+
+		switch(arg.type) {
+		case ENT_NONE:
+			variables_set_string(vars,name,tmp,FALSE);
+			break;
+
+		case ENT_NUMBER:
+			p = tmp;
+			for(i=0;i<arg.d.num && p && *p;i++)
+				p = one_argument(p,buf);
+			if(arg.d.num > 0 && i == arg.d.num)
+				variables_set_string(vars,name,buf,FALSE);
+			break;
+		}
+
+	// Format: APPEND <string>[ <word index>]
+	} else if(!str_cmp(buf,"append")) {
+		char tmp[MIL], *p;
+
+		switch(arg.type) {
+		case ENT_NUMBER:	sprintf(tmp,"%d",arg.d.num); break;
+		case ENT_STRING:	strcpy(tmp,arg.d.str); 	break;
+		default:return;
+		}
+
+		if(!(rest = expand_argument(info,rest,&arg))) return;
+
+		switch(arg.type) {
+		case ENT_NONE:		variables_append_string(vars,name,tmp); break;
+		case ENT_NUMBER:
+			p = tmp;
+			for(i=0;i<arg.d.num && p && *p;i++) p = one_argument(p,buf);
+
+			if(arg.d.num > 0 && (i == arg.d.num)) variables_append_string(vars,name,buf);
+			break;
+		}
+
+	// Format: STRFORMAT
+	// TO-DO: Add "STRFORMAT[ <width>]"
+	} else if(!str_cmp(buf,"strformat")) {
+		variables_format_string(vars,name);
+
+	// Copies an extra description
+	// Format: ED <OBJECT or ROOM> <keyword>
+	} else if(!str_cmp(buf,"ed")) {
+		// ed $<object|room> <keyword>
+		char tmp[MSL],*p;
+		EXTRA_DESCR_DATA *desc;
+
+		switch(arg.type) {
+		case ENT_OBJECT: desc = arg.d.obj->extra_descr; break;
+		case ENT_ROOM: desc = arg.d.room->extra_descr; break;
+		default:return;
+		}
+
+		expand_string(info,rest,tmp);
+
+		p = get_extra_descr(tmp, desc);
+
+		variables_set_string(info->var,name,(p ? p : ""),FALSE);
+
+	// Format: ROOM <VNUM> - room vnum
+	// Format: ROOM <ROOM> - explicit room
+	// Format: ROOM <EXIT> - gets the destination of the exit
+	// Format: ROOM <ROOM-LIST> - first room from the list
+	// Format: ROOM <ROOM-LIST> <INDEX> - Nth room from the list
+	// Format: ROOM <ROOM-LIST> FIRST - first room from the list
+	// Format: ROOM <ROOM-LIST> LAST - last room from the list
+	// Format: ROOM <ROOM-LIST> RANDOM - random valid room from the list
+	} else if(!str_cmp(buf,"room")) {
+		switch(arg.type) {
+		case ENT_NUMBER:
+			variables_set_room(vars,name,get_room_index(arg.d.num));
+			break;
+		case ENT_ROOM:
+			variables_set_room(vars,name,arg.d.room);
+			break;
+		case ENT_EXIT:
+			here = arg.d.door.r ? exit_destination(arg.d.door.r->exit[arg.d.door.door]) : NULL;
+			variables_set_room(vars,name,here);
+			break;
+		case ENT_BLIST_ROOM:
+			blist = arg.d.blist;
+			if(!(rest = expand_argument(info,rest,&arg)))
+				return;
+
+			idx = 0;
+			switch(arg.type) {
+			default: break;
+			case ENT_STRING:
+				if( !str_cmp(arg.d.str, "first"))
+					idx = 0;
+				else if( !str_cmp(arg.d.str, "last"))
+					idx = list_size(blist)-1;
+				else if( !str_cmp(arg.d.str, "random"))
+					idx = number_range(0, list_size(blist)-1);
+				break;
+
+			case ENT_NUMBER:
+				idx = arg.d.num;
+				break;
+			}
+
+			{
+				LIST_ROOM_DATA *lroom;
+				iterator_start_nth(&it, blist, idx);
+				while((lroom = (LIST_ROOM_DATA *)iterator_nextdata(&it)) && !lroom->room);
+				iterator_stop(&it);
+
+				if(lroom && lroom->room)
+					variables_set_room(vars,name,lroom->room);
+			}
+			break;
+		case ENT_PLIST_ROOM:
+			blist = arg.d.blist;
+			if(!(rest = expand_argument(info,rest,&arg)))
+				return;
+
+			idx = 0;
+			switch(arg.type) {
+			default: break;
+			case ENT_STRING:
+				if( !str_cmp(arg.d.str, "first"))
+					idx = 0;
+				else if( !str_cmp(arg.d.str, "last"))
+					idx = list_size(blist)-1;
+				else if( !str_cmp(arg.d.str, "random"))
+					idx = number_range(0, list_size(blist)-1);
+				break;
+
+			case ENT_NUMBER:
+				idx = arg.d.num;
+				break;
+			}
+
+			variables_set_room(vars, name, list_nthdata(blist, idx));
+			break;
+		}
+
+	// Find the highest room at that coordinate
+	// Format: HIGHROOM <MAP UID> <X> <Y> <Z> <GROUND>
+	} else if(!str_cmp(buf,"highroom")) {
+
+		// Format: highroom <wilds-uid> <x> <y> <z> <ground>
+		WILDS_DATA *wilds;
+		int x, y, z;
+		bool ground;
+
+		if(arg.type == ENT_NUMBER) {
+			wilds = get_wilds_from_uid(NULL,arg.d.num);
+			if(wilds) {
+				if(!(rest = expand_argument(info,rest,&arg)) && arg.type != ENT_NUMBER) return;
+				x = arg.d.num;
+				if(x < 0 || x >= wilds->map_size_x) return;
+
+				if(!(rest = expand_argument(info,rest,&arg)) && arg.type != ENT_NUMBER) return;
+				y = arg.d.num;
+				if(y < 0 || x >= wilds->map_size_y) return;
+
+				if(!(rest = expand_argument(info,rest,&arg)) && arg.type != ENT_NUMBER) return;
+				z = arg.d.num;
+
+				if(!(rest = expand_argument(info,rest,&arg)) && arg.type != ENT_STRING) return;
+				ground = !str_cmp(arg.d.str,"ground") || !str_cmp(arg.d.str,"true");
+
+				variables_set_room(info->var,name,wilds_seek_down(wilds, x, y, z, ground));
+			}
+		}
+
+	// Format: EXIT <STRING> - finds the exit at the given direction in the current room
+	// Format: EXIT <ROOM> <STRING> - same as EXIT <STRING> but at the given room
+	// Format: EXIT <EXIT> - explicit exit
+	} else if(!str_cmp(buf,"exit")) {
+		switch(arg.type) {
+		case ENT_ROOM:
+			here = arg.d.room;
+			if(!here || !expand_argument(info,rest,&arg))
+				return;
+			if(arg.type != ENT_STRING) return;
+		case ENT_STRING:
+			vnum = get_num_dir(arg.d.str);
+			if(vnum < 0) {
+				if(!str_cmp(arg.d.str,"random"))
+					vnum = number_range(0,MAX_DIR-1);
+				else if(!str_cmp(arg.d.str,"exists")) {
+					for(vnum = number_range(0,MAX_DIR-1), i = 0; i < MAX_DIR && !here->exit[vnum]; i++, vnum = (vnum+1)%MAX_DIR);
+
+					if(!here->exit[vnum]) vnum = -1;
+				} else if(!str_cmp(arg.d.str,"open")) {
+					for(vnum = number_range(0,MAX_DIR-1), i = 0; i < MAX_DIR && !here->exit[vnum]; i++, vnum = (vnum+1)%MAX_DIR);
+
+					if(!here->exit[vnum] || IS_SET(here->exit[vnum]->exit_info,EX_CLOSED)) vnum = -1;
+				}
+
+				if(vnum < 0)
+					return;
+			}
+			ex = here->exit[vnum];
+			break;
+		case ENT_EXIT:
+			ex = arg.d.door.r ? arg.d.door.r->exit[arg.d.door.door] : NULL;
+			break;
+		}
+		variables_set_exit(vars,name,ex);
+
+	// Format: MOBILE <ROOM VNUM or ROOM or MOBLIST> <VNUM or NAME>
+	// Format: MOBILE <NAME>
+	// Format: MOBILE <MOBILE>
+	} else if(!str_cmp(buf,"mobile")) {
+		switch(arg.type) {
+		case ENT_NUMBER:
+			here = get_room_index(arg.d.num);
+			mobs = here ? here->people : NULL;
+			break;
+		case ENT_STRING:
+			if(is_number(arg.d.str)) {
+				here = get_room_index(atoi(arg.d.str));
+				mobs = here ? here->people : NULL;
+			} else
+				vch = get_char_world(viewer,arg.d.str);
+			break;
+		case ENT_MOBILE:
+			vch = arg.d.mob;
+			break;
+		case ENT_OLIST_MOB:
+			mobs = arg.d.list.ptr.mob ? *arg.d.list.ptr.mob : NULL;
+			break;
+		case ENT_ROOM:
+			mobs = arg.d.room ? arg.d.room->people : NULL;
+			break;
+		default: return;
+		}
+
+		if(mobs) {
+			if(!expand_argument(info,rest,&arg))
+				return;
+			if(arg.type == ENT_NUMBER)
+				vnum = arg.d.num;
+			else if(arg.type == ENT_STRING) {
+				if(is_number(arg.d.str))
+					vnum = atoi(arg.d.str);
+				else
+					str = arg.d.str;
+			} else
+				return;
+
+			vch = script_get_char_list(mobs, viewer, FALSE, vnum, str);
+		}
+		variables_set_mobile(vars,name,vch);
+
+	// Format: PLAYER <ROOM VNUM or ROOM or MOBLIST> <NAME>
+	// Format: PLAYER <NAME>
+	// Format: PLAYER <PLAYER>
+	} else if(!str_cmp(buf,"player")) {
+		switch(arg.type) {
+		case ENT_STRING:
+			vch = get_player(arg.d.str);
+			break;
+		case ENT_MOBILE:
+			vch = arg.d.mob && !IS_NPC(arg.d.mob) ? arg.d.mob : NULL;
+			break;
+		case ENT_OLIST_MOB:
+			mobs = arg.d.list.ptr.mob ? *arg.d.list.ptr.mob : NULL;
+			if(mobs) {
+				if(!expand_argument(info,rest,&arg))
+					return;
+				if(arg.type == ENT_STRING && !is_number(arg.d.str))
+					str = arg.d.str;
+				else
+					mobs = NULL;
+			}
+			break;
+		default: return;
+		}
+		if(mobs) vch = script_get_char_list(mobs, viewer, TRUE, 0, str);
+		variables_set_mobile(vars,name,vch);
+
+	// Format: OBJECT <ROOM VNUM or ROOM or MOBILE or OBJECT or OBJLIST> <VNUM or NAME>
+	// Format: OBJECT <NAME>
+	} else if(!str_cmp(buf,"object")) {
+		switch(arg.type) {
+		case ENT_NUMBER:
+			here = get_room_index(arg.d.num);
+			objs = here ? here->contents : NULL;
+			break;
+		case ENT_STRING:
+			if(is_number(arg.d.str)) {
+				here = get_room_index(atoi(arg.d.str));
+				objs = here ? here->contents : NULL;
+			} else if(viewer)
+				obj = get_obj_here(viewer,NULL,arg.d.str);
+			else
+				obj = get_obj_here(NULL,here,arg.d.str);
+			break;
+		case ENT_OBJECT:
+			obj = arg.d.obj;
+			break;
+		case ENT_MOBILE:
+			objs = arg.d.mob ? arg.d.mob->carrying : NULL;
+			break;
+		case ENT_OLIST_OBJ:
+			objs = arg.d.list.ptr.obj ? *arg.d.list.ptr.obj : NULL;
+			break;
+		case ENT_ROOM:
+			objs = arg.d.room ? arg.d.room->contents : NULL;
+			break;
+		default: return;
+		}
+
+		if(objs) {
+			if(!expand_argument(info,rest,&arg))
+				return;
+			if(arg.type == ENT_NUMBER)
+				vnum = arg.d.num;
+			else if(arg.type == ENT_STRING) {
+				if(is_number(arg.d.str))
+					vnum = atoi(arg.d.str);
+				else
+					str = arg.d.str;
+			} else
+				return;
+			obj = script_get_obj_list(objs, viewer, 0, vnum, str);
+		}
+		variables_set_object(vars,name,obj);
+
+	// Format: CARRY <VNUM or NAME>
+	// Format: CARRY <MOBILE> <VNUM or NAME>
+	// Format: CARRY <OBJLIST> <VNUM or NAME>
+	} else if(!str_cmp(buf,"carry")) {
+		switch(arg.type) {
+		case ENT_NUMBER:
+			vnum = arg.d.num;
+			objs = viewer ? viewer->carrying : NULL;
+			break;
+		case ENT_STRING:
+			if(is_number(arg.d.str))
+				vnum = atoi(arg.d.str);
+			else
+				str = arg.d.str;
+			objs = viewer ? viewer->carrying : NULL;
+			break;
+		case ENT_MOBILE:
+			objs = arg.d.mob ? arg.d.mob->carrying : NULL;
+			break;
+		case ENT_OLIST_OBJ:
+			objs = arg.d.list.ptr.obj ? *arg.d.list.ptr.obj : NULL;
+			break;
+		default: return;
+		}
+
+		if(objs && arg.type != ENT_NUMBER && arg.type != ENT_STRING) {
+			if(!expand_argument(info,rest,&arg))
+				return;
+			if(arg.type == ENT_NUMBER)
+				vnum = arg.d.num;
+			else if(arg.type == ENT_STRING) {
+				if(is_number(arg.d.str))
+					vnum = atoi(arg.d.str);
+				else
+					str = arg.d.str;
+			} else
+				return;
+		}
+		obj = script_get_obj_list(objs, viewer, 2, vnum, str);
+		if(obj) variables_set_object(vars,name,obj);
+
+	// Format: WORN <VNUM or NAME>
+	// Format: WORN <MOBILE or OBJLIST> <VNUM or NAME>
+	} else if(!str_cmp(buf,"worn")) {
+		switch(arg.type) {
+		case ENT_NUMBER:
+			vnum = arg.d.num;
+			objs = viewer ? viewer->carrying : NULL;
+			break;
+		case ENT_STRING:
+			if(is_number(arg.d.str))
+				vnum = atoi(arg.d.str);
+			else
+				str = arg.d.str;
+			objs = viewer ? viewer->carrying : NULL;
+			break;
+		case ENT_MOBILE:
+			objs = arg.d.mob ? arg.d.mob->carrying : NULL;
+			break;
+		case ENT_OLIST_OBJ:
+			objs = arg.d.list.ptr.obj ? *arg.d.list.ptr.obj : NULL;
+			break;
+		default: return;
+		}
+
+		if(objs && arg.type != ENT_NUMBER && arg.type != ENT_STRING) {
+			if(!expand_argument(info,rest,&arg))
+				return;
+			if(arg.type == ENT_NUMBER)
+				vnum = arg.d.num;
+			else if(arg.type == ENT_STRING) {
+				if(is_number(arg.d.str))
+					vnum = atoi(arg.d.str);
+				else
+					str = arg.d.str;
+			} else
+				return;
+		}
+		obj = script_get_obj_list(objs, viewer, 1, vnum, str);
+		variables_set_object(vars,name,obj);
+
+	// Format: CONTENT <OBJECT or OBJLIST> <VNUM or NAME>
+	} else if(!str_cmp(buf,"content")) {
+		switch(arg.type) {
+		case ENT_OLIST_OBJ:
+			objs = arg.d.list.ptr.obj ? *arg.d.list.ptr.obj : NULL;
+			break;
+		case ENT_OBJECT:
+			objs = arg.d.obj ? arg.d.obj->contains : NULL;
+			break;
+		default: return;
+		}
+
+		if(objs) {
+			if(!expand_argument(info,rest,&arg))
+				return;
+			if(arg.type == ENT_NUMBER)
+				vnum = arg.d.num;
+			else if(arg.type == ENT_STRING) {
+				if(is_number(arg.d.str))
+					vnum = atoi(arg.d.str);
+				else
+					str = arg.d.str;
+			} else
+				return;
+			obj = script_get_obj_list(objs, info->mob, 0, vnum, str);
+		}
+		variables_set_object(vars,name,obj);
+
+	// Format: TOKEN <MOBILE or OBJECT or ROOM or TOKLIST> <Pattern>
+	// Format: TOKEN <TOKEN>
+	} else if(!str_cmp(buf,"token")) {
+		switch(arg.type) {
+		case ENT_MOBILE:   tokens = arg.d.mob ? arg.d.mob->tokens : NULL; break;
+		case ENT_OBJECT:   tokens = arg.d.obj ? arg.d.obj->tokens : NULL; break;
+		case ENT_ROOM:     tokens = arg.d.room ? arg.d.room->tokens : NULL; break;
+		case ENT_TOKEN:    token = arg.d.token; break;
+		case ENT_OLIST_TOK: tokens = arg.d.list.ptr.tok ? *arg.d.list.ptr.tok : NULL; break;
+		default: return;
+		}
+
+		if(tokens) token = token_find_match(info,tokens, rest);
+		variables_set_token(vars,name,token);
+
+	// Format: IDMOBILE <IDa> <IDb>
+	} else if(!str_cmp(buf,"idmobile")) {
+		switch(arg.type) {
+		case ENT_NUMBER:
+			id1 = arg.d.num;
+			if(!expand_argument(info,rest,&arg) || arg.type != ENT_NUMBER)
+				return;
+			vch = idfind_mobile(id1,arg.d.num);
+			break;
+		default: return;
+		}
+		variables_set_mobile(vars,name,vch);
+
+	// Format: IDOBJECT <IDa> <IDb>
+	} else if(!str_cmp(buf,"idobject")) {
+		switch(arg.type) {
+		case ENT_NUMBER:
+			id1 = arg.d.num;
+			if(!expand_argument(info,rest,&arg) || arg.type != ENT_NUMBER)
+				return;
+			obj = idfind_object(id1,arg.d.num);
+			break;
+		default: return;
+		}
+		variables_set_object(vars,name,obj);
+
+	// Format: IDPLAYER <IDa> <IDb>
+	} else if(!str_cmp(buf,"idplayer")) {
+		switch(arg.type) {
+		case ENT_NUMBER:
+			id1 = arg.d.num;
+			if(!expand_argument(info,rest,&arg) || arg.type != ENT_NUMBER)
+				return;
+			vch = idfind_player(id1,arg.d.num);
+			break;
+		default: return;
+		}
+		variables_set_mobile(vars,name,vch);
+
+	// Format: CROOM <ROOM VNUM> <IDa> <IDb>
+	} else if(!str_cmp(buf,"croom")) {
+		switch(arg.type) {
+		case ENT_NUMBER:
+			here = get_room_index(arg.d.num);
+			if(!(rest = expand_argument(info,rest,&arg)) || arg.type != ENT_NUMBER)
+				return;
+			id1 = arg.d.num;
+			if(!expand_argument(info,rest,&arg) || arg.type != ENT_NUMBER)
+				return;
+			variables_set_room(vars,name,get_clone_room(here,id1,arg.d.num));
+			break;
+		default: return;
+		}
+
+	// Format: SKILL <NAME>
+	} else if(!str_cmp(buf,"skill")) {
+		switch(arg.type) {
+		case ENT_STRING:
+			variables_set_skill(vars,name,skill_lookup(arg.d.str));
+			break;
+		default: return;
+		}
+
+	// Format: SKILLINFO <MOBILE> <NAME or TOKEN>
+	} else if(!str_cmp(buf,"skillinfo")) {
+		switch(arg.type) {
+		case ENT_MOBILE:
+			vch = arg.d.mob;
+			if(!expand_argument(info,rest,&arg))
+				return;
+
+			if( arg.type == ENT_STRING )
+				variables_set_skillinfo(vars,name,vch,skill_lookup(arg.d.str), NULL);
+			else if( arg.type == ENT_TOKEN )
+				variables_set_skillinfo(vars,name,vch, 0, arg.d.token);
+			break;
+		default: return;
+		}
+
+	// Format: FINDPATH <ROOM> <ROOM> <DEPTH> <IN-ZONE> <DOORS> - returns the EXIT entity
+	} else if(!str_cmp(buf,"findpath")) {
+		ROOM_INDEX_DATA *start_room = NULL, *end_room = NULL;
+		int depth, in_zone, doors;
+		int dir;
+
+		switch(arg.type) {
+		case ENT_NUMBER:	start_room = get_room_index(arg.d.num); break;
+		case ENT_ROOM:		start_room = arg.d.room; break;
+		case ENT_EXIT:		start_room = arg.d.door.r ? exit_destination(arg.d.door.r->exit[arg.d.door.door]) : NULL; break;
+		}
+
+		if(!start_room || !(rest = expand_argument(info,rest,&arg)))
+			return;
+
+		switch(arg.type) {
+		case ENT_NUMBER:	end_room = get_room_index(arg.d.num); break;
+		case ENT_ROOM:		end_room = arg.d.room; break;
+		case ENT_EXIT:		end_room = arg.d.door.r ? exit_destination(arg.d.door.r->exit[arg.d.door.door]) : NULL; break;
+		}
+
+		if(!end_room || !(rest = expand_argument(info,rest,&arg)) || arg.type != ENT_NUMBER)
+			return;
+
+		depth = arg.d.num;
+
+		if(!(rest = expand_argument(info,rest,&arg)) || arg.type != ENT_STRING)
+			return;
+
+		in_zone = !str_cmp(arg.d.str,"true") || !str_cmp(arg.d.str, "yes") || !str_cmp(arg.d.str, "local");
+
+		if(!(rest = expand_argument(info,rest,&arg)) || arg.type != ENT_STRING)
+			return;
+
+		doors = !str_cmp(arg.d.str,"true") || !str_cmp(arg.d.str, "yes") || !str_cmp(arg.d.str, "doors");
+
+		dir = find_path(start_room->vnum, end_room->vnum, NULL, (doors ? -depth : depth), in_zone);
+		if( dir < 0 || dir >= MAX_DIR )
+			variables_set_exit(vars,name,NULL);
+		else
+			variables_set_exit(vars,name,start_room->exit[dir]);
+
+	} else
+		return;
+}
+
+bool valid_spell_token( TOKEN_DATA *token )
+{
+	ITERATOR pit;
+	PROG_LIST *prg = NULL;
+
+	if( IS_VALID(token) && token->pIndexData->progs ) {
+		iterator_start(&pit, token->pIndexData->progs[TRIGSLOT_SPELL]);
+		while((prg = (PROG_LIST *)iterator_nextdata(&pit)))
+			if(prg->trig_type == TRIG_SPELL)
+				break;
+		iterator_stop(&pit);
+	}
+
+	return prg && TRUE;
+}
+
+bool visit_script_execute(ROOM_INDEX_DATA *room, void *argv[], int argc, int depth, int door)
+{
+	int ret;
+	SCRIPT_DATA *script = (SCRIPT_DATA *)argv[0];
+
+	ret = execute_script(script->vnum, script, NULL, NULL, room, NULL,
+		(CHAR_DATA *)argv[1],	// enactor
+		(OBJ_DATA *)argv[2],	// object 1
+		(OBJ_DATA *)argv[3],	// object 2
+		(CHAR_DATA *)argv[4],	// victim 1
+		(CHAR_DATA *)argv[5],	// victim 2
+		NULL,					// no random
+		(char *)argv[6],		// phrase
+		NULL,					// no trigger
+		depth,					// register 1
+		door,					// register 2
+		0,						// register 3
+		0,						// register 4
+		0);						// register 5
+
+	return ret > 0;
+}
 

@@ -17,146 +17,136 @@ static char buf[MSL];
 
 void do_help(CHAR_DATA *ch, char *argument)
 {
-    HELP_DATA *help;
-    HELP_CATEGORY *hcat, *hcatnest;
-    BUFFER *buffer;
-    char buf[MSL], buf2[MSL];
-    char *p;
-    int index;
-    int i;
+	HELP_DATA *help;
+	HELP_CATEGORY *hcat, *hcatnest;
+	BUFFER *buffer;
+	char buf[MSL], buf2[MSL];
+	char *p;
+	int index;
+	int i;
 
-    if (argument[0] == '\0')
-    {
-	send_to_char("Syntax: help <keyword(s)>\n\r"
-	             "        help <category name|summary>\n\r"
-	             "        help #<index>\n\r", ch);
-	return;
-    }
-
-    // Category lookup - must be exact
-    if ((hcat = find_help_category_exact(argument, topHelpCat)) != NULL
-    &&  get_trust(ch) >= hcat->min_level
-    &&  lookup_help_exact(argument, get_trust(ch), topHelpCat) == NULL)
-    {
-	buffer = new_buf();
-
-        sprintf(buf2, "{R%s{x", hcat == topHelpCat ? "summary" : hcat->name);
-
-        // Capitalize category name
-	for (i = 0; buf2[i] != '\0'; i++)
+	if (argument[0] == '\0')
 	{
-	    if (buf2[i] == '{')
-		i+= 2;
-
-	    buf2[i] = UPPER(buf2[i]);
+		send_to_char("Syntax: help <keyword(s)>\n\r"
+					"        help <category name|summary>\n\r"
+					"        help #<index>\n\r", ch);
+		return;
 	}
 
-	sprintf(buf, "{R%s{x", buf2);
+	// Category lookup - must be exact
+	if ((hcat = find_help_category_exact(argument, topHelpCat)) != NULL &&
+		get_trust(ch) >= hcat->min_level &&
+		lookup_help_exact(argument, get_trust(ch), topHelpCat) == NULL) {
 
-        // Add on higher-level categories
-        hcatnest = hcat;
-        while ((hcatnest = hcatnest->up) != NULL && hcatnest != topHelpCat)
-	{
-	    sprintf(buf2, "{R%s{x", hcatnest->name);
-	    for (i = 0; buf2[i] != '\0'; i++)
-		buf2[i] = UPPER(buf2[i]);
+		buffer = new_buf();
 
-            strcat(buf2, " {r->{R ");
-	    strcat(buf2, buf);
-	    sprintf(buf, "%s", buf2);
-	}
+		sprintf(buf2, "{R%s{x", hcat == topHelpCat ? "summary" : hcat->name);
 
-	sprintf(buf, "{b[{W%s{b]{x\n\r", buf2);
-	add_buf(buffer, buf);
+		// Capitalize category name
+		for (i = 0; buf2[i] != '\0'; i++) {
+			if (buf2[i] == '{')
+				i+= 2;
 
-	i = 1;
-        for (hcatnest = hcat->inside_cats; hcatnest != NULL; hcatnest = hcatnest->next)
-	{
-	    if (get_trust(ch) >= hcatnest->min_level) {
-		sprintf(buf, "%s", hcatnest->name);
-
-		p = buf;
-		while (*p != '\0') {
-		    *p = UPPER(*p);
-		    p++;
+			buf2[i] = UPPER(buf2[i]);
 		}
 
-		sprintf(buf2, "{b[{BC{b]{W   %s{B", buf);
-		sprintf(buf, "%-36s %s", buf2, i % 3 == 0 ? "\n\r" : "");
+		sprintf(buf, "{R%s{x", buf2);
+
+		// Add on higher-level categories
+		hcatnest = hcat;
+		while ((hcatnest = hcatnest->up) != NULL && hcatnest != topHelpCat) {
+			sprintf(buf2, "{R%s{x", hcatnest->name);
+			for (i = 0; buf2[i] != '\0'; i++)
+				buf2[i] = UPPER(buf2[i]);
+
+			strcat(buf2, " {r->{R ");
+			strcat(buf2, buf);
+			sprintf(buf, "%s", buf2);
+		}
+
+		sprintf(buf, "{b[{W%s{b]{x\n\r", buf2);
 		add_buf(buffer, buf);
-		i++;
-	    }
+
+		i = 1;
+		for (hcatnest = hcat->inside_cats; hcatnest != NULL; hcatnest = hcatnest->next) {
+			if (get_trust(ch) >= hcatnest->min_level) {
+				sprintf(buf, "%s", hcatnest->name);
+
+				p = buf;
+				while (*p != '\0') {
+					*p = UPPER(*p);
+					p++;
+				}
+
+				sprintf(buf2, "{b[{BC{b]{W   %s{B", buf);
+				sprintf(buf, "%-36s %s", buf2, i % 3 == 0 ? "\n\r" : "");
+				add_buf(buffer, buf);
+				i++;
+			}
+		}
+
+		for (help = hcat->inside_helps; help != NULL; help = help->next) {
+			if (get_trust(ch) >= help->min_level) {
+				sprintf(buf, "{b[{B%-3d{b]{x %-20.20s %s", help->index, help->keyword,
+								i % 3 == 0 ? "\n\r" : "");
+				add_buf(buffer, buf);
+				i++;
+			}
+		}
+
+		if ((i - 1) % 3 != 0)
+			add_buf(buffer, "\n\r");
+
+		// Only output data and return if we've found some results
+		if ((i - 1) > 0) {
+			page_to_char(buf_string(buffer), ch);
+			free_buf(buffer);
+			return;
+		}
 	}
 
-	for (help = hcat->inside_helps; help != NULL; help = help->next)
-	{
-	    if (get_trust(ch) >= help->min_level) {
-		sprintf(buf, "{b[{B%-3d{b]{x %-20.20s %s", help->index, help->keyword,
-		    i % 3 == 0 ? "\n\r" : "");
-		add_buf(buffer, buf);
-		i++;
-	    }
+	// help #<number> is used to lookup helpfiles by index.
+	if (*argument == '#') {
+		argument++;
+
+		if ((index = atoi(argument)) < 0 || index > 32000) {
+			send_to_char("That help index is out of range.\n\r", ch);
+			return;
+		} else
+			help = lookup_help_index(index, get_trust(ch), topHelpCat);
+
+		if (help == NULL)
+			send_to_char("No help found with that index.\n\r", ch);
+		else
+			show_help_to_ch(ch, help);
+
+		return;
 	}
 
-	if ((i - 1) % 3 != 0)
-	    add_buf(buffer, "\n\r");
-
-	// Only output data and return if we've found some results
-	if ((i - 1) > 0) {
-	    page_to_char(buf_string(buffer), ch);
-	    free_buf(buffer);
-	    return;
+	if (strlen(argument) < 3) {
+		send_to_char("You must specify at least 3 letters of a keyword.\n\r", ch);
+		return;
 	}
-    }
 
-    // help #<number> is used to lookup helpfiles by index.
-    if (*argument == '#')
-    {
-	argument++;
+	// Lookup by keyword
 
-	if ((index = atoi(argument)) < 0 || index > 32000)
-	{
-	    send_to_char("That help index is out of range.\n\r", ch);
-	    return;
+	// Handle multiple entries w/ same keyword
+	if (count_num_helps(argument, get_trust(ch), topHelpCat) > 1) {
+		act("{YMultiple entries found with keyword $t:{x", ch, NULL, NULL, NULL, NULL, argument, NULL, TO_CHAR);
+		buffer = new_buf();
+
+		lookup_help_multiple(argument, get_trust(ch), topHelpCat, buffer);
+		page_to_char(buf_string(buffer), ch);
+		free_buf(buffer);
+		return;
 	}
+
+	help = lookup_help(argument, get_trust(ch), topHelpCat);
+
+	if (help == NULL || help->hCat->min_level > get_trust(ch))
+		act("No help or category found with keyword $t.", ch, NULL, NULL, NULL, NULL, argument, NULL, TO_CHAR);
 	else
-	    help = lookup_help_index(index, get_trust(ch), topHelpCat);
-
-	if (help == NULL)
-	    send_to_char("No help found with that index.\n\r", ch);
-	else
-	    show_help_to_ch(ch, help);
-
-	return;
-    }
-
-    if (strlen(argument) < 3)
-    {
-	send_to_char("You must specify at least 3 letters of a keyword.\n\r", ch);
-	return;
-    }
-
-    // Lookup by keyword
-
-    // Handle multiple entries w/ same keyword
-    if (count_num_helps(argument, get_trust(ch), topHelpCat) > 1)
-    {
-	act("{YMultiple entries found with keyword $t:{x", ch, argument, NULL, TO_CHAR);
-	buffer = new_buf();
-
-	lookup_help_multiple(argument, get_trust(ch), topHelpCat, buffer);
-	page_to_char(buf_string(buffer), ch);
-	free_buf(buffer);
-	return;
-    }
-
-    help = lookup_help(argument, get_trust(ch), topHelpCat);
-
-    if (help == NULL
-    ||  help->hCat->min_level > get_trust(ch))
-	act("No help or category found with keyword $t.", ch, argument, NULL, TO_CHAR);
-    else
-	show_help_to_ch(ch, help);
+		show_help_to_ch(ch, help);
 }
 
 
@@ -183,22 +173,21 @@ void show_help_to_ch(CHAR_DATA *ch, HELP_DATA *help)
 	add_buf(buffer, "{bRelated topics:{x ");
 
     i = 0;
-    for (topic = help->related_topics; topic != NULL; topic = topic->next)
-    {
-	sprintf(buf, "%s", topic->string);
-	add_buf(buffer, buf);
+    for (topic = help->related_topics; topic != NULL; topic = topic->next) {
+		sprintf(buf, "%s", topic->string);
+		add_buf(buffer, buf);
 
-	if (topic->next != NULL)
-	    add_buf(buffer, "{B,{x ");
+		if (topic->next != NULL)
+		    add_buf(buffer, "{B,{x ");
 
-	i++;
+		i++;
 
-	if (i % 7 == 0)
-	    add_buf(buffer, "\n\r");
+		if (i % 7 == 0)
+		    add_buf(buffer, "\n\r");
     }
 
     if (i > 0 && i % 7 != 0)
-	add_buf(buffer, "\n\r");
+		add_buf(buffer, "\n\r");
 
     page_to_char(buf_string(buffer), ch);
     free_buf(buffer);

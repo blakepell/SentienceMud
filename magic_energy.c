@@ -16,8 +16,8 @@ SPELL_FUNC(spell_cosmic_blast)
 	int dam;
 
 	if (victim != ch) {
-		act("{M$n appears to power up, then unleashes a massive blast of energy upon $N!{x", ch,NULL,victim,TO_ROOM);
-		act("{MYou unleash a cosmic blast upon $N!{x", ch, NULL, victim, TO_CHAR);
+		act("{M$n appears to power up, then unleashes a massive blast of energy upon $N!{x", ch,victim, NULL, NULL, NULL, NULL, NULL,TO_ROOM);
+		act("{MYou unleash a cosmic blast upon $N!{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	}
 
 	dam = dice(level,8);
@@ -46,7 +46,7 @@ SPELL_FUNC(spell_energy_drain)
 		dam = 0;
 
 	if (dam < 1) {
-		act("{YYou try to suck life from $N, but $E seems to be immune to your dark powers!{x", ch, NULL, victim, TO_CHAR);
+		act("{YYou try to suck life from $N, but $E seems to be immune to your dark powers!{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		send_to_char("You feel a brief chilly sensation.", victim);
 		return TRUE;
 	}
@@ -65,9 +65,9 @@ SPELL_FUNC(spell_energy_drain)
 		ch->move = UMIN(maxm, ch->move);
 	}
 
-	act("{YYou feel energized as you suck the life from $N!{x", ch, NULL, victim, TO_CHAR);
-	act("$N keels over in pain as $n strips $S life force.", ch, NULL, victim, TO_NOTVICT);
-	act("You keel over in pain as $n strips your life force.", ch, NULL, victim, TO_VICT);
+	act("{YYou feel energized as you suck the life from $N!{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+	act("$N keels over in pain as $n strips $S life force.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
+	act("You keel over in pain as $n strips your life force.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
 
 	damage(ch, victim, dam, sn, DAM_NEGATIVE ,TRUE);
 	return TRUE;
@@ -91,7 +91,7 @@ SPELL_FUNC(spell_energy_field)
 		if (victim == ch)
 			send_to_char("You are already protected by an energy field.\n\r",ch);
 		else
-			act("$N is already protected by an energy field.",ch,NULL,victim,TO_CHAR);
+			act("$N is already protected by an energy field.",ch,victim, NULL, NULL, NULL, NULL, NULL,TO_CHAR);
 		return FALSE;
 	}
 
@@ -106,7 +106,7 @@ SPELL_FUNC(spell_energy_field)
 	af.bitvector2 = AFF2_ENERGY_FIELD;
 	affect_to_char(victim, &af);
 
-	act("{MThe air around $n starts to hum softly.{x", victim, NULL, NULL, TO_ROOM);
+	act("{MThe air around $n starts to hum softly.{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	send_to_char("{MThe air around you starts to hum softly.{x\n\r", victim);
 	return TRUE;
 }
@@ -130,7 +130,7 @@ SPELL_FUNC(spell_shield)
 		if (victim == ch)
 			send_to_char("You are already shielded from harm.\n\r",ch);
 		else
-			act("$N is already protected by a shield.",ch,NULL,victim,TO_CHAR);
+			act("$N is already protected by a shield.",ch,victim, NULL, NULL, NULL, NULL, NULL,TO_CHAR);
 		return FALSE;
 	}
 
@@ -144,7 +144,7 @@ SPELL_FUNC(spell_shield)
 	af.bitvector = 0;
 	af.bitvector2 = 0;
 	affect_to_char(victim, &af);
-	act("{W$n is surrounded by a force shield.{x", victim, NULL, NULL, TO_ROOM);
+	act("{W$n is surrounded by a force shield.{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	send_to_char("{WYou are surrounded by a force shield.\n\r{x", victim);
 	return TRUE;
 }

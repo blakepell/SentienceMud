@@ -158,23 +158,23 @@ SPELL_FUNC(spell_earth_walk)
 
 	switch(s1) {
 	case 1:	// Forest/Wooded
-		act("{g$n fades into the brush.{x",ch,NULL,NULL,TO_ROOM);
+		act("{g$n fades into the brush.{x",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
 		send_to_char("{gYou fade into the brush.\n\r{x",ch);
 		break;
 	case 2:	// Desert
-		act("{y$n descends into the sand.{x",ch,NULL,NULL,TO_ROOM);
+		act("{y$n descends into the sand.{x",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
 		send_to_char("{yYou descend into the sand below.\n\r{x",ch);
 		break;
 	case 3:	// Mountainous
-		act("{x$n walks into nearby rock.{x",ch,NULL,NULL,TO_ROOM);
+		act("{x$n walks into nearby rock.{x",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
 		send_to_char("{xYou pass through the surface of a nearby rock.\n\r{x",ch);
 		break;
 	case 4:	// Swamp
-		act("{g$n descends into the murky swamp.{x",ch,NULL,NULL,TO_ROOM);
+		act("{g$n descends into the murky swamp.{x",ch,NULL, NULL, NULL, NULL, NULL,NULL,TO_ROOM);
 		send_to_char("{gYou descend into the murky swamp.\n\r{x",ch);
 		break;
 	case 5:	// Field
-		act("{g$n disappears into the grass.{x",ch,NULL,NULL,TO_ROOM);
+		act("{g$n disappears into the grass.{x",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
 		send_to_char("{gYou disappear into the grass.\n\r{x",ch);
 		break;
 	}
@@ -182,27 +182,27 @@ SPELL_FUNC(spell_earth_walk)
 	char_from_room(ch);
 	char_to_room(ch,victim->in_room);
 
-	act("\n\r{WYou feel your spirit rush toward $N through the earth...{x\n\r",ch,NULL,victim,TO_CHAR);
+	act("\n\r{WYou feel your spirit rush toward $N through the earth...{x\n\r",ch,victim, NULL, NULL, NULL, NULL, NULL,TO_CHAR);
 
 	switch(s2) {
 	case 1:	// Forest/Wooded
-		act("{G$n steps out from the brush.{x",ch,NULL,NULL,TO_ROOM);
+		act("{G$n steps out from the brush.{x",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
 		send_to_char("{gYou step out from the brush.\n\r{x",ch);
 		break;
 	case 2:	// Desert
-		act("{Y$n rises from the sand dunes.{x",ch,NULL,NULL,TO_ROOM);
+		act("{Y$n rises from the sand dunes.{x",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
 		send_to_char("{YYou arise from the sand.\n\r{x",ch);
 		break;
 	case 3:	// Mountainous
-		act("{x$n emerges from a nearby rock.{x",ch,NULL,NULL,TO_ROOM);
+		act("{x$n emerges from a nearby rock.{x",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
 		send_to_char("{xYou pass through the surface of a nearby rock.\n\r{x",ch);
 		break;
 	case 4:	// Swamp
-		act("{G$n emerges from the murky depths of the swamp.{x",ch,NULL,NULL,TO_ROOM);
+		act("{G$n emerges from the murky depths of the swamp.{x",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
 		send_to_char("{gYou emerge from the murky depths of the swamp.\n\r{x",ch);
 		break;
 	case 5:	// Field
-		act("{g$n rises from the grass.{x",ch,NULL,NULL,TO_ROOM);
+		act("{g$n rises from the grass.{x",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
 		send_to_char("{gYou arise from the grass.\n\r{x",ch);
 		break;
 	}
@@ -219,7 +219,7 @@ SPELL_FUNC(spell_earthquake)
 	CHAR_DATA *vch_next;
 
 	send_to_char("{YThe earth trembles beneath your feet!{x\n\r", ch);
-	act("{Y$n makes the earth tremble and shiver.{x", ch, NULL, NULL, TO_ROOM);
+	act("{Y$n makes the earth tremble and shiver.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
 	for (vch = ch->in_room->people; vch; vch = vch_next) {
 		vch_next = vch->next_in_room;
@@ -257,7 +257,7 @@ SPELL_FUNC(spell_giant_strength)
 		if (victim == ch)
 			send_to_char("You are already as strong as you can get!\n\r",ch);
 		else
-			act("$N can't get any stronger.",ch,NULL,victim,TO_CHAR);
+			act("$N can't get any stronger.",ch,victim, NULL, NULL, NULL, NULL, NULL,TO_CHAR);
 		return FALSE;
 	}
 
@@ -273,7 +273,7 @@ SPELL_FUNC(spell_giant_strength)
 	affect_to_char(victim, &af);
 
 	send_to_char("Your muscles surge with heightened power!\n\r", victim);
-	act("$n's muscles surge with heightened power.",victim,NULL,NULL,TO_ROOM);
+	act("$n's muscles surge with heightened power.",victim,NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
 
 	return TRUE;
 }
@@ -296,7 +296,7 @@ SPELL_FUNC(spell_stone_skin)
 		if (victim == ch)
 			send_to_char("Your skin is already as hard as a rock.\n\r",ch);
 		else
-			act("$N's skin is already as hard as can be.",ch,NULL,victim,TO_CHAR);
+			act("$N's skin is already as hard as can be.",ch,victim, NULL, NULL, NULL, NULL, NULL,TO_CHAR);
 		return FALSE;
 	}
 
@@ -310,7 +310,7 @@ SPELL_FUNC(spell_stone_skin)
 	af.bitvector = 0;
 	af.bitvector2 = AFF2_STONE_SKIN;
 	affect_to_char(victim, &af);
-	act("$n's skin turns to stone.", victim, NULL, NULL, TO_ROOM);
+	act("$n's skin turns to stone.", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	send_to_char("Your skin turns to stone.\n\r", victim);
 	return TRUE;
 }
@@ -331,14 +331,14 @@ SPELL_FUNC(spell_stone_spikes)
 		return FALSE;
 	}
 
-	act("Three huge stone spikes jut up from the ground!", ch, NULL, NULL, TO_CHAR);
+	act("Three huge stone spikes jut up from the ground!", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	for (victim = ch->in_room->people; victim != NULL; victim = victim_next) {
 		victim_next = victim->next_in_room;
 
 		if (!is_safe(ch, victim, FALSE) && ch != victim) {
 			if (number_percent() < get_curr_stat(victim, STAT_DEX)) {
 				send_to_char("You dodge the spikes!\n\r", victim);
-				act("$n dodges the spikes!", victim, NULL, NULL, TO_ROOM);
+				act("$n dodges the spikes!", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 			} else {
 				damage(ch, victim, dice(level/4, 8), sn, DAM_PIERCE, TRUE);
 				affect_strip(victim, gsn_sneak);
@@ -362,7 +362,7 @@ SPELL_FUNC(spell_stone_spikes)
 				if (!is_safe(ch, victim, FALSE)) {
 					if (number_percent() < get_curr_stat(victim, STAT_DEX)) {
 						send_to_char("You dodge the spikes!\n\r", victim);
-						act("$n dodges the spikes!", victim, NULL, NULL, TO_ROOM);
+						act("$n dodges the spikes!", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 					} else {
 						damage(ch, victim, dice(level/4, 8), sn, DAM_PIERCE, TRUE);
 						affect_strip(victim, gsn_sneak);
@@ -393,7 +393,7 @@ SPELL_FUNC(spell_stone_touch)
 		if (victim == ch)
 			send_to_char("You are already a statue.\n\r",ch);
 		else
-			act("$N is already a statue.",ch,NULL,victim,TO_CHAR);
+			act("$N is already a statue.",ch,victim, NULL, NULL, NULL, NULL, NULL,TO_CHAR);
 		return FALSE;
 	}
 
@@ -414,7 +414,7 @@ SPELL_FUNC(spell_stone_touch)
 	af.bitvector = 0;
 	af.bitvector2 = AFF2_IMMOBILE|AFF2_PROTECTED;
 	affect_to_char(victim, &af);
-	act("$n's entire body turns to stone, becoming immobilized like a statue.", victim, NULL, NULL, TO_ROOM);
+	act("$n's entire body turns to stone, becoming immobilized like a statue.", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	send_to_char("Your entire body turns to stone, leaving you immobilized like a statue.\n\r", victim);
 	return TRUE;
 }

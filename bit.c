@@ -385,21 +385,21 @@ char *extra2_bit_name( long extra2_flags )
     if ( extra2_flags & ITEM_EMITS_LIGHT 	) strcat( buf, " emits_light" 		);
     if ( extra2_flags & ITEM_FLOAT_USER 	) strcat( buf, " float_user" 		);
     if ( extra2_flags & ITEM_SEE_HIDDEN 	) strcat( buf, " see_hidden" 		);
-    if ( extra2_flags & ITEM_WEED 		) strcat( buf, " weed"			);
+    if ( extra2_flags & ITEM_WEED 			) strcat( buf, " weed"			);
     if ( extra2_flags & ITEM_SUPER_STRONG 	) strcat( buf, " super_strong" 		);
     if ( extra2_flags & ITEM_REMORT_ONLY 	) strcat( buf, " remort_only" 		);
     if ( extra2_flags & ITEM_NO_HUNT 		) strcat( buf, " no_hunt"		);
     if ( extra2_flags & ITEM_NO_RESURRECT 	) strcat( buf, " no_resurrect"		);
     if ( extra2_flags & ITEM_NO_DISCHARGE 	) strcat( buf, " no_discharge"		);
     if ( extra2_flags & ITEM_NO_DONATE 		) strcat( buf, " no_donate"		);
-    if ( extra2_flags & ITEM_KEPT 		) strcat( buf, " kept"			);
+    if ( extra2_flags & ITEM_KEPT 			) strcat( buf, " kept"			);
     if ( extra2_flags & ITEM_SINGULAR 		) strcat( buf, " singular"		);
     if ( extra2_flags & ITEM_NO_ENCHANT 	) strcat( buf, " no_enchant"		);
     if ( extra2_flags & ITEM_NO_LOOT 		) strcat( buf, " no_loot"		);
     if ( extra2_flags & ITEM_NO_CONTAINER	) strcat( buf, " no_container"		);
     if ( extra2_flags & ITEM_THIRD_EYE		) strcat( buf, " third_eye"		);
-    if ( extra2_flags & ITEM_UNSEEN		) strcat( buf, " unseen"		);
-    if ( extra2_flags & ITEM_BURIED		) strcat( buf, " buried"		);
+    if ( extra2_flags & ITEM_UNSEEN			) strcat( buf, " unseen"		);
+    if ( extra2_flags & ITEM_BURIED			) strcat( buf, " buried"		);
     if ( extra2_flags & ITEM_NOLOCKER		) strcat( buf, " no_locker"		);
     if ( extra2_flags & ITEM_NOAUCTION		) strcat( buf, " no_auction"		);
     if ( extra2_flags & ITEM_KEEP_VALUE		) strcat( buf, " keep_value"		);
@@ -413,7 +413,9 @@ char *extra3_bit_name( long extra3_flags )
 
     buf[0] = '\0';
     if ( extra3_flags & ITEM_EXCLUDE_LIST	) strcat( buf, " exclude_list"		);
-    if ( extra3_flags & ITEM_PERSIST		) strcat( buf, " persist"		);
+    if ( extra3_flags & ITEM_NO_TRANSFER	) strcat( buf, " no_transfer"		);
+    if ( extra3_flags & ITEM_ALWAYS_LOOT	) strcat( buf, " always_loot"		);
+    if ( extra3_flags & ITEM_FORCE_LOOT		) strcat( buf, " force_loot"		);
     return ( buf[0] != '\0' ) ? buf+1 : "none";
 }
 

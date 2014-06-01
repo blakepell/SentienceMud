@@ -110,7 +110,7 @@ bool show_help( CHAR_DATA *ch, char *argument );
 bool show_version( CHAR_DATA *ch, char *argument );
 int cd_phrase_lookup( int condition, char *phrase );
 void add_reset( ROOM_INDEX_DATA *room, RESET_DATA *pReset, int index );
-bool edit_deltrigger(PROG_LIST **list, int index);
+bool edit_deltrigger(LIST **list, int index);
 
 
 /*
@@ -220,6 +220,7 @@ DECLARE_OLC_FUN( redit_up		);
 DECLARE_OLC_FUN( redit_west		);
 DECLARE_OLC_FUN( redit_varset	);
 DECLARE_OLC_FUN( redit_varclear	);
+DECLARE_OLC_FUN( redit_persist  );
 
 
 /*
@@ -227,6 +228,7 @@ DECLARE_OLC_FUN( redit_varclear	);
  */
 DECLARE_OLC_FUN( oedit_addaffect	);
 DECLARE_OLC_FUN( oedit_addapply		);
+DECLARE_OLC_FUN( oedit_addimmune	);
 DECLARE_OLC_FUN( oedit_addoprog		);
 DECLARE_OLC_FUN( oedit_addspell		);
 DECLARE_OLC_FUN( oedit_addskill		);
@@ -238,6 +240,7 @@ DECLARE_OLC_FUN( oedit_condition        );
 DECLARE_OLC_FUN( oedit_cost		);
 DECLARE_OLC_FUN( oedit_create		);
 DECLARE_OLC_FUN( oedit_delaffect	);
+DECLARE_OLC_FUN( oedit_delimmune	);
 DECLARE_OLC_FUN( oedit_delcatalyst	);
 DECLARE_OLC_FUN( oedit_deloprog		);
 DECLARE_OLC_FUN( oedit_delspell		);
@@ -273,6 +276,7 @@ DECLARE_OLC_FUN( oedit_weight		);
 DECLARE_OLC_FUN( oedit_skeywds			);
 DECLARE_OLC_FUN( oedit_varset	);
 DECLARE_OLC_FUN( oedit_varclear	);
+DECLARE_OLC_FUN( oedit_persist  );
 
 /*
  * Mobile Editor Prototypes
@@ -325,6 +329,8 @@ DECLARE_OLC_FUN( medit_varclear	);
 DECLARE_OLC_FUN( medit_corpsetype	);
 DECLARE_OLC_FUN( medit_corpsevnum	);
 DECLARE_OLC_FUN( medit_zombievnum	);
+DECLARE_OLC_FUN( medit_persist  );
+
 
 
 /* Any script editor */
@@ -468,3 +474,4 @@ void show_liqlist		args ( ( CHAR_DATA *ch ) );
 void show_damlist		args ( ( CHAR_DATA *ch ) );
 void show_material_list( CHAR_DATA *ch );
 char *prog_type_to_name       args ( ( int type ) );
+char *token_index_getvaluename args( (TOKEN_INDEX_DATA *token, int v) );

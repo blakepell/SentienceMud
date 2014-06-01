@@ -49,7 +49,7 @@ DECLARE_SPEC_FUN(	spec_cast_judge		);
 DECLARE_SPEC_FUN(	spec_cast_mage		);
 DECLARE_SPEC_FUN(	spec_cast_undead	);
 DECLARE_SPEC_FUN(	spec_executioner	);
-DECLARE_SPEC_FUN(       spec_questmaster        );   
+DECLARE_SPEC_FUN(       spec_questmaster        );
 DECLARE_SPEC_FUN(	spec_fido		);
 DECLARE_SPEC_FUN(	spec_guard		);
 DECLARE_SPEC_FUN(	spec_janitor		);
@@ -75,7 +75,7 @@ const   struct  spec_type    spec_table[] =
     {	"spec_breath_fire",		spec_breath_fire	},
     {	"spec_breath_frost",		spec_breath_frost	},
     {	"spec_breath_gas",		spec_breath_gas		},
-    {	"spec_breath_lightning",	spec_breath_lightning	},	
+    {	"spec_breath_lightning",	spec_breath_lightning	},
     {	"spec_cast_adept",		spec_cast_adept		},
     {	"spec_cast_cleric",		spec_cast_cleric	},
     {	"spec_cast_judge",		spec_cast_judge		},
@@ -90,10 +90,10 @@ const   struct  spec_type    spec_table[] =
     {	"spec_thief",			spec_thief		},
     {	"spec_nasty",			spec_nasty		},
     {	"spec_patrolman",		spec_patrolman		},
-    {	"spec_questmaster",		spec_questmaster        }, 
-    {	"spec_protector",		spec_protector        	}, 
-    {	"spec_dark_magic",		spec_dark_magic        	}, 
-    {	"spec_magic_master",		spec_magic_master       }, 
+    {	"spec_questmaster",		spec_questmaster        },
+    {	"spec_protector",		spec_protector        	},
+    {	"spec_dark_magic",		spec_dark_magic        	},
+    {	"spec_magic_master",		spec_magic_master       },
     {	"spec_fight_bot",		spec_fight_bot        	},
     {	"spec_pirate",		spec_pirate        	},
     {	"spec_pirate_hunter",		spec_pirate_hunter     	},
@@ -108,14 +108,14 @@ const   struct  spec_type    spec_table[] =
 SPEC_FUN *spec_lookup( const char *name )
 {
    int i;
- 
+
    for ( i = 0; spec_table[i].name != NULL; i++)
    {
         if (LOWER(name[0]) == LOWER(spec_table[i].name[0])
         &&  !str_prefix( name,spec_table[i].name))
             return spec_table[i].function;
    }
- 
+
     return 0;
 }
 
@@ -157,19 +157,19 @@ bool spec_protector(CHAR_DATA *ch)
 	if (vch->fighting != NULL && !IS_IMMORTAL(vch) && !str_cmp(vch->in_room->area->name, "plith") && vch->tot_level > 30 && vch->fighting->tot_level < 30 && IS_NPC(vch->fighting))  /* break it up! */
 	{
 		victim = vch;
-		act("$n gasps.\n\r{C$n says 'Justice must be upheld!'{x",ch, NULL, NULL, TO_ROOM);
-		act("{W$n draws his sword and kicks his horse into a gallop.{x",ch, NULL, NULL, TO_ROOM);
+		act("$n gasps.\n\r{C$n says 'Justice must be upheld!'{x",ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+		act("{W$n draws his sword and kicks his horse into a gallop.{x",ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		char_from_room(ch);
-		char_to_room(ch, victim->in_room);		
+		char_to_room(ch, victim->in_room);
 		stop_fighting(victim, TRUE);
-		act("{W$n gallops in on his mighty steed!{x",ch, NULL, NULL, TO_ROOM);
-		act("{C$n says 'By the council of Olaria, I Sir Albert Stiener, sentence you to\n\rgaol for the term of your natural life!'{x",ch, NULL, victim, TO_ROOM);
-		act("$n drags $N away.",ch, NULL, victim, TO_ROOM);
+		act("{W$n gallops in on his mighty steed!{x",ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+		act("{C$n says 'By the council of Olaria, I Sir Albert Stiener, sentence you to\n\rgaol for the term of your natural life!'{x",ch, victim, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+		act("$n drags $N away.",ch, victim, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
-		act("$n throws you in gaol!", ch, NULL, victim, TO_VICT);
+		act("$n throws you in gaol!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
 
 		char_from_room(victim);
-		char_to_room(victim, get_room_index(11308));		
+		char_to_room(victim, get_room_index(11308));
 
 		return TRUE;
 	}
@@ -207,7 +207,7 @@ bool spec_spell_hold(CHAR_DATA *ch)
 		act("{RA swirling red rift snaps open in the middle of the office!{x", victim, NULL, NULL, TO_ROOM);
 		spell_hold_timer = 40;
 		spell_hold_victim = victim;
-	    //act("Cease your magic at once mageling!", vch, NULL, NULL, TO_CHAR );	
+	    //act("Cease your magic at once mageling!", vch, NULL, NULL, TO_CHAR );
 	}
     return TRUE;
 }
@@ -233,7 +233,7 @@ bool spec_patrolman(CHAR_DATA *ch)
 	if (vch->fighting != NULL)  /* break it up! */
 	{
 	    if (number_range(0,count) == 0)
-	        victim = (vch->tot_level > vch->fighting->tot_level) 
+	        victim = (vch->tot_level > vch->fighting->tot_level)
 		    ? vch : vch->fighting;
 	    count++;
 	}
@@ -242,20 +242,20 @@ bool spec_patrolman(CHAR_DATA *ch)
     if (victim == NULL || (IS_NPC(victim) && victim->spec_fun == ch->spec_fun))
 	return FALSE;
 
-    if (((obj = get_eq_char(ch,WEAR_NECK_1)) != NULL 
+    if (((obj = get_eq_char(ch,WEAR_NECK_1)) != NULL
     &&   obj->pIndexData->vnum == OBJ_VNUM_WHISTLE)
     ||  ((obj = get_eq_char(ch,WEAR_NECK_2)) != NULL
     &&   obj->pIndexData->vnum == OBJ_VNUM_WHISTLE))
     {
-	act("You blow down hard on $p.",ch,obj,NULL,TO_CHAR);
-	act("$n blows on $p, ***WHEEEEEEEEEEEET***",ch,obj,NULL,TO_ROOM);
+	act("You blow down hard on $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
+	act("$n blows on $p, ***WHEEEEEEEEEEEET***",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 
     	for ( vch = char_list; vch != NULL; vch = vch->next )
     	{
             if ( vch->in_room == NULL )
             	continue;
 
-            if (vch->in_room != ch->in_room 
+            if (vch->in_room != ch->in_room
 	    &&  vch->in_room->area == ch->in_room->area)
             	send_to_char( "You hear a shrill whistling sound.\n\r", vch );
     	}
@@ -266,17 +266,17 @@ bool spec_patrolman(CHAR_DATA *ch)
 	default:	message = NULL;		break;
 	case 0:	message = "$n yells 'All roit! All roit! break it up!'";
 		break;
-	case 1: message = 
+	case 1: message =
 		"$n says 'Society's to blame, but what's a bloke to do?'";
 		break;
-	case 2: message = 
+	case 2: message =
 		"$n mumbles 'bloody kids will be the death of us all.'";
 		break;
 	case 3: message = "$n shouts 'Stop that! Stop that!' and attacks.";
 		break;
 	case 4: message = "$n pulls out his billy and goes to work.";
 		break;
-	case 5: message = 
+	case 5: message =
 		"$n sighs in resignation and proceeds to break up the fight.";
 		break;
 	case 6: message = "$n says 'Settle down, you hooligans!'";
@@ -284,22 +284,22 @@ bool spec_patrolman(CHAR_DATA *ch)
     }
 
     if (message != NULL)
-	act(message,ch,NULL,NULL,TO_ALL);
+	act(message,ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_ALL);
 
     multi_hit(ch,victim,TYPE_UNDEFINED);
 
     return TRUE;
 }
-	
+
 
 bool spec_nasty( CHAR_DATA *ch )
 {
     CHAR_DATA *victim, *v_next;
- 
+
     if (!IS_AWAKE(ch)) {
        return FALSE;
     }
- 
+
     if (ch->position != POS_FIGHTING) {
        for ( victim = ch->in_room->people; victim != NULL; victim = v_next)
        {
@@ -316,16 +316,16 @@ bool spec_nasty( CHAR_DATA *ch )
        }
        return FALSE;    /*  No one to attack */
     }
- 
+
     /* okay, we must be fighting.... steal some coins and flee */
     if ( (victim = ch->fighting) == NULL)
         return FALSE;   /* let's be paranoid.... */
- 
+
     switch ( number_bits(2) )
     {
         case 1:  do_function(ch, &do_flee, "");
                  return TRUE;
- 
+
         default: return FALSE;
     }
 }
@@ -440,7 +440,7 @@ bool spec_cast_adept( CHAR_DATA *ch )
     for ( victim = ch->in_room->people; victim != NULL; victim = v_next )
     {
 	v_next = victim->next_in_room;
-	if ( victim != ch && can_see( ch, victim ) && number_bits( 1 ) == 0 
+	if ( victim != ch && can_see( ch, victim ) && number_bits( 1 ) == 0
 	     && !IS_NPC(victim) && victim->tot_level < 11)
 	    break;
     }
@@ -474,7 +474,7 @@ bool spec_cast_adept( CHAR_DATA *ch )
 	sprintf( buf, "'cure poison' %s", victim->name );
 	do_function( ch, &do_cast, buf );
 	return TRUE;
-	
+
     case 5:
 	sprintf( buf, "'refresh' %s", victim->name );
 	do_function( ch, &do_cast, buf );
@@ -538,7 +538,7 @@ bool spec_cast_cleric( CHAR_DATA *ch )
     }
 
     if ( spell == NULL ) return FALSE;
-    
+
     if ( ( sn = skill_lookup( spell ) ) < 0 )
 	return FALSE;
     //mob_cast( ch, sn , ch->tot_level, victim->name);
@@ -556,25 +556,25 @@ bool spec_cast_judge( CHAR_DATA *ch )
     char buf[MAX_STRING_LENGTH];
     char *spell;
     int sn;
- 
+
     if ( ch->position != POS_FIGHTING )
         return FALSE;
- 
+
     for ( victim = ch->in_room->people; victim != NULL; victim = v_next )
     {
         v_next = victim->next_in_room;
         if ( victim->fighting == ch && number_bits( 2 ) == 0 )
             break;
     }
- 
+
     if ( victim == NULL )
         return FALSE;
- 
+
     spell = "high explosive";
     if ( ( sn = skill_lookup( spell ) ) < 0 )
         return FALSE;
     //mob_cast( ch, sn , ch->tot_level, victim->name);
-	
+
 	sprintf( buf, "'%s' %s", spell, victim->name );
 	do_function( ch, &do_cast, buf );
 
@@ -684,7 +684,7 @@ bool spec_cast_undead( CHAR_DATA *ch )
 
     if ( ( sn = skill_lookup( spell ) ) < 0 )
 	return FALSE;
-	
+
 	sprintf( buf, "'%s' %s", spell, victim->name );
 	do_function( ch, &do_cast, buf );
 
@@ -711,7 +711,7 @@ bool spec_executioner( CHAR_DATA *ch )
 	&&   can_see(ch,victim))
 	    { crime = "KILLER"; break; }
 
-	if ( !IS_NPC(victim) && IS_SET(victim->act, PLR_THIEF) 
+	if ( !IS_NPC(victim) && IS_SET(victim->act, PLR_THIEF)
 	&&   can_see(ch,victim))
 	    { crime = "THIEF"; break; }*/
     }
@@ -726,7 +726,7 @@ bool spec_executioner( CHAR_DATA *ch )
     return TRUE;
 }
 
-			
+
 
 bool spec_fido( CHAR_DATA *ch )
 {
@@ -744,7 +744,7 @@ bool spec_fido( CHAR_DATA *ch )
 	if ( corpse->item_type != ITEM_CORPSE_NPC )
 	    continue;
 
-	act( "$n savagely devours a corpse.", ch, NULL, NULL, TO_ROOM );
+	act( "$n savagely devours a corpse.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM );
 	for ( obj = corpse->contains; obj; obj = obj_next )
 	{
 	    obj_next = obj->next_content;
@@ -764,7 +764,7 @@ bool spec_guard( CHAR_DATA *ch )
 {
     CHAR_DATA *victim;
     CHAR_DATA *v_next;
-    
+
     if (!IS_AWAKE(ch) || ch->fighting != NULL)
 	return FALSE;
 
@@ -775,38 +775,38 @@ bool spec_guard( CHAR_DATA *ch )
 	if (IS_NPC(victim))
 	    continue;
 
-	if ((get_eq_char(victim, WEAR_BODY) == NULL || get_eq_char(victim, WEAR_LEGS) == NULL) 
-	&&   victim->sex == SEX_FEMALE) 
+	if ((get_eq_char(victim, WEAR_BODY) == NULL || get_eq_char(victim, WEAR_LEGS) == NULL)
+	&&   victim->sex == SEX_FEMALE)
 	{
-	    if (number_percent() < 5) 
+	    if (number_percent() < 5)
 	    {
-		act("$n looks at $N.", ch, NULL, victim, TO_NOTVICT);
-		act("$n looks at you.", ch, NULL, victim, TO_VICT);
-		act("$n winks at $N.", ch, NULL, victim, TO_NOTVICT);
-		act("$n winks at you.", ch, NULL, victim, TO_VICT);
-		act("{C$n says 'What can I get for a piece of silver?'{x", ch, NULL, NULL, TO_ROOM);
+		act("$n looks at $N.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
+		act("$n looks at you.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
+		act("$n winks at $N.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
+		act("$n winks at you.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
+		act("{C$n says 'What can I get for a piece of silver?'{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	    }
 	    else
-	    if (number_percent() < 5) 
+	    if (number_percent() < 5)
 	    {
-		act("$n looks at $N.", ch, NULL, victim, TO_NOTVICT);
-		act("$n looks at you.", ch, NULL, victim, TO_VICT);
-		act("{C$n says 'My god woman, put some bloody clothes on.'{x", ch, NULL, NULL, TO_ROOM);
+		act("$n looks at $N.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
+		act("$n looks at you.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
+		act("{C$n says 'My god woman, put some bloody clothes on.'{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	    }
 	}
-        else 
-	if (get_eq_char(victim, WEAR_LEGS) == NULL) 
+        else
+	if (get_eq_char(victim, WEAR_LEGS) == NULL)
 	{
-	    if (number_percent() < 5) 
+	    if (number_percent() < 5)
 	    {
-		act("$n looks at $N.", ch, NULL, victim, TO_NOTVICT);
-		act("$n looks at you.", ch, NULL, victim, TO_VICT);
-		act("$n pukes everywhere.", ch, NULL, victim, TO_ROOM);
-		act("{C$n says 'My god man, put some bloody pants on.'{x", ch, NULL, NULL, TO_ROOM);
+		act("$n looks at $N.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
+		act("$n looks at you.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
+		act("$n pukes everywhere.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+		act("{C$n says 'My god man, put some bloody pants on.'{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	    }
 	}
     }
-    
+
     return FALSE;
 }
 
@@ -822,13 +822,13 @@ bool spec_janitor( CHAR_DATA *ch )
     for ( trash = ch->in_room->contents; trash != NULL; trash = trash_next )
     {
 	trash_next = trash->next_content;
-	if ( !IS_SET( trash->wear_flags, ITEM_TAKE ) ) 
+	if ( !IS_SET( trash->wear_flags, ITEM_TAKE ) )
 	    continue;
 	if ( trash->item_type == ITEM_DRINK_CON
 	||   trash->item_type == ITEM_TRASH
 	||   trash->cost < 10 )
 	{
-	    act( "$n picks up some trash.", ch, NULL, NULL, TO_ROOM );
+	    act( "$n picks up some trash.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM );
 	    obj_from_room( trash );
 	    obj_to_char( trash, ch );
 	    return TRUE;
@@ -954,7 +954,7 @@ bool spec_mayor( CHAR_DATA *ch )
 	break;
     }
 
-    pos++; 
+    pos++;
     */
     return FALSE;
 }
@@ -967,13 +967,13 @@ bool spec_poison( CHAR_DATA *ch )
 
     if ( ch->position != POS_FIGHTING
     || ( victim = ch->fighting ) == NULL
-    || number_percent() > 2 * ch->tot_level 
+    || number_percent() > 2 * ch->tot_level
     || number_percent() < 80 )
 	return FALSE;
 
-    act( "You bite $N!",  ch, NULL, victim, TO_CHAR    );
-    act( "$n bites $N!",  ch, NULL, victim, TO_NOTVICT );
-    act( "$n bites you!", ch, NULL, victim, TO_VICT    );
+    act( "You bite $N!",  ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR    );
+    act( "$n bites $N!",  ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT );
+    act( "$n bites you!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT    );
     spell_poison( gsn_poison, ch->tot_level, ch, victim,TARGET_CHAR);
     return TRUE;
 }
@@ -995,16 +995,14 @@ bool spec_thief( CHAR_DATA *ch )
 
 	if ( IS_NPC(victim)
 	||   victim->tot_level >= LEVEL_IMMORTAL
-	||   number_bits( 5 ) != 0 
+	||   number_bits( 5 ) != 0
 	||   !can_see(ch,victim))
 	    continue;
 
 	if ( IS_AWAKE(victim) && number_range( 0, ch->tot_level ) == 0 )
 	{
-	    act( "You discover $n's hands in your wallet!",
-		ch, NULL, victim, TO_VICT );
-	    act( "$N discovers $n's hands in $S wallet!",
-		ch, NULL, victim, TO_NOTVICT );
+	    act( "You discover $n's hands in your wallet!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT );
+	    act( "$N discovers $n's hands in $S wallet!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT );
 	    return TRUE;
 	}
 	else
@@ -1024,255 +1022,255 @@ bool spec_thief( CHAR_DATA *ch )
     return FALSE;
 }
 
-bool spec_dark_magic( CHAR_DATA *ch ) 
-{ 
+bool spec_dark_magic( CHAR_DATA *ch )
+{
 	return FALSE;
 	/*
-   CHAR_DATA *victim; 
-   CHAR_DATA *v_next; 
+   CHAR_DATA *victim;
+   CHAR_DATA *v_next;
 
-   if ( ch->position != POS_FIGHTING ) 
-    return FALSE; 
+   if ( ch->position != POS_FIGHTING )
+    return FALSE;
 
-   for ( victim = ch->in_room->people; victim != NULL; victim = v_next ) 
-   { 
-    v_next = victim->next_in_room; 
-    if ( victim->fighting == ch && number_bits( 2 ) == 0 ) 
-        break; 
-   } 
+   for ( victim = ch->in_room->people; victim != NULL; victim = v_next )
+   {
+    v_next = victim->next_in_room;
+    if ( victim->fighting == ch && number_bits( 2 ) == 0 )
+        break;
+   }
 
-   if ( victim == NULL ) 
-    return FALSE; 
-   if (ch->stunned) 
-       return FALSE; 
+   if ( victim == NULL )
+    return FALSE;
+   if (ch->stunned)
+       return FALSE;
 
-    switch ( number_bits( 4 ) ) 
-    { 
+    switch ( number_bits( 4 ) )
+    {
 
-   case 0: 
-    if (IS_AFFECTED(ch, AFF_BLIND)) 
-    { 
-    act("$n's eyes flare bright blue for a moment.", ch,NULL,NULL,TO_ROOM); 
-    //spell_cure_blindness( skill_lookup( "cure blindness" ), ch->tot_level, ch, ch, TAR_CHAR_SELF ); 
+   case 0:
+    if (IS_AFFECTED(ch, AFF_BLIND))
+    {
+    act("$n's eyes flare bright blue for a moment.", ch,NULL,NULL,TO_ROOM);
+    //spell_cure_blindness( skill_lookup( "cure blindness" ), ch->tot_level, ch, ch, TAR_CHAR_SELF );
     mob_cast( ch, skill_lookup( "cure blindness" ) , ch->tot_level, ch->name);
-       } 
-       else if (IS_AFFECTED(ch, AFF_CURSE)) 
-       { 
-           act("$n's eyes flare black for a moment.", ch,NULL,NULL,TO_ROOM); 
-        //   spell_remove_curse( skill_lookup("remove curse" ), ch->tot_level, ch, ch, TAR_CHAR_SELF ); 
+       }
+       else if (IS_AFFECTED(ch, AFF_CURSE))
+       {
+           act("$n's eyes flare black for a moment.", ch,NULL,NULL,TO_ROOM);
+        //   spell_remove_curse( skill_lookup("remove curse" ), ch->tot_level, ch, ch, TAR_CHAR_SELF );
            mob_cast( ch, skill_lookup( "remove curse" ) , ch->tot_level, ch->name);
-        } 
-        else if (!IS_AFFECTED(ch, AFF_SANCTUARY)) 
-        { 
-            act("$n's eyes glow bright white for a moment.", ch,NULL, NULL, TO_ROOM); 
-         //   spell_sanctuary( skill_lookup("sanctuary" ), ch->tot_level, ch, ch, TAR_CHAR_SELF 
+        }
+        else if (!IS_AFFECTED(ch, AFF_SANCTUARY))
+        {
+            act("$n's eyes glow bright white for a moment.", ch,NULL, NULL, TO_ROOM);
+         //   spell_sanctuary( skill_lookup("sanctuary" ), ch->tot_level, ch, ch, TAR_CHAR_SELF
             mob_cast( ch, skill_lookup( "sanctuary" ) , ch->tot_level, ch->name);
-        } 
-        else if (!IS_AFFECTED(ch, AFF_FAERIE_FIRE)) 
-        { 
-             act("$n meditates for a moment.", ch, NULL, NULL, TO_ROOM); 
-             //spell_faerie_fire( skill_lookup("faerie fire" ), ch->tot_level, ch, ch, TAR_CHAR_SELF ); 
+        }
+        else if (!IS_AFFECTED(ch, AFF_FAERIE_FIRE))
+        {
+             act("$n meditates for a moment.", ch, NULL, NULL, TO_ROOM);
+             //spell_faerie_fire( skill_lookup("faerie fire" ), ch->tot_level, ch, ch, TAR_CHAR_SELF );
              mob_cast( ch, skill_lookup( "faerie fire" ) , ch->tot_level, ch->name);
-        } 
+        }
 
-        return TRUE; 
+        return TRUE;
 
-        case  1: 
-             if (!IS_AFFECTED(victim, AFF_POISON)) 
-             { 
-                 act("{C$n says, 'Your blood shall be a pleasant scrifice!{x", ch, NULL, NULL, TO_ROOM); 
-               //  spell_poison( skill_lookup("poison" ), ch->tot_level, ch, victim, TAR_CHAR_SELF ); 
+        case  1:
+             if (!IS_AFFECTED(victim, AFF_POISON))
+             {
+                 act("{C$n says, 'Your blood shall be a pleasant scrifice!{x", ch, NULL, NULL, TO_ROOM);
+               //  spell_poison( skill_lookup("poison" ), ch->tot_level, ch, victim, TAR_CHAR_SELF );
                  mob_cast( ch, skill_lookup( "poison" ) , ch->tot_level, victim->name);
-              } 
-              else if (!IS_AFFECTED(victim, AFF_CURSE) ) 
-              { 
-                  act("$n's eyes flash black for a moment.", ch, NULL, NULL, TO_ROOM); 
-               //   spell_curse( skill_lookup("curse" ), ch->tot_level, ch, victim, 
+              }
+              else if (!IS_AFFECTED(victim, AFF_CURSE) )
+              {
+                  act("$n's eyes flash black for a moment.", ch, NULL, NULL, TO_ROOM);
+               //   spell_curse( skill_lookup("curse" ), ch->tot_level, ch, victim,
                   mob_cast( ch, skill_lookup( "cure blindness" ) , ch->tot_level, victim->name);
-//TAR_CHAR_SELF ); 
-              } 
-              else if (IS_AFFECTED(victim, AFF_SANCTUARY)) 
-              { 
+//TAR_CHAR_SELF );
+              }
+              else if (IS_AFFECTED(victim, AFF_SANCTUARY))
+              {
                  act("{C$n says, 'Your death's are at hand, flee while you "
-		     "still can!{x", ch, NULL, NULL, TO_ROOM); 
-                // spell_dispel_magic( skill_lookup("dispel magic" ), ch->tot_level, ch, victim, TAR_CHAR_SELF ); 
+		     "still can!{x", ch, NULL, NULL, TO_ROOM);
+                // spell_dispel_magic( skill_lookup("dispel magic" ), ch->tot_level, ch, victim, TAR_CHAR_SELF );
                  mob_cast( ch, skill_lookup( "dispel magic" ) , ch->tot_level, victim->name);
-               } 
-               return TRUE; 
+               }
+               return TRUE;
 
-               case 2: 
-                   if (ch->hit < (ch->max_hit * .50 ) ) 
-                   { 
-                       act("{C$n says, 'Pathetic fools, you cannot hurt me!{x", ch, NULL, NULL, TO_ROOM); 
-//                       spell_heal( skill_lookup("heal" ), ch->tot_level, ch, ch, 
+               case 2:
+                   if (ch->hit < (ch->max_hit * .50 ) )
+                   {
+                       act("{C$n says, 'Pathetic fools, you cannot hurt me!{x", ch, NULL, NULL, TO_ROOM);
+//                       spell_heal( skill_lookup("heal" ), ch->tot_level, ch, ch,
                        mob_cast( ch, skill_lookup( "heal" ) , ch->tot_level, ch->name);
-//TAR_CHAR_SELF); 
-                    } 
-                    else if (IS_AFFECTED(ch, AFF_PLAGUE)) 
-                    { 
-                    act("{C$n says, 'Disease means nothing to me fools!{x", ch, NULL, NULL, TO_ROOM); 
-//                    spell_cure_disease( skill_lookup("cure disease" ), ch->tot_level, ch, ch, TAR_CHAR_SELF ); 
+//TAR_CHAR_SELF);
+                    }
+                    else if (IS_AFFECTED(ch, AFF_PLAGUE))
+                    {
+                    act("{C$n says, 'Disease means nothing to me fools!{x", ch, NULL, NULL, TO_ROOM);
+//                    spell_cure_disease( skill_lookup("cure disease" ), ch->tot_level, ch, ch, TAR_CHAR_SELF );
                     mob_cast( ch, skill_lookup( "cure disease" ) , ch->tot_level, ch->name);
-                    } 
-                    if (ch->hit < (ch->max_hit * .25 ) ) 
-                    { 
-                        act("{C$n says, 'Arrgghhh you are indead powerfull!{x", ch, NULL, NULL, TO_ROOM); 
-                    //    spell_flamestrike( skill_lookup("flamestrike" ), ch->tot_level, ch, victim, TAR_CHAR_SELF ); 
+                    }
+                    if (ch->hit < (ch->max_hit * .25 ) )
+                    {
+                        act("{C$n says, 'Arrgghhh you are indead powerfull!{x", ch, NULL, NULL, TO_ROOM);
+                    //    spell_flamestrike( skill_lookup("flamestrike" ), ch->tot_level, ch, victim, TAR_CHAR_SELF );
                         mob_cast( ch, skill_lookup( "flamestrike" ) , ch->tot_level, victim->name);
-                     } 
-                     return TRUE; 
+                     }
+                     return TRUE;
 
-                   case 3: 
-                       if (!IS_AFFECTED(victim, AFF_PLAGUE)) 
-                       { 
-                           act("$n's eyes flash a brilliant green.", ch, NULL, NULL, TO_ROOM); 
-                         //  spell_plague( skill_lookup("plague" ), ch->tot_level, ch, victim, TAR_CHAR_SELF ); 
+                   case 3:
+                       if (!IS_AFFECTED(victim, AFF_PLAGUE))
+                       {
+                           act("$n's eyes flash a brilliant green.", ch, NULL, NULL, TO_ROOM);
+                         //  spell_plague( skill_lookup("plague" ), ch->tot_level, ch, victim, TAR_CHAR_SELF );
                            mob_cast( ch, skill_lookup( "plague" ) , ch->tot_level, victim->name);
-                        } 
-                        else if (ch->hit < (ch->max_hit * .10 ) ) 
-                        { 
-                            do_flee(ch,""); 
-                        } 
-                        else if (IS_AFFECTED(ch, AFF_POISON)) 
-                        { 
-                            act("$n's eyes flash yellow.", ch, NULL, NULL, TO_ROOM); 
-//                            spell_cure_poison( skill_lookup("cure poison" ), ch->tot_level, ch, ch, TAR_CHAR_SELF ); 
+                        }
+                        else if (ch->hit < (ch->max_hit * .10 ) )
+                        {
+                            do_flee(ch,"");
+                        }
+                        else if (IS_AFFECTED(ch, AFF_POISON))
+                        {
+                            act("$n's eyes flash yellow.", ch, NULL, NULL, TO_ROOM);
+//                            spell_cure_poison( skill_lookup("cure poison" ), ch->tot_level, ch, ch, TAR_CHAR_SELF );
                             mob_cast( ch, skill_lookup( "cure poison" ) , ch->tot_level, ch->name);
-                        } 
-                        else if (!IS_AFFECTED(victim, AFF_BLIND)) 
-                        { 
-                            act("$n's eyes glaze over.", ch, NULL, NULL, TO_ROOM); 
-//                            spell_blindness( skill_lookup("blindness" ), ch->tot_level, ch, victim, TAR_CHAR_SELF ); 
+                        }
+                        else if (!IS_AFFECTED(victim, AFF_BLIND))
+                        {
+                            act("$n's eyes glaze over.", ch, NULL, NULL, TO_ROOM);
+//                            spell_blindness( skill_lookup("blindness" ), ch->tot_level, ch, victim, TAR_CHAR_SELF );
                             mob_cast( ch, skill_lookup( "blindness" ) , ch->tot_level, victim->name);
-                        } 
+                        }
 
 
-                        return TRUE; 
+                        return TRUE;
 
 
-        } 
+        }
 
        return FALSE; */
-} 
+}
 
-bool spec_magic_master( CHAR_DATA *ch ) 
-{  
-   CHAR_DATA *victim; 
-   CHAR_DATA *v_next; 
+bool spec_magic_master( CHAR_DATA *ch )
+{
+   CHAR_DATA *victim;
+   CHAR_DATA *v_next;
    char buf[MAX_STRING_LENGTH];
 
-   if ( ch->position != POS_FIGHTING ) 
-    return FALSE; 
+   if ( ch->position != POS_FIGHTING )
+    return FALSE;
 
-   for ( victim = ch->in_room->people; victim != NULL; victim = v_next ) 
-   { 
-    v_next = victim->next_in_room; 
-    if ( victim->fighting == ch ) //&& number_percent() < 25 ) 
-        break; 
-   } 
+   for ( victim = ch->in_room->people; victim != NULL; victim = v_next )
+   {
+    v_next = victim->next_in_room;
+    if ( victim->fighting == ch ) //&& number_percent() < 25 )
+        break;
+   }
 
-   if ( victim == NULL ) 
-    return FALSE; 
-    switch ( number_bits( 4 ) ) 
-    { 
+   if ( victim == NULL )
+    return FALSE;
+    switch ( number_bits( 4 ) )
+    {
 
-   case 0: 
-    if (IS_AFFECTED(ch, AFF_BLIND)) 
-    { 
+   case 0:
+    if (IS_AFFECTED(ch, AFF_BLIND))
+    {
 		sprintf( buf, "'cure blindness' me" );
 		do_function( ch, &do_cast, buf );
-       } 
-       else if (IS_AFFECTED(ch, AFF_CURSE)) 
-       { 
+       }
+       else if (IS_AFFECTED(ch, AFF_CURSE))
+       {
 			sprintf( buf, "'remove curse' me" );
 			do_function( ch, &do_cast, buf );
-        } 
-        else if (!IS_AFFECTED(ch, AFF_SANCTUARY)) 
-        { 
+        }
+        else if (!IS_AFFECTED(ch, AFF_SANCTUARY))
+        {
 			sprintf( buf, "'sanctuary' me" );
 			do_function( ch, &do_cast, buf );
-        } 
-        else if (!IS_AFFECTED(ch, AFF_FAERIE_FIRE)) 
-        { 
+        }
+        else if (!IS_AFFECTED(ch, AFF_FAERIE_FIRE))
+        {
 			sprintf( buf, "'faerie fire' me" );
 			do_function( ch, &do_cast, buf );
-        } 
+        }
 
-        return TRUE; 
+        return TRUE;
 
-        case  1: 
-             if (!IS_AFFECTED(victim, AFF_POISON)) 
-             { 
+        case  1:
+             if (!IS_AFFECTED(victim, AFF_POISON))
+             {
 			sprintf( buf, "'poison' %s", victim->name );
 			do_function( ch, &do_cast, buf );
-              } 
-              else if (!IS_AFFECTED(victim, AFF_CURSE) ) 
-              { 
+              }
+              else if (!IS_AFFECTED(victim, AFF_CURSE) )
+              {
 			sprintf( buf, "'curse' %s", victim->name );
 			do_function( ch, &do_cast, buf );
-              } 
-              else if (IS_AFFECTED(victim, AFF_SANCTUARY)) 
-              { 
+              }
+              else if (IS_AFFECTED(victim, AFF_SANCTUARY))
+              {
 			sprintf( buf, "'dispel magic' %s", victim->name );
 			do_function( ch, &do_cast, buf );
-               } 
-               return TRUE; 
+               }
+               return TRUE;
 
-               case 2: 
-                   if (ch->hit < (ch->max_hit * .50 ) ) 
-                   { 
+               case 2:
+                   if (ch->hit < (ch->max_hit * .50 ) )
+                   {
 			sprintf( buf, "'cure critical' me" );
 			do_function( ch, &do_cast, buf );
-                    } 
-                    else if (IS_AFFECTED(ch, AFF_PLAGUE)) 
-                    { 
+                    }
+                    else if (IS_AFFECTED(ch, AFF_PLAGUE))
+                    {
 			sprintf( buf, "'cure disease' me" );
 			do_function( ch, &do_cast, buf );
-                    } 
-                    if (ch->hit < (ch->max_hit * .25 ) ) 
-                    { 
+                    }
+                    if (ch->hit < (ch->max_hit * .25 ) )
+                    {
 			sprintf( buf, "'flamestrike' me" );
 			do_function( ch, &do_cast, buf );
-                     } 
-                     return TRUE; 
+                     }
+                     return TRUE;
 
-                   case 3: 
-                       if (!IS_AFFECTED(victim, AFF_PLAGUE)) 
-                       { 
+                   case 3:
+                       if (!IS_AFFECTED(victim, AFF_PLAGUE))
+                       {
 			sprintf( buf, "'plague' %s", victim->name );
 			do_function( ch, &do_cast, buf );
-                        } 
-                        else if (ch->hit < (ch->max_hit * .10 ) ) 
-                        { 
-                            do_flee(ch,""); 
-                        } 
-                        else if (IS_AFFECTED(ch, AFF_POISON)) 
-                        { 
+                        }
+                        else if (ch->hit < (ch->max_hit * .10 ) )
+                        {
+                            do_flee(ch,"");
+                        }
+                        else if (IS_AFFECTED(ch, AFF_POISON))
+                        {
 			sprintf( buf, "'cure poison' me" );
 			do_function( ch, &do_cast, buf );
-                        } 
-                        else if (!IS_AFFECTED(victim, AFF_BLIND)) 
-                        { 
+                        }
+                        else if (!IS_AFFECTED(victim, AFF_BLIND))
+                        {
 			sprintf( buf, "'blindness' %s", victim->name );
 			do_function( ch, &do_cast, buf );
-                        } 
+                        }
 
 
-                        return TRUE; 
+                        return TRUE;
 
 
-        } 
+        }
 
-       return FALSE; 
-} 
+       return FALSE;
+}
 
 bool spec_fight_bot( CHAR_DATA *ch ) {
-   CHAR_DATA *victim; 
+   CHAR_DATA *victim;
    char buf[MAX_STRING_LENGTH];
 
-   if ( ch->position != POS_FIGHTING ) 
+   if ( ch->position != POS_FIGHTING )
    {
-       return FALSE; 
+       return FALSE;
    }
 
    // Dont want to cast while fighting
@@ -1283,35 +1281,35 @@ bool spec_fight_bot( CHAR_DATA *ch ) {
 
    victim = ch->fighting;
 
-   if (!IS_AFFECTED(victim, AFF_WEB)) 
-   { 
+   if (!IS_AFFECTED(victim, AFF_WEB))
+   {
        sprintf( buf, "'web' %s", victim->name );
        do_function( ch, &do_cast, buf );
 	   return TRUE;
-   } 
+   }
 
-   if (ch->hit < (ch->max_hit * .65 ) ) 
+   if (ch->hit < (ch->max_hit * .65 ) )
    {
        sprintf( buf, "'heal' me" );
        do_function( ch, &do_cast, buf );
 	   return TRUE;
    }
-   
-   if (ch->hit < (ch->max_hit * .5 ) ) 
+
+   if (ch->hit < (ch->max_hit * .5 ) )
    {
-	   if (!IS_AFFECTED2(victim, AFF2_SILENCE)) 
-	   { 
+	   if (!IS_AFFECTED2(victim, AFF2_SILENCE))
+	   {
 		   sprintf( buf, "'silence' %s", victim->name );
 		   do_function( ch, &do_cast, buf );
 	   	   return TRUE;
-	   } 
+	   }
    }
 
-   if (IS_AFFECTED(ch, AFF_BLIND)) 
-   { 
+   if (IS_AFFECTED(ch, AFF_BLIND))
+   {
 	   sprintf( buf, "'cure blindness' me" );
 	   do_function( ch, &do_cast, buf );
-   } 
+   }
 
    if (!IS_AFFECTED(ch, AFF_SANCTUARY))
    {
@@ -1336,33 +1334,33 @@ bool spec_fight_bot( CHAR_DATA *ch ) {
 		}
    }
 
-   if (!IS_AFFECTED(victim, AFF_BLIND)) 
-   { 
+   if (!IS_AFFECTED(victim, AFF_BLIND))
+   {
        sprintf( buf, "'blindness' %s", victim->name );
        do_function( ch, &do_cast, buf );
 	   return TRUE;
-   } 
+   }
 
    if ( victim->cast > 0 )
-   { 
+   {
        sprintf( buf, "'counterspell' %s", victim->name );
        do_function( ch, &do_cast, buf );
 	   return TRUE;
-   } 
+   }
 
-   if (!IS_AFFECTED(victim, AFF_POISON)) 
-   { 
+   if (!IS_AFFECTED(victim, AFF_POISON))
+   {
        sprintf( buf, "'poison' %s", victim->name );
        do_function( ch, &do_cast, buf );
 	   return TRUE;
-   } 
+   }
 
-   if (!IS_AFFECTED(victim, AFF_PLAGUE)) 
-   { 
+   if (!IS_AFFECTED(victim, AFF_PLAGUE))
+   {
        sprintf( buf, "'plague' %s", victim->name );
        do_function( ch, &do_cast, buf );
 	   return TRUE;
-   } 
+   }
 
    sprintf( buf, "'magic missile' %s", victim->name );
    do_function( ch, &do_cast, buf );
@@ -1371,12 +1369,12 @@ bool spec_fight_bot( CHAR_DATA *ch ) {
 }
 
 bool spec_pirate( CHAR_DATA *ch ) {
-	CHAR_DATA *victim; 
+	CHAR_DATA *victim;
 	char buf[MAX_STRING_LENGTH];
 
-	if ( ch->position != POS_FIGHTING ) 
+	if ( ch->position != POS_FIGHTING )
 	{
-		return FALSE; 
+		return FALSE;
 	}
 
 	// Dont want to cast while fighting
@@ -1387,33 +1385,33 @@ bool spec_pirate( CHAR_DATA *ch ) {
 
 	victim = ch->fighting;
 
-	if (!IS_AFFECTED(victim, AFF2_SILENCE) && number_percent() < 2) 
-	{ 
+	if (!IS_AFFECTED(victim, AFF2_SILENCE) && number_percent() < 2)
+	{
 		sprintf( buf, "'silence' %s", victim->name );
 		do_function( ch, &do_cast, buf );
 		return TRUE;
-	} 
+	}
 
-	if (!IS_AFFECTED(victim, AFF_WEB) && number_percent() < 5) 
-	{ 
+	if (!IS_AFFECTED(victim, AFF_WEB) && number_percent() < 5)
+	{
 		sprintf( buf, "'web' %s", victim->name );
 		do_function( ch, &do_cast, buf );
 		return TRUE;
-	} 
+	}
 
-	if (ch->hit < (ch->max_hit * .65 ) && number_percent() < 5) 
+	if (ch->hit < (ch->max_hit * .65 ) && number_percent() < 5)
 	{
 		sprintf( buf, "'cure critical' me" );
 		do_function( ch, &do_cast, buf );
 		return TRUE;
 	}
 
-	if (IS_AFFECTED(ch, AFF_BLIND) && number_percent() < 5) 
-	{ 
+	if (IS_AFFECTED(ch, AFF_BLIND) && number_percent() < 5)
+	{
 		sprintf( buf, "'cure blindness' me" );
 		do_function( ch, &do_cast, buf );
 		return TRUE;
-	} 
+	}
 
 	if (!IS_AFFECTED(ch, AFF_SANCTUARY))
 	{
@@ -1438,44 +1436,44 @@ bool spec_pirate( CHAR_DATA *ch ) {
 		}
 	}
 
-	if (!IS_AFFECTED(victim, AFF_BLIND) && number_percent() < 5) 
-	{ 
+	if (!IS_AFFECTED(victim, AFF_BLIND) && number_percent() < 5)
+	{
 		sprintf( buf, "'blindness' %s", victim->name );
 		do_function( ch, &do_cast, buf );
 		return TRUE;
-	} 
+	}
 
 	if ( victim->cast > 0 && number_percent() < 5 )
-	{ 
+	{
 		sprintf( buf, "'counterspell' %s", victim->name );
 		do_function( ch, &do_cast, buf );
 		return TRUE;
-	} 
+	}
 
-	if (!IS_AFFECTED(victim, AFF_POISON) && number_percent() < 5) 
-	{ 
+	if (!IS_AFFECTED(victim, AFF_POISON) && number_percent() < 5)
+	{
 		sprintf( buf, "'poison' %s", victim->name );
 		do_function( ch, &do_cast, buf );
 		return TRUE;
-	} 
+	}
 
-	if (!IS_AFFECTED(victim, AFF_PLAGUE) && number_percent() < 5) 
-	{ 
+	if (!IS_AFFECTED(victim, AFF_PLAGUE) && number_percent() < 5)
+	{
 		sprintf( buf, "'plague' %s", victim->name );
 		do_function( ch, &do_cast, buf );
 		return TRUE;
-	} 
+	}
 
    return TRUE;
 }
 
 bool spec_pirate_hunter( CHAR_DATA *ch ) {
-	CHAR_DATA *victim; 
+	CHAR_DATA *victim;
 	char buf[MAX_STRING_LENGTH];
 
-	if ( ch->position != POS_FIGHTING ) 
+	if ( ch->position != POS_FIGHTING )
 	{
-		return FALSE; 
+		return FALSE;
 	}
 
 	// Dont want to cast while fighting
@@ -1493,33 +1491,33 @@ bool spec_pirate_hunter( CHAR_DATA *ch ) {
     do_say(ch, "Die filthy pirate!");
   }
 
-	if (!IS_AFFECTED(victim, AFF_WEB) && number_percent() < 5) 
-	{ 
+	if (!IS_AFFECTED(victim, AFF_WEB) && number_percent() < 5)
+	{
 		sprintf( buf, "'web' %s", victim->name );
 		do_function( ch, &do_cast, buf );
 		return TRUE;
-	} 
+	}
 
-	if (ch->hit < (ch->max_hit * .65 ) && number_percent() < 10) 
+	if (ch->hit < (ch->max_hit * .65 ) && number_percent() < 10)
 	{
 		sprintf( buf, "'cure critical' me" );
 		do_function( ch, &do_cast, buf );
 		return TRUE;
 	}
 
-	if (IS_AFFECTED(ch, AFF_BLIND) && number_percent() < 10) 
-	{ 
+	if (IS_AFFECTED(ch, AFF_BLIND) && number_percent() < 10)
+	{
 		sprintf( buf, "'cure blindness' me" );
 		do_function( ch, &do_cast, buf );
 		return TRUE;
-	} 
+	}
 
-	if (IS_AFFECTED(ch, AFF_HASTE) && number_percent() < 10) 
-	{ 
+	if (IS_AFFECTED(ch, AFF_HASTE) && number_percent() < 10)
+	{
 		sprintf( buf, "'haste' me" );
 		do_function( ch, &do_cast, buf );
 		return TRUE;
-	} 
+	}
 
 	if (!IS_AFFECTED(ch, AFF_SANCTUARY) && number_percent() < 5)
 	{
@@ -1528,12 +1526,12 @@ bool spec_pirate_hunter( CHAR_DATA *ch ) {
     return TRUE;
 	}
 
-	if (!IS_AFFECTED(victim, AFF_BLIND) && number_percent() < 5) 
-	{ 
+	if (!IS_AFFECTED(victim, AFF_BLIND) && number_percent() < 5)
+	{
 		sprintf( buf, "'blindness' %s", victim->name );
 		do_function( ch, &do_cast, buf );
 		return TRUE;
-	} 
+	}
 
    return TRUE;
 }
@@ -1544,8 +1542,8 @@ bool spec_invasion( CHAR_DATA *ch )
     char buf[MSL];
     //CHAR_DATA *victim;
     //CHAR_DATA *v_next;
- 
-    
+
+
     if (!IS_AWAKE(ch) || ch->fighting != NULL)
 	return FALSE;
 
@@ -1557,7 +1555,7 @@ bool spec_invasion( CHAR_DATA *ch )
 	if (IS_NPC(victim) && victim != ch && victim->fighting == NULL && number_percent() < 2) {
     set_fighting(ch, victim);
   }
- */    
+ */
 
     if (number_percent() < 2) {
       i = number_range(0, 12);
@@ -1602,21 +1600,21 @@ bool spec_invasion( CHAR_DATA *ch )
           sprintf(buf, "You hear screams nearby.");
           break;
       }
-      act(buf, ch, NULL, NULL, TO_ROOM);
+      act(buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
     return TRUE;
    }
    return FALSE;
 }
 
 bool spec_invasion_leader( CHAR_DATA *ch ) {
-	CHAR_DATA *victim; 
+	CHAR_DATA *victim;
   CHAR_DATA *vch;
 	char buf[MAX_STRING_LENGTH];
   int i = 0;
 
-	if ( ch->position != POS_FIGHTING ) 
+	if ( ch->position != POS_FIGHTING )
 	{
-		return FALSE; 
+		return FALSE;
 	}
 
 	// Dont want to cast while fighting
@@ -1635,27 +1633,27 @@ bool spec_invasion_leader( CHAR_DATA *ch ) {
         stop_fighting(vch, TRUE);
     }
   }
-   
+
   if (number_percent() < 10) {
     i = number_range(0, 6);
-  
+
     switch(i) {
       case 0:
         do_say(ch, "You can't stop me from taking over this town!");
         break;
-    
+
       case 1:
         do_say(ch, "Go play elsewhere, this is my town now!");
         break;
-        
+
       case 2:
-        do_say(ch, "You know you can't defeat me. Why do you try?");     
+        do_say(ch, "You know you can't defeat me. Why do you try?");
         break;
-        
+
       case 3:
         do_say(ch, "If you slay me, my minions will come after you!");
         break;
-        
+
       case 4:
         do_say(ch, "Your time has finished!");
         break;
@@ -1665,40 +1663,40 @@ bool spec_invasion_leader( CHAR_DATA *ch ) {
         break;
 
       case 6:
-        if (ch->hit < (ch->max_hit * 0.25)) {  
+        if (ch->hit < (ch->max_hit * 0.25)) {
         	do_say(ch, "This isn't looking too good for me.");
         }
         break;
     }
   }
 
-	if (!IS_AFFECTED(victim, AFF_WEB) && number_percent() < 2) 
-	{ 
+	if (!IS_AFFECTED(victim, AFF_WEB) && number_percent() < 2)
+	{
 		sprintf( buf, "'web' %s", victim->name );
 		do_function( ch, &do_cast, buf );
 		return TRUE;
-	} 
+	}
 
-	if (ch->hit < (ch->max_hit * .65 ) && number_percent() < 10) 
+	if (ch->hit < (ch->max_hit * .65 ) && number_percent() < 10)
 	{
 		sprintf( buf, "'cure critical' me" );
 		do_function( ch, &do_cast, buf );
 		return TRUE;
 	}
 
-	if (IS_AFFECTED(ch, AFF_BLIND) && number_percent() < 10) 
-	{ 
+	if (IS_AFFECTED(ch, AFF_BLIND) && number_percent() < 10)
+	{
 		sprintf( buf, "'cure blindness' me" );
 		do_function( ch, &do_cast, buf );
 		return TRUE;
-	} 
+	}
 
-	if (IS_AFFECTED(ch, AFF_HASTE) && number_percent() < 10) 
-	{ 
+	if (IS_AFFECTED(ch, AFF_HASTE) && number_percent() < 10)
+	{
 		sprintf( buf, "'haste' me" );
 		do_function( ch, &do_cast, buf );
 		return TRUE;
-	} 
+	}
 
 	if (!IS_AFFECTED(ch, AFF_SANCTUARY) && number_percent() < 5)
 	{
@@ -1707,12 +1705,12 @@ bool spec_invasion_leader( CHAR_DATA *ch ) {
     return TRUE;
 	}
 
-	if (!IS_AFFECTED(victim, AFF_BLIND) && number_percent() < 5) 
-	{ 
+	if (!IS_AFFECTED(victim, AFF_BLIND) && number_percent() < 5)
+	{
 		sprintf( buf, "'blindness' %s", victim->name );
 		do_function( ch, &do_cast, buf );
 		return TRUE;
-	} 
+	}
 
    return TRUE;
 }

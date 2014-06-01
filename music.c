@@ -141,13 +141,13 @@ void do_play(CHAR_DATA *ch, char *argument)
 	    if ( mob == ch )
 	    {
 		send_to_char("{YYou begin to play the song softly to yourself...{X\n\r", ch);
-		act( "{Y$n begins to play a song on $p{Y softly to $mself...{x", ch, obj, NULL, TO_ROOM);
+		act( "{Y$n begins to play a song on $p{Y softly to $mself...{x", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 	    }
 	    else
 	    {
-		act("{YYou begin to play the song, sweetly exerting its influence on $N...{X", ch, obj, mob, TO_CHAR);
-		act("{Y$n begins to play a song, exerting its influence on $N...{X", ch, obj, mob, TO_NOTVICT);
-		act("{Y$n begins to play a song, exerting its influence on you...{X", ch, obj, mob, TO_VICT);
+		act("{YYou begin to play the song, sweetly exerting its influence on $N...{X", ch, mob, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+		act("{Y$n begins to play a song, exerting its influence on $N...{X", ch, mob, NULL, obj, NULL, NULL, NULL, TO_NOTVICT);
+		act("{Y$n begins to play a song, exerting its influence on you...{X", ch, mob, NULL, obj, NULL, NULL, NULL, TO_VICT);
 	    }
 	}
 
@@ -156,19 +156,19 @@ void do_play(CHAR_DATA *ch, char *argument)
     else
     {
 	/* Syn- this fix is here to make sure offensive target songs cannot be played in safe rooms. */
-	
+
 	switch (music_table[counter].target) {
 	    case TAR_CHAR_OFFENSIVE:
 	    case TAR_OBJ_CHAR_OFF:
-		if (IS_SET(ch->in_room->room_flags, ROOM_SAFE)) {    
+		if (IS_SET(ch->in_room->room_flags, ROOM_SAFE)) {
 		    send_to_char("This room is sanctioned by the gods.\n\r", ch);
 		    return;
 		}
-		
+
 		break;
 	}
-	act( "{YYou begin to play a song on $p{Y...{x", ch, obj, NULL, TO_CHAR);
-	act( "{Y$n begins to play a song on $p{Y...{x", ch, obj, NULL, TO_ROOM);
+	act( "{YYou begin to play a song on $p{Y...{x", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+	act( "{Y$n begins to play a song on $p{Y...{x", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
     }
 
     ch->song_num = counter;
@@ -186,7 +186,7 @@ void music_end( CHAR_DATA *ch, sh_int song_num )
     CHAR_DATA *mob, *mob_next;
     int sn;
 
-    act( "{YYou finish playing your song.{x", ch, NULL, NULL, TO_CHAR);
+    act( "{YYou finish playing your song.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
     if ( ch->mana < music_table[song_num].mana )
     {
@@ -196,7 +196,7 @@ void music_end( CHAR_DATA *ch, sh_int song_num )
 
     ch->mana -= music_table[song_num].mana;
 
-    act( "{Y$n finishes $s song.{x", ch, NULL, NULL, TO_ROOM);
+    act( "{Y$n finishes $s song.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
     // We are casting it on just one person only
     if (ch->music_target != NULL)

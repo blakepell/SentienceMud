@@ -282,8 +282,12 @@ extern void boat_attack(CHAR_DATA *ch);
 /*
  * Global variables.
  */
+bool			is_test_port;
 int 		    port;
 GLOBAL_DATA         gconfig;		/* Vizz - UID Tracking, and any other persistent global config info */
+LIST *conn_players;
+LIST *conn_immortals;
+LIST *conn_online;
 DESCRIPTOR_DATA *   descriptor_list;	/* All open descriptors		*/
 DESCRIPTOR_DATA *   d_next;		/* Next descriptor in loop	*/
 FILE *		    fpReserve;		/* Reserved file handle		*/
@@ -294,7 +298,7 @@ bool		    newlock;		/* Game is newlocked		*/
 char		    str_boot_time[MAX_INPUT_LENGTH];
 time_t		    current_time;	/* time of this pulse */
 bool		    MOBtrigger = TRUE;  /* act() switch                 */
-
+LIST *loaded_areas;
 
 /*
  * OS-dependent local functions.
@@ -427,11 +431,69 @@ static void check_logfile(void)
 	}
 }
 
+bool parse_options(int argc, char **argv)
+{
+	int i;
+
+	for(i = 1; i < argc; i++ )
+	{
+		if( is_number(argv[i] )
+		{
+			int p = atoi(argv[i]);
+
+			if( p <= 1024 )
+			{
+				fprintf(stderr, "Port number must be above 1024.");
+				return FALSE;
+			}
+
+			port = p;
+		}
+		else if ( argv[i][0] == '-' && (strlen(argv[i]) == 2) )
+		{
+			switch( argv[i][1] )
+			{
+				case 'n':
+				case 'N':
+					newlock = TRUE;
+					break;
+
+				case 't':
+				case 'T':
+					is_test_port = TRUE;
+					break;
+
+				case 'w':
+				case 'W':
+					wizlock = TRUE;
+					break;
+
+				case '?':
+					// Silently return
+					return FALSE;
+
+				default:
+					fprintf(stderr, "Invalid option found.");
+					return FALSE;
+			}
+		}
+		else {
+			fprintf(stderr, "Invalid argument found.");
+			return FALSE;
+		}
+
+	}
+	return TRUE;
+}
+
+
 int main(int argc, char **argv)
 {
     static GLOBAL_DATA gconfig_zero;
     struct timeval now_time;
     int control;
+    ITERATOR iter;
+    void *data;
 
     /*
      * Memory debugging if needed.
@@ -439,6 +501,55 @@ int main(int argc, char **argv)
 #if defined(MALLOC_DEBUG)
     malloc_debug(2);
 #endif
+
+	conn_players = list_create(FALSE);
+	if(!conn_players) {
+		perror("Could not create 'conn_players'");
+		exit(1);
+	}
+
+	conn_immortals = list_create(FALSE);
+	if(!conn_immortals) {
+		perror("Could not create 'conn_immortals'");
+		exit(1);
+	}
+
+	conn_online = list_create(FALSE);
+	if(!conn_online) {
+		perror("Could not create 'conn_online'");
+		exit(1);
+	}
+	loaded_areas = list_create(FALSE);
+	if(!loaded_areas) {
+		perror("Could not create 'loaded_areas'");
+		exit(1);
+	}
+	loaded_wilds = list_create(FALSE);
+	if(!loaded_wilds) {
+		perror("Could not create 'loaded_wilds'");
+		exit(1);
+	}
+	list_churches = list_create(FALSE);
+	if(!list_churches) {
+		perror("Could not create 'list_churches'");
+		exit(1);
+	}
+	persist_mobs = list_create(FALSE);
+	if(!persist_mobs) {
+		perror("Could not create 'persist_mobs'");
+		exit(1);
+	}
+	persist_objs = list_create(FALSE);
+	if(!persist_objs) {
+		perror("Could not create 'persist_objs'");
+		exit(1);
+	}
+	persist_rooms = list_create(FALSE);
+	if(!persist_rooms) {
+		perror("Could not create 'persist_rooms'");
+		exit(1);
+	}
+
 
     /*
      * Init time.
@@ -460,22 +571,45 @@ int main(int argc, char **argv)
      * Get the port number.
      */
     port = 9000;
+    is_test_port = FALSE;
+    newlock = FALSE;
+    wizlock = FALSE;
+
+    if( !parse_options(argc, argv) )
+    {
+		fprintf(stderr, "Usage: %s [port #] [-NTW]\n", argv[0]);
+		fprintf(stderr, "\n");
+		fprintf(stderr, "\tport #\tListening port for the server (>1024).  Default is 9000.\n");
+		fprintf(stderr, "\n");
+		fprintf(stderr, "\t-N\tStart up with newlock active.\n");
+		fprintf(stderr, "\t-T\tStart up in Test Port mode.\n");
+		fprintf(stderr, "\t-W\tStart up with wizlock active.\n");
+		fprintf(stderr, "\n");
+		fprintf(stderr, "\t-?\tShow this screen.\n");
+		fprintf(stderr, "\n");
+		exit(1);
+	}
+#if 0
     if (argc > 1)
     {
-	if (!is_number(argv[1]))
-	{
-	    fprintf(stderr, "Usage: %s [port #]\n", argv[0]);
-	    exit(1);
-	}
-	else if ((port = atoi(argv[1])) <= 1024)
-	{
-	    fprintf(stderr, "Port number must be above 1024.\n");
-	    exit(1);
-	}
+		if (!is_number(argv[1]))
+		{
+			fprintf(stderr, "Usage: %s [port #] [-T]\n", argv[0]);
+			exit(1);
+		}
+		else if ((port = atoi(argv[1])) <= 1024)
+		{
+			fprintf(stderr, "Port number must be above 1024.\n");
+			exit(1);
+		}
     }
+#endif
 
     if(port == PORT_TEST) newlock = TRUE;	/* The alpha port is initially set to newlock*/
     if(port == PORT_TEST) wizlock = TRUE;	/* Newlock/Wizlock all ports for now */
+
+    if(port == PORT_TEST || port == PORT_ALPHA || port == PORT_SYN) is_test_port = TRUE;
+
     RedirectOutput();
 
     /* Vizz - load up our list of UIDs. Without this, we cannot assign unique UIDs to things */
@@ -493,6 +627,23 @@ int main(int argc, char **argv)
     imc_startup( FALSE, -1, FALSE );
     #endif
     game_loop_unix(control);
+	list_destroy(conn_players);
+	list_destroy(conn_immortals);
+	list_destroy(conn_online);
+	list_destroy(persist_mobs);
+	list_destroy(persist_objs);
+	list_destroy(persist_rooms);
+	iterator_start(&iter, loaded_areas);
+	while((data = iterator_nextdata(&iter)))
+		free_mem(data, sizeof(LIST_AREA_DATA));
+	iterator_stop(&iter);
+	list_destroy(loaded_areas);
+	iterator_start(&iter, loaded_wilds);
+	while((data = iterator_nextdata(&iter)))
+		free_mem(data, sizeof(LIST_WILDS_DATA));
+	iterator_stop(&iter);
+	list_destroy(loaded_wilds);
+	list_destroy(list_churches);
     close (control);
 	#ifdef IMC
 	SERVER_DATA *server;
@@ -509,6 +660,23 @@ int main(int argc, char **argv)
         plogf("                                   NextWildsUID:	%ld", gconfig.next_wilds_uid);
     }
 
+    // @@@@FIXME: FREE EVERYTHING!!!!
+    // @@@@FIXME: FREE EVERYTHING!!!!
+    // @@@@FIXME: FREE EVERYTHING!!!!
+    // @@@@FIXME: FREE EVERYTHING!!!!
+    // @@@@FIXME: FREE EVERYTHING!!!!
+    // @@@@FIXME: FREE EVERYTHING!!!!
+    // @@@@FIXME: FREE EVERYTHING!!!!
+    // @@@@FIXME: FREE EVERYTHING!!!!
+    // @@@@FIXME: FREE EVERYTHING!!!!
+    // @@@@FIXME: FREE EVERYTHING!!!!
+    // @@@@FIXME: FREE EVERYTHING!!!!
+    // @@@@FIXME: FREE EVERYTHING!!!!
+    // @@@@FIXME: FREE EVERYTHING!!!!
+    // @@@@FIXME: FREE EVERYTHING!!!!
+    // @@@@FIXME: FREE EVERYTHING!!!!
+    // @@@@FIXME: FREE EVERYTHING!!!!
+
     /*
      * That's all, folks.
      */
@@ -519,7 +687,6 @@ int main(int argc, char **argv)
     exit(0);
     return 0;
 }
-
 
 int init_socket(int port)
 {
@@ -991,10 +1158,7 @@ void close_socket(DESCRIPTOR_DATA *dclose)
 	if (dclose->connected == CON_PLAYING && !merc_down)
 	{
 	    if (ch->invis_level < LEVEL_IMMORTAL)
-		act("$n has lost $s link.", ch, NULL, NULL, TO_ROOM);
-
-	    /* so they dont see us loose link simultaneously */
-	    if (str_cmp(ch->name, "Arlox") && str_cmp(ch->name, "Zoron"))
+		act("$n has lost $s link.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		wiznet("$N has lost $S link.",ch,NULL,WIZ_LINKS,0,0);
 
 	    ch->desc = NULL;
@@ -1843,175 +2007,171 @@ void join_world(DESCRIPTOR_DATA * d)
  */
 void nanny(DESCRIPTOR_DATA *d, char *argument)
 {
-    DESCRIPTOR_DATA *d_old, *d_next, *d2;
-    OBJ_DATA *obj;
-    char buf[MAX_STRING_LENGTH];
-    char arg[MAX_INPUT_LENGTH];
-    char races[MSL];
-    char classes[MSL];
-    char subclasses[MSL];
-    CHAR_DATA *ch;
-    char *pwdnew;
-    int iClass,race,i,weapon;
-    bool fOld;
-//    SHIP_DATA *ship = NULL;
-    long playernum;
-    HELP_DATA *help;
-    long vector, *field;
+	DESCRIPTOR_DATA *d_old, *d_next, *d2;
+	char buf[MAX_STRING_LENGTH];
+	char arg[MAX_INPUT_LENGTH];
+	char races[MSL];
+	char classes[MSL];
+	char subclasses[MSL];
+	CHAR_DATA *ch;
+	char *pwdnew;
+	int iClass,race,i,weapon;
+	bool fOld;
+	long playernum;
+	HELP_DATA *help;
+	long vector, *field;
     char strsave[MAX_INPUT_LENGTH];
     FILE *fp;
 
-    iClass = -1;
+	iClass = -1;
 
-    while (isspace(*argument))
-	argument++;
-
-    ch = d->character;
-
-    switch (d->connected)
-    {
-    default:
-	bug("Nanny: bad d->connected %d.", d->connected);
-	close_socket(d);
-	return;
-
-    case CON_GET_NAME:
-	if (argument[0] == '\0')
-	{
-	    close_socket(d);
-	    return;
-	}
-
-	argument[0] = UPPER(argument[0]);
-	if (!check_parse_name(argument))
-	{
-	    write_to_buffer(d, "Illegal name, try another.\n\rName: ", 0);
-	    return;
-	}
-
-	/* Ban old names -- Gairun - 20111219 */
-	sprintf(strsave, "%s%c/%s", OLD_PLAYER_DIR, tolower(argument[0]), capitalize(argument));
-	if ((fp = fopen(strsave, "r")) != NULL)
-	{
-		fclose(fp);
-	   	write_to_buffer(d, "Old names are not allowed.\n\rName: ", 0);
-	  	return;
-	}
-
-
-	fOld = load_char_obj(d, argument);
+	while (isspace(*argument))
+		argument++;
 
 	ch = d->character;
 
-	if (IS_SET(ch->act, PLR_DENY))
-	{
-	    sprintf(log_buf, "Denying access to %s@%s.", argument, d->host);
-	    log_string(log_buf);
-	    write_to_buffer(d, "You are denied access.\n\r", 0);
-	    close_socket(d);
-	    return;
-	}
-
-	if (check_ban(d->host,BAN_PERMIT))
-	{
-	    write_to_buffer(d,"Your site has been banned from Sentience.\n\r",0);
-	    close_socket(d);
-	    return;
-	}
-
-	if (check_reconnect(d, argument, FALSE))
-	    fOld = TRUE;
-	else
-	{
-	    if (wizlock && !IS_IMMORTAL(ch))
-	    {
-		write_to_buffer(d, "The game is wizlocked.\n\r", 0);
+	switch (d->connected) {
+	default:
+		bug("Nanny: bad d->connected %d.", d->connected);
+		connection_remove(d);
 		close_socket(d);
 		return;
-	    }
-	}
 
-	/* Old player */
-	if (fOld)
-	{
-	    if (port != PORT_SYN) {
-		write_to_buffer(d, "Password: ", 0);
-		write_to_buffer(d, echo_off_str, 0);
-		d->connected = CON_GET_OLD_PASSWORD;
-	    }
-	    /* Syn - placed here for ease of testing so that I don't have to spam through
-	       pw entry/motd's every single time I boot the game. DEBUG is a definition
-	       as a safeguard just in case someone runs it on PORT_SYN for whatever reason. */
-	    else if (DEBUG == TRUE)
-	    {
-		write_to_buffer(d, "Welcome back, Master.\n\r", 0);
-		if (check_playing(d,ch->name))
-		    return;
+	case CON_GET_NAME:
+		if (!argument[0]) {
+			close_socket(d);
+			return;
+		}
 
-		if (check_reconnect(d,ch->name,TRUE))
-		    return;
+		argument[0] = UPPER(argument[0]);
+		if (!check_parse_name(argument)) {
+			write_to_buffer(d, "Illegal name, try another.\n\rName: ", 0);
+			return;
+		}
 
-		reset_char(ch);
+		/* Ban old names -- Gairun - 20111219 */
+		sprintf(strsave, "%s%c/%s", OLD_PLAYER_DIR, tolower(argument[0]), capitalize(argument));
+		if ((fp = fopen(strsave, "r")) != NULL)
+		{
+			fclose(fp);
+			write_to_buffer(d, "Old names are not allowed.\n\rName: ", 0);
+			return;
+		}
 
-		ch->next = char_list;
-		char_list = ch;
-		char_to_room(ch, ch->in_room);
-		d->connected = CON_PLAYING;
-		do_function(d->character, &do_look, "");
-	    }
-	    return;
-	}
-	else
-	{
-	    /* New player */
- 	    if (newlock)
-	    {
-                write_to_buffer(d, "The game is newlocked.\n\r", 0);
-                close_socket(d);
-                return;
-            }
 
-	    if (check_ban(d->host,BAN_NEWBIES))
-	    {
-		write_to_buffer(d,
-		    "New players are not allowed from your site.\n\r",0);
-		close_socket(d);
-		return;
-	    }
+		fOld = load_char_obj(d, argument);
 
-	    if(port == PORT_ALPHA) newlock = TRUE;	/* Reset the newlock, even if this one fails to do anything...*/
+		ch = d->character;
 
-	    sprintf(buf, "\n\rDo you want to create a character named %s (Y/N)? ", argument);
-	    write_to_buffer(d, buf, 0);
-	    d->connected = CON_CONFIRM_NEW_NAME;
-	    return;
-	}
-	break;
+		if (IS_SET(ch->act, PLR_DENY))
+		{
+			sprintf(log_buf, "Denying access to %s@%s.", argument, d->host);
+			log_string(log_buf);
+			write_to_buffer(d, "You are denied access.\n\r", 0);
+			close_socket(d);
+			return;
+		}
 
-    case CON_GET_OLD_PASSWORD:
+		if (check_ban(d->host,BAN_PERMIT))
+		{
+			write_to_buffer(d,"Your site has been banned from Sentience.\n\r",0);
+			close_socket(d);
+			return;
+		}
+
+		if (check_reconnect(d, argument, FALSE))
+			fOld = TRUE;
+		else
+		{
+			if (wizlock && !IS_IMMORTAL(ch))
+			{
+				write_to_buffer(d, "The game is wizlocked.\n\r", 0);
+				close_socket(d);
+				return;
+			}
+		}
+
+		/* Old player */
+		if (fOld)
+		{
+			if (port != PORT_SYN) {
+				write_to_buffer(d, "Password: ", 0);
+				write_to_buffer(d, echo_off_str, 0);
+				d->connected = CON_GET_OLD_PASSWORD;
+			}
+
+			/* Syn - placed here for ease of testing so that I don't have to spam through
+				pw entry/motd's every single time I boot the game. DEBUG is a definition
+				as a safeguard just in case someone runs it on PORT_SYN for whatever reason. */
+			else if (DEBUG == TRUE)
+			{
+				write_to_buffer(d, "Welcome back, Master.\n\r", 0);
+				if (check_playing(d,ch->name))
+					return;
+
+				if (check_reconnect(d,ch->name,TRUE))
+					return;
+
+				reset_char(ch);
+
+				ch->next = char_list;
+				char_list = ch;
+				char_to_room(ch, ch->in_room);
+				d->connected = CON_PLAYING;
+				do_function(d->character, &do_look, "");
+			}
+			return;
+		}
+		else
+		{
+			/* New player */
+			if (newlock)
+			{
+				write_to_buffer(d, "The game is newlocked.\n\r", 0);
+				close_socket(d);
+				return;
+			}
+
+			if (check_ban(d->host,BAN_NEWBIES))
+			{
+				write_to_buffer(d, "New players are not allowed from your site.\n\r",0);
+				close_socket(d);
+				return;
+			}
+
+			if(port == PORT_ALPHA) newlock = TRUE;	/* Reset the newlock, even if this one fails to do anything...*/
+
+			sprintf(buf, "\n\rDo you want to create a character named %s (Y/N)? ", argument);
+			write_to_buffer(d, buf, 0);
+			d->connected = CON_CONFIRM_NEW_NAME;
+			return;
+		}
+		break;
+
+	case CON_GET_OLD_PASSWORD:
 #if defined(unix)
 	write_to_buffer(d, "\n\r", 2);
 #endif
 
 	if (strcmp(crypt(argument, ch->pcdata->pwd), ch->pcdata->pwd))
 	{
-            /* Log bad password attempts*/
-	    sprintf(log_buf, "Denying access to %s@%s (bad password).",
-                ch->name, d->host);
-            log_string(log_buf);
-            wiznet(log_buf,NULL,NULL,WIZ_LOGINS,0,get_trust(ch));
-	    write_to_buffer(d, "Wrong password.\n\r", 0);
-	    close_socket(d);
-	    return;
+	/* Log bad password attempts*/
+	sprintf(log_buf, "Denying access to %s@%s (bad password).",
+	ch->name, d->host);
+	log_string(log_buf);
+	wiznet(log_buf,NULL,NULL,WIZ_LOGINS,0,get_trust(ch));
+	write_to_buffer(d, "Wrong password.\n\r", 0);
+	close_socket(d);
+	return;
 	}
 
 	write_to_buffer(d, echo_on_str, 0);
 
 	if (check_playing(d,ch->name))
-	    return;
+	return;
 
 	if (check_reconnect(d, ch->name, TRUE))
-	    return;
+	return;
 
 	sprintf(log_buf, "%s@%s has connected.", ch->name, d->host);
 	log_string(log_buf);
@@ -2020,48 +2180,48 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 
 	/* OLD character who doesn't have an email on file with us will be prompted for it here. */
 	if (ch->pcdata->email == NULL) {
-	    write_to_buffer(d, "\n\rPlease enter a valid e-mail address at which we can reach you in case you lose your password.\n\r"
-		    "It will not be distributed to any third parties or abused in any way.\n\r", 0);
-	    send_to_char("\n\rEnter your e-mail address: ", ch);
-	    d->connected = CON_GET_EMAIL;
-	    return;
+	write_to_buffer(d, "\n\rPlease enter a valid e-mail address at which we can reach you in case you lose your password.\n\r"
+	"It will not be distributed to any third parties or abused in any way.\n\r", 0);
+	send_to_char("\n\rEnter your e-mail address: ", ch);
+	d->connected = CON_GET_EMAIL;
+	return;
 	}
 
 	if (IS_IMMORTAL(ch))
 	{
-	    send_to_char("{BWelcome, Immortal.{x\n\r\n\r", ch);
-	    do_function(ch, &do_imotd, "");
-	    if(ch->tot_level >= MAX_LEVEL) {
-		    if(wizlock) send_to_char("\n\r{b-{B==={C=={W[ {YWIZLOCK ACTIVE{W ]{C=={B==={b-{x\n\r", ch);
-		    if(newlock) send_to_char("\n\r{b-{B==={C=={W[ {GNEWLOCK ACTIVE{W ]{C=={B==={b-{x\n\r", ch);
-	    }
-	    send_to_char("\n\r{WCurrent active projects:{x\n\r", ch);
-	    do_function(ch, &do_project, "list open");
-	    send_to_char("[Hit Return to continue]\n\r", ch);
-	    d->connected = CON_READ_IMOTD;
+	send_to_char("{BWelcome, Immortal.{x\n\r\n\r", ch);
+	do_function(ch, &do_imotd, "");
+	if(ch->tot_level >= MAX_LEVEL) {
+	if(wizlock) send_to_char("\n\r{b-{B==={C=={W[ {YWIZLOCK ACTIVE{W ]{C=={B==={b-{x\n\r", ch);
+	if(newlock) send_to_char("\n\r{b-{B==={C=={W[ {GNEWLOCK ACTIVE{W ]{C=={B==={b-{x\n\r", ch);
+	}
+	send_to_char("\n\r{WCurrent active projects:{x\n\r", ch);
+	do_function(ch, &do_project, "list open");
+	send_to_char("[Hit Return to continue]\n\r", ch);
+	d->connected = CON_READ_IMOTD;
 	}
 	else
 	{
-	    do_function(ch, &do_motd, "");
-	    d->connected = CON_READ_MOTD;
+	do_function(ch, &do_motd, "");
+	d->connected = CON_READ_MOTD;
 	}
 
 	break;
 
-    case CON_CHANGE_PASSWORD:
+	case CON_CHANGE_PASSWORD:
 	send_to_char("\n\rPassword: ", ch);
 
 	if (argument[0] == '\0')
-	    return;
+	return;
 
 	if (!strcmp(argument, ch->pcdata->old_pwd))
 	{
-	    send_to_char("Password must be DIFFERENT from your current password!\n\r", ch);
-	    return;
+	send_to_char("Password must be DIFFERENT from your current password!\n\r", ch);
+	return;
 	}
 
 	if (!acceptablePassword(d, argument))
-	    return;
+	return;
 
 	pwdnew = crypt(argument, ch->name);
 
@@ -2069,16 +2229,16 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 	ch->pcdata->pwd	= str_dup(pwdnew);
 	write_to_buffer(d, "Please retype new password: ", 0);
 
-        ch->pcdata->need_change_pw = FALSE;
-        d->connected = CON_CHANGE_PASSWORD_CONFIRM;
-        break;
+	ch->pcdata->need_change_pw = FALSE;
+	d->connected = CON_CHANGE_PASSWORD_CONFIRM;
+	break;
 
-    case CON_CHANGE_PASSWORD_CONFIRM:
+	case CON_CHANGE_PASSWORD_CONFIRM:
 	if (strcmp(crypt(argument, ch->pcdata->pwd), ch->pcdata->pwd))
 	{
-	    write_to_buffer(d, "Passwords don't match.\n\rPassword: ", 0);
-	    d->connected = CON_CHANGE_PASSWORD;
-	    return;
+	write_to_buffer(d, "Passwords don't match.\n\rPassword: ", 0);
+	d->connected = CON_CHANGE_PASSWORD;
+	return;
 	}
 
 	send_to_char("\n\r\n\r{Y***{x {RThank you. Please remember to never give your password to anybody.{Y *** {x\n\r\n\r", ch);
@@ -2087,89 +2247,89 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 
 	if (IS_IMMORTAL(ch))
 	{
-	    do_function(ch, &do_imotd, "");
-	    d->connected = CON_READ_IMOTD;
+	do_function(ch, &do_imotd, "");
+	d->connected = CON_READ_IMOTD;
 	}
 	else
 	{
-	    do_function(ch, &do_motd, "");
-	    d->connected = CON_READ_MOTD;
+	do_function(ch, &do_motd, "");
+	d->connected = CON_READ_MOTD;
 	}
 
 	break;
 
-    case CON_BREAK_CONNECT:
+	case CON_BREAK_CONNECT:
 	switch(*argument)
 	{
 	case 'y' : case 'Y':
-            for (d_old = descriptor_list; d_old != NULL; d_old = d_next)
-	    {
-		d_next = d_old->next;
-		if (d_old == d || d_old->character == NULL)
-		    continue;
+	for (d_old = descriptor_list; d_old != NULL; d_old = d_next)
+	{
+	d_next = d_old->next;
+	if (d_old == d || d_old->character == NULL)
+	continue;
 
-		if (str_cmp(ch->name,d_old->original ?
-		    d_old->original->name : d_old->character->name))
-		    continue;
+	if (str_cmp(ch->name,d_old->original ?
+	d_old->original->name : d_old->character->name))
+	continue;
 
-		close_socket(d_old);
-	    }
-	    if (check_reconnect(d,ch->name,TRUE))
-	    	return;
-	    write_to_buffer(d,"Reconnect attempt failed.\n\rName: ",0);
-            if (d->character != NULL)
-            {
-                free_char(d->character);
-                d->character = NULL;
-            }
-	    d->connected = CON_GET_NAME;
-	    break;
+	close_socket(d_old);
+	}
+	if (check_reconnect(d,ch->name,TRUE))
+	return;
+	write_to_buffer(d,"Reconnect attempt failed.\n\rName: ",0);
+	if (d->character != NULL)
+	{
+	free_char(d->character);
+	d->character = NULL;
+	}
+	d->connected = CON_GET_NAME;
+	break;
 
 	case 'n' : case 'N':
-	    write_to_buffer(d,"Name: ",0);
-            if (d->character != NULL)
-            {
-                free_char(d->character);
-                d->character = NULL;
-            }
-	    d->connected = CON_GET_NAME;
-	    break;
+	write_to_buffer(d,"Name: ",0);
+	if (d->character != NULL)
+	{
+	free_char(d->character);
+	d->character = NULL;
+	}
+	d->connected = CON_GET_NAME;
+	break;
 
 	default:
-	    write_to_buffer(d,"Please type Y or N? ",0);
-	    break;
+	write_to_buffer(d,"Please type Y or N? ",0);
+	break;
 	}
 	break;
 
-    case CON_CONFIRM_NEW_NAME:
+	case CON_CONFIRM_NEW_NAME:
 	switch (*argument)
 	{
-	    case 'y': case 'Y':
-		sprintf(buf, "\n\rEnter a password for %s: %s",
-		    ch->name, echo_off_str);
-		write_to_buffer(d, buf, 0);
-		d->connected = CON_GET_NEW_PASSWORD;
-		break;
+	case 'y': case 'Y':
+	sprintf(buf, "\n\rEnter a password for %s: %s",
+	ch->name, echo_off_str);
+	write_to_buffer(d, buf, 0);
+	d->connected = CON_GET_NEW_PASSWORD;
+	break;
 
-	    case 'n': case 'N':
-		write_to_buffer(d, "Name: ", 0);
-		free_char(d->character);
-		d->character = NULL;
-		d->connected = CON_GET_NAME;
-		break;
+	case 'n': case 'N':
+	write_to_buffer(d, "Name: ", 0);
+	free_char(d->character);
+	d->character = NULL;
+	d->connected = CON_GET_NAME;
+	break;
 
-	    default:
-		write_to_buffer(d, "Please type yes or no: ", 0);
-		break;
+	default:
+	write_to_buffer(d, "Please type yes or no: ", 0);
+	break;
 	}
 	break;
 
-    case CON_GET_NEW_PASSWORD:
+	case CON_GET_NEW_PASSWORD:
 #if defined(unix)
 	write_to_buffer(d, "\n\r", 2);
 #endif
 	if (!acceptablePassword(d, argument))
-	    return;
+	return;
 
 	pwdnew = crypt(argument, ch->name);
 
@@ -2181,23 +2341,23 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 	ch->pcdata->need_change_pw = FALSE;
 	break;
 
-    case CON_CONFIRM_NEW_PASSWORD:
+	case CON_CONFIRM_NEW_PASSWORD:
 #if defined(unix)
 	write_to_buffer(d, "\n\r", 2);
 #endif
 
 	if (strcmp(crypt(argument, ch->pcdata->pwd), ch->pcdata->pwd))
 	{
-	    write_to_buffer(d, "Passwords don't match.\n\r\n\rRetype password: ",
+	write_to_buffer(d, "Passwords don't match.\n\r\n\rRetype password: ",
 	0);
-	    d->connected = CON_GET_NEW_PASSWORD;
-	    return;
+	d->connected = CON_GET_NEW_PASSWORD;
+	return;
 	}
 
 	write_to_buffer(d, echo_on_str, 0);
 
 	write_to_buffer(d, "\n\rPlease enter a valid e-mail address at which we can reach you in case you lose your password.\n\r"
-		"It will not be distributed to any third parties or abused in any way.\n\r", 0);
+	"It will not be distributed to any third parties or abused in any way.\n\r", 0);
 
 	send_to_char("\n\rEnter your e-mail address: ", ch);
 
@@ -2205,54 +2365,54 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 
 	break;
 
-    case CON_GET_ASCII:
+	case CON_GET_ASCII:
 	switch (argument[0])
 	{
-	    case 'y': case 'Y':
-		SET_BIT(ch->act, PLR_COLOUR);
-		break;
-	    case 'n': case 'N':
-		break;
-	    default:
-		write_to_buffer(d, "Yes/No.\n\rWould you like ascii colour? ", 0);
-		return;
+	case 'y': case 'Y':
+	SET_BIT(ch->act, PLR_COLOUR);
+	break;
+	case 'n': case 'N':
+	break;
+	default:
+	write_to_buffer(d, "Yes/No.\n\rWould you like ascii colour? ", 0);
+	return;
 	}
 
 	send_to_char("\n\r{r-----{R======{D//// {WWelcome to the world of Sentience! {D\\\\{R======{r-----{x\n\r",ch);
 	write_to_buffer(d, "\n\r", 2);
 
 	wiznet("Newbie alert!  $N sighted.",ch,NULL,WIZ_NEWBIE,0,0);
-        /* wiznet(log_buf,NULL,NULL,WIZ_NEWBIE,0,get_trust(ch));*/
+	/* wiznet(log_buf,NULL,NULL,WIZ_NEWBIE,0,get_trust(ch));*/
 
 	send_to_char("\n\r{YChoose an alignment ({GGood/Neutral/Evil{Y):{x ", ch);
 	d->connected = CON_GET_ALIGNMENT;
 	break;
 
-    case CON_GET_ALIGNMENT:
+	case CON_GET_ALIGNMENT:
 	switch (argument[0])
 	{
-	    case 'g' : case 'G' : ch->alignment = 750;  break;
-	    case 'n' : case 'N' : ch->alignment = 0;	break;
-	    case 'e' : case 'E' : ch->alignment = -750; break;
-	    default:
-	        if (argument[0] != '\0')
-		    write_to_buffer(d,"That's not a valid alignment.\n\r",0);
+	case 'g' : case 'G' : ch->alignment = 750;  break;
+	case 'n' : case 'N' : ch->alignment = 0;	break;
+	case 'e' : case 'E' : ch->alignment = -750; break;
+	default:
+	if (argument[0] != '\0')
+	write_to_buffer(d,"That's not a valid alignment.\n\r",0);
 
-		send_to_char("\n\r{YChoose an alignment ({GGood/Neutral/Evil{Y):{x ", ch);
-		return;
+	send_to_char("\n\r{YChoose an alignment ({GGood/Neutral/Evil{Y):{x ", ch);
+	return;
 	}
 
 	/* Evil*/
-//	Align checks out
+	// Align checks out
 	if (ch->alignment < 0)
 	{
 	    send_to_char("\n\r{xYou have chosen to be {REvil{x.\n\r\n\r", ch);
 
-	    send_to_char("{YThe following races are available to you: \n\r", ch);
-	    send_to_char("{GDrow        {B - Dark elves who are masters of tact and dexterity.\n\r", ch);
-	    send_to_char("{GVampire     {B - The walking dead. Lots of extra skills but lots of vulnerabilities.\n\r", ch);// -- Disabled by Gairun 20111219
-	    send_to_char("{GSith        {B - Half man, half snake. Natural hunt, toxins, and a nasty tail.\n\r", ch);
-	    send_to_char("{GMinotaur    {B - The ultimate warrior. Very strong, tough and has a thick warm coat, but vulnerable to fire. \n\r", ch);
+	send_to_char("{YThe following races are available to you: \n\r", ch);
+	send_to_char("{GDrow        {B - Dark elves who are masters of tact and dexterity.\n\r", ch);
+	    send_to_char("{GVampire     {B - The walking dead. Lots of extra skills but lots of vulnerabilities.\n\r", ch); -- Disabled by Gairun 20111219
+	send_to_char("{GSith        {B - Half man, half snake. Natural hunt, toxins, and a nasty tail.\n\r", ch);
+	send_to_char("{GMinotaur    {B - The ultimate warrior. Very strong, tough and has a thick warm coat, but vulnerable to fire. \n\r", ch);
 	}
 
 	/* Good*/
@@ -2261,20 +2421,20 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 	    send_to_char("\n\r{xYou have chosen to be {WGood{x.\n\r\n\r", ch);
 
 	    send_to_char("{YThe following races are available to you:\n\r", ch);
-	    send_to_char("{GDraconian   {B - Dragon/human cross. Can fly and breathe fire, frost, acid, gas, or lightning.\n\r", ch);
-	    send_to_char("{GSlayer      {B - Ancient holy fighters who can shapeshift into beasts. 25%% extra damage against evil.\n\r", ch);// -- Disabled by Gairun 20111219
-	    send_to_char("{GTitan       {B - Very strong, have an extra attack, vulnerable to lightning.\n\r", ch);
-	    send_to_char("{GElf         {B - Very high stats, resistant to magic and fast mana regen.\n\r", ch);
+	send_to_char("{GDraconian   {B - Dragon/human cross. Can fly and breathe fire, frost, acid, gas, or lightning.\n\r", ch);
+	    send_to_char("{GSlayer      {B - Ancient holy fighters who can shapeshift into beasts. 25%% extra damage against evil.\n\r", ch); -- Disabled by Gairun 20111219
+	send_to_char("{GTitan       {B - Very strong, have an extra attack, vulnerable to lightning.\n\r", ch);
+	send_to_char("{GElf         {B - Very high stats, resistant to magic and fast mana regen.\n\r", ch);
 	}
 
 	/* Neutral*/
 	if (ch->alignment == 0)
 	{
 	    send_to_char("\n\r{xYou have chosen to be {GNeutral{x.\n\r\n\r", ch);
-	    send_to_char("{GDwarf       {B - Hardy, great at combat, and masters of craftwork.\n\r", ch);
-	    send_to_char("{GHuman       {B - Average stats, no particular strengths or vunerabilities.\n\r", ch);
-	    send_to_char("{GLich        {B - Undead lords of magic - many magical powers but physically weak.\n\r", ch);// -- Disabled by Gairun 20111219
-	    send_to_char("{DPraxis      {D - Coming soon!\n\r",ch);
+	send_to_char("{GDwarf       {B - Hardy, great at combat, and masters of craftwork.\n\r", ch);
+	send_to_char("{GHuman       {B - Average stats, no particular strengths or vunerabilities.\n\r", ch);
+	    send_to_char("{GLich        {B - Undead lords of magic - many magical powers but physically weak.\n\r", ch); -- Disabled by Gairun 20111219
+//	    send_to_char("{DPraxis      {D - Coming soon!\n\r",ch);
 	}
 
 	send_to_char("\n\r{xYou will now be asked which race you would like your character to\n\r", ch);
@@ -2286,7 +2446,7 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 	d->connected = CON_GET_NEW_RACE;
 	break;
 
-    case CON_GET_NEW_RACE:
+	case CON_GET_NEW_RACE:
 	one_argument(argument,arg);
 
 	sprintf(races, "\n\r{YChoose your race");
@@ -2295,78 +2455,80 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 
 	if (!strcmp(arg,"help"))
 	{
-	    argument = one_argument(argument,arg);
-	    if (argument[0] == '\0' || !str_prefix(argument, "races"))
-	    {
-		send_to_char("{b++++++{B------{C++++++ {WRACES SUMMARY {C++++++{B------{b++++++{x\n\r\n\r", ch);
-		if ((help = lookup_help_exact("races grid", 0, topHelpCat)) != NULL)
-		    send_to_char(help->text, ch);
-	    }
-	    else
-	    {
-		if ((race = race_lookup(argument)) != 0
-		&&  (help = lookup_help_exact(race_table[race].name, 0, topHelpCat)) != NULL)
-		{
-		    sprintf(buf, "{b++++++{B------{C++++++ {W%s {C++++++{B------{b++++++{x\n\r\n\r",
-		        help->keyword);
-		    send_to_char(buf, ch);
-		    send_to_char(help->text, ch);
-		}
-		else
-		    send_to_char("That's not a race.\n\r", ch);
-	    }
+	argument = one_argument(argument,arg);
+	if (argument[0] == '\0' || !str_prefix(argument, "races"))
+	{
+	send_to_char("{b++++++{B------{C++++++ {WRACES SUMMARY {C++++++{B------{b++++++{x\n\r\n\r", ch);
+	if ((help = lookup_help_exact("races grid", 0, topHelpCat)) != NULL)
+	send_to_char(help->text, ch);
+	}
+	else
+	{
+	if ((race = race_lookup(argument)) != 0
+	&&  (help = lookup_help_exact(race_table[race].name, 0, topHelpCat)) != NULL)
+	{
+	sprintf(buf, "{b++++++{B------{C++++++ {W%s {C++++++{B------{b++++++{x\n\r\n\r",
+	help->keyword);
+	send_to_char(buf, ch);
+	send_to_char(help->text, ch);
+	}
+	else
+	send_to_char("That's not a race.\n\r", ch);
+	}
 
-	    send_to_char(races, ch);
-	    break;
-  	}
+	send_to_char(races, ch);
+	break;
+	}
 
 	if (arg[0] == '\0') {
-	    send_to_char(races, ch);
-	    break;
+	send_to_char(races, ch);
+	break;
 	}
 
 	if ((race = race_lookup(argument)) == 0) {
-	    send_to_char("There is no such race.\n\r", ch);
-	    send_to_char(races, ch);
-	    break;
+	send_to_char("There is no such race.\n\r", ch);
+	send_to_char(races, ch);
+	break;
 	}
 
 	if (!race_table[race].pc_race || race == grn_shaper) {
-	    send_to_char("That isn't a player race.\n\r", ch);
-	    send_to_char(races, ch);
-	    break;
+	send_to_char("That isn't a player race.\n\r", ch);
+	send_to_char(races, ch);
+	break;
 	}
 
 	if (pc_race_table[race].remort) {
-	    send_to_char("You cannot choose that race.\n\r", ch);
-	    send_to_char(races, ch);
-	    break;
+	send_to_char("You cannot choose that race.\n\r", ch);
+	send_to_char(races, ch);
+	break;
 	}
 
-	/* Alignment restrictions, out for now -- Gairun 20111219 */
-	
 	if ((ch->alignment == 0 && pc_race_table[race].alignment != ALIGN_NONE)
 	||  (ch->alignment  < 0 && pc_race_table[race].alignment != ALIGN_EVIL)
 	||  (ch->alignment  > 0 && pc_race_table[race].alignment != ALIGN_GOOD))
 	{
-	    if (ch->alignment == 0)
-		send_to_char("That is not a neutral aligned race.\n\r", ch);
-	    else if (ch->alignment < 0)
-		send_to_char("That is not an evil aligned race.\n\r", ch);
-	    else
-		send_to_char("That is not a good aligned race.\n\r", ch);
+	if (ch->alignment == 0)
+	send_to_char("That is not a neutral aligned race.\n\r", ch);
+	else if (ch->alignment < 0)
+	send_to_char("That is not an evil aligned race.\n\r", ch);
+	else
+	send_to_char("That is not a good aligned race.\n\r", ch);
 
-	    send_to_char(races, ch);
-	    break;
+	send_to_char(races, ch);
+	break;
 	}
-	
-        ch->race = race;
+	ch->race = race;
 
 	/* initialize stats */
 	for (i = 0; i < MAX_STATS; i++)
-	    ch->perm_stat[i] = pc_race_table[race].stats[i];
-        ch->act2        = ch->act2|race_table[race].act2;
+	ch->perm_stat[i] = pc_race_table[race].stats[i];
+	ch->act2        = ch->act2|race_table[race].act2;
 	ch->affected_by = ch->affected_by|race_table[race].aff;
+
+	ch->imm_flags_perm = race_table[race].imm;
+	ch->res_flags_perm = race_table[race].res;
+	ch->vuln_flags_perm = race_table[race].vuln;
+
 	ch->imm_flags	= ch->imm_flags|race_table[race].imm;
 	ch->res_flags	= ch->res_flags|race_table[race].res;
 	ch->vuln_flags	= ch->vuln_flags|race_table[race].vuln;
@@ -2376,33 +2538,33 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 	/* add skills */
 	for (i = 0; i < 5; i++)
 	{
-	    if (pc_race_table[race].skills[i] == NULL)
-	 	break;
+	if (pc_race_table[race].skills[i] == NULL)
+	break;
 
-	    group_add(ch,pc_race_table[race].skills[i],FALSE);
+	group_add(ch,pc_race_table[race].skills[i],FALSE);
 	}
 
 	ch->size = pc_race_table[race].size;
 
 	send_to_char("\n\r{YWhat is your sex (M/F)?{x ", ch);
 	d->connected = CON_GET_NEW_SEX;
-        break;
+	break;
 
-    case CON_GET_NEW_SEX:
+	case CON_GET_NEW_SEX:
 	switch (argument[0])
 	{
-	    case 'm': case 'M': ch->sex = SEX_MALE;
-				ch->pcdata->true_sex = SEX_MALE;
-				break;
-	    case 'f': case 'F': ch->sex = SEX_FEMALE;
-				ch->pcdata->true_sex = SEX_FEMALE;
-				break;
-	    default:
-	                        if (argument[0] != '\0')
-				    send_to_char("{xThat's not a sex.\n\r", ch);
+	case 'm': case 'M': ch->sex = SEX_MALE;
+	ch->pcdata->true_sex = SEX_MALE;
+	break;
+	case 'f': case 'F': ch->sex = SEX_FEMALE;
+	ch->pcdata->true_sex = SEX_FEMALE;
+	break;
+	default:
+				if (argument[0] != '\0')
+		send_to_char("{xThat's not a sex.\n\r", ch);
 
-				send_to_char("\n\r{YWhat is your sex (M/F)?{x ", ch);
-				return;
+	send_to_char("\n\r{YWhat is your sex (M/F)?{x ", ch);
+	return;
 	}
 
 	send_to_char("\n\rIn Sentience, there are four main classes to choose from. From \n\r", ch);
@@ -2417,80 +2579,80 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 	strcpy(buf, "{YSelect the class you would like to begin with {B[{C");
 	for (iClass = 0; iClass < MAX_CLASS; iClass++)
 	{
-	    if (iClass > 0)
-		strcat(buf, " ");
-	    strcat(buf, class_table[iClass].name);
+	if (iClass > 0)
+	strcat(buf, " ");
+	strcat(buf, class_table[iClass].name);
 	}
 	strcat(buf, "{B]{Y:{x ");
 	send_to_char(buf, ch);
 	d->connected = CON_GET_NEW_CLASS;
 	break;
 
-    case CON_GET_NEW_CLASS:
+	case CON_GET_NEW_CLASS:
 	sprintf(classes, "\n\r{YChoose your class {B[{Cmage cleric thief warrior{B]{Y:{x ");
 	if (!str_prefix("help", argument))
 	{
-	    argument = one_argument(argument,arg);
-	    if (argument[0] == '\0')
-	    {
-		send_to_char("{b++++++{B------{C++++++ {WCLASSES AND SUBCLASSES{C++++++{B------{b++++++{x\n\r\n\r", ch);
-		if ((help = lookup_help_exact("classes professions", 0, topHelpCat)) != NULL)
-		    send_to_char(help->text, ch);
-	    }
-	    else
-	    {
-		if ((iClass = class_lookup(argument)) != -1
-		&&  (help = lookup_help_exact(class_table[iClass].name, 0, topHelpCat)) != NULL)
-		{
-		    sprintf(buf, "{b++++++{B------{C++++++ {W%s {C++++++{B------{b++++++{x\n\r\n\r",
-		        help->keyword);
-		    send_to_char(buf, ch);
-		    send_to_char(help->text, ch);
-		}
-		else
-		    send_to_char("That's not a class.\n\r", ch);
-	    }
+	argument = one_argument(argument,arg);
+	if (argument[0] == '\0')
+	{
+	send_to_char("{b++++++{B------{C++++++ {WCLASSES AND SUBCLASSES{C++++++{B------{b++++++{x\n\r\n\r", ch);
+	if ((help = lookup_help_exact("classes professions", 0, topHelpCat)) != NULL)
+	send_to_char(help->text, ch);
+	}
+	else
+	{
+	if ((iClass = class_lookup(argument)) != -1
+	&&  (help = lookup_help_exact(class_table[iClass].name, 0, topHelpCat)) != NULL)
+	{
+	sprintf(buf, "{b++++++{B------{C++++++ {W%s {C++++++{B------{b++++++{x\n\r\n\r",
+	help->keyword);
+	send_to_char(buf, ch);
+	send_to_char(help->text, ch);
+	}
+	else
+	send_to_char("That's not a class.\n\r", ch);
+	}
 
-	    send_to_char(classes, ch);
-	    break;
+	send_to_char(classes, ch);
+	break;
 	}
 
 	if (argument[0] == '\0') {
-	    send_to_char(classes, ch);
-	    break;
+	send_to_char(classes, ch);
+	break;
 	}
 
 	if ((iClass = class_lookup(argument)) == -1)
 	{
-	    send_to_char("{xThat's not a class.\n\r", ch);
-	    send_to_char(classes, ch);
-	    break;
+	send_to_char("{xThat's not a class.\n\r", ch);
+	send_to_char(classes, ch);
+	break;
 	}
 
 	ch->pcdata->class_current = iClass;
 
 	switch(iClass)
 	{
-	    case 0 :	ch->pcdata->class_mage = 0;
-			ch->pcdata->class_cleric = -1;
-			ch->pcdata->class_thief = -1;
-			ch->pcdata->class_warrior = -1;
-			break;
-	    case 1 :	ch->pcdata->class_mage = -1;
-			ch->pcdata->class_cleric = 1;
-			ch->pcdata->class_thief = -1;
-			ch->pcdata->class_warrior = -1;
-			break;
-	    case 2 :	ch->pcdata->class_mage = -1;
-			ch->pcdata->class_cleric = -1;
-			ch->pcdata->class_thief = 2;
-			ch->pcdata->class_warrior = -1;
-			break;
-	    case 3 :	ch->pcdata->class_mage = -1;
-			ch->pcdata->class_cleric = -1;
-			ch->pcdata->class_thief = -1;
-			ch->pcdata->class_warrior = 3;
-			break;
+	case 0 :	ch->pcdata->class_mage = 0;
+	ch->pcdata->class_cleric = -1;
+	ch->pcdata->class_thief = -1;
+	ch->pcdata->class_warrior = -1;
+	break;
+	case 1 :	ch->pcdata->class_mage = -1;
+	ch->pcdata->class_cleric = 1;
+	ch->pcdata->class_thief = -1;
+	ch->pcdata->class_warrior = -1;
+	break;
+	case 2 :	ch->pcdata->class_mage = -1;
+	ch->pcdata->class_cleric = -1;
+	ch->pcdata->class_thief = 2;
+	ch->pcdata->class_warrior = -1;
+	break;
+	case 3 :	ch->pcdata->class_mage = -1;
+	ch->pcdata->class_cleric = -1;
+	ch->pcdata->class_thief = -1;
+	ch->pcdata->class_warrior = 3;
+	break;
 	}
 
 	send_to_char("\n\r{xFor each class there are a possible of three subclasses. Each subclass\n\r", ch);
@@ -2508,96 +2670,96 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 	d->connected = CON_GET_SUB_CLASS;
 	break;
 
-    case CON_GET_SUB_CLASS:
-        sprintf(subclasses, "\n\r{YChoose your subclass ");
+	case CON_GET_SUB_CLASS:
+	sprintf(subclasses, "\n\r{YChoose your subclass ");
 	add_possible_subclasses(ch, subclasses);
 	strcat(subclasses, "{Y:{x ");
 
 	if (!str_prefix("help", argument))
 	{
-	    argument = one_argument(argument,arg);
-	    if (argument[0] == '\0' || !str_prefix(argument, "subclasses") || !str_prefix(argument, "classes"))
-	    {
-		send_to_char("{b++++++{B------{C++++++ {WCLASSES AND SUBCLASSES {C++++++{B------{b++++++{x\n\r\n\r", ch);
-		if ((help = lookup_help_exact("classes professions", 0, topHelpCat)) != NULL)
-		    send_to_char(help->text, ch);
-	    }
-	    else
-	    {
-		sprintf(buf, "%s", argument);
-		for (iClass = 0; iClass < MAX_SUB_CLASS; iClass++)
-		{
-		    if (!str_prefix(buf, sub_class_table[iClass].name[ch->sex])
-	            &&  !sub_class_table[iClass].remort)
-			break;
-		}
+	argument = one_argument(argument,arg);
+	if (argument[0] == '\0' || !str_prefix(argument, "subclasses") || !str_prefix(argument, "classes"))
+	{
+	send_to_char("{b++++++{B------{C++++++ {WCLASSES AND SUBCLASSES {C++++++{B------{b++++++{x\n\r\n\r", ch);
+	if ((help = lookup_help_exact("classes professions", 0, topHelpCat)) != NULL)
+	send_to_char(help->text, ch);
+	}
+	else
+	{
+	sprintf(buf, "%s", argument);
+	for (iClass = 0; iClass < MAX_SUB_CLASS; iClass++)
+	{
+	if (!str_prefix(buf, sub_class_table[iClass].name[ch->sex])
+	&&  !sub_class_table[iClass].remort)
+	break;
+	}
 
-		if (iClass == MAX_SUB_CLASS)
-		    send_to_char("That's not a subclass.\n\r", ch);
-                else
-		{
-		    /* Kind of a hack for now*/
-		    if (!str_cmp(sub_class_table[iClass].name[ch->sex], "witch")
-		    ||  !str_cmp(sub_class_table[iClass].name[ch->sex], "warlock"))
-			sprintf(buf, "Warlock Witch");
-		    else if (!str_cmp(sub_class_table[iClass].name[ch->sex], "sorcerer")
-		    ||	 !str_cmp(sub_class_table[iClass].name[ch->sex], "sorceress"))
-			sprintf(buf, "Sorcerer Sorceress");
-		    else
-			sprintf(buf, sub_class_table[iClass].name[ch->sex]);
+	if (iClass == MAX_SUB_CLASS)
+	send_to_char("That's not a subclass.\n\r", ch);
+	else
+	{
+	/* Kind of a hack for now*/
+	if (!str_cmp(sub_class_table[iClass].name[ch->sex], "witch")
+	||  !str_cmp(sub_class_table[iClass].name[ch->sex], "warlock"))
+	sprintf(buf, "Warlock Witch");
+	else if (!str_cmp(sub_class_table[iClass].name[ch->sex], "sorcerer")
+	||	 !str_cmp(sub_class_table[iClass].name[ch->sex], "sorceress"))
+	sprintf(buf, "Sorcerer Sorceress");
+	else
+	sprintf(buf, sub_class_table[iClass].name[ch->sex]);
 
-		    if ((help = lookup_help_exact(buf, 0, topHelpCat)) != NULL)
-		    {
-			sprintf(buf, "{b++++++{B------{C++++++ {W%s {C++++++{B------{b++++++{x\n\r\n\r",
-			    help->keyword);
-			send_to_char(buf, ch);
-			send_to_char(help->text, ch);
-		    }
-		}
-	    }
+	if ((help = lookup_help_exact(buf, 0, topHelpCat)) != NULL)
+	{
+	sprintf(buf, "{b++++++{B------{C++++++ {W%s {C++++++{B------{b++++++{x\n\r\n\r",
+	help->keyword);
+	send_to_char(buf, ch);
+	send_to_char(help->text, ch);
+	}
+	}
+	}
 
-	    send_to_char(subclasses, ch);
-	    return;
+	send_to_char(subclasses, ch);
+	return;
 	}
 
 	if (argument[0] == '\0') {
-	    send_to_char(subclasses, ch);
-	    return;
+	send_to_char(subclasses, ch);
+	return;
 	}
 
 	iClass = sub_class_lookup(ch, argument);
-        if (iClass == -1)
+	if (iClass == -1)
 	{
-	    send_to_char("{xThat's not a subclass you can choose.\n\r", ch);
-	    send_to_char(subclasses, ch);
-	    return;
+	send_to_char("{xThat's not a subclass you can choose.\n\r", ch);
+	send_to_char(subclasses, ch);
+	return;
 	}
 
-        ch->pcdata->sub_class_current = iClass;
+	ch->pcdata->sub_class_current = iClass;
 
 	if (ch->pcdata->class_mage != -1)
-	    ch->pcdata->sub_class_mage = iClass;
+	ch->pcdata->sub_class_mage = iClass;
 	else
 	if (ch->pcdata->class_cleric != -1)
-	    ch->pcdata->sub_class_cleric = iClass;
+	ch->pcdata->sub_class_cleric = iClass;
 	else
 	if (ch->pcdata->class_thief != -1)
-	    ch->pcdata->sub_class_thief = iClass;
+	ch->pcdata->sub_class_thief = iClass;
 	else
 	if (ch->pcdata->class_warrior != -1)
-	    ch->pcdata->sub_class_warrior = iClass;
+	ch->pcdata->sub_class_warrior = iClass;
 
 	sprintf(log_buf, "%s@%s new player.", ch->name, d->host);
 	log_string(log_buf);
 
-        SET_BIT(ch->act, PLR_NO_CHALLENGE);
+	SET_BIT(ch->act, PLR_NO_CHALLENGE);
 
-        group_add(ch,"global skills",FALSE);
-        group_add(ch,class_table[ch->pcdata->class_current].base_group,FALSE);
+	group_add(ch,"global skills",FALSE);
+	group_add(ch,class_table[ch->pcdata->class_current].base_group,FALSE);
 	group_add(ch, sub_class_table[ch->pcdata->sub_class_current].default_group, FALSE);
 
-        /* Make it so no notes appear*/
-        ch->pcdata->last_note = current_time;
+	/* Make it so no notes appear*/
+	ch->pcdata->last_note = current_time;
 	ch->pcdata->last_idea = current_time;
 	ch->pcdata->last_penalty = current_time;
 	ch->pcdata->last_news = current_time;
@@ -2609,58 +2771,58 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 	/* Set up default toggles*/
 	for (i = 0; pc_set_table[i].name != NULL; i++)
 	{
-	    if (pc_set_table[i].default_state == SETTING_ON
-            &&  ch->tot_level >= pc_set_table[i].min_level)
-	    {
-		if (pc_set_table[i].vector != 0)
-		{
-		    vector = pc_set_table[i].vector;
-		    field = &ch->act;
-		}
-		else if (pc_set_table[i].vector2 != 0)
-		{
-		    vector = pc_set_table[i].vector2;
-		    field = &ch->act2;
-		}
-		else if (pc_set_table[i].vector_comm != 0)
-		{
-		    vector = pc_set_table[i].vector_comm;
-		    field = &ch->comm;
-		}
-		else
-		    continue;
+	if (pc_set_table[i].default_state == SETTING_ON
+	&&  ch->tot_level >= pc_set_table[i].min_level)
+	{
+	if (pc_set_table[i].vector != 0)
+	{
+	vector = pc_set_table[i].vector;
+	field = &ch->act;
+	}
+	else if (pc_set_table[i].vector2 != 0)
+	{
+	vector = pc_set_table[i].vector2;
+	field = &ch->act2;
+	}
+	else if (pc_set_table[i].vector_comm != 0)
+	{
+	vector = pc_set_table[i].vector_comm;
+	field = &ch->comm;
+	}
+	else
+	continue;
 
-		if (pc_set_table[i].inverted)
-		{
-		    /*if (IS_SET(*field, vector))*/
-			REMOVE_BIT(*field, vector);
-		    /*else*/
-			/*SET_BIT(*field, vector);*/
-		}
-		else
-		{
-		    /*if (IS_SET(*field, vector))*/
-			/*REMOVE_BIT(*field, vector);*/
-		   /* else*/
-			SET_BIT(*field, vector);
-		}
-	    }
+	if (pc_set_table[i].inverted)
+	{
+	/*if (IS_SET(*field, vector))*/
+	REMOVE_BIT(*field, vector);
+	/*else*/
+	/*SET_BIT(*field, vector);*/
+	}
+	else
+	{
+	/*if (IS_SET(*field, vector))*/
+	/*REMOVE_BIT(*field, vector);*/
+	/* else*/
+	SET_BIT(*field, vector);
+	}
+	}
 	}
 
 	ch->level     = 0;
 	ch->tot_level = 0;
 
-        /* Set up weapon skill*/
+	/* Set up weapon skill*/
 	switch (ch->pcdata->class_current)
 	{
-	    case CLASS_MAGE:	weapon = gsn_quarterstaff;	break;
-	    case CLASS_CLERIC:	weapon = gsn_quarterstaff;	break;
-	    case CLASS_THIEF:	weapon = gsn_dagger;		break;
-	    case CLASS_WARRIOR:	weapon = gsn_sword;		break;
-	    default:
-		bug("nanny: bad current class in weapon pick", 0);
-		weapon = gsn_sword;
-		break;
+	case CLASS_MAGE:	weapon = gsn_quarterstaff;	break;
+	case CLASS_CLERIC:	weapon = gsn_quarterstaff;	break;
+	case CLASS_THIEF:	weapon = gsn_dagger;		break;
+	case CLASS_WARRIOR:	weapon = gsn_sword;		break;
+	default:
+	bug("nanny: bad current class in weapon pick", 0);
+	weapon = gsn_sword;
+	break;
 	}
 
 	ch->pcdata->learned[weapon] = 50;
@@ -2668,20 +2830,20 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 	d->connected = CON_READ_MOTD;
 	break;
 
-    case CON_READ_IMOTD:
+	case CON_READ_IMOTD:
 	write_to_buffer(d,"\n\r",2);
-        do_function(ch, &do_motd, "");
-        d->connected = CON_READ_MOTD;
+	do_function(ch, &do_motd, "");
+	d->connected = CON_READ_MOTD;
 	break;
 
-    case CON_READ_MOTD:
+	case CON_READ_MOTD:
 	/* VIZZMARK */
 	if (ch->pcdata == NULL || ch->pcdata->pwd[0] == '\0')
-        {
-            write_to_buffer(d, "Warning! Null password!\n\r",0);
-            write_to_buffer(d,
-                "Type 'password null <new password>' to fix.\n\r",0);
-        }
+	{
+	write_to_buffer(d, "Warning! Null password!\n\r",0);
+	write_to_buffer(d,
+	"Type 'password null <new password>' to fix.\n\r",0);
+	}
 
 	ch->next	= char_list;
 	char_list	= ch;
@@ -2689,250 +2851,205 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 
 	if (ch->pcdata->old_pwd != NULL)
 	{
-	    free_string(ch->pcdata->old_pwd);
-	    ch->pcdata->old_pwd = NULL;
+	free_string(ch->pcdata->old_pwd);
+	ch->pcdata->old_pwd = NULL;
 	}
 
 	reset_char(ch);
 
- 	/* Show how many players on */
- 	playernum = 0;
- 	for (d2 = descriptor_list; d2 != NULL; d2 = d2->next)
+	/* Show how many players on */
+	playernum = 0;
+	for (d2 = descriptor_list; d2 != NULL; d2 = d2->next)
 	{
-	    if (d2->connected == CON_PLAYING
-            &&  d2 != d
-	    &&  can_see(d->character, d2->character))
-		playernum++;
+	if (d2->connected == CON_PLAYING
+	&&  d2 != d
+	&&  can_see(d->character, d2->character))
+	playernum++;
 	}
 
-/*	 No the one that logged on isn't playing yet!*/
-/*		CON_READ_MOTD != CON_PLAYING*/
-/*        if (playernum != 0)*/
-/*	    --playernum; // One less because the one who just logged in is a player*/
+	/*	 No the one that logged on isn't playing yet!*/
+	/*		CON_READ_MOTD != CON_PLAYING*/
+	/*        if (playernum != 0)*/
+	/*	    --playernum; // One less because the one who just logged in is a player*/
 
 	sprintf(buf, "{MThe current system time is {x%s{x\r", ctime(&current_time));
 	send_to_char(buf, ch);
 
 	sprintf(buf, "{MLast reboot was at {x%s{x\r", str_boot_time);
- 	send_to_char(buf, ch);
+	send_to_char(buf, ch);
 
 	sprintf(buf, "{MThere are currently {W%ld{M players online.{x\n\r", playernum);
- 	send_to_char(buf, ch);
+	send_to_char(buf, ch);
 
 	if (ch->level == 0)
 	{
-	    ch->perm_stat[class_table[ch->pcdata->class_current].attr_prime] += 3;
+	ch->perm_stat[class_table[ch->pcdata->class_current].attr_prime] += 3;
 
-	    ch->exp	= 0;
-	    ch->hit	= ch->max_hit;
-	    ch->mana	= ch->max_mana;
-	    ch->move	= ch->max_move;
-	    ch->train	 = 3;
-	    ch->practice = 5;
-	    sprintf(buf, "{x");
-	    set_title(ch, buf);
-	    char_to_room(ch, get_room_index(ROOM_VNUM_SCHOOL));
-	    do_function(ch, &do_changes, "catchup");
-	    SET_BIT(ch->comm, COMM_NO_OOC);
-	    SET_BIT(ch->comm, COMM_NO_FLAMING);
-	    send_to_char("\n\r",ch);
-	    for (d2 = descriptor_list; d2 != NULL; d2 = d2->next)
-	    {
-		if (d2->connected == CON_PLAYING
-		&& d2->character != ch
-		&& !IS_SET(d2->character->comm, COMM_NOANNOUNCE))
-		{
-		    act("{MThe Town Crier Announces 'All welcome $N, a new adventurer to Sentience!'{x",
-			    d2->character,NULL, ch, TO_CHAR);
-		}
-	    }
+	ch->exp	= 0;
+	ch->hit	= ch->max_hit;
+	ch->mana	= ch->max_mana;
+	ch->move	= ch->max_move;
+	ch->train	 = 3;
+	ch->practice = 5;
+	sprintf(buf, "{x");
+	set_title(ch, buf);
+	char_to_room(ch, get_room_index(ROOM_VNUM_SCHOOL));
+	do_function(ch, &do_changes, "catchup");
+	SET_BIT(ch->comm, COMM_NO_OOC);
+	SET_BIT(ch->comm, COMM_NO_FLAMING);
+	send_to_char("\n\r",ch);
+	for (d2 = descriptor_list; d2 != NULL; d2 = d2->next)
+	{
+	if (d2->connected == CON_PLAYING
+	&& d2->character != ch
+	&& !IS_SET(d2->character->comm, COMM_NOANNOUNCE))
+	{
+		act("{MThe Town Crier Announces 'All welcome $N, a new adventurer to Sentience!'{x",
+		d2->character,ch, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+	}
+	}
 
-	    ch->level = 1;
-	    ch->tot_level = 1;
+	ch->level = 1;
+	ch->tot_level = 1;
 
-	    /* Give them eq*/
-	    /* Or don't -- this should be scripted -- Gairun - 20111219 
-	    if (get_obj_index(class_table[ch->pcdata->class_current].weapon) != NULL)
-	    {
-		obj = create_object(get_obj_index(class_table[ch->pcdata->class_current].weapon), 1, TRUE);
-		obj_to_char(obj, ch);
-		equip_char(ch, obj, WEAR_WIELD);
-	    }
+	/* Give them eq*/
+	    /* Or don't -- this should be scripted -- Gairun - 20111219
+	if (get_obj_index(class_table[ch->pcdata->class_current].weapon) != NULL)
+	{
+	obj = create_object(get_obj_index(class_table[ch->pcdata->class_current].weapon), 1, TRUE);
+	obj_to_char(obj, ch);
+	equip_char(ch, obj, WEAR_WIELD);
+	}
 
-	    /* Kind of a hack to give bards a newbie harmonica
-	    if (ch->pcdata->sub_class_current == CLASS_THIEF_BARD)
-	    {
-		obj = create_object(get_obj_index(OBJ_VNUM_NEWB_HARMONICA), 1, TRUE);
-		obj_to_char(obj, ch);
-	    }
+	    // Kind of a hack to give bards a newbie harmonica
+	if (ch->pcdata->sub_class_current == CLASS_THIEF_BARD)
+	{
+	obj = create_object(get_obj_index(OBJ_VNUM_NEWB_HARMONICA), 1, TRUE);
+	obj_to_char(obj, ch);
+	}
 
-	    for (i = 0; newbie_eq_table[i].vnum != -1; i++)
-	    {
-		if (get_obj_index(newbie_eq_table[i].vnum) != NULL)
-		{
-		    obj = create_object(get_obj_index(newbie_eq_table[i].vnum), 1, TRUE);
-		    obj_to_char(obj, ch);
-		    equip_char(ch, obj, newbie_eq_table[i].wear_loc);
-		}
-	    }
+	for (i = 0; newbie_eq_table[i].vnum != -1; i++)
+	{
+	if (get_obj_index(newbie_eq_table[i].vnum) != NULL)
+	{
+	obj = create_object(get_obj_index(newbie_eq_table[i].vnum), 1, TRUE);
+	obj_to_char(obj, ch);
+	equip_char(ch, obj, newbie_eq_table[i].wear_loc);
+	}
+	}
 	    */
 	}
 
-        if (ch->in_room != NULL)
+	if (ch->in_room != NULL)
 	{
-	    /*if (ch->pcdata->owner_of_boat_before_logoff != NULL
-	    ||  ch->pcdata->vnum_of_boat_before_logoff > 0)
-	    {
-		SHIP_DATA *ship = NULL;
-
-		for (ship = ((AREA_DATA *) get_sailing_boat_area())->ship_list; ship !=NULL; ship = ship->next)
-		{
-		    if (ch->pcdata->owner_of_boat_before_logoff != NULL)
-		    {
-			if (!str_cmp(ship->owner_name, ch->pcdata->owner_of_boat_before_logoff))
-			{
-			    char_from_room(ch);
-			    char_to_room(ch, get_room_index(ship->ship->value[5]));
-			    break;
-			}
-		    }
-		    else
-		    {
-			if (IS_NPC_SHIP(ship))
-			{
-			    if (ch->pcdata->vnum_of_boat_before_logoff == ship->npc_ship->pShipData->vnum)
-			    {
-				char_from_room(ch);
-				char_to_room(ch, get_room_index(ship->ship->value[5]));
-				break;
-			    }
-			}
-		    }
-		}
-
-		if (ship == NULL)
-		{
-		    char_to_room(ch, get_room_index(ROOM_VNUM_TEMPLE));
-		    act("As you wake, you recall faint memories of someone dragging you back to Plith after your vessel sunk.", ch, NULL, NULL, TO_CHAR);
-		    act("You feel exhausted but relieved you weren't eaten by sharks!", ch, NULL, NULL, TO_CHAR);
-		    ch->position = POS_RESTING;
-		}
-	    }
-	    else*/
-	    if (ch->in_room->vnum != ROOM_VNUM_SCHOOL)
-		char_to_room(ch, ch->in_room);
+		if( ch->in_room->vnum != ROOM_VNUM_SCHOOL )
+			char_to_room(ch, ch->in_room);
 	}
 	else
-        {
-            if (ch->in_wilds != NULL)
-            {
-                plogf("nanny.c, join_world(): Transferring char to VRoom");
-                char_to_vroom (ch, ch->in_wilds, ch->at_wilds_x, ch->at_wilds_y);
-            }
-            else
-            {
-                if (IS_IMMORTAL (ch))
-                {
-                    char_to_room (ch, get_room_index (ROOM_VNUM_CHAT));
-                }
-                else
-                {
-                    char_to_room (ch, get_room_index (ROOM_VNUM_TEMPLE));
-                }
-            }
-        }
+	{
+	if (ch->in_wilds != NULL)
+	{
+	plogf("nanny.c, join_world(): Transferring char to VRoom");
+	char_to_vroom (ch, ch->in_wilds, ch->at_wilds_x, ch->at_wilds_y);
+	}
+	else
+	{
+	if (IS_IMMORTAL (ch))
+	{
+		char_to_room (ch, get_room_index (ROOM_VNUM_CHAT));
+	}
+	else
+	{
+		char_to_room (ch, get_room_index (ROOM_VNUM_TEMPLE));
+	}
+	}
+	}
 
-	act("$n has entered the game.", ch, NULL, NULL, TO_ROOM);
+	act("$n has entered the game.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	for (d2 = descriptor_list; d2 != NULL; d2 = d2->next)
 	{
-	    if (d2->connected == CON_PLAYING
-	    && !IS_IMMORTAL(d->character)
-	    && d2->character != ch
-	    && IS_SET(d2->character->comm, COMM_NOTIFY))
-		act("{B$N has entered the game.{x", d2->character, NULL, ch, TO_CHAR);
+	if (d2->connected == CON_PLAYING
+	&& !IS_IMMORTAL(d->character)
+	&& d2->character != ch
+	&& IS_SET(d2->character->comm, COMM_NOTIFY))
+	act("{B$N has entered the game.{x", d2->character, ch, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	}
 
 	/* Kick chars of wrong align out of their church*/
 	if (ch->church != NULL)
 	{
-	    if ((ch->alignment < 0
-		   && ch->church->alignment == CHURCH_GOOD)
-            || (ch->alignment > 0
-	         && ch->church->alignment == CHURCH_EVIL))
-	    {
-		act("{YAs you enter Sentience, you feel your church's faith has been changed.{x", ch, NULL, NULL, TO_CHAR);
-		act("{YYou feel your psychic link to $T being severed.{x", ch, NULL, ch->church->name, TO_CHAR);
-		remove_member(ch->church_member);
-		ch->church = NULL;
-	    }
+	if ((ch->alignment < 0
+	&& ch->church->alignment == CHURCH_GOOD)
+	|| (ch->alignment > 0
+	&& ch->church->alignment == CHURCH_EVIL))
+	{
+	act("{YAs you enter Sentience, you feel your church's faith has been changed.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+	act("{YYou feel your psychic link to $T being severed.{x", ch, NULL, NULL, NULL, NULL, NULL, ch->church->name, TO_CHAR);
+	remove_member(ch->church_member);
+	ch->church = NULL;
+	}
 	}
 
 	/* Send a message to the church*/
 	if (ch->church != NULL)
 	{
-	    sprintf(buf, "{Y[%s has entered the game.]{x\n\r", ch->name);
-	    church_echo(ch->church, buf);
+	sprintf(buf, "{Y[%s has entered the game.]{x\n\r", ch->name);
+	church_echo(ch->church, buf);
+
+		list_addlink(ch->church->online_players, ch);
 	}
 
-        /* Unscrew people's classes, subclasses and skills if they are messed up somehow.*/
+	/* Unscrew people's classes, subclasses and skills if they are messed up somehow.*/
 	if (!IS_IMMORTAL(ch))
 	{
-	    descrew_subclasses(d->character);
+	descrew_subclasses(d->character);
 
-	    if (!has_correct_classes(d->character))
-		fix_broken_classes(d->character);
+	if (!has_correct_classes(d->character))
+	fix_broken_classes(d->character);
 
-	    update_skills(d->character);
+	update_skills(d->character);
 	}
+
+	// Add connection to appropriate lists
+	connection_add(d);
 
 	wiznet("$N has entered the game.", d->character, NULL, WIZ_LOGINS, 0, 0);
 
 	do_function(ch, &do_look, "auto");
 
 	do_function(ch, &do_unread, "");
-	if(0 && IS_IMMORTAL(ch)) {
-	if(ch->in_room) {
-	CHAR_DATA *rch;
 
-	for(rch = ch->in_room->people; rch && rch != ch; rch = rch->next_in_room);
-
-	if(rch)
-	send_to_char("{WFOUND IN ROOM{x\n\r", ch);
-	else
-	send_to_char("{WNOT FOUND IN ROOM{x\n\r", ch);
-	} else {
-	send_to_char("{WROOM IS NULL{x\n\r", ch);
-	}
-	}
+	// LOGIN TRIGGER
+	script_login(ch);
 
 	break;
 
 	/* Get the player's e-mail if it's not in the pfile already */
-    case CON_GET_EMAIL:
-        if (argument[0] == '\0') {
-	    send_to_char("Enter your e-mail address: ", ch);
-	    return;
+	case CON_GET_EMAIL:
+	if (argument[0] == '\0') {
+	send_to_char("Enter your e-mail address: ", ch);
+	return;
 	}
 
 	if (strlen(argument) < 5 || str_infix("@", argument)) {
-	    send_to_char("\n\rInvalid e-mail address. Enter your e-mail address: ", ch);
-	    return;
+	send_to_char("\n\rInvalid e-mail address. Enter your e-mail address: ", ch);
+	return;
 	}
 
 	ch->pcdata->email = str_dup(argument);
 
 	/* New char, continue with the char creation process */
 	if (ch->tot_level == 0) {
-	    write_to_buffer(d, "\n\rWould you like ascii colour (Y/N)? ", 0);
-	    d->connected = CON_GET_ASCII;
+	write_to_buffer(d, "\n\rWould you like ascii colour (Y/N)? ", 0);
+	d->connected = CON_GET_ASCII;
 	} else { /* Old char, send them on their merry way */
-	    write_to_buffer(d, "\n\rYour e-mail address has been saved.\n\r\n\r[Hit Return to continue]\n\r", 0);
-	    if (IS_IMMORTAL(ch))
-		d->connected = CON_READ_IMOTD;
-	    else
-		d->connected = CON_READ_MOTD;
+	write_to_buffer(d, "\n\rYour e-mail address has been saved.\n\r\n\r[Hit Return to continue]\n\r", 0);
+	if (IS_IMMORTAL(ch))
+	d->connected = CON_READ_IMOTD;
+	else
+	d->connected = CON_READ_MOTD;
 	}
-    }
+	}
 }
 
 
@@ -3085,7 +3202,7 @@ bool check_reconnect(DESCRIPTOR_DATA *d, char *name, bool fConn)
 		ch->timer	 = 0;
 		send_to_char(
 		    "Reconnecting. Type replay to see missed tells.\n\r", ch);
-		act("$n has reconnected.", ch, NULL, NULL, TO_ROOM);
+		act("$n has reconnected.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
 		sprintf(log_buf, "%s@%s reconnected.", ch->name, d->host);
 		log_string(log_buf);
@@ -3160,11 +3277,34 @@ void stop_idling(CHAR_DATA *ch)
     ||   ch->in_room != get_room_index(ROOM_VNUM_LIMBO))
 	return;
 
-    ch->timer = 0;
-    char_from_room(ch);
-    char_to_room(ch, ch->was_in_room);
+	if( ch->was_in_room_id[0] || ch->was_in_room_id[1] )
+	{
+		// If this is a clone room but isn't the same one...
+		if( !ch->was_in_room->source ||
+			ch->was_in_room->id[0] != ch->was_in_room_id[0] ||
+			ch->was_in_room->id[1] != ch->was_in_room_id[1])
+			return;
+
+		ch->timer = 0;
+		char_from_room(ch);
+	    char_to_room(ch, ch->was_in_room);
+
+	}
+	else if( ch->was_in_wilds )
+	{
+		ch->timer = 0;
+		char_from_room(ch);
+		char_to_vroom(ch, ch->was_in_wilds, ch->was_at_wilds_x, ch->was_at_wilds_y);
+	}
+	else
+	{
+		ch->timer = 0;
+		char_from_room(ch);
+		char_to_room(ch, ch->was_in_room);
+	}
+
     ch->was_in_room = NULL;
-    act("$n has returned from the void.", ch, NULL, NULL, TO_ROOM);
+    act("$n has returned from the void.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 }
 
 
@@ -3252,37 +3392,58 @@ void send_to_char(const char *txt, CHAR_DATA *ch)
 
     if(txt && ch->desc)
 	{
+		bool capitalize = FALSE;
 	    if(IS_SET(ch->act, PLR_COLOUR))
 	    {
-		for(point = txt ; *point ; point++)
+			for(point = txt ; *point ; point++)
 	        {
-		    if(*point == '{')
-		    {
-			point++;
-			skip = colour(*point, ch, point2);
-			while(skip-- > 0)
-			    ++point2;
-			continue;
-		    }
-		    *point2 = *point;
-		    *++point2 = '\0';
-		}
-		*point2 = '\0';
+			    if(*point == '{')
+			    {
+					point++;
+
+					if( *point == '+' )
+						capitalize = TRUE;
+					else {
+						skip = colour(*point, ch, point2);
+						point2 += skip;
+					}
+					continue;
+			    }
+
+			    if( capitalize && isalpha(*point) )
+				{
+			    	*point2 = UPPER(*point);	// Make uppercase
+			    	capitalize = FALSE;
+				}
+				else
+					*point2 = *point;
+			    *++point2 = '\0';
+			}
+			*point2 = '\0';
         	write_to_buffer(ch->desc, buf, point2 - buf);
 	    }
 	    else
 	    {
-		for(point = txt ; *point ; point++)
-	        {
-		    if(*point == '{')
-		    {
-			point++;
-			continue;
-		    }
-		    *point2 = *point;
-		    *++point2 = '\0';
-		}
-		*point2 = '\0';
+			for(point = txt ; *point ; point++)
+				{
+				if(*point == '{')
+				{
+					point++;
+					if( *point == '+' )
+						capitalize = TRUE;
+
+					continue;
+				}
+			    if( capitalize && isalpha(*point) )
+				{
+			    	*point2 = UPPER(*point);	// Make uppercase
+			    	capitalize = FALSE;
+				}
+				else
+					*point2 = *point;
+				*++point2 = '\0';
+			}
+			*point2 = '\0';
         	write_to_buffer(ch->desc, buf, point2 - buf);
 	    }
 	}
@@ -3300,7 +3461,7 @@ void page_to_char_bw(const char *txt, CHAR_DATA *ch)
 
     if (ch->lines == 0)
     {
-	send_to_char(txt,ch);
+	send_to_char_bw(txt,ch);
 	return;
     }
 
@@ -3324,60 +3485,81 @@ void page_to_char(const char *txt, CHAR_DATA *ch)
 
     if(txt && ch->desc)
 	{
+		bool capitalize = FALSE;
 	    if(IS_SET(ch->act, PLR_COLOUR))
 	    {
-		for(point = txt, len = 1 ; *point ; point++)
+			for(point = txt, len = 1 ; *point ; point++)
+				{
+				if(*point == '{')
+				{
+					point++;
+					if( *point != '+' )
+						len += colour(*point, ch, cbuf);
+					continue;
+				}
+				len++;
+			}
+			buf = malloc(len);
+			buf[0] = '\0';
+			point2 = buf;
+			for(point = txt ; *point ; point++)
 	        {
-		    if(*point == '{')
-		    {
-			point++;
-			len += colour(*point, ch, cbuf);
-			continue;
-		    }
-		    len++;
-		}
-		buf = malloc(len);
-		buf[0] = '\0';
-		point2 = buf;
-		for(point = txt ; *point ; point++)
-	        {
-		    if(*point == '{')
-		    {
-			point++;
-			skip = colour(*point, ch, point2);
-			point2+=skip;
-			continue;
-		    }
-		    *point2 = *point;
-		    *++point2 = '\0';
-		}
-		*point2 = '\0';
-		ch->desc->showstr_head  = malloc(len);
-		strcpy(ch->desc->showstr_head, buf);
-		ch->desc->showstr_point = ch->desc->showstr_head;
-		show_string(ch->desc, "");
+			    if(*point == '{')
+			    {
+					point++;
+					if( *point == '+')
+						capitalize = TRUE;
+					else {
+						skip = colour(*point, ch, point2);
+						point2+=skip;
+					}
+					continue;
+				}
+			    if( capitalize && isalpha(*point) )
+				{
+			    	*point2 = UPPER(*point);	// Make uppercase
+			    	capitalize = FALSE;
+				}
+				else
+					*point2 = *point;
+				*point2 = *point;
+				*++point2 = '\0';
+			}
+			*point2 = '\0';
+			ch->desc->showstr_head  = malloc(len);
+			strcpy(ch->desc->showstr_head, buf);
+			ch->desc->showstr_point = ch->desc->showstr_head;
+			show_string(ch->desc, "");
 	    }
 	    else
 	    {
-		len = strlen(txt) + 1;
-		buf = malloc(len);
-		buf[0] = '\0';
-		point2 = buf;
-		for(point = txt ; *point ; point++)
-	        {
-		    if(*point == '{')
-		    {
-			point++;
-			continue;
-		    }
-		    *point2 = *point;
-		    *++point2 = '\0';
-		}
-		*point2 = '\0';
-		ch->desc->showstr_head  = malloc(strlen(buf) + 1);
-		strcpy(ch->desc->showstr_head, buf);
-		ch->desc->showstr_point = ch->desc->showstr_head;
-		show_string(ch->desc, "");
+			len = strlen(txt) + 1;
+			buf = malloc(len);
+			buf[0] = '\0';
+			point2 = buf;
+			for(point = txt ; *point ; point++)
+			{
+				if(*point == '{')
+				{
+					point++;
+					if( *point == '+')
+						capitalize = TRUE;
+					continue;
+				}
+			    if( capitalize && isalpha(*point) )
+				{
+			    	*point2 = UPPER(*point);	// Make uppercase
+			    	capitalize = FALSE;
+				}
+				else
+					*point2 = *point;
+				*++point2 = '\0';
+			}
+			*point2 = '\0';
+			ch->desc->showstr_head  = malloc(strlen(buf) + 1);
+			strcpy(ch->desc->showstr_head, buf);
+			ch->desc->showstr_point = ch->desc->showstr_head;
+			show_string(ch->desc, "");
 	    }
 	    free(buf);
 	}
@@ -3439,8 +3621,11 @@ void show_string(struct descriptor_data *d, char *input)
 }
 
 
-void act_new(const char *format, CHAR_DATA *ch, const void *arg1,
-	      const void *arg2, int type, int min_pos, CHAR_TEST char_func)
+void act_new(char *format, CHAR_DATA *ch,
+		CHAR_DATA *vch, CHAR_DATA *vch2,
+		OBJ_DATA *obj1, OBJ_DATA *obj2,
+		void *arg1, void *arg2,
+		int type, int min_pos, CHAR_TEST char_func)
 {
     static char * const he_she  [] = { "it",  "he",  "she" };
     static char * const him_her [] = { "it",  "him", "her" };
@@ -3448,10 +3633,10 @@ void act_new(const char *format, CHAR_DATA *ch, const void *arg1,
 
 
     CHAR_DATA 		*to;
-    CHAR_DATA 		*vch = (CHAR_DATA *) arg2;
-    CHAR_DATA 		*vch2 = (CHAR_DATA *) arg1;
-    OBJ_DATA 		*obj1 = (OBJ_DATA  *) arg1;
-    OBJ_DATA 		*obj2 = (OBJ_DATA  *) arg2;
+//    CHAR_DATA 		*vch = (CHAR_DATA *) arg2;
+//    CHAR_DATA 		*vch2 = (CHAR_DATA *) arg1;
+//    OBJ_DATA 		*obj1 = (OBJ_DATA  *) arg1;
+//    OBJ_DATA 		*obj2 = (OBJ_DATA  *) arg2;
     const 	char 	*str;
     char 		*i = NULL;
     char 		*point;
@@ -3528,13 +3713,13 @@ void act_new(const char *format, CHAR_DATA *ch, const void *arg1,
 	    fColour = TRUE;
             ++str;
 
-            if (!arg2 && *str >= 'A' && *str <= 'Z')
-            {
-                bug("Act: missing arg2 for code %d.", *str);
-                i = " <@@@> ";
-            }
-            else
-            {
+//            if (!arg2 && *str >= 'A' && *str <= 'Z')
+//            {
+//                bug("Act: missing arg2 for code %d.", *str);
+//                i = " <@@@> ";
+//            }
+//            else
+//            {
                 switch (*str)
                 {
                 default:  bug("Act: bad code %d.", *str);
@@ -3602,7 +3787,7 @@ void act_new(const char *format, CHAR_DATA *ch, const void *arg1,
                     }
                     break;
                 }
-            }
+//            }
 
             ++str;
             while ((*point = *i) != '\0')
@@ -3622,7 +3807,7 @@ void act_new(const char *format, CHAR_DATA *ch, const void *arg1,
 
 	else
 	if (MOBtrigger)
-	    p_act_trigger(buf, to, NULL, NULL, ch, arg1, arg2, TRIG_ACT);
+	    p_act_trigger(buf, to, NULL, NULL, ch, vch, vch2, obj1, obj2, TRIG_ACT);
     }
 
     if (MOBtrigger && (type == TO_ROOM || type == TO_NOTVICT))
@@ -3641,7 +3826,7 @@ void act_new(const char *format, CHAR_DATA *ch, const void *arg1,
 	for(obj = ch->in_room->contents; obj; obj = obj_next)
 	{
 	    obj_next = obj->next_content;
-	    p_act_trigger(buf, NULL, obj, NULL, ch, NULL, NULL, TRIG_ACT);
+	    p_act_trigger(buf, NULL, obj, NULL, ch, vch, vch2, obj1, obj2, TRIG_ACT);
 	}
 
 	for(tch = ch; tch; tch = tch_next)
@@ -3651,11 +3836,11 @@ void act_new(const char *format, CHAR_DATA *ch, const void *arg1,
 	    for (obj = tch->carrying; obj; obj = obj_next)
 	    {
 		obj_next = obj->next_content;
-		p_act_trigger(buf, NULL, obj, NULL, ch, NULL, NULL, TRIG_ACT);
+		p_act_trigger(buf, NULL, obj, NULL, ch, vch, vch2, obj1, obj2, TRIG_ACT);
 	    }
 	}
 
-	p_act_trigger(buf, NULL, NULL, ch->in_room, ch, NULL, NULL, TRIG_ACT);
+	p_act_trigger(buf, NULL, NULL, ch->in_room, ch, vch, vch2, obj1, obj2, TRIG_ACT);
     }
 }
 
@@ -4000,7 +4185,7 @@ void update_pc_timers(CHAR_DATA *ch)
 	if (ch->pk_timer == 0) {
 	    ch->pk_timer = 0;
 	    send_to_char("You feel the dangerous blood aura fade away.\n\r", ch);
-	    act("The dangerous blood aura surrounding $n fades away.", ch, NULL, NULL, TO_ROOM);
+	    act("The dangerous blood aura surrounding $n fades away.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	}
     }
 
@@ -4028,8 +4213,8 @@ void update_pc_timers(CHAR_DATA *ch)
 	--ch->panic;
 	if (ch->panic <= 0)
 	{
-	    act("{RPANIC! You are overcome with FEAR and attmpts to FLEE!{x", ch, NULL, NULL, TO_CHAR);
-	    act("{R$n is overcome with FEAR and attmpts to FLEE!{x", ch, NULL, NULL, TO_ROOM);
+	    act("{RPANIC! You are overcome with FEAR and attmpts to FLEE!{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+	    act("{R$n is overcome with FEAR and attmpts to FLEE!{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	    do_function(ch, &do_flee, "anyway");
 	    ch->panic = 0;
 	}
@@ -4078,7 +4263,7 @@ void update_pc_timers(CHAR_DATA *ch)
 	    if (number_percent() > get_skill(ch, gsn_deep_trance) - 10)
 	    {
 		send_to_char("{YYou lose your meditative focus as something grabs your attention.{x\n\r", ch);
-		act("{Y$n loses $s meditative focus as something grabs $s attention.{x", ch, NULL, NULL, TO_ROOM);
+		act("{Y$n loses $s meditative focus as something grabs $s attention.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		ch->trance = 0;
 	    }
 	}
@@ -4201,3 +4386,37 @@ void add_possible_subclasses(CHAR_DATA *ch, char *string)
     strcat(string, "{B]{x");
 }
 
+
+void connection_add(DESCRIPTOR_DATA *d)
+{
+	CHAR_DATA *ch;
+
+	if(d) {
+		ch = d->original ? d->original : d->character;
+
+		if(ch && !IS_NPC(ch)) {
+			if(IS_IMMORTAL(ch))
+				list_addlink(conn_immortals, d);
+			else
+				list_addlink(conn_players, d);
+			list_addlink(conn_online, d);
+		}
+	}
+}
+
+void connection_remove(DESCRIPTOR_DATA *d)
+{
+	CHAR_DATA *ch;
+
+	if(d) {
+		ch = d->original ? d->original : d->character;
+
+		if(ch && !IS_NPC(ch)) {
+			if(IS_IMMORTAL(ch))
+				list_remlink(conn_immortals, d);
+			else
+				list_remlink(conn_players, d);
+			list_remlink(conn_online, d);
+		}
+	}
+}

@@ -69,7 +69,7 @@ void do_scan(CHAR_DATA *ch, char *argument)
 	else			max_depth = 7;
 
 	if (!arg1[0]) {
-		act("$n looks all around.", ch, NULL, NULL, TO_ROOM);
+		act("$n looks all around.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		send_to_char("{YLooking around, you see:{x\n\r", ch);
 		scan_list(ch->in_room, ch, 0, -1);
 
@@ -110,8 +110,8 @@ void do_scan(CHAR_DATA *ch, char *argument)
 		return;
 	}
 
-	act("{YLooking $T, you see:{x", ch, NULL, dir_name[door], TO_CHAR);
-	act("$n peers intently $T.", ch, NULL, dir_name[door], TO_ROOM);
+	act("{YLooking $T, you see:{x", ch, NULL, NULL, NULL, NULL, NULL, dir_name[door], TO_CHAR);
+	act("$n peers intently $T.", ch, NULL, NULL, NULL, NULL, NULL, dir_name[door], TO_ROOM);
 
 	scan_room = ch->in_room;
 	for (depth = 1; depth < max_depth; depth++) {

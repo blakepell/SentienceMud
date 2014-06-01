@@ -8,12 +8,14 @@
 #define	IFC_T	(D)	/* Allowed in tprogs */
 #define	IFC_A	(E)	/* Allowed in aprogs */
 
+#define IFC_MO	(IFC_M|IFC_O)
 #define	IFC_ANY	(IFC_M|IFC_O|IFC_R|IFC_T|IFC_A)	/* Any prog type */
 
 #define IFC_MAXPARAMS		20
 #define MAX_STACK		20	/* Adjust as desired */
 #define MAX_NAMED_LABELS	256
 #define MAX_NESTED_LOOPS	20
+#define SYSTEM_SCRIPT_SECURITY	(10)
 #define MAX_SCRIPT_SECURITY	(9)
 #define MIN_SCRIPT_SECURITY	(0)
 #define NO_SCRIPT_SECURITY	(-1)
@@ -21,8 +23,9 @@
 
 #define SCRIPT_WIZNET		(A)	/* The script will wiznet to WIZ_SCRIPTS */
 #define SCRIPT_DISABLED		(B)	/* The script must be turned off by an IMP */
-#define SCRIPT_LUA		(C)	/* This script is a LUA compiled script. */
+#define SCRIPT_LUA			(C)	/* This script is a LUA compiled script. */
 #define SCRIPT_SECURED		(D)	/* This script will reset security settings to its values */
+#define SCRIPT_SYSTEM		(E)	// A system script, may ONLY be called when security is SYSTEM security
 #define SCRIPT_INSPECT		(Z)	/* Inspect the script for restricted actions */
 
 #define SCRIPTEXEC_HALT		(A)	/* Kill script execution because the controller entity had been destructed */
@@ -46,7 +49,7 @@
 #define INTERRUPT_SILENT	(ee)	/* Used to make the interrupt SILENT */
 
 
-#define DECL_IFC_FUN(x) bool x (CHAR_DATA *mob,OBJ_DATA *obj,ROOM_INDEX_DATA *room, TOKEN_DATA *token,int *ret,int argc,SCRIPT_PARAM *argv)
+#define DECL_IFC_FUN(x) bool x (SCRIPT_VARINFO *info, CHAR_DATA *mob,OBJ_DATA *obj,ROOM_INDEX_DATA *room, TOKEN_DATA *token,int *ret,int argc,SCRIPT_PARAM *argv)
 #define DECL_OPC_FUN(x) bool x (SCRIPT_CB *block)
 #define SCRIPT_CMD(x)	void x (SCRIPT_VARINFO *info, char *argument)
 
@@ -98,10 +101,9 @@ enum ifcheck_enum {
 
 	/* C */
 	CHK_CANHUNT,CHK_CANPRACTICE,CHK_CANSCARE,CHK_CARRIEDBY,CHK_CARRIES,CHK_CARRYLEFT,
-	CHK_CHURCH,CHK_CHURCHONLINE,CHK_CHURCHRANK,CHK_CLAN,CHK_CLASS,CHK_CLONES,
-	CHK_CONTAINER,CHK_COS,CHK_CPKFIGHTS,CHK_CPKLOSS,CHK_CPKRATIO,CHK_CPKWINS,CHK_CURHIT,
+	CHK_CHURCH,CHK_CHURCHHASRELIC,CHK_CHURCHONLINE,CHK_CHURCHRANK,CHK_CLAN,CHK_CLASS,CHK_CLONES,
+	CHK_COMM,CHK_CONTAINER,CHK_COS,CHK_CPKFIGHTS,CHK_CPKLOSS,CHK_CPKRATIO,CHK_CPKWINS,CHK_CURHIT,
 	CHK_CURMANA,CHK_CURMOVE,
-
 
 	/* D */
 	CHK_DANGER,CHK_DAMTYPE,CHK_DAY,CHK_DEATH,CHK_DEATHCOUNT,CHK_DEITY,CHK_DICE,CHK_DRUNK,
@@ -111,7 +113,7 @@ enum ifcheck_enum {
 
 	/* F */
 	CHK_FINDPATH,
-	CHK_FLAG_ACT,CHK_FLAG_ACT2,CHK_FLAG_AFFECT,CHK_FLAG_AFFECT2,CHK_FLAG_CONTAINER,CHK_FLAG_EXIT,
+	CHK_FLAG_ACT,CHK_FLAG_ACT2,CHK_FLAG_AFFECT,CHK_FLAG_AFFECT2,CHK_FLAG_COMM,CHK_FLAG_CONTAINER,CHK_FLAG_EXIT,
 	CHK_FLAG_EXTRA,CHK_FLAG_EXTRA2,CHK_FLAG_EXTRA3,CHK_FLAG_EXTRA4,CHK_FLAG_FORM,CHK_FLAG_FURNITURE,CHK_FLAG_IMM,CHK_FLAG_INTERRUPT,
 	CHK_FLAG_OFF,CHK_FLAG_PART,CHK_FLAG_PORTAL,CHK_FLAG_RES,CHK_FLAG_ROOM,CHK_FLAG_ROOM2,
 	CHK_FLAG_VULN,CHK_FLAG_WEAPON,CHK_FLAG_WEAR,CHK_FULLNESS,CHK_FURNITURE,
@@ -130,27 +132,43 @@ enum ifcheck_enum {
 
 
 	/* I */
-	CHK_ID,CHK_ID2,CHK_IDENTICAL,CHK_IMM,CHK_INNATURE,CHK_INPUTWAIT,CHK_INWILDS,CHK_ISACTIVE,CHK_ISAMBUSHING,CHK_ISANGEL,
-	CHK_ISBREWING,CHK_ISCASTING,CHK_ISCHARM,CHK_ISCHURCHEXCOM,CHK_ISCLONEROOM,
-	CHK_ISCPKPROOF,CHK_ISDEAD,
-	CHK_ISDELAY,CHK_ISDEMON,CHK_ISEVIL,CHK_ISFADING,CHK_ISFIGHTING,CHK_ISFLYING,
-	CHK_ISFOLLOW,CHK_ISGOOD,CHK_ISHUNTING,CHK_ISIMMORT,CHK_ISKEY,CHK_ISLEADER,CHK_ISMOONUP,
-	CHK_ISMORPHED,
-	CHK_ISMYSTIC,CHK_ISNEUTRAL,CHK_ISNPC,CHK_ISON,CHK_ISPC,CHK_ISPREY,CHK_ISPULLING,
-	CHK_ISPULLINGRELIC,CHK_ISQUESTING,CHK_ISREMORT,CHK_ISREPAIRABLE,CHK_ISRESTRUNG,
-	CHK_ISRIDDEN,CHK_ISRIDER,CHK_ISRIDING,CHK_ISROOMDARK,CHK_ISSAFE,
-	CHK_ISSCRIBING,CHK_ISSHIFTED,CHK_ISSHOOTING,CHK_ISSHOPKEEPER,CHK_ISSPELL,CHK_ISSUBCLASS,
-	CHK_ISSUSTAINED,CHK_ISTARGET,CHK_ISVISIBLE,CHK_ISVISIBLETO,CHK_ISWORN,
+	CHK_ID,CHK_ID2,CHK_IDENTICAL,CHK_IMM,CHK_INCHURCH,CHK_INNATURE,CHK_INPUTWAIT,CHK_INWILDS,
+
+	/* IS */
+		CHK_ISACTIVE,CHK_ISAMBUSHING,CHK_ISANGEL,
+		CHK_ISBREWING,
+		CHK_ISCASTING,CHK_ISCHARM,CHK_ISCHURCHEXCOM,CHK_ISCHURCHPK,CHK_ISCLONEROOM,CHK_ISCPKPROOF,CHK_ISCROSSZONE,
+		CHK_ISDEAD,CHK_ISDELAY,CHK_ISDEMON,
+		CHK_ISEVIL,
+		CHK_ISFADING,CHK_ISFIGHTING,CHK_ISFLYING,CHK_ISFOLLOW,
+		CHK_ISGOOD,
+		CHK_ISHUNTING,
+		CHK_ISIMMORT,
+		CHK_ISKEY,
+		CHK_ISLEADER,
+		CHK_ISMOONUP,CHK_ISMORPHED,CHK_ISMYSTIC,
+		CHK_ISNEUTRAL,CHK_ISNPC,
+		CHK_ISON,
+		CHK_ISPC,CHK_ISPERSIST,CHK_ISPK,CHK_ISPREY,CHK_ISPULLING,CHK_ISPULLINGRELIC,
+		CHK_ISQUESTING,
+		CHK_ISREMORT,CHK_ISREPAIRABLE,CHK_ISRESTRUNG,CHK_ISRIDDEN,CHK_ISRIDER,CHK_ISRIDING,CHK_ISROOMDARK,
+		CHK_ISSAFE,CHK_ISSCRIBING,CHK_ISSHIFTED,CHK_ISSHOOTING,CHK_ISSHOPKEEPER,CHK_ISSPELL,CHK_ISSUBCLASS,CHK_ISSUSTAINED,
+		CHK_ISTARGET,CHK_ISTREASUREROOM,
+		CHK_ISVISIBLE,CHK_ISVISIBLETO,
+		CHK_ISWORN,
 
 	/* L */
-	CHK_LASTRETURN,CHK_LEVEL,CHK_LIQUID,CHK_LOSTPARTS,
-
+	CHK_LASTRETURN,CHK_LEVEL,CHK_LIQUID,CHK_LISTCONTAINS,CHK_LOSTPARTS,
 
 	/* M */
 	CHK_MANAREGEN,CHK_MANASTORE,
 	CHK_MAPAREA,CHK_MAPHEIGHT,CHK_MAPID,CHK_MAPVALID,CHK_MAPWIDTH,CHK_MAPX,CHK_MAPY,
-	CHK_MATERIAL,CHK_MAXCARRY,CHK_MAXHIT,CHK_MAXMANA,CHK_MAXMOVE,
-	CHK_MAXWEIGHT,CHK_MAXXP,CHK_MOBEXISTS,CHK_MOBHERE,CHK_MOBS,CHK_MOBSIZE,CHK_MONEY,CHK_MONKILLS,
+	CHK_MATERIAL,
+	CHK_MAX,
+	CHK_MAXCARRY,CHK_MAXHIT,CHK_MAXMANA,CHK_MAXMOVE,
+	CHK_MAXWEIGHT,CHK_MAXXP,
+	CHK_MIN,
+	CHK_MOBEXISTS,CHK_MOBHERE,CHK_MOBS,CHK_MOBSIZE,CHK_MONEY,CHK_MONKILLS,
 	CHK_MONTH,CHK_MOONPHASE,CHK_MOVEREGEN,
 
 
@@ -179,7 +197,7 @@ enum ifcheck_enum {
 
 	/* R */
 	CHK_RACE,CHK_RAND,CHK_RANDPOINT,
-	CHK_RECKONING,CHK_RECKONINGCHANCE,
+	CHK_RECKONING,CHK_RECKONINGCHANCE,CHK_REGISTER,
 	CHK_RES,CHK_ROOM,CHK_ROOMFLAG,CHK_ROOMFLAG2,CHK_ROOMVIEWWILDS,
 	CHK_ROOMWEIGHT,CHK_ROOMWILDS,CHK_ROOMX,CHK_ROOMY,CHK_ROOMZ,
 
@@ -188,7 +206,7 @@ enum ifcheck_enum {
 	CHK_SCRIPTSECURITY,
 	CHK_SECTOR,CHK_SEX,CHK_SIGN,CHK_SILVER,CHK_SIN,CHK_SKEYWORD,CHK_SKILL,
 	CHK_STATCON,CHK_STATDEX,CHK_STATINT,CHK_STATSTR,CHK_STATWIS,CHK_STRLEN,
-	CHK_SUBLEVEL,CHK_SYSTEMTIME,
+	CHK_SUBLEVEL,CHK_SUNLIGHT,CHK_SYSTEMTIME,
 
 
 	/* T */
@@ -236,17 +254,62 @@ enum variable_enum {
 	VAR_UNKNOWN,
 	VAR_INTEGER,
 	VAR_STRING,
-	VAR_STRING_S,	/* Shared, allocated elsewhere! */
+	VAR_STRING_S,		/* Shared, allocated elsewhere! */
 	VAR_ROOM,
 	VAR_EXIT,
 	VAR_MOBILE,
 	VAR_OBJECT,
 	VAR_TOKEN,
-	VAR_SKILL,	/* A skill INDEX that will reference general skill data */
-	VAR_SKILLINFO,	/* Skill reference on a creature { CHAR_DATA *owner, int sn } */
-	VAR_AFFECT,	/* References an affect */
+	VAR_AREA,
+	VAR_SKILL,			/* A skill INDEX that will reference general skill data */
+	VAR_SKILLINFO,		/* Skill reference on a creature { CHAR_DATA *owner, int sn } */
+	VAR_CONNECTION,
+	VAR_AFFECT,			/* References an affect */
+	VAR_WILDS,
+	VAR_CHURCH,
+	VAR_CLONE_ROOM,		// Used only when loading
+	VAR_WILDS_ROOM,		// Used only when loading
+	VAR_DOOR,			// Used only when loading
+	VAR_CLONE_DOOR,		// Used only when loading
+	VAR_WILDS_DOOR,		// Used only when loading
+	VAR_MOBILE_ID,		// Used only when loading
+	VAR_OBJECT_ID,		// Used only when loading
+	VAR_TOKEN_ID,		// Used only when loading
+	VAR_SKILLINFO_ID,	// Used only when loading
+	VAR_AREA_ID,
+	VAR_WILDS_ID,
+	VAR_CHURCH_ID,
+	VAR_BLIST_FIRST,
+	////////////////////////
+
+	VAR_BLIST_ROOM,
+	VAR_BLIST_MOB,
+	VAR_BLIST_OBJ,
+	VAR_BLIST_TOK,
+	VAR_BLIST_EXIT,
+	VAR_BLIST_SKILL,
+	VAR_BLIST_AREA,
+	VAR_BLIST_WILDS,
+
+	////////////////////////
+	VAR_BLIST_LAST,
+	VAR_PLIST_FIRST,
+	////////////////////////
+
+	VAR_PLIST_STR,
+	VAR_PLIST_CONN,
+	VAR_PLIST_ROOM,
+	VAR_PLIST_MOB,
+	VAR_PLIST_OBJ,
+	VAR_PLIST_TOK,
+	VAR_PLIST_CHURCH,
+
+	////////////////////////
+	VAR_PLIST_LAST,
 	VAR_MAX
 };
+
+
 
 enum ifcheck_param_types {
 	IFCP_NONE = 0,
@@ -260,6 +323,8 @@ enum ifcheck_param_types {
 	IFCP_EXIT,
 	IFCP_SKILL,
 	IFCP_SKILLINFO,
+	IFCP_CONN,
+	IFCP_WILDS,
 	IFCP_MAX
 };
 
@@ -305,6 +370,7 @@ struct entity_field_type {
 
 enum entity_type_enum {
 	ENT_NONE = 0,
+	ENT_NULL,
 	ENT_NUMBER,
 	ENT_STRING,
 	ENT_MOBILE,
@@ -313,15 +379,69 @@ enum entity_type_enum {
 	ENT_EXIT,
 	ENT_TOKEN,
 	ENT_AREA,
+	ENT_WILDS,
 	ENT_SKILL,
 	ENT_SKILLINFO,
+	ENT_CONN,
 	ENT_PRIOR,
-	ENT_LIST_MOB,
-	ENT_LIST_OBJ,
-	ENT_LIST_TOK,
-	ENT_LIST_AFF,
 	ENT_EXTRADESC,
 	ENT_AFFECT,
+	ENT_CHURCH,
+
+	//////////////////////////////
+	// ALL lists here are designed to be saved
+	ENT_BLIST_MIN,
+	ENT_BLIST_ROOM,
+	ENT_BLIST_MOB,
+	ENT_BLIST_OBJ,
+	ENT_BLIST_TOK,
+	ENT_BLIST_EXIT,
+	ENT_BLIST_SKILL,
+	ENT_BLIST_AREA,
+	ENT_BLIST_WILDS,
+	ENT_BLIST_MAX,
+	//////////////////////////////
+
+	//////////////////////////////
+	// Only the STRING list is savable due to it being strings
+	ENT_PLIST_MIN,
+	ENT_PLIST_STR,
+	ENT_PLIST_CONN,
+	ENT_PLIST_ROOM,
+	ENT_PLIST_MOB,
+	ENT_PLIST_OBJ,
+	ENT_PLIST_TOK,
+	ENT_PLIST_CHURCH,
+	ENT_PLIST_MAX,
+	//////////////////////////////
+
+	//////////////////////////////
+	// Owned list - referenced directly off entities
+	ENT_OLIST_MIN,
+	ENT_OLIST_MOB,
+	ENT_OLIST_OBJ,
+	ENT_OLIST_TOK,
+	ENT_OLIST_AFF,
+	ENT_OLIST_MAX,
+	//////////////////////////////
+
+	ENT_MOBILE_ID,		// Will act as ENT_MOBILE that does not exist, but will allow access to the UID
+	ENT_OBJECT_ID,		// Will act as ENT_OBJECT that does not exist, but will allow access to the UID
+	ENT_TOKEN_ID,		// Will act as ENT_TOKEN that does not exist, but will allow access to the UID
+	ENT_SKILLINFO_ID,	// Will act as ENT_SKILLINFO that does not exist, but will allow access to the UIDs
+	ENT_CHURCH_ID,
+	ENT_AREA_ID,
+	ENT_WILDS_ID,
+
+	ENT_CLONE_ROOM,		// Will act as ENT_ROOM that does not exist
+	ENT_WILDS_ROOM,
+	ENT_CLONE_DOOR,
+	ENT_WILDS_DOOR,
+
+	ENT_GAME,			// Used to reference things about the game itself
+	ENT_PERSIST,		// Grouping of persistant entities
+	ENT_HELP,			// Way of accessing help strings, uses the same construct as ENT_EXTRADESC
+
 	ENT_MAX,
 	ENT_UNKNOWN = ENT_MAX+1,
 	ENT_PRIMARY = ENT_NONE
@@ -338,7 +458,15 @@ enum entity_primary_enum {
 	ENTITY_SELF,
 	ENTITY_PHRASE,
 	ENTITY_TRIGGER,
-	ENTITY_PRIOR
+	ENTITY_PRIOR,
+	ENTITY_GAME,
+	ENTITY_HELP,
+	ENTITY_NULL,
+	ENTITY_REGISTER1,
+	ENTITY_REGISTER2,
+	ENTITY_REGISTER3,
+	ENTITY_REGISTER4,
+	ENTITY_REGISTER5,
 };
 
 enum entity_variable_types_enum {
@@ -350,9 +478,30 @@ enum entity_variable_types_enum {
 	ENTITY_VAR_EXIT,
 	ENTITY_VAR_TOKEN,
 	ENTITY_VAR_AREA,
+	ENTITY_VAR_WILDS,
 	ENTITY_VAR_SKILL,
 	ENTITY_VAR_SKILLINFO,
-	ENTITY_VAR_AFFECT
+	ENTITY_VAR_CONN,
+	ENTITY_VAR_AFFECT,
+	ENTITY_VAR_CHURCH,
+
+	ENTITY_VAR_BLIST_ROOM,
+	ENTITY_VAR_BLIST_MOB,
+	ENTITY_VAR_BLIST_OBJ,
+	ENTITY_VAR_BLIST_TOK,
+	ENTITY_VAR_BLIST_EXIT,
+	ENTITY_VAR_BLIST_SKILL,
+	ENTITY_VAR_BLIST_AREA,
+	ENTITY_VAR_BLIST_WILDS,
+
+	ENTITY_VAR_PLIST_STR,
+	ENTITY_VAR_PLIST_CONN,
+	ENTITY_VAR_PLIST_ROOM,
+	ENTITY_VAR_PLIST_MOB,
+	ENTITY_VAR_PLIST_OBJ,
+	ENTITY_VAR_PLIST_TOK,
+	ENTITY_VAR_PLIST_CHURCH,
+
 };
 
 enum entity_prior_enum {
@@ -369,6 +518,11 @@ enum entity_prior_enum {
 	ENTITY_PRIOR_HERE,
 	ENTITY_PRIOR_PHRASE,
 	ENTITY_PRIOR_TRIGGER,
+	ENTITY_PRIOR_REGISTER1,
+	ENTITY_PRIOR_REGISTER2,
+	ENTITY_PRIOR_REGISTER3,
+	ENTITY_PRIOR_REGISTER4,
+	ENTITY_PRIOR_REGISTER5,
 	ENTITY_PRIOR_PRIOR
 };
 
@@ -453,7 +607,10 @@ enum entity_mobile_enum {
 	ENTITY_MOB_CASTTOKEN,
 	ENTITY_MOB_CASTTARGET,
 	ENTITY_MOB_RECALL,		/* Targets their current recall location */
-	ENTITY_MOB_NEXT
+	ENTITY_MOB_CONNECTION,
+	ENTITY_MOB_CHURCH,
+	ENTITY_MOB_CLONEROOMS,
+	ENTITY_MOB_NEXT,
 };
 
 enum entity_object_enum {
@@ -470,6 +627,7 @@ enum entity_object_enum {
 	ENTITY_OBJ_TARGET,
 	ENTITY_OBJ_AREA,
 	ENTITY_OBJ_EXTRADESC,
+	ENTITY_OBJ_CLONEROOMS,
 	ENTITY_OBJ_NEXT
 };
 
@@ -495,7 +653,10 @@ enum entity_room_enum {
 	ENTITY_ROOM_ENVIRON_OBJ,
 	ENTITY_ROOM_ENVIRON_ROOM,
 	ENTITY_ROOM_EXTRADESC,
-	ENTITY_ROOM_DESC
+	ENTITY_ROOM_DESC,
+	ENTITY_ROOM_WILDS,
+	ENTITY_ROOM_CLONES,
+	ENTITY_ROOM_CLONEROOMS,
 };
 
 enum entity_exit_enum {
@@ -521,18 +682,77 @@ enum entity_exit_enum {
 enum entity_token_enum {
 	ENTITY_TOKEN_NAME = ESCAPE_EXTRA,
 	ENTITY_TOKEN_OWNER,
+	ENTITY_TOKEN_OBJECT,
+	ENTITY_TOKEN_ROOM,
 	ENTITY_TOKEN_TIMER,
 	ENTITY_TOKEN_VAL0,
 	ENTITY_TOKEN_VAL1,
 	ENTITY_TOKEN_VAL2,
 	ENTITY_TOKEN_VAL3,
+	ENTITY_TOKEN_VAL4,
+	ENTITY_TOKEN_VAL5,
+	ENTITY_TOKEN_VAL6,
+	ENTITY_TOKEN_VAL7,
 	ENTITY_TOKEN_NEXT
 };
 
 enum entity_area_enum {
 	ENTITY_AREA_NAME = ESCAPE_EXTRA,
 	ENTITY_AREA_RECALL,
-	ENTITY_AREA_POSTOFFICE
+	ENTITY_AREA_POSTOFFICE,
+	ENTITY_AREA_LOWERVNUM,
+	ENTITY_AREA_UPPERVNUM,
+	ENTITY_AREA_ROOMS,
+};
+
+enum entity_wilds_enum {
+	ENTITY_WILDS_NAME = ESCAPE_EXTRA,	//**
+	ENTITY_WILDS_WIDTH,					//**
+	ENTITY_WILDS_HEIGHT,				//**
+	ENTITY_WILDS_VROOMS,				//**
+	ENTITY_WILDS_VLINKS,				//**
+};
+
+enum entity_game_enum {
+	ENTITY_GAME_NAME = ESCAPE_EXTRA,
+	ENTITY_GAME_PORT,
+	ENTITY_GAME_PLAYERS,
+	ENTITY_GAME_IMMORTALS,
+	ENTITY_GAME_ONLINE,
+	ENTITY_GAME_PERSIST,
+	ENTITY_GAME_AREAS,
+	ENTITY_GAME_WILDS,
+	ENTITY_GAME_CHURCHES,
+};
+
+enum entity_persist_enum {
+	ENTITY_PERSIST_MOBS = ESCAPE_EXTRA,
+	ENTITY_PERSIST_OBJS,
+	ENTITY_PERSIST_ROOMS,
+};
+
+enum entity_church_enum {
+	ENTITY_CHURCH_NAME = ESCAPE_EXTRA,
+	ENTITY_CHURCH_TYPE,
+	ENTITY_CHURCH_FLAG,
+	ENTITY_CHURCH_FOUNDER,
+	ENTITY_CHURCH_MOTD,
+	ENTITY_CHURCH_RULES,
+	ENTITY_CHURCH_INFO,
+	ENTITY_CHURCH_RECALL,
+	ENTITY_CHURCH_TREASURE,
+	ENTITY_CHURCH_KEY,
+	ENTITY_CHURCH_ONLINE,
+	ENTITY_CHURCH_ROSTER,
+};
+
+
+enum entity_conn_enum {
+	ENTITY_CONN_PLAYER = ESCAPE_EXTRA,
+	ENTITY_CONN_ORIGINAL,
+	ENTITY_CONN_HOST,
+	ENTITY_CONN_CONNECTION,
+	ENTITY_CONN_SNOOPER,
 };
 
 enum entity_list_enum {
@@ -540,6 +760,13 @@ enum entity_list_enum {
 	ENTITY_LIST_RANDOM,
 	ENTITY_LIST_FIRST,
 	ENTITY_LIST_LAST
+};
+
+enum entity_blist_enum {
+	ENTITY_BLIST_SIZE = ESCAPE_EXTRA,
+	ENTITY_BLIST_RANDOM,
+	ENTITY_BLIST_FIRST,
+	ENTITY_BLIST_LAST
 };
 
 enum entity_skill_enum {
@@ -572,6 +799,7 @@ enum entity_skill_enum {
 enum entity_skillinfo_enum {
 	ENTITY_SKILLINFO_SKILL = ESCAPE_EXTRA,
 	ENTITY_SKILLINFO_OWNER,
+	ENTITY_SKILLINFO_TOKEN,
 	ENTITY_SKILLINFO_RATING
 };
 
@@ -660,6 +888,8 @@ enum entity_affect_enum {
 #define PRETNOERRNO	return ((ret_val < 0) ? PRET_NOSCRIPT : ret_val)
 #define SETPRET		do { if(ret != PRET_NOSCRIPT) ret_val = ret; } while(0)
 #define SETPRETX	do { if(ret != PRET_NOSCRIPT) { ret_val = ret; return ret_val; } } while(0)
+#define ISSETPRET	if( ret_val != PRET_NOSCRIPT ) return ret_val
+#define BREAKPRET	if( ret_val != PRET_NOSCRIPT ) break
 
 #define EVAL_EQ            0
 #define EVAL_GE            1
@@ -691,17 +921,69 @@ struct script_var_type {
 		int i;
 		char *s;
 		ROOM_INDEX_DATA *r;
-		EXIT_DATA *e;
 		CHAR_DATA *m;
 		OBJ_DATA *o;
 		TOKEN_DATA *t;
 		AREA_DATA *a;
 		AFFECT_DATA *aff;
+		DESCRIPTOR_DATA *conn;
+		CHURCH_DATA *church;
+		WILDS_DATA *wilds;
 		int sn;
 		struct {
 			CHAR_DATA *owner;
+			TOKEN_DATA *token;
 			int sn;
 		} sk;
+
+		// Only used when on persistant entities
+		long aid;		// area UID
+		long chid;		// Church UID
+		long wid;		// wilds UID
+		struct {
+			unsigned long a;
+			unsigned long b;
+		} mid;
+		struct {
+			unsigned long a;
+			unsigned long b;
+		} oid;
+		struct {
+			unsigned long a;
+			unsigned long b;
+		} tid;
+		struct {
+			ROOM_INDEX_DATA *r;
+			unsigned long a;
+			unsigned long b;
+		} cr;	// Clone Room
+		struct {
+			int sn;
+			unsigned long mid[2];
+			unsigned long tid[2];
+		} skid;
+		struct {	// Used by VAR_EXIT
+			ROOM_INDEX_DATA *r;
+			int door;
+		} door;
+		struct {
+			ROOM_INDEX_DATA *r;
+			unsigned long a;
+			unsigned long b;
+			int door;
+		} cdoor;
+		struct {
+			unsigned long wuid;
+			int x;
+			int y;
+		} wroom;
+		struct {
+			unsigned long wuid;
+			int x;
+			int y;
+			int door;
+		} wdoor;
+		LIST *list;	// Used for HOMOGENOUS lists only
 	} _;
 };
 
@@ -739,10 +1021,14 @@ struct loop_data {
 				CHAR_DATA *m;
 				OBJ_DATA *o;
 				TOKEN_DATA *t;
-				EXIT_DATA *x;
+				int door;
 				AFFECT_DATA *aff;
 				void *raw;
 			} cur, next;
+			struct {
+				LIST *lp;
+				ITERATOR it;
+			} list;
 			void *owner;
 		} l;
 	} d;
@@ -775,15 +1061,13 @@ struct script_parameter {
 		OBJ_DATA *obj;
 		ROOM_INDEX_DATA *room;
 		AREA_DATA *area;
-		EXIT_DATA *exit;
 		TOKEN_DATA *token;
 		EXTRA_DESCR_DATA *ed;
 		AFFECT_DATA *aff;
+		DESCRIPTOR_DATA *conn;
+		WILDS_DATA *wilds;
+		CHURCH_DATA *church;
 		int sn;
-		struct {
-			CHAR_DATA *owner;
-			int sn;
-		} sk;
 		struct {
 			union {
 				CHAR_DATA **mob;
@@ -793,15 +1077,61 @@ struct script_parameter {
 			} ptr;
 			void *owner;
 		} list;
+		struct {
+			ROOM_INDEX_DATA *r;
+			unsigned long a;
+			unsigned long b;
+		} cr;	// Clone Room
+		struct {
+			CHAR_DATA *m;
+			TOKEN_DATA *t;
+			int sn;
+			unsigned long mid[2];
+			unsigned long tid[2];
+		} sk;
+		struct {	// Used by VAR_EXIT
+			ROOM_INDEX_DATA *r;
+			int door;
+		} door;
+		struct {
+			ROOM_INDEX_DATA *r;
+			unsigned long a;
+			unsigned long b;
+			int door;
+		} cdoor;
+		struct {
+			unsigned long wuid;
+			int x;
+			int y;
+		} wroom;
+		struct {
+			unsigned long wuid;
+			int x;
+			int y;
+			int door;
+		} wdoor;
+
+		LIST *blist;
+		long aid;
+		long chid;
+		long wid;
+		unsigned long uid[2];
 		SCRIPT_VARINFO *info;
 	} d;
-	char buf[MIL];
+	char buf[MSL];
 };
 
 struct script_cmd_type {
 	char *name;
 	void (*func) (SCRIPT_VARINFO *info, char *argument);
 	bool restricted;
+};
+
+struct _entity_type_info {
+	int type_min;
+	int type_max;
+	ENT_FIELD *fields;
+	bool allow_vars;
 };
 
 /* Externs */
@@ -827,28 +1157,31 @@ extern const struct script_cmd_type obj_cmd_table[];
 extern const struct script_cmd_type room_cmd_table[];
 extern const struct script_cmd_type token_cmd_table[];
 extern const struct script_cmd_type tokenother_cmd_table[];
-extern const ENT_FIELD entity_primary[];
-extern const ENT_FIELD entity_types[];
-extern const ENT_FIELD entity_number[];
-extern const ENT_FIELD entity_string[];
-extern const ENT_FIELD entity_mobile[];
-extern const ENT_FIELD entity_object[];
-extern const ENT_FIELD entity_room[];
-extern const ENT_FIELD entity_exit[];
-extern const ENT_FIELD entity_token[];
-extern const ENT_FIELD entity_area[];
-extern const ENT_FIELD entity_list[];
-extern const ENT_FIELD *entity_type_lists[];
-extern const ENT_FIELD entity_skill_info[];
-extern const ENT_FIELD entity_skill[];
-extern const ENT_FIELD entity_prior[];
-extern const bool entity_allow_vars[];
+extern ENT_FIELD entity_primary[];
+extern ENT_FIELD entity_types[];
+extern ENT_FIELD entity_number[];
+extern ENT_FIELD entity_string[];
+extern ENT_FIELD entity_mobile[];
+extern ENT_FIELD entity_object[];
+extern ENT_FIELD entity_room[];
+extern ENT_FIELD entity_exit[];
+extern ENT_FIELD entity_token[];
+extern ENT_FIELD entity_area[];
+extern ENT_FIELD entity_list[];
+extern ENT_FIELD *entity_type_lists[];
+extern ENT_FIELD entity_skill_info[];
+extern ENT_FIELD entity_skill[];
+extern ENT_FIELD entity_conn[];
+extern ENT_FIELD entity_prior[];
+extern bool entity_allow_vars[];
 extern bool forced_command;
 extern int trigger_table_size;
 extern int trigger_slots_size;
 extern ROOM_INDEX_DATA room_used_for_wilderness;
 extern ROOM_INDEX_DATA room_pointer_vlink;
 extern ROOM_INDEX_DATA room_pointer_environment;
+extern struct _entity_type_info entity_type_info[];
+extern bool script_destructed;
 
 /* Ifchecks */
 DECL_IFC_FUN(ifc_abs);
@@ -856,8 +1189,8 @@ DECL_IFC_FUN(ifc_act);
 DECL_IFC_FUN(ifc_act2);
 DECL_IFC_FUN(ifc_affected);
 DECL_IFC_FUN(ifc_affected2);
-DECL_IFC_FUN(ifc_affectedspell);
 DECL_IFC_FUN(ifc_affectedname);
+DECL_IFC_FUN(ifc_affectedspell);
 DECL_IFC_FUN(ifc_age);
 DECL_IFC_FUN(ifc_align);
 DECL_IFC_FUN(ifc_angle);
@@ -871,6 +1204,7 @@ DECL_IFC_FUN(ifc_arenafights);
 DECL_IFC_FUN(ifc_arenaloss);
 DECL_IFC_FUN(ifc_arenaratio);
 DECL_IFC_FUN(ifc_arenawins);
+DECL_IFC_FUN(ifc_bankbalance);
 DECL_IFC_FUN(ifc_bit);
 DECL_IFC_FUN(ifc_canhunt);
 DECL_IFC_FUN(ifc_canpractice);
@@ -934,12 +1268,21 @@ DECL_IFC_FUN(ifc_gold);
 DECL_IFC_FUN(ifc_groundweight);
 DECL_IFC_FUN(ifc_groupcon);
 DECL_IFC_FUN(ifc_groupdex);
+DECL_IFC_FUN(ifc_grouphit);
 DECL_IFC_FUN(ifc_groupint);
+DECL_IFC_FUN(ifc_groupmana);
+DECL_IFC_FUN(ifc_groupmaxhit);
+DECL_IFC_FUN(ifc_groupmaxmana);
+DECL_IFC_FUN(ifc_groupmaxmove);
+DECL_IFC_FUN(ifc_groupmove);
 DECL_IFC_FUN(ifc_groupstr);
 DECL_IFC_FUN(ifc_groupwis);
 DECL_IFC_FUN(ifc_grpsize);
+DECL_IFC_FUN(ifc_handsfull);
 DECL_IFC_FUN(ifc_has);
 DECL_IFC_FUN(ifc_hascatalyst);
+DECL_IFC_FUN(ifc_hasenvironment);
+DECL_IFC_FUN(ifc_hasprompt);
 DECL_IFC_FUN(ifc_hasqueue);
 DECL_IFC_FUN(ifc_hasship);
 DECL_IFC_FUN(ifc_hassubclass);
@@ -968,6 +1311,7 @@ DECL_IFC_FUN(ifc_isbrewing);
 DECL_IFC_FUN(ifc_iscasting);
 DECL_IFC_FUN(ifc_ischarm);
 DECL_IFC_FUN(ifc_ischurchexcom);
+DECL_IFC_FUN(ifc_iscloneroom);
 DECL_IFC_FUN(ifc_iscpkproof);
 DECL_IFC_FUN(ifc_isdead);
 DECL_IFC_FUN(ifc_isdelay);
@@ -1000,10 +1344,12 @@ DECL_IFC_FUN(ifc_isridden);
 DECL_IFC_FUN(ifc_isrider);
 DECL_IFC_FUN(ifc_isriding);
 DECL_IFC_FUN(ifc_isroomdark);
+DECL_IFC_FUN(ifc_issafe);
 DECL_IFC_FUN(ifc_isscribing);
 DECL_IFC_FUN(ifc_isshifted);
 DECL_IFC_FUN(ifc_isshooting);
 DECL_IFC_FUN(ifc_isshopkeeper);
+DECL_IFC_FUN(ifc_isspell);
 DECL_IFC_FUN(ifc_isspell);
 DECL_IFC_FUN(ifc_issubclass);
 DECL_IFC_FUN(ifc_issustained);
@@ -1015,7 +1361,9 @@ DECL_IFC_FUN(ifc_isworn);
 DECL_IFC_FUN(ifc_lastreturn);
 DECL_IFC_FUN(ifc_level);
 DECL_IFC_FUN(ifc_liquid);
+DECL_IFC_FUN(ifc_lostparts);
 DECL_IFC_FUN(ifc_manaregen);
+DECL_IFC_FUN(ifc_manastore);
 DECL_IFC_FUN(ifc_maparea);
 DECL_IFC_FUN(ifc_mapheight);
 DECL_IFC_FUN(ifc_mapid);
@@ -1024,28 +1372,33 @@ DECL_IFC_FUN(ifc_mapwidth);
 DECL_IFC_FUN(ifc_mapx);
 DECL_IFC_FUN(ifc_mapy);
 DECL_IFC_FUN(ifc_material);
+DECL_IFC_FUN(ifc_max);
 DECL_IFC_FUN(ifc_maxcarry);
 DECL_IFC_FUN(ifc_maxhit);
 DECL_IFC_FUN(ifc_maxmana);
 DECL_IFC_FUN(ifc_maxmove);
 DECL_IFC_FUN(ifc_maxweight);
+DECL_IFC_FUN(ifc_maxxp);
+DECL_IFC_FUN(ifc_min);
 DECL_IFC_FUN(ifc_mobexists);
 DECL_IFC_FUN(ifc_mobhere);
 DECL_IFC_FUN(ifc_mobs);
+DECL_IFC_FUN(ifc_mobsize);
 DECL_IFC_FUN(ifc_money);
 DECL_IFC_FUN(ifc_monkills);
 DECL_IFC_FUN(ifc_month);
 DECL_IFC_FUN(ifc_moonphase);
 DECL_IFC_FUN(ifc_moveregen);
 DECL_IFC_FUN(ifc_name);
+DECL_IFC_FUN(ifc_numenchants);
 DECL_IFC_FUN(ifc_objcond);
-DECL_IFC_FUN(ifc_objfrag);
 DECL_IFC_FUN(ifc_objcost);
 DECL_IFC_FUN(ifc_objexists);
 DECL_IFC_FUN(ifc_objextra);
 DECL_IFC_FUN(ifc_objextra2);
 DECL_IFC_FUN(ifc_objextra3);
 DECL_IFC_FUN(ifc_objextra4);
+DECL_IFC_FUN(ifc_objfrag);
 DECL_IFC_FUN(ifc_objhere);
 DECL_IFC_FUN(ifc_objmaxweight);
 DECL_IFC_FUN(ifc_objtimer);
@@ -1089,14 +1442,21 @@ DECL_IFC_FUN(ifc_practices);
 DECL_IFC_FUN(ifc_quest);
 DECL_IFC_FUN(ifc_race);
 DECL_IFC_FUN(ifc_rand);
+DECL_IFC_FUN(ifc_randpoint);
 DECL_IFC_FUN(ifc_reckoning);
 DECL_IFC_FUN(ifc_reckoningchance);
 DECL_IFC_FUN(ifc_res);
 DECL_IFC_FUN(ifc_room);
 DECL_IFC_FUN(ifc_roomflag);
 DECL_IFC_FUN(ifc_roomflag2);
+DECL_IFC_FUN(ifc_roomviewwilds);
 DECL_IFC_FUN(ifc_roomweight);
+DECL_IFC_FUN(ifc_roomwilds);
+DECL_IFC_FUN(ifc_roomx);
+DECL_IFC_FUN(ifc_roomy);
+DECL_IFC_FUN(ifc_roomz);
 DECL_IFC_FUN(ifc_samegroup);
+DECL_IFC_FUN(ifc_scriptsecurity);
 DECL_IFC_FUN(ifc_sector);
 DECL_IFC_FUN(ifc_sex);
 DECL_IFC_FUN(ifc_sign);
@@ -1110,12 +1470,17 @@ DECL_IFC_FUN(ifc_statint);
 DECL_IFC_FUN(ifc_statstr);
 DECL_IFC_FUN(ifc_statwis);
 DECL_IFC_FUN(ifc_strlen);
+DECL_IFC_FUN(ifc_sublevel);
+DECL_IFC_FUN(ifc_sunlight);
 DECL_IFC_FUN(ifc_systemtime);
 DECL_IFC_FUN(ifc_tempstore1);
 DECL_IFC_FUN(ifc_tempstore2);
 DECL_IFC_FUN(ifc_tempstore3);
 DECL_IFC_FUN(ifc_tempstore4);
+DECL_IFC_FUN(ifc_testhardmagic);
 DECL_IFC_FUN(ifc_testskill);
+DECL_IFC_FUN(ifc_testslowmagic);
+DECL_IFC_FUN(ifc_testtokenspell);
 DECL_IFC_FUN(ifc_thirst);
 DECL_IFC_FUN(ifc_timeofday);
 DECL_IFC_FUN(ifc_timer);
@@ -1163,37 +1528,22 @@ DECL_IFC_FUN(ifc_weightleft);
 DECL_IFC_FUN(ifc_wimpy);
 DECL_IFC_FUN(ifc_word);
 DECL_IFC_FUN(ifc_wornby);
-DECL_IFC_FUN(ifc_year);
-DECL_IFC_FUN(ifc_lostparts);
-DECL_IFC_FUN(ifc_hasprompt);
-DECL_IFC_FUN(ifc_numenchants);
-DECL_IFC_FUN(ifc_randpoint);
-DECL_IFC_FUN(ifc_issafe);
-DECL_IFC_FUN(ifc_roomx);
-DECL_IFC_FUN(ifc_roomy);
-DECL_IFC_FUN(ifc_roomz);
-DECL_IFC_FUN(ifc_roomwilds);
-DECL_IFC_FUN(ifc_roomviewwilds);
-DECL_IFC_FUN(ifc_testtokenspell);
-DECL_IFC_FUN(ifc_testhardmagic);
-DECL_IFC_FUN(ifc_testslowmagic);
-DECL_IFC_FUN(ifc_isspell);
-DECL_IFC_FUN(ifc_hasenvironment);
-DECL_IFC_FUN(ifc_iscloneroom);
-DECL_IFC_FUN(ifc_scriptsecurity);
-DECL_IFC_FUN(ifc_bankbalance);
-DECL_IFC_FUN(ifc_grouphit);
-DECL_IFC_FUN(ifc_groupmana);
-DECL_IFC_FUN(ifc_groupmove);
-DECL_IFC_FUN(ifc_groupmaxhit);
-DECL_IFC_FUN(ifc_groupmaxmana);
-DECL_IFC_FUN(ifc_groupmaxmove);
-DECL_IFC_FUN(ifc_manastore);
 DECL_IFC_FUN(ifc_xp);
-DECL_IFC_FUN(ifc_maxxp);
-DECL_IFC_FUN(ifc_sublevel);
-DECL_IFC_FUN(ifc_mobsize);
-DECL_IFC_FUN(ifc_handsfull);
+DECL_IFC_FUN(ifc_year);
+
+DECL_IFC_FUN(ifc_istreasureroom);	// if istreasureroom[ $<mobile|church|name>] $<room|vnum>
+DECL_IFC_FUN(ifc_churchhasrelic);	// if churchhasrelic $<mobile|church|name> $<string=relic>
+DECL_IFC_FUN(ifc_ischurchpk);	// if ischurchpk $<mobile|church|name>
+DECL_IFC_FUN(ifc_iscrosszone);	// if iscrosszone $<mobile|church|name>
+DECL_IFC_FUN(ifc_inchurch);	// if isinchurch $<mobile|church|name> $<mobile|name>
+DECL_IFC_FUN(ifc_ispersist);	// if ispersist $<mobile|object|room>
+DECL_IFC_FUN(ifc_listcontains);	// if listcontains $<list> $<element>
+DECL_IFC_FUN(ifc_ispk);			// if ispk $<player>
+								// if ispk $<room>[ <boolean=arena>]
+
+DECL_IFC_FUN(ifc_register);		// if register <number> <op> <value>
+DECL_IFC_FUN(ifc_comm);			// if comm $<player> <flags>
+DECL_IFC_FUN(ifc_flagcomm);		// if flagcomm <flags> == <value>
 
 /* Opcode functions */
 DECL_OPC_FUN(opc_end);
@@ -1229,7 +1579,8 @@ DECL_OPC_FUN(opc_tokenother);
 char *ifcheck_get_value(SCRIPT_VARINFO *info,IFCHECK_DATA *ifc,char *text,int *ret,bool *valid);
 int execute_script(long pvnum, SCRIPT_DATA *script, CHAR_DATA *mob, OBJ_DATA *obj,
 	ROOM_INDEX_DATA *room, TOKEN_DATA *token, CHAR_DATA *ch,
-	OBJ_DATA *obj1,OBJ_DATA *obj2,CHAR_DATA *vch,CHAR_DATA *rch, char *phrase, char *trigger);
+	OBJ_DATA *obj1,OBJ_DATA *obj2,CHAR_DATA *vch,CHAR_DATA *vch2,CHAR_DATA *rch, char *phrase, char *trigger,
+	int number1, int number2, int number3, int number4, int number5);
 void get_level_damage(int level, int *num, int *type, bool fRemort, bool fTwo);
 CHAR_DATA *get_random_char(CHAR_DATA *mob, OBJ_DATA *obj, ROOM_INDEX_DATA *room, TOKEN_DATA *token);
 int count_people_room(CHAR_DATA *mob, OBJ_DATA *obj, ROOM_INDEX_DATA *room, TOKEN_DATA *token, int iFlag);
@@ -1243,12 +1594,12 @@ CHAR_DATA *script_get_char_list(CHAR_DATA *mobs, CHAR_DATA *viewer, bool player,
 OBJ_DATA *script_get_obj_list(OBJ_DATA *objs, CHAR_DATA *viewer, int worn, int vnum, char *name);
 void script_interpret(SCRIPT_VARINFO *info, char *command);
 int trigger_index(char *name, int type);
-bool has_trigger(PROG_LIST **bank, int trigger);
+bool has_trigger(LIST **bank, int trigger);
 bool mp_same_group(CHAR_DATA *ch,CHAR_DATA *vch,CHAR_DATA *to);
 bool rop_same_group(CHAR_DATA *ch,CHAR_DATA *vch,CHAR_DATA *to);
 bool script_expression_push_operator(STACK *stk,int op);
 int ifcheck_lookup(char *name, int type);
-const ENT_FIELD *entity_type_lookup(char *name,const ENT_FIELD *list);
+ENT_FIELD *entity_type_lookup(char *name,ENT_FIELD *list);
 ROOM_INDEX_DATA *get_exit_dest(ROOM_INDEX_DATA *room, char *argument);
 bool script_change_exit(ROOM_INDEX_DATA *pRoom, ROOM_INDEX_DATA *pToRoom, int door);
 char *trigger_name(int type);
@@ -1260,6 +1611,20 @@ void script_clear_token(TOKEN_DATA *ptr);
 void script_clear_affect(AFFECT_DATA *ptr);
 void script_clear_list(void *owner);
 SCRIPT_VARINFO *script_get_prior(SCRIPT_VARINFO *info);
+
+void script_mobile_addref(CHAR_DATA *ch);
+bool script_mobile_remref(CHAR_DATA *ch);
+void script_object_addref(OBJ_DATA *obj);
+bool script_object_remref(OBJ_DATA *obj);
+void script_room_addref(ROOM_INDEX_DATA *room);
+bool script_room_remref(ROOM_INDEX_DATA *room);
+void script_token_addref(TOKEN_DATA *token);
+bool script_token_remref(TOKEN_DATA *token);
+
+
+ENT_FIELD *script_entity_fields(int type);
+bool script_entity_allow_vars(int type);
+void script_entity_info(int type, ENT_FIELD **fields, bool *vars);
 
 /* Expansion */
 bool check_varinfo(SCRIPT_VARINFO *info);
@@ -1277,34 +1642,94 @@ char *compile_string(char *str, int type, int *length, bool doquotes);
 bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type);
 
 /* Variables */
+
+bool is_trigger_type(int tindex, int type);
+bool variable_copy(ppVARIABLE list,char *oldname,char *newname);
+bool variable_copylist(ppVARIABLE from,ppVARIABLE to,bool index);
+bool variable_copyto(ppVARIABLE from,ppVARIABLE to,char *oldname,char *newname, bool index);
+bool variable_fread(ppVARIABLE vars, int type, FILE *fp);
+bool variable_fread_area_list(ppVARIABLE vars, char *name, FILE *fp);
+bool variable_fread_exit_list(ppVARIABLE vars, char *name, FILE *fp);
+bool variable_fread_room_list(ppVARIABLE vars, char *name, FILE *fp);
+bool variable_fread_skill_list(ppVARIABLE vars, char *name, FILE *fp);
+bool variable_fread_str_list(ppVARIABLE vars, char *name, FILE *fp);
+bool variable_fread_uid_list(ppVARIABLE vars, char *name, int type, FILE *fp);
+bool variable_fread_wilds_list(ppVARIABLE vars, char *name, FILE *fp);
+bool variable_remove(ppVARIABLE list,char *name);
+bool variable_setsave(pVARIABLE vars,char *name,bool state);
 bool variable_validname(char *str);
-void variable_free (pVARIABLE v);
-void variable_freelist(ppVARIABLE list);
-pVARIABLE variable_get(pVARIABLE list,char *name);
-bool variables_setindex_string(ppVARIABLE list,char *name,char *str,bool shared, bool saved);
-bool variables_setindex_integer(ppVARIABLE list,char *name,int num, bool saved);
-bool variables_setindex_room(ppVARIABLE list,char *name,long vnum, bool saved);
-bool variables_set_string(ppVARIABLE list,char *name,char *str,bool shared);
+bool variables_append_list_area (ppVARIABLE list, char *name, AREA_DATA *area);
+bool variables_append_list_connection (ppVARIABLE list, char *name, DESCRIPTOR_DATA *conn);
+bool variables_append_list_door (ppVARIABLE list, char *name, ROOM_INDEX_DATA *room, int door);
+bool variables_append_list_exit (ppVARIABLE list, char *name, EXIT_DATA *ex);
+bool variables_append_list_mob (ppVARIABLE list, char *name, CHAR_DATA *mob);
+bool variables_append_list_obj (ppVARIABLE list, char *name, OBJ_DATA *obj);
+bool variables_append_list_room (ppVARIABLE list, char *name, ROOM_INDEX_DATA *room);
+bool variables_append_list_skill_sn (ppVARIABLE list, char *name, CHAR_DATA *ch, int sn);
+bool variables_append_list_skill_token (ppVARIABLE list, char *name, TOKEN_DATA *tok);
+bool variables_append_list_str (ppVARIABLE list, char *name, char *str);
+bool variables_append_list_token (ppVARIABLE list, char *name, TOKEN_DATA *token);
+bool variables_append_list_wilds (ppVARIABLE list, char *name, WILDS_DATA *wilds);
 bool variables_append_string(ppVARIABLE list,char *name,char *str);
 bool variables_format_string(ppVARIABLE list,char *name);
-bool variables_set_integer(ppVARIABLE list,char *name,int num);
-bool variables_set_room(ppVARIABLE list,char *name,ROOM_INDEX_DATA *r);
+bool variables_set_affect (ppVARIABLE list,char *name,AFFECT_DATA* aff);
+bool variables_set_area (ppVARIABLE list,char *name,AREA_DATA* a);
+bool variables_set_church (ppVARIABLE list,char *name,CHURCH_DATA* church);
+bool variables_set_connection(ppVARIABLE list,char *name, DESCRIPTOR_DATA *conn);
+bool variables_set_door (ppVARIABLE list,char *name, ROOM_INDEX_DATA *room, int door, bool save);
 bool variables_set_exit(ppVARIABLE list,char *name,EXIT_DATA *e);
+bool variables_set_integer(ppVARIABLE list,char *name,int num);
+bool variables_set_list (ppVARIABLE list, char *name, int type, bool save);
 bool variables_set_mobile(ppVARIABLE list,char *name,CHAR_DATA *m);
 bool variables_set_object(ppVARIABLE list,char *name,OBJ_DATA *o);
-bool variables_set_token(ppVARIABLE list,char *name,TOKEN_DATA *t);
+bool variables_set_room(ppVARIABLE list,char *name,ROOM_INDEX_DATA *r);
 bool variables_set_skill(ppVARIABLE list,char *name,int sn);
-bool variables_set_skillinfo(ppVARIABLE list,char *name,CHAR_DATA *owner,int sn);
-bool variables_set_affect(ppVARIABLE list,char *name,AFFECT_DATA *aff);
-bool variable_remove(ppVARIABLE list,char *name);
-bool variable_copy(ppVARIABLE list,char *oldname,char *newname);
-bool variable_copyto(ppVARIABLE from,ppVARIABLE to,char *oldname,char *newname, bool index);
-bool variable_copylist(ppVARIABLE from,ppVARIABLE to,bool index);
-bool variable_setsave(pVARIABLE vars,char *name,bool state);
-void variable_index_fix(void);
-bool is_trigger_type(int tindex, int type);
+bool variables_set_skillinfo(ppVARIABLE list,char *name,CHAR_DATA *owner,int sn, TOKEN_DATA *token);
+bool variables_set_string(ppVARIABLE list,char *name,char *str,bool shared);
+bool variables_set_token(ppVARIABLE list,char *name,TOKEN_DATA *t);
+bool variables_set_wilds (ppVARIABLE list,char *name,WILDS_DATA* wilds);
+bool variables_setindex_integer(ppVARIABLE list,char *name,int num, bool saved);
+bool variables_setindex_room(ppVARIABLE list,char *name,long vnum, bool saved);
+bool variables_setindex_string(ppVARIABLE list,char *name,char *str,bool shared, bool saved);
+bool variables_setsave_affect(ppVARIABLE list,char *name,AFFECT_DATA *aff, bool save);
+bool variables_setsave_area (ppVARIABLE list, char *name,AREA_DATA* a, bool save);
+bool variables_setsave_church (ppVARIABLE list, char *name,CHURCH_DATA* church, bool save);
+bool variables_setsave_exit(ppVARIABLE list,char *name,EXIT_DATA *e, bool save);
+bool variables_setsave_integer(ppVARIABLE list,char *name,int num, bool save);
+bool variables_setsave_mobile(ppVARIABLE list,char *name,CHAR_DATA *m, bool save);
+bool variables_setsave_object(ppVARIABLE list,char *name,OBJ_DATA *o, bool save);
+bool variables_setsave_room(ppVARIABLE list,char *name,ROOM_INDEX_DATA *r, bool save);
+bool variables_setsave_skill(ppVARIABLE list,char *name,int sn, bool save);
+bool variables_setsave_skillinfo(ppVARIABLE list,char *name,CHAR_DATA *owner,int sn, TOKEN_DATA *token, bool save);
+bool variables_setsave_string(ppVARIABLE list,char *name,char *str,bool shared, bool save);
+bool variables_setsave_token(ppVARIABLE list,char *name,TOKEN_DATA *t, bool save);
+bool variables_setsave_wilds (ppVARIABLE list, char *name,WILDS_DATA* wilds, bool save);
+int variable_fread_type(char *str);
+pVARIABLE variable_create(ppVARIABLE list,char *name, bool index, bool clear);
+pVARIABLE variable_get(pVARIABLE list,char *name);
+pVARIABLE variable_new(void);
+void script_varclearon(ppVARIABLE vars, char *argument);
+void variable_add(ppVARIABLE list,pVARIABLE var);
+void variable_clearfield(int type, void *ptr);
+void variable_dynamic_fix_church (CHURCH_DATA *church);
+void variable_dynamic_fix_clone_room (ROOM_INDEX_DATA *clone);
+void variable_dynamic_fix_mobile (CHAR_DATA *ch);
+void variable_dynamic_fix_object(OBJ_DATA *obj);
+void variable_dynamic_fix_token (TOKEN_DATA *token);
+void variable_fix(pVARIABLE var);
+void variable_fix_global(void);
+void variable_fix_list(register pVARIABLE list);
+void variable_free (pVARIABLE v);
+void variable_freedata (pVARIABLE v);
+void variable_freelist(ppVARIABLE list);
 void variable_fwrite(pVARIABLE var, FILE *fp);
+void variable_fwrite_uid_list( char *field, char *name, LIST *list, FILE *fp);
+void variable_index_fix(void);
 
+
+// Prototype for find_path() in hunt.c
+int find_path( long in_room_vnum, long out_room_vnum, CHAR_DATA *ch, int depth, int in_zone );
+void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument);
 
 /* Commands */
 int mpcmd_lookup(char *command);
@@ -1627,7 +2052,14 @@ SCRIPT_CMD(do_tpawardpneuma);
 SCRIPT_CMD(do_tpawardprac);
 SCRIPT_CMD(do_tpawardqp);
 SCRIPT_CMD(do_tpawardxp);
+SCRIPT_CMD(do_mpstartcombat);
+SCRIPT_CMD(do_opstartcombat);
+SCRIPT_CMD(do_rpstartcombat);
 SCRIPT_CMD(do_tpstartcombat);
+SCRIPT_CMD(do_mppersist);
+SCRIPT_CMD(do_oppersist);
+SCRIPT_CMD(do_rppersist);
+SCRIPT_CMD(do_tppersist);
 
 
 #include "tables.h"

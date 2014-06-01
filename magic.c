@@ -186,7 +186,7 @@ void say_spell(CHAR_DATA *ch, int sn)
     {
 	if (rch != ch)
 	    act((!IS_NPC(rch) && ch->pcdata->class_current == rch->pcdata->class_current) ? buf : buf2,
-	        ch, NULL, rch, TO_VICT);
+	        ch, rch, NULL, NULL, NULL, NULL, NULL, TO_VICT);
     }
 }
 
@@ -307,7 +307,7 @@ bool check_dispel(CHAR_DATA *ch, CHAR_DATA *victim, int sn)
 						send_to_char("\n\r", victim);
 					}
 					if (skill_table[sn].msg_disp && skill_table[sn].msg_disp[0])
-						act(skill_table[sn].msg_disp,victim,NULL,NULL,TO_ROOM);
+						act(skill_table[sn].msg_disp,victim,NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
 
 					return TRUE;
 				} else
@@ -353,7 +353,7 @@ bool validate_spell_target(CHAR_DATA *ch,int type,char *arg,int *t,CHAR_DATA **v
 		}
 
 		if (ch->fighting && !is_same_group(victim, ch->fighting) && ch != victim && !IS_NPC(victim)) {
-			act("You must finish your fight before attacking $N.", ch, NULL, victim, TO_CHAR);
+			act("You must finish your fight before attacking $N.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 			return FALSE;
 		}
 
@@ -509,23 +509,23 @@ void do_cast(CHAR_DATA *ch, char *argument)
 	char arg2[MAX_INPUT_LENGTH];
 	CHAR_DATA *victim;
 	OBJ_DATA *obj;
-	TOKEN_DATA *token;
 	SCRIPT_DATA *script = NULL;
+	ITERATOR it;
 	PROG_LIST *prg;
 	int beats;
 	int mana;
-	int sn;
 	int target;
 	int i;
 	char buf[MSL];
 	char temp[MSL];
+	SKILL_ENTRY *spell;
 
 	argument = one_argument(argument, arg1);
 	argument = one_argument(argument, arg2);
 
 	if (IS_AFFECTED2(ch, AFF2_SILENCE)) {
 		send_to_char("You open your mouth but nothing comes out.\n\r", ch);
-		act("$n opens $s mouth but nothing comes out.", ch, NULL, NULL, TO_ROOM);
+		act("$n opens $s mouth but nothing comes out.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		return;
 	}
 
@@ -544,48 +544,42 @@ void do_cast(CHAR_DATA *ch, char *argument)
 		return;
 	}
 
-	/* 09-25-2006 Syn
-	I put in a fix which makes sure to check all matches, rather than
-	just the first one. For example, if someone who doesn't know deathbarbs
-	but does know death grip tries "c death", it assumes deathbarbs and tells
-	the person they don't know that spell.
-	*/
-	for (sn = 0; sn < MAX_SKILL; sn++) {
-		if (!str_prefix(arg1, skill_table[sn].name) &&
-			get_skill(ch, sn) > 0 && skill_table[sn].spell_fun != spell_null)
-			break;
-	}
-
 	mana = 0;
 	if(ch->manastore < 0) ch->manastore = 0;
-	if (sn >= MAX_SKILL) {
-		// Check for TOKEN spells
-		script = NULL;
-		for(token = ch->tokens; token; token = token->next) {
-//			sprintf(buf,"TOKEN: '%s' -> '%s' -> %s, %s\n\r", token->pIndexData->name, arg1, !str_prefix(arg1, token->pIndexData->name) ? "TRUE" : "FALSE", token->pIndexData->progs ? "TRUE" : "FALSE");
-//			send_to_char(buf,ch);
-			if(token->pIndexData->type == TOKEN_SPELL && token->pIndexData && !str_prefix(arg1, token->pIndexData->name) && token->pIndexData->progs) {
-				for(prg = token->pIndexData->progs[TRIGSLOT_SPELL]; prg; prg = prg->next) {
-//					sprintf(buf,"TOKEN->SCRIPT: '%s' -> %s\n\r", token->pIndexData->name, trigger_table[prg->trig_type].name);
-//					send_to_char(buf,ch);
 
-					if(is_trigger_type(prg->trig_type,TRIG_SPELL)) {
-						mana = atoi(prg->trig_phrase);
-						script = prg->script;
-						break;
-					}
+	// 2011-09-04 NIB; added functionality to merge builtin spells and token spells into a single sorted list.
+	// This will allow for seamless addition of spells so that names of builtin skills/spells do not thwart spell tokens.
+	// A sideaffect of this change allows for funny spells.. like 'dodge' or 'trackless step' since skills and spells
+	// are kept seperate.
+	spell = skill_entry_findname(ch->sorted_spells, arg1);
+	if( !spell ) {
+		send_to_char("You don't know any spells by that name.\n\r", ch);
+		return;
+	}
+
+	if ( IS_VALID(spell->token) ) {
+		// Check thst the token is a valid token spell
+		script = NULL;
+		if( spell->token->pIndexData->progs ) {
+			iterator_start(&it, spell->token->pIndexData->progs[TRIGSLOT_SPELL]);
+			while(( prg = (PROG_LIST *)iterator_nextdata(&it))) {
+				if(is_trigger_type(prg->trig_type,TRIG_SPELL)) {
+					mana = atoi(prg->trig_phrase);
+					script = prg->script;
+					break;
 				}
-				if(script) break;
 			}
+			iterator_stop(&it);
 		}
 
 		if(!script) {
-			send_to_char("You don't know any spells of that name.\n\r", ch);
+			// Give some indication that the spell token is broken
+			send_to_char("You don't recall how to cast that spell.\n\r", ch);
 			return;
 		}
 
 		// Check minimum position
-		if (ch->position < token->pIndexData->value[TOKVAL_SPELL_POSITION]) {
+		if (ch->position < spell->token->pIndexData->value[TOKVAL_SPELL_POSITION]) {
 			send_to_char("You can't concentrate enough.\n\r", ch);
 			return;
 		}
@@ -597,30 +591,35 @@ void do_cast(CHAR_DATA *ch, char *argument)
 
 		// Setup targets.
 		ch->cast_sn = -1;
-		ch->cast_token = token;
+		ch->cast_token = spell->token;
 		ch->cast_script = script;
 		ch->cast_mana = mana;
 
-		if(!validate_spell_target(ch,token->pIndexData->value[TOKVAL_SPELL_TARGET],arg2,&target,&victim,&obj)) {
+		if(!validate_spell_target(ch,spell->token->pIndexData->value[TOKVAL_SPELL_TARGET],arg2,&target,&victim,&obj)) {
 			return;
 		}
 
 		ch->tempstore[0] = 0;
 
 		// Precheck for the spell token - set the cast beats in here!
-		if(p_percent_trigger(NULL,NULL,NULL,token,ch,NULL,NULL, TRIG_PRESPELL)) {
+		if(p_percent_trigger(NULL,NULL,NULL,spell->token,ch,NULL,NULL, NULL, NULL, TRIG_PRESPELL, NULL))
+			return;
+
+		beats = ch->tempstore[0];
+	} else if( spell->sn > 0 && skill_table[spell->sn].spell_fun != spell_null ) {
+		int skill = get_skill( ch, spell->sn );
+
+		if ( skill < 1 ) {
+			send_to_char("You don't recall how to cast that spell.\n\r", ch);
 			return;
 		}
 
-		beats = ch->tempstore[0];
-	} else {
-
-		if (ch->position < skill_table[sn].minimum_position) {
+		if (ch->position < skill_table[spell->sn].minimum_position) {
 			send_to_char("You can't concentrate enough.\n\r", ch);
 			return;
 		}
 
-		mana = skill_table[sn].min_mana;
+		mana = skill_table[spell->sn].min_mana;
 
 		if ((ch->mana + ch->manastore) < mana) {
 			send_to_char("You don't have enough mana.\n\r", ch);
@@ -630,20 +629,23 @@ void do_cast(CHAR_DATA *ch, char *argument)
 		// Setup targets.
 		ch->cast_token = NULL;
 		ch->cast_script = NULL;
-		ch->cast_sn = sn;
+		ch->cast_sn = spell->sn;
 		ch->cast_mana = mana;
 
-		if(!validate_spell_target(ch,skill_table[sn].target,arg2,&target,&victim,&obj))
+		if(!validate_spell_target(ch,skill_table[spell->sn].target,arg2,&target,&victim,&obj))
 			return;
 
-		if(p_percent_trigger_phrase(NULL,NULL,ch->in_room,NULL,ch,NULL,NULL, TRIG_PRECAST,"check"))
+		if(p_percent_trigger(NULL,NULL,ch->in_room,NULL,ch,NULL,NULL, NULL, NULL, TRIG_PRECAST,"check"))
 			return;
 
-		beats = skill_table[sn].beats;
+		beats = skill_table[spell->sn].beats;
+	} else {
+		send_to_char("You don't know any spells by that name.\n\r", ch);
+		return;
 	}
 
 	send_to_char("{WYou begin to speak the words of the spell...\n\r{x", ch);
-	act("{W$n begins casting a spell...{x", ch, NULL, NULL, TO_ROOM);
+	act("{W$n begins casting a spell...{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
 	// this bit makes sure that if there are 2 mobs in the room with the same
 	//   name, cast_end is performed on the correct target.
@@ -667,7 +669,7 @@ void do_cast(CHAR_DATA *ch, char *argument)
 	//	sector:cursed_sanctum adds 0.5-1x
 	if(!IS_NPC(ch)) {
 		ch->tempstore[0] = 1000;
-		p_percent_trigger_phrase(NULL,NULL,ch->in_room,NULL,ch,NULL,NULL, TRIG_PRECAST,"beats");
+		p_percent_trigger(NULL,NULL,ch->in_room,NULL,ch,NULL,NULL, NULL, NULL, TRIG_PRECAST,"beats");
 		i = ch->tempstore[0];
 		if(IS_SET(ch->in_room->room2_flags,ROOM_SLOW_MAGIC)) i += number_range(500,1000);
 		if(ch->in_room->sector_type == SECT_CURSED_SANCTUM) i += number_range(500,1000);
@@ -705,7 +707,7 @@ void cast_end(CHAR_DATA *ch)
 	int chance;	// @@@NIB : 20070126 : hard_magic
 
 	send_to_char("{WYou have completed your casting.{x\n\r", ch);
-	act("{W$n has completed $s casting.{x", ch , NULL, NULL, TO_ROOM);
+	act("{W$n has completed $s casting.{x", ch , NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
 	if(ch->cast_token) {
 		token = ch->cast_token;
@@ -826,21 +828,30 @@ void cast_end(CHAR_DATA *ch)
 		return;
 	}
 
+	// If the victim is valid and using a built-in spell, check for spell cast script
+	if( (victim != NULL) && (sn >= 0) &&
+		p_exact_trigger(skill_table[sn].name, victim, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_SPELLCAST) )
+	{
+		deduct_mana(ch,mana);
+		stop_casting(ch, FALSE);
+		return;
+	}
+
+
 	/* Spell trap in the room ? */
 	for (trap = ch->in_room->contents; trap; trap = trap->next_content) {
 		if (trap->item_type == ITEM_SPELL_TRAP) {
 			trap->level -= ch->tot_level/4;
-			act("{Y$p sucks up $n's spell!{x", ch, trap, NULL, TO_ROOM);
-			act("{Y$p sucks up your spell!{x", ch, trap, NULL, TO_CHAR);
+			act("{Y$p sucks up $n's spell!{x", ch, NULL, NULL, trap, NULL, NULL, NULL, TO_ROOM);
+			act("{Y$p sucks up your spell!{x", ch, NULL, NULL, trap, NULL, NULL, NULL, TO_CHAR);
 			if (trap->level <= 0) {
 				CHAR_DATA *dam_vict;
 
-				act("{R$p shatters explosively!{x", ch, trap, NULL, TO_ROOM);
-				act("{R$p shatters explosively!{x", ch, trap, NULL, TO_CHAR);
+				act("{R$p shatters explosively!{x", ch, NULL, NULL, trap, NULL, NULL, NULL, TO_ALL);
 				if (!IS_SET(ch->in_room->room_flags, ROOM_SAFE)) {
 					for (dam_vict = ch->in_room->people; dam_vict; dam_vict = dam_vict->next_in_room) {
-						act("{RYou are struck by $p's shards!", dam_vict, trap, NULL, TO_CHAR);
-						act("{R$n is struck by $p's shards!", dam_vict, trap, NULL, TO_ROOM);
+						act("{RYou are struck by $p's shards!", dam_vict, NULL, NULL, trap, NULL, NULL, NULL, TO_CHAR);
+						act("{R$n is struck by $p's shards!", dam_vict, NULL, NULL, trap, NULL, NULL, NULL, TO_ROOM);
 						damage(dam_vict, dam_vict, dice(60, 8), 0, DAM_PIERCE, FALSE);
 					}
 				}
@@ -883,11 +894,11 @@ void cast_end(CHAR_DATA *ch)
 		if (target == TARGET_CHAR && victim && IS_AFFECTED2(victim, AFF2_SPELL_DEFLECTION)) {
 			if (check_spell_deflection_token(ch, victim, token, script)) {
 				token->value[3] = ch->tot_level;
-				execute_script(script->vnum, script, NULL, NULL, NULL, token, ch, NULL, NULL, victim, NULL,ch->cast_target_name,NULL);
+				execute_script(script->vnum, script, NULL, NULL, NULL, token, ch, NULL, NULL, victim, NULL, NULL,ch->cast_target_name,NULL,0,0,0,0,0);
 			}
 		} else {
 			token->value[3] = ch->tot_level;
-			execute_script(script->vnum, script, NULL, NULL, NULL, token, ch, (target == TARGET_OBJ)?obj:NULL, NULL, (target == TARGET_CHAR)?victim:NULL, NULL,ch->cast_target_name,NULL);
+			execute_script(script->vnum, script, NULL, NULL, NULL, token, ch, (target == TARGET_OBJ)?obj:NULL, NULL, (target == TARGET_CHAR)?victim:NULL, NULL,NULL,ch->cast_target_name,NULL,0,0,0,0,0);
 		}
 
 		// Only bother with the token if it is valid and the SAME token as before the casting
@@ -1291,7 +1302,7 @@ bool can_escape(CHAR_DATA *ch)
 	}
 
 	if (ch->pulled_cart) {
-		act("You can't take $p with you.", ch, ch->pulled_cart, NULL, TO_CHAR);
+		act("You can't take $p with you.", ch, NULL, NULL, ch->pulled_cart, NULL, NULL, NULL, TO_CHAR);
 		return FALSE;
 	}
 
@@ -1328,7 +1339,7 @@ bool can_gate(CHAR_DATA *ch, CHAR_DATA *victim)
 		}
 
 		if (get_region(ch) != get_region(victim)) {
-			act("$N is too far away.", ch, NULL, victim, TO_CHAR);
+			act("$N is too far away.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 			return FALSE;
 		}
 	}
@@ -1552,9 +1563,9 @@ void reverie_end(CHAR_DATA *ch, int amount)
     }
 
     sprintf(buf, "{YYou have finished your reverie.{x");
-    act(buf, ch, NULL, NULL, TO_CHAR);
+    act(buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
     sprintf(buf, "{Y$n has finished $s reverie.{x");
-    act(buf, ch, NULL, NULL, TO_ROOM);
+    act(buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
     sprintf(buf, "You have transferred %i %s to your %s.\n\r",
 	amount,
 	ch->reverie_type == MANA_TO_HIT ? "mana" : "hit points",

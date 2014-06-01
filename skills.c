@@ -359,7 +359,7 @@ void show_multiclass_choices(CHAR_DATA *ch, CHAR_DATA *looker)
     if (ch == looker)
 	send_to_char("{YYou are skilled in the following subclasses:{x\n\r", looker);
     else
-	act("{Y$N is skilled in the following subclasses:{x", looker, NULL, ch, TO_CHAR);
+	act("{Y$N is skilled in the following subclasses:{x", looker, ch, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
     sprintf(buf, "{x");
 
@@ -623,9 +623,9 @@ void do_train(CHAR_DATA *ch, char *argument)
 	if (cost <= ch->train)
 	{
 	    ch->train -= cost;
-	    act("$n trains $t with $N.", ch, skill_table[sn].name, mob, TO_ROOM);
-	    act("You train $t with $N.", ch, skill_table[sn].name, mob, TO_CHAR);
-	    act("{YYou feel your mastery of $t soaring to new heights!{x", ch, skill_table[sn].name, NULL, TO_CHAR);
+	    act("$n trains $t with $N.", ch, mob, NULL, NULL, NULL, skill_table[sn].name, NULL, TO_ROOM);
+	    act("You train $t with $N.", ch, mob, NULL, NULL, NULL, skill_table[sn].name, NULL, TO_CHAR);
+	    act("{YYou feel your mastery of $t soaring to new heights!{x", ch, NULL, NULL, NULL, NULL, skill_table[sn].name, NULL, TO_CHAR);
 	    ch->pcdata->learned[sn]++;
 	}
 	else
@@ -649,7 +649,7 @@ void do_train(CHAR_DATA *ch, char *argument)
 	return;
     }
 
-    if(p_percent_trigger(mob, NULL, NULL, NULL, ch, NULL, NULL, TRIG_PRETRAIN))
+    if(p_percent_trigger(mob, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_PRETRAIN, NULL))
 	return;
 
     if (argument[0] == '\0')
@@ -768,7 +768,7 @@ void do_train(CHAR_DATA *ch, char *argument)
 	}
 	else
 	{
-	    act("You have nothing left to train.", ch, NULL, NULL, TO_CHAR);
+	    act("You have nothing left to train.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	}
 
 	return;
@@ -791,8 +791,8 @@ void do_train(CHAR_DATA *ch, char *argument)
         ch->pcdata->perm_hit += 10;
         ch->max_hit += 10;
         ch->hit += 10;
-        act("Your health increases!",ch,NULL,NULL,TO_CHAR);
-        act("$n's health increases!",ch,NULL,NULL,TO_ROOM);
+        act("Your health increases!",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_CHAR);
+        act("$n's health increases!",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
         return;
     }
 
@@ -813,8 +813,8 @@ void do_train(CHAR_DATA *ch, char *argument)
         ch->pcdata->perm_mana += 10;
         ch->max_mana += 10;
         ch->mana +=10;
-        act("Your mana increases!",ch,NULL,NULL,TO_CHAR);
-        act("$n's mana increases!",ch,NULL,NULL,TO_ROOM);
+        act("Your mana increases!",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_CHAR);
+        act("$n's mana increases!",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
 
 	return;
     }
@@ -836,14 +836,14 @@ void do_train(CHAR_DATA *ch, char *argument)
         ch->pcdata->perm_move += 10;
         ch->max_move += 10;
         ch->move += 10;
-        act("Your stamina increases!",ch,NULL,NULL,TO_CHAR);
-        act("$n's stamina increases!",ch,NULL,NULL,TO_ROOM);
+        act("Your stamina increases!",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_CHAR);
+        act("$n's stamina increases!",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
         return;
     }
 
     if (ch->perm_stat[stat]  >= get_max_train(ch,stat))
     {
-	act("Your $T is already at maximum.", ch, NULL, pOutput, TO_CHAR);
+	act("Your $T is already at maximum.", ch, NULL, NULL, NULL, NULL, NULL, pOutput, TO_CHAR);
 	return;
     }
 
@@ -856,8 +856,8 @@ void do_train(CHAR_DATA *ch, char *argument)
     ch->train		-= cost;
 
     ch->perm_stat[stat]		+= 1;
-    act("Your $T increases!", ch, NULL, pOutput, TO_CHAR);
-    act("$n's $T increases!", ch, NULL, pOutput, TO_ROOM);
+    act("Your $T increases!", ch, NULL, NULL, NULL, NULL, NULL, pOutput, TO_CHAR);
+    act("$n's $T increases!", ch, NULL, NULL, NULL, NULL, NULL, pOutput, TO_ROOM);
 }
 
 
@@ -908,12 +908,12 @@ void do_convert(CHAR_DATA *ch, char *argument)
 	if (ch->practice < 20)
 	{
 	    act("{R$N tells you 'You don't have enough practices. You must have 20 practices!'{x",
-		ch,NULL,trainer,TO_CHAR);
+		ch,trainer, NULL, NULL, NULL, NULL, NULL,TO_CHAR);
 	    return;
 	}
 
 	act("$N helps you apply your practice to training.",
-		ch,NULL,trainer,TO_CHAR);
+		ch,trainer, NULL, NULL, NULL, NULL, NULL,TO_CHAR);
 	ch->practice -= 20;
 	ch->train++;
 	return;
@@ -924,12 +924,12 @@ void do_convert(CHAR_DATA *ch, char *argument)
 	if (ch->train < 1)
 	{
 	    act("{R$N tells you 'You don't have any trains to convert into pracs!'{x",
-		ch,NULL,trainer,TO_CHAR);
+		ch,trainer, NULL, NULL, NULL, NULL, NULL,TO_CHAR);
 	    return;
 	}
 
 	act("$N helps you apply your practice to training.",
-		ch,NULL,trainer,TO_CHAR);
+		ch,trainer, NULL, NULL, NULL, NULL, NULL,TO_CHAR);
 	ch->practice += 20;
 	ch->train--;
 	return;
@@ -941,276 +941,171 @@ void do_convert(CHAR_DATA *ch, char *argument)
 
 void do_spells(CHAR_DATA *ch, char *argument)
 {
-    BUFFER *buffer;
-    char buf[MAX_STRING_LENGTH];
-    int sn;
-    bool found = FALSE;
-    int this_class;
-    char arg[MSL];
-    int i;
-    int n;
+	BUFFER *buffer;
 
-    if (ch == NULL)
-    {
-        bug("do_spells: NULL ch pointer.", 0);
-        return;
-    }
+	bool found = FALSE;
+	char buf[MAX_STRING_LENGTH];
+	char arg[MSL];
+	int i;
+	char color, *name;
+	int skill, rating, mod, level;
+	SKILL_ENTRY *entry;
 
-    if (IS_NPC(ch))
-	return;
-
-    argument = one_argument( argument, arg );
-
-    buffer = new_buf();
-    add_buf(buffer, "\n\r{B [ {w# {B] [ {wLvl{B ]   [ {wSpell Name{B ]                 [ {w%{B ]{x\n\r");
-    i = 1;
-
-    // Show spells people lost
-    if (!str_cmp( arg, "negated"))
-    {
-        for ( sn = 1; sn < MAX_SKILL && skill_table[sn].name; sn++ )
-	{
-	    if ( skill_table[sn].spell_fun != spell_null
-	    &&   ch->pcdata->learned[sn] < 0 )
-	    {
-		sprintf(buf, " %3d     %3d       {Y%-26s    {D%d%%{x\n\r",
-			i,
-			0,
-			skill_table[sn].name,
-			-ch->pcdata->learned[sn]);
-		add_buf(buffer,buf);
-		i++;
-		found = TRUE;
-	    }
-	}
-    } else if (!str_cmp(arg, "acquired")) {
-	TOKEN_DATA *tok;
-	int percent;
-
-	for(tok = ch->tokens; tok; tok = tok->next) {
-		if(tok->pIndexData->type == TOKEN_SPELL) {
-
-			// Value 0 is the rating on skill tokens..
-			if(tok->pIndexData->value[0] > 0)
-				percent = 100 * tok->value[0] / tok->pIndexData->value[0];
-			else
-				percent = tok->value[0];
-
-			if(percent < 1) continue;
-
-			if(percent >= 100)
-				sprintf(buf, " %3d     ---       {Y%-26s    {MMaster{x\n\r",
-					i,tok->name);
-			else
-				sprintf(buf, " %3d     ---       {Y%-26s    {G%d%%{x\n\r",
-					i,tok->name,percent);
-
-			add_buf(buffer,buf);
-			i++;
-			found = TRUE;
-		}
+	if (ch == NULL) {
+		bug("do_skills: NULL ch pointer.", 0);
+		return;
 	}
 
-    } else {
-	for ( n = 'a'; n <= 'z'; n++ )
-	{
-	    for ( sn = 1; sn < MAX_SKILL && skill_table[sn].name; sn++ )
-	    {
-		if (skill_table[sn].name[0] == n
-		&&  skill_table[sn].spell_fun != spell_null
-		&&  ch->pcdata->learned[sn] > 0
-		&&  (arg[0] == '\0' || !str_prefix(arg, skill_table[sn].name)))
-		{
-		    found = TRUE;
-		    this_class = get_this_class(ch, sn);
+	if (IS_NPC(ch)) return;
 
-		    // they dont have it yet
-		    if ( !had_skill(ch,sn)
-		    && ch->level < skill_table[sn].skill_level[this_class] )
-		    {
-			sprintf(buf, " %3d     %3d       {Y%-26s    {xN/A\n\r",
-				i,
-				skill_table[sn].skill_level[this_class],
-				skill_table[sn].name);
-		    }
-		    else
-		    {
-			if (ch->pcdata->learned[sn] == 100) {
-				if(ch->pcdata->mod_learned[sn] != 0)
-				    sprintf(buf, " %3d     %3d       {Y%-26s    {MMaster {W(%+d%%){x\n\r",
-					    i,
-					    IS_IMMORTAL(ch) ? 150 : skill_table[sn].skill_level[this_class],
-					    skill_table[sn].name, ch->pcdata->mod_learned[sn]);
-				else
-				    sprintf(buf, " %3d     %3d       {Y%-26s    {MMaster{x\n\r",
-					    i,
-					    IS_IMMORTAL(ch) ? 150 : skill_table[sn].skill_level[this_class],
-					    skill_table[sn].name);
-			} else if(ch->pcdata->mod_learned[sn] != 0) {
-			    sprintf(buf, " %3d     %3d       {Y%-26s    {G%d%% {W(%+d%%){x\n\r",
-				    i,
-				    IS_IMMORTAL(ch) ? 150 : skill_table[sn].skill_level[this_class],
-				    skill_table[sn].name,
-				    ch->pcdata->learned[sn],ch->pcdata->mod_learned[sn]);
-			} else {
-			    sprintf(buf, " %3d     %3d       {Y%-26s    {G%d%%{x\n\r",
-				    i,
-				    IS_IMMORTAL(ch) ? 150 : skill_table[sn].skill_level[this_class],
-				    skill_table[sn].name,
-				    ch->pcdata->learned[sn]);
+	argument = one_argument( argument, arg );
+
+	buffer = new_buf();
+	add_buf(buffer, "\n\r{B [ {w# {B] [ {wLvl{B ]   [ {wSpell Name{B ]                 [ {w%{B ]{x\n\r");
+	i = 1;
+
+	// Show spells people lost
+ 	if (!str_cmp(arg, "negated")) {
+		for(entry = ch->sorted_spells; entry; entry = entry->next) {
+			rating = skill_entry_rating(ch, entry);
+
+			if(rating < 0) {
+				color = ( IS_IMMORTAL(ch) && IS_VALID(entry->token) ) ? 'G' : 'Y';
+
+				sprintf(buf, " %3d     ---       {%c%-26s    {D%d%%{x\n\r", i++, color, skill_entry_name(entry), -rating);
+				add_buf(buffer,buf);
+				found = TRUE;
 			}
-		    }
-
-		    add_buf(buffer,buf);
-		    i++;
 		}
-	    }
+	} else {
+		for(entry = ch->sorted_spells; entry; entry = entry->next) {
+			skill = skill_entry_rating(ch, entry);
+			mod = skill_entry_mod(ch, entry);
+			level = skill_entry_level(ch, entry);	// Negate level implies they do not know it yet.
+			name = skill_entry_name(entry);
+
+			if( skill < 1 ) continue;
+
+			if( !arg[0] || !str_prefix(arg, name) ) {
+
+				color = ( IS_IMMORTAL(ch) && IS_VALID(entry->token) ) ? 'G' : 'Y';
+
+				// Don't have it yet
+				if( level < 0 )
+					sprintf(buf, " %3d     %3d       {%c%-26s    {xN/A\n\r", i, -level, color, name);
+				else {
+					rating = skill + mod;
+					rating = URANGE(0,rating,100);
+
+					if( rating >= 100 ) {	// MASTER
+						if( mod )
+							sprintf(buf, " %3d     %3d       {%c%-26s    {MMaster {W(%+d%%){x\n\r", i, level, color, name, mod);
+						else
+							sprintf(buf, " %3d     %3d       {%c%-26s    {MMaster{x\n\r", i, level, color, name);
+					} else if( mod )
+						sprintf(buf, " %3d     %3d       {%c%-26s    {G%d%% {W(%+d%%){x\n\r", i, level, color, name, rating, mod);
+					else
+						sprintf(buf, " %3d     %3d       {%c%-26s    {G%d%%{x\n\r", i, level, color, name, rating);
+				}
+
+				add_buf(buffer,buf);
+				i++;
+				found = TRUE;
+			}
+
+		}
 	}
-    }
 
-    if (!found)
-    {
-      	send_to_char("No spells found.\n\r",ch);
-      	return;
-    }
-
-    page_to_char(buf_string(buffer),ch);
-    free_buf(buffer);
+	if (!found)
+		send_to_char("No spells found.\n\r", ch );
+	else
+		page_to_char(buf_string(buffer),ch);
+	free_buf(buffer);
 }
 
 
 void do_skills(CHAR_DATA *ch, char *argument)
 {
-    BUFFER *buffer;
-    int sn;
-    bool found = FALSE;
-    char buf[MAX_STRING_LENGTH];
-    char arg[MSL];
-    int i;
-    char n;
-    int this_class;
+	BUFFER *buffer;
 
-    argument = one_argument( argument, arg );
+	bool found = FALSE;
+	char buf[MAX_STRING_LENGTH];
+	char arg[MSL];
+	int i;
+	char color, *name;
+	int skill, rating, mod, level;
+	SKILL_ENTRY *entry;
 
-    if (ch == NULL)
-    {
-        bug("do_skills: NULL ch pointer.", 0);
-        return;
-    }
-
-    if (IS_NPC(ch))
-        return;
-
-    buffer = new_buf();
-    add_buf(buffer, "\n\r{B [ {w# {B] [ {wLvl{B ]   [ {wSkill Name{B ]                 [ {w%{B ]{x\n\r");
-    i = 1;
-
-    // Show skills people lost
-    if (!str_cmp(arg, "negated")) {
-        for (sn = 1; sn < MAX_SKILL && skill_table[sn].name; sn++)
-	{
-	    if (skill_table[sn].spell_fun == spell_null
-	    &&  ch->pcdata->learned[sn] < 0)
-	    {
-		sprintf(buf, " %3d     %3d       {Y%-26s    {D%d%%{x\n\r",
-			i,
-			0,
-			skill_table[sn].name,
-			-ch->pcdata->learned[sn]);
-		add_buf(buffer,buf);
-		i++;
-		found = TRUE;
-	    }
-	}
-    } else if (!str_cmp(arg, "acquired")) {
-	TOKEN_DATA *tok;
-	int percent;
-
-	for(tok = ch->tokens; tok; tok = tok->next) {
-		if(tok->pIndexData->type == TOKEN_SKILL) {
-
-			// Value 0 is the rating on skill tokens..
-			if(tok->pIndexData->value[TOKVAL_SPELL_RATING] > 0)
-				percent = 100 * tok->value[TOKVAL_SPELL_RATING] / tok->pIndexData->value[TOKVAL_SPELL_RATING];
-			else
-				percent = tok->value[TOKVAL_SPELL_RATING];
-
-			if(percent < 1) continue;
-
-			if(percent >= 100)
-				sprintf(buf, " %3d     ---       {Y%-26s    {MMaster{x\n\r",
-					i,tok->name);
-			else
-				sprintf(buf, " %3d     ---       {Y%-26s    {G%d%%{x\n\r",
-					i,tok->name,percent);
-
-			add_buf(buffer,buf);
-			i++;
-			found = TRUE;
-		}
+	if (ch == NULL) {
+		bug("do_skills: NULL ch pointer.", 0);
+		return;
 	}
 
-    } else {
-	for (n = 'a'; n <= 'z'; n++)
-	{
-	    for (sn = 1; sn < MAX_SKILL && skill_table[sn].name; sn++)
-	    {
-		if ( skill_table[sn].name[0] == n
-		&& skill_table[sn].spell_fun == spell_null
-		&&  ch->pcdata->learned[sn] > 0
-		&& (arg[0] == '\0' || !str_prefix( arg, skill_table[sn].name )))
-		{
-		    found = TRUE;
-		    this_class = get_this_class(ch, sn);
+	if (IS_NPC(ch)) return;
 
-		    // they dont have it yet
-		    if ( !had_skill(ch,sn)
-		    && ch->level < skill_table[sn].skill_level[this_class] )
-		    {
-			sprintf(buf, " %3d     %3d       {Y%-26s    {xN/A\n\r",
-				i, skill_table[sn].skill_level[this_class] ,
-				skill_table[sn].name);
-		    }
-		    else
-		    {
-			if (ch->pcdata->learned[sn] == 100) {
-				if(ch->pcdata->mod_learned[sn] != 0)
-				    sprintf(buf, " %3d     %3d       {Y%-26s    {MMaster {W(%+d%%){x\n\r",
-					    i,
-					    IS_IMMORTAL(ch) ? 150 : skill_table[sn].skill_level[this_class],
-					    skill_table[sn].name, ch->pcdata->mod_learned[sn]);
-				else
-				    sprintf(buf, " %3d     %3d       {Y%-26s    {MMaster{x\n\r",
-					    i,
-					    IS_IMMORTAL(ch) ? 150 : skill_table[sn].skill_level[this_class],
-					    skill_table[sn].name);
-			} else if(ch->pcdata->mod_learned[sn] != 0) {
-			    sprintf(buf, " %3d     %3d       {Y%-26s    {G%d%% {W(%+d%%){x\n\r",
-				    i,
-				    IS_IMMORTAL(ch) ? 150 : skill_table[sn].skill_level[this_class],
-				    skill_table[sn].name,
-				    ch->pcdata->learned[sn],ch->pcdata->mod_learned[sn]);
-			} else {
-			    sprintf(buf, " %3d     %3d       {Y%-26s    {G%d%%{x\n\r",
-				    i,
-				    IS_IMMORTAL(ch) ? 150 : skill_table[sn].skill_level[this_class],
-				    skill_table[sn].name,
-				    ch->pcdata->learned[sn]);
+	argument = one_argument( argument, arg );
+
+	buffer = new_buf();
+	add_buf(buffer, "\n\r{B [ {w# {B] [ {wLvl{B ]   [ {wSkill Name{B ]                 [ {w%{B ]{x\n\r");
+	i = 1;
+
+	// Show skills people lost
+ 	if (!str_cmp(arg, "negated")) {
+		for(entry = ch->sorted_skills; entry; entry = entry->next) {
+			rating = skill_entry_rating(ch, entry);
+
+			if(rating < 0) {
+				color = ( IS_IMMORTAL(ch) && IS_VALID(entry->token) ) ? 'G' : 'Y';
+
+				sprintf(buf, " %3d     ---       {%c%-26s    {D%d%%{x\n\r", i++, color, skill_entry_name(entry), -rating);
+				add_buf(buffer,buf);
+				found = TRUE;
 			}
-		    }
-
-		    add_buf(buffer,buf);
-		    i++;
 		}
-	    }
-	}
-    }
+	} else {
+		for(entry = ch->sorted_skills; entry; entry = entry->next) {
+			skill = skill_entry_rating(ch, entry);
+			mod = skill_entry_mod(ch, entry);
+			level = skill_entry_level(ch, entry);	// Negate level implies they do not know it yet.
+			name = skill_entry_name(entry);
 
-    if (!found)
-      	send_to_char("No skills found.\n\r", ch );
-    else
-	page_to_char(buf_string(buffer),ch);
-    free_buf(buffer);
+			if( skill < 1 ) continue;
+
+			if( !arg[0] || !str_prefix(arg, name) ) {
+
+				color = ( IS_IMMORTAL(ch) && IS_VALID(entry->token) ) ? 'G' : 'Y';
+
+				// Don't have it yet
+				if( level < 0 )
+					sprintf(buf, " %3d     %3d       {%c%-26s    {xN/A\n\r", i, -level, color, name);
+				else {
+					rating = skill + mod;
+					rating = URANGE(0,rating,100);
+
+					if( rating >= 100 ) {	// MASTER
+						if( mod )
+							sprintf(buf, " %3d     %3d       {%c%-26s    {MMaster {W(%+d%%){x\n\r", i, level, color, name, mod);
+						else
+							sprintf(buf, " %3d     %3d       {%c%-26s    {MMaster{x\n\r", i, level, color, name);
+					} else if( mod )
+						sprintf(buf, " %3d     %3d       {%c%-26s    {G%d%% {W(%+d%%){x\n\r", i, level, color, name, rating, mod);
+					else
+						sprintf(buf, " %3d     %3d       {%c%-26s    {G%d%%{x\n\r", i, level, color, name, rating);
+				}
+
+				add_buf(buffer,buf);
+				i++;
+				found = TRUE;
+			}
+
+		}
+	}
+
+	if (!found)
+		send_to_char("No skills found.\n\r", ch );
+	else
+		page_to_char(buf_string(buffer),ch);
+	free_buf(buffer);
 }
 
 
@@ -1223,8 +1118,8 @@ long exp_per_level(CHAR_DATA *ch, long points)
 
     expl = exp_per_level_table[ch->tot_level].exp;
 
-    if (IS_ANGEL(ch) || IS_MYSTIC(ch) || IS_DEMON(ch))
-        expl = (expl * 3)/2;
+    if (IS_REMORT(ch))
+        expl = 3 * expl / 2;
 
     if (ch->level == MAX_CLASS_LEVEL)
 	expl = 0;
@@ -1352,8 +1247,13 @@ void group_add( CHAR_DATA *ch, const char *name, bool deduct)
 
     if (sn != -1)
     {
-	if (ch->pcdata->learned[sn] <= 0) /* i.e. not known */
+	if (ch->pcdata->learned[sn] <= 0) { /* i.e. not known */
 	    ch->pcdata->learned[sn] = 1;
+		if( skill_table[sn].spell_fun == spell_null )
+			skill_entry_addskill(ch, sn, NULL);
+		else
+			skill_entry_addspell(ch, sn, NULL);
+	}
 
 	return;
     }
@@ -1380,6 +1280,10 @@ void group_remove(CHAR_DATA *ch, const char *name)
     if (sn != -1)
     {
 	ch->pcdata->learned[sn] = 0;
+	if( skill_table[sn].spell_fun == spell_null )
+		skill_entry_removeskill(ch,sn, NULL);
+	else
+		skill_entry_removespell(ch,sn, NULL);
 	return;
     }
 
@@ -1426,14 +1330,14 @@ void do_practice( CHAR_DATA *ch, char *argument )
 	sn = find_spell(ch, arg);
 
 	if (sn <= 0 || !can_practice( ch, sn )) {
-		if(!p_percent_trigger_phrase(mob, NULL, NULL, NULL, ch, NULL, NULL, TRIG_PREPRACTICEOTHER,arg))
+		if(!p_percent_trigger(mob, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_PREPRACTICEOTHER,arg))
 			send_to_char("You can't practice that.\n\r", ch);
 		return;
 	}
 
 	// If it makes it this far, it is a standard spell
 
-	if(p_percent_trigger_phrase(mob, NULL, NULL, NULL, ch, NULL, NULL, TRIG_PREPRACTICE, skill_table[sn].name))
+	if(p_percent_trigger(mob, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_PREPRACTICE, skill_table[sn].name))
 		return;
 
 	if (ch->practice <= 0) {
@@ -1451,12 +1355,12 @@ void do_practice( CHAR_DATA *ch, char *argument )
 			(skill_table[sn].rating[this_class] == 0 ? 10 : skill_table[sn].rating[this_class]);
 
 		if (ch->pcdata->learned[sn] < 75) {
-			act("You practice $T.", ch, NULL, skill_table[sn].name, TO_CHAR);
-			act("$n practices $T.", ch, NULL, skill_table[sn].name, TO_ROOM);
+			act("You practice $T.", ch, NULL, NULL, NULL, NULL, NULL, skill_table[sn].name, TO_CHAR);
+			act("$n practices $T.", ch, NULL, NULL, NULL, NULL, NULL, skill_table[sn].name, TO_ROOM);
 		} else {
 			ch->pcdata->learned[sn] = 75;
-			act("{WYou are now learned at $T.{x", ch, NULL, skill_table[sn].name, TO_CHAR);
-			act("{W$n is now learned at $T.{x", ch, NULL, skill_table[sn].name, TO_ROOM);
+			act("{WYou are now learned at $T.{x", ch, NULL, NULL, NULL, NULL, NULL, skill_table[sn].name, TO_CHAR);
+			act("{W$n is now learned at $T.{x", ch, NULL, NULL, NULL, NULL, NULL, skill_table[sn].name, TO_ROOM);
 		}
 	}
 }
@@ -1533,7 +1437,7 @@ bool had_skill( CHAR_DATA *ch, int sn )
     if (ch->pcdata->learned[sn] > 1)
 	return TRUE;
 
-    if (!IS_ANGEL(ch) && !IS_DEMON(ch) && !IS_MYSTIC(ch))
+    if (!IS_REMORT(ch))
     {
 	switch (ch->pcdata->class_current)
 	{
@@ -1663,8 +1567,7 @@ void update_skills( CHAR_DATA *ch )
     for (sn = 0; sn < MAX_SKILL && skill_table[sn].name; sn++)
     {
 	if (ch->pcdata->learned[sn] > 0 && !should_have_skill(ch, sn)
-	&&  str_cmp(skill_table[sn].name, "reserved")
-	&&  !(!str_cmp(ch->name, "Tiglas") && sn == gsn_shape))
+	&&  str_cmp(skill_table[sn].name, "reserved"))
 	{
 	    sprintf(buf, "You shouldn't have skill %s (reward of {Y%d{x quest points)\n\r",
 	        skill_table[sn].name, 7 * ch->pcdata->learned[sn]);
@@ -1681,9 +1584,6 @@ void update_skills( CHAR_DATA *ch )
     }
 
     ch->questpoints += reward;
-
-    if (!str_cmp(ch->name, "Tiglas") && get_skill(ch, gsn_shape) == 0)
-	ch->pcdata->learned[gsn_shape] = 75;
 }
 
 
@@ -1804,3 +1704,237 @@ bool should_have_skill( CHAR_DATA *ch, int sn )
 
     return FALSE;
 }
+
+char *skill_entry_name (SKILL_ENTRY *entry)
+{
+	if( entry ) {
+		if ( IS_VALID(entry->token) ) return entry->token->name;
+
+		if ( entry->sn > 0 ) return skill_table[entry->sn].name;
+	}
+
+	return &str_empty[0];
+}
+
+int skill_entry_compare (SKILL_ENTRY *a, SKILL_ENTRY *b)
+{
+	char *an = skill_entry_name(a);
+	char *bn = skill_entry_name(b);
+	int cmp = str_cmp(an, bn);
+
+	if( !cmp ) {
+		if( a->sn > 0 && IS_VALID(b->token)) cmp = -1;
+		else if( IS_VALID(a->token) && b->sn > 0) cmp = 1;
+	}
+
+	//log_stringf("skill_entry_compare: a(%s) %s b(%s)", an, ((cmp < 0) ? "<" : ((cmp > 0) ? ">" : "==")), bn);
+
+	return cmp;
+}
+
+void skill_entry_insert (SKILL_ENTRY **list, int sn, TOKEN_DATA *token)
+{
+	SKILL_ENTRY *cur, *prev, *entry;
+
+	entry = new_skill_entry();
+	if( !entry ) return;
+
+	entry->sn = sn;
+	entry->token = token;
+
+	cur = *list;
+	prev = NULL;
+
+	while( cur ) {
+		if( skill_entry_compare(entry, cur) < 0 )
+			break;
+
+		prev = cur;
+		cur = cur->next;
+	}
+
+	if( prev )
+		prev->next = entry;
+	else
+		*list = entry;
+	entry->next = cur;
+}
+
+void skill_entry_remove (SKILL_ENTRY **list, int sn, TOKEN_DATA *token)
+{
+	SKILL_ENTRY *cur, *prev;
+
+	cur = *list;
+	prev = NULL;
+	while(cur) {
+		if ( (IS_VALID(token) && (cur->token == token)) ||
+			(sn > 0 && (cur->sn == sn)) ) {
+
+			if(prev)
+				prev->next = cur->next;
+			else
+				*list = cur->next;
+
+			free_skill_entry(cur);
+		}
+
+		prev = cur;
+		cur = cur->next;
+	}
+}
+
+SKILL_ENTRY *skill_entry_findname( SKILL_ENTRY *list, char *str )
+{
+	int count;
+	char name[MIL];
+
+	count = number_argument(str, name);
+
+	if(count < 1) count = 1;
+
+	while (list) {
+		// Name match, until count predecrements to 0
+		if( is_name(str, skill_entry_name(list)) && !--count )
+			return list;
+
+		list = list->next;
+	}
+
+	return NULL;
+}
+
+SKILL_ENTRY *skill_entry_findsn( SKILL_ENTRY *list, int sn )
+{
+	if( sn < 1 || sn >= MAX_SKILL ) return NULL;
+
+	while (list && list->sn != sn)
+		list = list->next;
+
+	return list;
+}
+
+SKILL_ENTRY *skill_entry_findtoken( SKILL_ENTRY *list, TOKEN_DATA *token )
+{
+	if( !IS_VALID(token) ) return NULL;
+
+	while (list && list->token != token)
+		list = list->next;
+
+	return list;
+}
+
+void skill_entry_addskill (CHAR_DATA *ch, int sn, TOKEN_DATA *token)
+{
+	if( !ch ) return;
+
+	if(token)
+		log_stringf("skill_entry_addskill: ch(%s) sn(%d) token(%ld, %s, %s)", (ch->name ? ch->name : "(unknown)"), sn, token->pIndexData->vnum, token->name, (token->type == TOKEN_SKILL) ? "SKILL" : "!SKILL");
+	else
+		log_stringf("skill_entry_addskill: ch(%s) sn(%d) token(0)", (ch->name ? ch->name : "(unknown)"), sn);
+
+	if( !sn && (!token || token->type != TOKEN_SKILL)) return;
+
+	skill_entry_insert( &ch->sorted_skills, sn, token );
+}
+
+void skill_entry_addspell (CHAR_DATA *ch, int sn, TOKEN_DATA *token)
+{
+	if( !ch ) return;
+
+	if( !sn && (!token || token->type != TOKEN_SPELL)) return;
+
+	skill_entry_insert( &ch->sorted_spells, sn, token );
+}
+
+void skill_entry_removeskill (CHAR_DATA *ch, int sn, TOKEN_DATA *token)
+{
+	if( !ch ) return;
+
+	if( !sn && (!token || token->type != TOKEN_SKILL)) return;
+
+	skill_entry_remove( &ch->sorted_skills, sn, token );
+}
+
+void skill_entry_removespell (CHAR_DATA *ch, int sn, TOKEN_DATA *token)
+{
+	if( !ch ) return;
+
+	if( !sn && (!token || token->type != TOKEN_SPELL)) return;
+
+	skill_entry_remove( &ch->sorted_spells, sn, token );
+}
+
+int token_skill_rating( CHAR_DATA *ch, TOKEN_DATA *token)
+{
+	int percent;
+
+	// Make sure the tokens are skill/spell tokens
+	if( ((token->type == TOKEN_SKILL) || (token->type == TOKEN_SPELL)) &&
+		(token->type != token->pIndexData->type))
+		return 0;
+
+	// Value 0
+	if(token->pIndexData->value[TOKVAL_SPELL_RATING] > 0)
+		percent = 100 * token->value[TOKVAL_SPELL_RATING] / token->pIndexData->value[TOKVAL_SPELL_RATING];
+	else
+		percent = token->value[TOKVAL_SPELL_RATING];
+
+	return percent;
+}
+
+int skill_entry_rating (CHAR_DATA *ch, SKILL_ENTRY *entry)
+{
+	if( IS_VALID(entry->token) ) {
+		return token_skill_rating(ch, entry->token);
+	} else if( entry->sn > 0) {
+		if( IS_NPC(ch) ) {
+			if ((skill_table[entry->sn].race != -1 && ch->race != skill_table[entry->sn].race) || ch->tot_level < 10)
+				return 0;
+
+			return mob_skill_table[ch->tot_level];
+		} else
+			return ch->pcdata->learned[entry->sn];
+	} else
+		return 0;
+}
+
+int skill_entry_mod(CHAR_DATA *ch, SKILL_ENTRY *entry)
+{
+	if( IS_VALID(entry->token) ) {
+		return 0;	// No mods for TOKEN entries yet!
+	} else if( entry->sn > 0) {
+		if( IS_NPC(ch) ) return 0;
+
+		return ch->pcdata->mod_learned[entry->sn];
+	} else
+		return 0;
+}
+
+int skill_entry_level (CHAR_DATA *ch, SKILL_ENTRY *entry)
+{
+	int this_class;
+
+	if( IS_IMMORTAL(ch) )
+		return LEVEL_IMMORTAL;
+
+	if( IS_VALID(entry->token) ) {
+		// Make sure the tokens are skill/spell tokens
+		if( (entry->token->type == TOKEN_SKILL || entry->token->type != TOKEN_SPELL) &&
+			entry->token->type != entry->token->pIndexData->type)
+			return 0;
+
+		// All token abilities register as level 1 (for now)
+		return 1;
+
+	} else if( entry->sn > 0) {
+		this_class = get_this_class(ch, entry->sn);
+
+		// Not ready yet
+		if( !had_skill( ch, entry->sn ) && (ch->level < skill_table[entry->sn].skill_level[this_class]) )
+			return -skill_table[entry->sn].skill_level[this_class];
+
+		return skill_table[entry->sn].skill_level[this_class];
+	} else
+		return 0;
+}
+

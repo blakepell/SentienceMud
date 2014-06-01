@@ -1342,7 +1342,7 @@ void boat_echo( SHIP_DATA *ship, char *str )
        victim = d->original ? d->original : d->character;
 
        if ( d->connected == CON_PLAYING && victim->in_room != NULL && victim->in_room->ship == ship )
- 	   act(str, victim, NULL, NULL, TO_CHAR);
+ 	   act(str, victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
     }
 }
 
@@ -1568,8 +1568,8 @@ void boat_attack( CHAR_DATA *ch )
             {
 	        CHAR_DATA *random;
                 random = (CHAR_DATA *)get_random_char( NULL, NULL, ship->char_attacked->in_room, NULL);
-		act("{RWhat luck! Your head is taken off by a stray cannon ball!{x", random, NULL, NULL, TO_CHAR);
-		act("{RA cannon ball appears out of nowhere taking $n's head off!{x", random, NULL, NULL, TO_ROOM);
+		act("{RWhat luck! Your head is taken off by a stray cannon ball!{x", random, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		act("{RA cannon ball appears out of nowhere taking $n's head off!{x", random, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		damage( ch, random, 30000, TYPE_UNDEFINED, DAM_FIRE, FALSE);
 	        ship->attack_position = (sh_int)SHIP_ATTACK_LOADING;
                 SHIP_ATTACK_STATE(ch, 8);
@@ -1657,7 +1657,7 @@ void do_damage( CHAR_DATA *ch, char *argument)
 
 	if (ch->in_room->ship == NULL)
 	{
-		act("You arn't on a vessel.", ch, NULL, NULL, TO_CHAR);
+		act("You arn't on a vessel.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		return;
 	}
 
@@ -2016,7 +2016,7 @@ void do_cargo( CHAR_DATA *ch, char *argument )
 			if ( pObj == NULL
 					|| ( pObj != NULL && IS_SET(pObj->extra_flags, ITEM_HIDDEN)))
 			{
-				act( "There is no $T in the cargo hold.", ch, NULL, arg2, TO_CHAR );
+				act( "There is no $T in the cargo hold.", ch, NULL, NULL, NULL, NULL, NULL, arg2, TO_CHAR );
 				return;
 			}
 
@@ -2031,8 +2031,8 @@ void do_cargo( CHAR_DATA *ch, char *argument )
 			obj_from_obj( pObj );
 			obj_to_obj( pObj, cart );
 
-			act( "You get $p from the vessels cargo hold and place it in your cart.", ch, pObj, NULL, TO_CHAR );
-			act( "$n gets $p from the vessels cargo hold and places it in $s cart.", ch, pObj, NULL, TO_ROOM );
+			act( "You get $p from the vessels cargo hold and place it in your cart.", ch, NULL, NULL, pObj, NULL, NULL, NULL, TO_CHAR );
+			act( "$n gets $p from the vessels cargo hold and places it in $s cart.", ch, NULL, NULL, pObj, NULL, NULL, NULL, TO_ROOM );
 
 			return;
 		}
@@ -2070,8 +2070,8 @@ void do_cargo( CHAR_DATA *ch, char *argument )
 						obj_from_obj( obj );
 						obj_to_obj( obj, cart );
 
-						act( "You get $p from the vessels cargo hold and place it in your cart.", ch, obj, NULL, TO_CHAR );
-						act( "$n gets $p from the vessels cargo hold and places it in $s cart.", ch, obj, NULL, TO_ROOM );
+						act( "You get $p from the vessels cargo hold and place it in your cart.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR );
+						act( "$n gets $p from the vessels cargo hold and places it in $s cart.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM );
 					}
 					}
 				}
@@ -2112,9 +2112,9 @@ void do_cargo( CHAR_DATA *ch, char *argument )
 					else
 					{
 						sprintf( buf, "{Y({G%2d{Y) {xYou get $p from the vessels cargo hold and place it in your cart.", counter );
-						act( buf, ch, pObj, NULL, TO_CHAR );
+						act( buf, ch, NULL, NULL, pObj, NULL, NULL, NULL, TO_CHAR );
 						sprintf( buf, "{Y({G%2d{Y) {x$n gets $p from the vessels cargo hold and places it in $s cart.", counter );
-						act( buf, ch, pObj, NULL, TO_CHAR );
+						act( buf, ch, NULL, NULL, pObj, NULL, NULL, NULL, TO_CHAR );
 					}
 				}
 			}
@@ -2146,7 +2146,7 @@ void do_cargo( CHAR_DATA *ch, char *argument )
 			if ( pObj == NULL
 					|| ( pObj != NULL && IS_SET(pObj->extra_flags, ITEM_HIDDEN)))
 			{
-				act( "There is no $T in your cart.", ch, NULL, arg2, TO_CHAR );
+				act( "There is no $T in your cart.", ch, NULL, NULL, NULL, NULL, NULL, arg2, TO_CHAR );
 				return;
 			}
 
@@ -2167,8 +2167,8 @@ void do_cargo( CHAR_DATA *ch, char *argument )
 			obj_from_obj( pObj );
 			obj_to_obj( pObj, pShipObj );
 
-			act( "$n puts $p from $s cart into the vessels cargo hold.", ch, pObj, NULL, TO_ROOM );
-			act( "You put $p from your cart into the vessels cargo hold.", ch, pObj, NULL, TO_CHAR );
+			act( "$n puts $p from $s cart into the vessels cargo hold.", ch, NULL, NULL, pObj, NULL, NULL, NULL, TO_ROOM );
+			act( "You put $p from your cart into the vessels cargo hold.", ch, NULL, NULL, pObj, NULL, NULL, NULL, TO_CHAR );
 		}
 		else
 			if ( !str_cmp( arg2, "all" ) )
@@ -2209,8 +2209,8 @@ void do_cargo( CHAR_DATA *ch, char *argument )
 							obj_from_obj( obj );
 							obj_to_obj( obj, pShipObj );
 
-							act( "$n puts $p from $s cart into the vessels cargo hold.", ch, obj, NULL, TO_ROOM );
-							act( "You put $p from your cart into the vessels cargo hold.", ch, obj, NULL, TO_CHAR );
+							act( "$n puts $p from $s cart into the vessels cargo hold.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM );
+							act( "You put $p from your cart into the vessels cargo hold.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR );
 						}
 			    }
 			  }
@@ -2258,9 +2258,9 @@ void do_cargo( CHAR_DATA *ch, char *argument )
 					else
 					{
 						sprintf( buf, "{Y({G%2d{Y) {xYou put $p from your cart into the vessels cargo hold.", counter );
-						act( buf, ch, pObj, NULL, TO_CHAR );
+						act( buf, ch, NULL, NULL, pObj, NULL, NULL, NULL, TO_CHAR );
 						sprintf( buf, "{Y({G%2d{Y) {x$n puts $p from $s cart into the vessels cargo hold.", counter );
-						act( buf, ch, pObj, NULL, TO_CHAR );
+						act( buf, ch, NULL, NULL, pObj, NULL, NULL, NULL, TO_CHAR );
 					}
 				}
 	}
@@ -2443,7 +2443,7 @@ void do_board( CHAR_DATA *ch, char *argument)
             char_from_room(mob);
             char_to_room(mob, get_room_index(ship->first_room));
 
-            act("$n runs in from elsewhere on the vessel.", mob, NULL, NULL, TO_ROOM);
+            act("$n runs in from elsewhere on the vessel.", mob, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
         }
         mob->boarded_ship = ship;
     }
@@ -3167,7 +3167,7 @@ void do_pardon( CHAR_DATA *ch, char *argument )
   		deduct_cost( ch, cost );
 
 		  sprintf( buf, "$N takes {Y%ld{x gold coins.", cost );
-		  act( buf, ch, NULL, mob, TO_CHAR );
+		  act( buf, ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR );
 
 			ch->pcdata->bounty[region_type] = 0;
 			ch->pcdata->rank[region_type] = NPC_SHIP_RANK_NONE;

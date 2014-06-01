@@ -42,20 +42,20 @@ void do_disembark( CHAR_DATA *ch, char *argument)
 
     if ( ch->fighting != NULL )
     {
-	act("You can't disembark while fighting.", ch, NULL, NULL, TO_CHAR);
+	act("You can't disembark while fighting.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	return;
     }
 
     if ( ch->in_room->area->ship_list == NULL )
     {
-	act("You arn't on a vessel.", ch, NULL, NULL, TO_CHAR);
+	act("You arn't on a vessel.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	return;
     }
 
     if ( ch->in_room->ship->ship_type == SHIP_AIR_SHIP &&
     ch->in_room->ship->speed != SHIP_SPEED_STOPPED )
     {
-	act( "The doors of the airship are locked!", ch, NULL, NULL, TO_CHAR );
+	act( "The doors of the airship are locked!", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR );
 	return;
     }
 
@@ -66,8 +66,8 @@ void do_disembark( CHAR_DATA *ch, char *argument)
     char_from_room(ch);
     char_to_room(ch, location);
 
-    act("{WYou disembark from $p.{x", ch, ship_obj, NULL, TO_CHAR);
-    act("{W$n disembarks from $p.{x", ch, ship_obj, NULL, TO_ROOM);
+    act("{WYou disembark from $p.{x", ch, NULL, NULL, ship_obj, NULL, NULL, NULL, TO_CHAR);
+    act("{W$n disembarks from $p.{x", ch, NULL, NULL, ship_obj, NULL, NULL, NULL, TO_ROOM);
 
 /*
     if ( IS_SET( ch->in_room->room_flags, ROOM_SHIP))
@@ -126,28 +126,28 @@ if (PULLING_CART(ch) && portal->item_type != ITEM_SHIP)
 	{
 	    if (MOUNTED(ch))
 	    {
-		act("You can't board this vessel while mounted.", ch, NULL, NULL, TO_CHAR);
+		act("You can't board this vessel while mounted.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		return;
 	    }
 
 	    if (portal->ship->speed != SHIP_SPEED_STOPPED)
 	    {
-		act("You can't board a moving vessel.", ch, NULL, NULL, TO_CHAR);
+		act("You can't board a moving vessel.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		return;
 	    }
 
 	    if ( portal->value[5] != -1 && (location = get_room_index(portal->value[5])))
 	    {
 		/* CHAR_DATA *pMob; */
-		act("{WYou board $p.{x\n\r", ch, portal, NULL, TO_CHAR);
-		act("{W$n boards $p.{x\n\r", ch, portal, NULL, TO_ROOM);
+		act("{WYou board $p.{x\n\r", ch, NULL, NULL, portal, NULL, NULL, NULL, TO_CHAR);
+		act("{W$n boards $p.{x\n\r", ch, NULL, NULL, portal, NULL, NULL, NULL, TO_ROOM);
 
 		move_cart(ch,location,TRUE);
 
 		char_from_room(ch);
 		char_to_room(ch, location);
 
-		act("{W$n boards $p.{x", ch, portal, NULL, TO_ROOM);
+		act("{W$n boards $p.{x", ch, NULL, NULL, portal, NULL, NULL, NULL, TO_ROOM);
 
                 /* For now this makes airship captain kill people.
 		   disable it for now as i dont know how this thing works
@@ -157,7 +157,7 @@ if (PULLING_CART(ch) && portal->item_type != ITEM_SHIP)
 		{
 		    boat_echo(portal->ship, "{YThe ship crew charge into combat!{x");
 
-		     if boarding other persons boat then everyone wants to kill the person 
+		     if boarding other persons boat then everyone wants to kill the person
 		    for (pMob = portal->ship->crew_list; pMob != NULL;
 		         pMob = pMob->next_in_crew)
 		    {
@@ -166,7 +166,7 @@ if (PULLING_CART(ch) && portal->item_type != ITEM_SHIP)
 			    char_from_room(pMob);
 			    char_to_room(pMob, get_room_index(portal->ship->first_room));
 
-				p_percent_trigger( ch,NULL, NULL, NULL, pMob, NULL, NULL, TRIG_BOARD );
+				p_percent_trigger( ch,NULL, NULL, NULL, pMob, NULL, NULL, NULL, NULL,TRIG_BOARD , NULL);
 
 			    set_fighting(pMob, ch);
 			}
@@ -198,7 +198,7 @@ if (PULLING_CART(ch) && portal->item_type != ITEM_SHIP)
 	    return;
 	}
 
-	if (IS_SET(portal->value[1],EX_ENVIRONMENT) && old_room && IS_SET(old_room->room2_flags,ROOM_VIRTUAL_ROOM)) {
+	if (IS_SET(portal->value[1],EX_ENVIRONMENT) && old_room && old_room->source) {
 		location = get_environment(old_room);
 	} else if (IS_SET(portal->value[2],GATE_RANDOM) || portal->value[4] == -1 || (IS_SET(portal->value[2],GATE_BUGGY) && (number_percent() < 5)))
 		location = get_random_room( ch, 0 );
@@ -232,11 +232,11 @@ if (PULLING_CART(ch) && portal->item_type != ITEM_SHIP)
 
   	if (!location || location == old_room || !can_see_room(ch,location) ||
   		(!IS_SET(portal->value[2],GATE_NOPRIVACY) && room_is_private(location, ch))) {
-	    act("$p doesn't seem to go anywhere.",ch,portal,NULL,TO_CHAR);
+	    act("$p doesn't seem to go anywhere.",ch, NULL, NULL,portal,NULL, NULL, NULL,TO_CHAR);
 	    return;
 	}
 
-	if(p_percent_trigger_phrase(NULL, NULL, location, NULL, ch, portal, NULL, TRIG_PREENTER, "portal"))
+	if(p_percent_trigger(NULL, NULL, location, NULL, ch, NULL, NULL,portal, NULL,TRIG_PREENTER, "portal"))
 		return;
 
 	portal->value[3] = location->vnum;
@@ -247,16 +247,16 @@ if (PULLING_CART(ch) && portal->item_type != ITEM_SHIP)
 
  	/* @@@NIB : 20070126 : added the check */
  	if(!IS_SET(portal->value[2],GATE_SILENTENTRY))
-  		act("$n steps into $p.",ch,portal,NULL,TO_ROOM);
+  		act("$n steps into $p.",ch, NULL, NULL,portal, NULL, NULL,NULL,TO_ROOM);
 
 	if (IS_SET(portal->value[2],GATE_NORMAL_EXIT))
-	    act("{YYou enter $p.{x",ch,portal,NULL,TO_CHAR);
+	    act("{YYou enter $p.{x",ch, NULL, NULL,portal, NULL, NULL,NULL,TO_CHAR);
 	else if (!IS_SET(portal->value[2], GATE_RANDOM))
 	    act("{YYou walk through $p and find yourself in $T.{x",
-		    ch,portal,location->name,TO_CHAR);
+		    ch, NULL, NULL,portal, NULL, NULL,location->name,TO_CHAR);
 	else
 	    act("{YYou walk through $p and find yourself somewhere else...{x",
-		    ch,portal,location->name,TO_CHAR);
+		    ch, NULL, NULL,portal, NULL, NULL,location->name,TO_CHAR);
 
 	move_cart(ch,location,TRUE);
 
@@ -311,9 +311,9 @@ if (PULLING_CART(ch) && portal->item_type != ITEM_SHIP)
 	/* @@@NIB : 20070126 : added the check */
 	if(!IS_SET(portal->value[2],GATE_SILENTEXIT)) {
   		if (IS_SET(portal->value[2],GATE_NORMAL_EXIT))
-  		    act("$n has arrived.",ch,portal,NULL,TO_ROOM);
+  		    act("$n has arrived.",ch, NULL, NULL,portal, NULL, NULL,NULL,TO_ROOM);
   		else
-  		    act("$n has arrived through $p.",ch,portal,NULL,TO_ROOM);
+  		    act("$n has arrived through $p.",ch, NULL, NULL,portal, NULL, NULL,NULL,TO_ROOM);
 	}
 
 	do_function(ch, &do_look, "auto");
@@ -344,22 +344,22 @@ if (PULLING_CART(ch) && portal->item_type != ITEM_SHIP)
 
 	    if ( fch->master == ch && fch->position == POS_STANDING)
 	    {
-		act( "You follow $N.", fch, NULL, ch, TO_CHAR );
+		act( "You follow $N.", fch, ch, NULL, NULL, NULL, NULL, NULL, TO_CHAR );
 		do_function(fch, &do_enter, argument);
 	    }
 	}
 
 	if (portal != NULL && portal->value[0] == -1)
 	{
-	    act("$p fades out of existence.",ch,portal,NULL,TO_CHAR);
+	    act("$p fades out of existence.",ch, NULL, NULL,portal,NULL, NULL, NULL,TO_CHAR);
 	    if (ch->in_room == old_room)
-		act("$p fades out of existence.",ch,portal,NULL,TO_ROOM);
+		act("$p fades out of existence.",ch, NULL, NULL,portal,NULL, NULL, NULL,TO_ROOM);
 	    else if (old_room->people != NULL)
 	    {
 		act("$p fades out of existence.",
-			old_room->people,portal,NULL,TO_CHAR);
+			old_room->people, NULL, NULL,portal,NULL, NULL, NULL,TO_CHAR);
 		act("$p fades out of existence.",
-			old_room->people,portal,NULL,TO_ROOM);
+			old_room->people, NULL, NULL,portal,NULL, NULL, NULL,TO_ROOM);
 	    }
 	    extract_obj(portal);
 	}
@@ -369,7 +369,7 @@ if (PULLING_CART(ch) && portal->item_type != ITEM_SHIP)
 	 * for the followers before the char, but it's safer this way...
 	 */
 	if (IS_NPC(ch))
-	    p_percent_trigger( ch, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_ENTRY );
+	    p_percent_trigger( ch, NULL, NULL, NULL,NULL, NULL, NULL, NULL, NULL, TRIG_ENTRY , NULL);
 	if ( !IS_NPC( ch ) ) {
 	    p_greet_trigger( ch, PRG_MPROG );
 	    p_greet_trigger( ch, PRG_OPROG );

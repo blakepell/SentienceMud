@@ -372,7 +372,7 @@ char *compile_entity(char *str,int type, char **store)
 //		sprintf(buf,"Line %d: $() field '%s' ent %d.", compile_current_line, field, ent);
 //		compile_error_show(buf);
 
-		if(ent == ENT_EXTRADESC) {
+		if(ent == ENT_EXTRADESC || ent == ENT_HELP) {
 			if(suffix[0]) {
 				sprintf(buf,"Line %d: type suffix is only allowed for variable fields.", compile_current_line);
 				compile_error_show(buf);
@@ -385,7 +385,7 @@ char *compile_entity(char *str,int type, char **store)
 
 		// Is this a variable call?
 		} else if(suffix[0]) {
-			if(entity_allow_vars[ent]) {
+			if(script_entity_allow_vars(ent)) {
 				if(!field[0]) {
 					sprintf(buf,"Line %d: Missing $() variable name.", compile_current_line);
 					compile_error_show(buf);
@@ -408,7 +408,7 @@ char *compile_entity(char *str,int type, char **store)
 				compile_error_show(buf);
 				return NULL;
 			}
-		} else if((ftype = entity_type_lookup(field,entity_type_lists[ent]))) {
+		} else if((ftype = entity_type_lookup(field,script_entity_fields(ent)))) {
 			*p++ = ftype->code;
 			next_ent = ftype->type;
 		} else {
@@ -434,10 +434,28 @@ char *compile_entity(char *str,int type, char **store)
 					return NULL;
 				}
 				break;
-			case ENT_LIST_MOB: ent = ENT_MOBILE; break;
-			case ENT_LIST_OBJ: ent = ENT_OBJECT; break;
-			case ENT_LIST_TOK: ent = ENT_TOKEN; break;
-			case ENT_LIST_AFF: ent = ENT_AFFECT; break;
+			case ENT_OLIST_MOB:	ent = ENT_MOBILE; break;
+			case ENT_OLIST_OBJ:	ent = ENT_OBJECT; break;
+			case ENT_OLIST_TOK:	ent = ENT_TOKEN; break;
+			case ENT_OLIST_AFF:	ent = ENT_AFFECT; break;
+
+			case ENT_BLIST_ROOM:	ent = ENT_ROOM; break;
+			case ENT_BLIST_MOB:	ent = ENT_MOBILE; break;
+			case ENT_BLIST_OBJ:	ent = ENT_OBJECT; break;
+			case ENT_BLIST_TOK:	ent = ENT_TOKEN; break;
+			case ENT_BLIST_EXIT:	ent = ENT_EXIT; break;
+			case ENT_BLIST_SKILL:	ent = ENT_SKILLINFO; break;
+			case ENT_BLIST_AREA:	ent = ENT_AREA; break;
+			case ENT_BLIST_WILDS:	ent = ENT_WILDS; break;
+
+			case ENT_PLIST_STR:	ent = ENT_STRING; break;
+			case ENT_PLIST_CONN:	ent = ENT_CONN; break;
+			case ENT_PLIST_ROOM:	ent = ENT_ROOM; break;
+			case ENT_PLIST_MOB:	ent = ENT_MOBILE; break;
+			case ENT_PLIST_OBJ:	ent = ENT_OBJECT; break;
+			case ENT_PLIST_TOK:	ent = ENT_TOKEN; break;
+			case ENT_PLIST_CHURCH:	ent = ENT_CHURCH; break;
+
 			default:
 				sprintf(buf,"Line %d: Invalid $() primary '%s'.", compile_current_line, field);
 				compile_error_show(buf);

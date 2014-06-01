@@ -16,14 +16,14 @@
  ***************************************************************************/
 
 /***************************************************************************
-*	ROM 2.4 is copyright 1993-1998 Russ Taylor			   *
-*	ROM has been brought to you by the ROM consortium		   *
-*	    Russ Taylor (rtaylor@hypercube.org)				   *
-*	    Gabrielle Taylor (gtaylor@hypercube.org)			   *
-*	    Brian Moore (zump@rom.org)					   *
-*	By using this code, you have agreed to follow the terms of the	   *
-*	ROM license, in the file Rom24/doc/rom.license			   *
-***************************************************************************/
+ * ROM 2.4 is copyright 1993-1998 Russ Taylor                              *
+ * ROM has been brought to you by the ROM consortium                       *
+ *   Russ Taylor (rtaylor@hypercube.org)                                   *
+ *   Gabrielle Taylor (gtaylor@hypercube.org)                              *
+ *   Brian Moore (zump@rom.org)                                            *
+ * By using this code, you have agreed to follow the terms of the          *
+ * ROM license, in the file Rom24/doc/rom.license                          *
+ ***************************************************************************/
 
 #include <sys/types.h>
 #include <time.h>
@@ -38,7 +38,9 @@
 #include "olc_save.h"
 #include "wilds.h"
 
-extern AREA_DATA *get_area_from_uid args ((long uid));
+extern void persist_save(void);
+extern char *token_index_getvaluename(TOKEN_INDEX_DATA *token, int v);
+extern void affect_fix_char(CHAR_DATA *ch);
 
 int gconfig_read (void)
 {
@@ -61,6 +63,8 @@ int gconfig_read (void)
     gconfig.next_obj_uid[0] = 1;	gconfig.next_obj_uid[1] = 0;
     gconfig.next_token_uid[0] = 1;	gconfig.next_token_uid[1] = 0;
     gconfig.next_vroom_uid[0] = 1;	gconfig.next_vroom_uid[1] = 0;
+
+    gconfig.next_church_uid = 1;
 
     for(;;)
     {
@@ -92,6 +96,9 @@ int gconfig_read (void)
 			gconfig.next_vroom_uid[3] = gconfig.next_vroom_uid[1];
 			gconfig.next_vroom_uid[2] = gconfig.next_vroom_uid[0] + UID_INC - (gconfig.next_vroom_uid[0] & UID_MASK);
 			if(!gconfig.next_vroom_uid[2]) gconfig.next_vroom_uid[3]++;
+
+
+			if(!gconfig.next_church_uid) gconfig.next_church_uid++;
                     fclose(fp);
                     gconfig_write();
                     return(0); /* Success*/
@@ -127,6 +134,7 @@ int gconfig_read (void)
                 KEY ("NextAreaUID", gconfig.next_area_uid, fread_number(fp));
                 KEY ("NextWildsUID", gconfig.next_wilds_uid, fread_number(fp));
                 KEY ("NextVlinkUID", gconfig.next_vlink_uid, fread_number(fp));
+                KEY ("NextChurchUID", gconfig.next_church_uid, fread_number(fp));
             break;
 
         } /* end switch */
@@ -160,6 +168,7 @@ int gconfig_write(void)
     fprintf(fp, "NextAreaUID %ld\n", gconfig.next_area_uid);
     fprintf(fp, "NextWildsUID %ld\n", gconfig.next_wilds_uid);
     fprintf(fp, "NextVlinkUID %ld\n", gconfig.next_vlink_uid);
+    fprintf(fp, "NextChurchUID %ld\n", gconfig.next_church_uid);
     fprintf(fp, "END\n");
     fclose(fp);
 /*    log_string("act_wiz.c, gconfig_write(): Config written to 'gconfig.rc'.");*/
@@ -296,7 +305,7 @@ void wiznet(char *string, CHAR_DATA *ch, OBJ_DATA *obj,
 
 	    if (IS_SET(d->character->wiznet,WIZ_PREFIX))
 	  	send_to_char("{B({MSE{B){G-->{x ",d->character);
-            act_new(string,d->character,obj,ch,TO_CHAR,POS_DEAD,NULL);
+            act_new(string,d->character,ch,NULL,obj,NULL,NULL,NULL,TO_CHAR,POS_DEAD,NULL);
         }
     }
 }
@@ -327,7 +336,7 @@ void do_zot(CHAR_DATA *ch, char *argument)
 
 		send_to_char("{YYou are struck by a bolt of lightning!\n\r{x", victim);
 
-		act("{Y$n is struck by a bolt of lightning!{x", victim, NULL, NULL, TO_ROOM);
+		act("{Y$n is struck by a bolt of lightning!{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
 		sprintf(buf, "{Y***ZOT*** {xYou have zotted %s!\n\r",
 			IS_NPC(victim) ? victim->short_descr : victim->name);
@@ -372,7 +381,7 @@ void do_zot(CHAR_DATA *ch, char *argument)
 
     send_to_char("{YYou are struck by a bolt of lightning!\n\r{x", victim);
 
-    act("{Y$n is struck by a bolt of lightning!{x", victim, NULL, NULL, TO_ROOM);
+    act("{Y$n is struck by a bolt of lightning!{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
     sprintf(buf, "{Y***ZOT*** {xYou have zotted %s!\n\r",
 		    IS_NPC(victim) ? victim->short_descr : victim->name);
@@ -532,10 +541,10 @@ void do_deny(CHAR_DATA *ch, char *argument)
     send_to_char("You are denied access!\n\r", victim);
     sprintf(buf,"$N denies access to %s",victim->name);
     wiznet(buf,ch,NULL,WIZ_PENALTIES,WIZ_SECURE,0);
-    act("Denied access to $N.", ch, NULL, victim, TO_CHAR);
+    act("Denied access to $N.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
     save_char_obj(victim);
     stop_fighting(victim,TRUE);
-    do_function(victim, &do_quit, "");
+    do_function(victim, &do_quit, NULL);
 }
 
 
@@ -561,8 +570,10 @@ void do_disconnect(CHAR_DATA *ch, char *argument)
     	{
             if (d->descriptor == desc)
             {
-            	act("Disconnected $N.", ch, NULL, d->character, TO_CHAR);
-		close_socket(d);
+            	act("Disconnected $N.", ch, d->character, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+
+				connection_remove(d);
+				close_socket(d);
             	return;
             }
 	}
@@ -576,7 +587,7 @@ void do_disconnect(CHAR_DATA *ch, char *argument)
 
     if (victim->desc == NULL)
     {
-	act("$N doesn't have a descriptor.", ch, NULL, victim, TO_CHAR);
+	act("$N doesn't have a descriptor.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	return;
     }
 
@@ -584,7 +595,8 @@ void do_disconnect(CHAR_DATA *ch, char *argument)
     {
 	if (d == victim->desc)
 	{
-            act("Disconnected $N.", ch, NULL, d->character, TO_CHAR);
+            act("Disconnected $N.", ch, d->character, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+			connection_remove(d);
 	    close_socket(d);
 	    return;
 	}
@@ -778,7 +790,7 @@ void do_transfer(CHAR_DATA *ch, char *argument)
     if (victim->fighting != NULL)
 	stop_fighting(victim, TRUE);
 
-    act("$n disappears.", victim, NULL, NULL, TO_ROOM);
+    act("$n disappears.", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
     char_from_room(victim);
 	if(location->wilds)
 		char_to_vroom(victim, location->wilds, location->x, location->y);
@@ -795,13 +807,13 @@ void do_transfer(CHAR_DATA *ch, char *argument)
     }
 
     if (ch != victim)
-	act("$n has transferred you.", ch, NULL, victim, TO_VICT);
+	act("$n has transferred you.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
     do_function(victim, &do_look, "auto");
 
 	sprintf(buf, "Transferred $N to %s (%ld)",
 	victim->in_room->name,
 	victim->in_room->vnum);
-	act(buf, ch, NULL, victim, TO_CHAR);
+	act(buf, ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 }
 
 
@@ -987,9 +999,9 @@ void do_goto(CHAR_DATA *ch, char *argument)
 	if (get_trust(rch) >= ch->invis_level)
 	{
 	    if (ch->pcdata != NULL && ch->pcdata->immortal->bamfout[0] != '\0')
-		act("$t",ch,ch->pcdata->immortal->bamfout,rch,TO_VICT);
+		act("$t",ch,rch, NULL, NULL, NULL,ch->pcdata->immortal->bamfout, NULL,TO_VICT);
 	    else
-		act("$n leaves in a swirling mist.",ch,NULL,rch,TO_VICT);
+		act("$n leaves in a swirling mist.",ch,rch, NULL, NULL, NULL, NULL, NULL,TO_VICT);
 	}
     }
 
@@ -1014,9 +1026,9 @@ void do_goto(CHAR_DATA *ch, char *argument)
         if (ch != rch && get_trust(rch) >= ch->invis_level)
         {
             if (ch->pcdata != NULL && ch->pcdata->immortal->bamfin[0] != '\0')
-                act("$t",ch,ch->pcdata->immortal->bamfin,rch,TO_VICT);
+                act("$t",ch,rch, NULL, NULL, NULL,ch->pcdata->immortal->bamfin, NULL,TO_VICT);
             else
-                act("$n appears in a swirling mist.",ch,NULL,rch,TO_VICT);
+                act("$n appears in a swirling mist.",ch,rch, NULL, NULL, NULL, NULL, NULL,TO_VICT);
         }
     }
 
@@ -1114,9 +1126,9 @@ void do_goxy (CHAR_DATA * ch, char *argument)
             if (ch->pcdata != NULL)
             {
                 if (IS_IMMORTAL(ch) && ch->pcdata->immortal->bamfout[0] != '\0')
-                    act ("$t", ch, ch->pcdata->immortal->bamfout, rch, TO_VICT);
+                    act ("$t", ch, rch, NULL, NULL, NULL, ch->pcdata->immortal->bamfout, NULL, TO_VICT);
                 else
-                    act ("$n leaves in a swirling mist.", ch, NULL, rch, TO_VICT);
+                    act ("$n leaves in a swirling mist.", ch, rch, NULL, NULL, NULL, NULL, NULL, TO_VICT);
 
 /* Vizz - For later on... disabled for now.
                 if (ch->pcdata->poofout_mspfile[0] != '\0')
@@ -1142,9 +1154,9 @@ void do_goxy (CHAR_DATA * ch, char *argument)
         if (get_trust (rch) >= ch->invis_level)
         {
             if (ch->pcdata != NULL && IS_IMMORTAL(ch) && ch->pcdata->immortal->bamfin[0] != '\0')
-                act ("$t", ch, ch->pcdata->immortal->bamfin, rch, TO_VICT);
+                act ("$t", ch, rch, NULL, NULL, NULL, ch->pcdata->immortal->bamfin, NULL, TO_VICT);
             else
-                act ("$n appears in a swirling mist.", ch, NULL, rch,
+                act ("$n appears in a swirling mist.", ch, rch, NULL, NULL, NULL, NULL, NULL,
                      TO_VICT);
         }
     }
@@ -1603,27 +1615,8 @@ void do_wstat (CHAR_DATA * ch, char *argument)
     sprintf(buf, "Players: {W%d{x\n\r", pWilds->nplayer);
     add_buf(output, buf);
 
-    sprintf(buf, "Loaded Vrooms: %d\n\r", pWilds->loaded_rooms);
+    sprintf(buf, "Loaded Vrooms: %d\n\r", list_size(pWilds->loaded_vrooms));
     add_buf(output, buf);
-
-    /*
-    if (pWilds->loaded_vroom)
-    {
-        sprintf(buf, "  Vroom  Coordinates    Name\n\r");
-        add_buf(output, buf);
-
-        for (room = pWilds->loaded_vroom;room;room = room->next)
-        {
-            sprintf(buf, "  ({W%3d{x)  ({W%5ld{x, {W%5ld{x) '{W%s{x'\n\r",
-                         vroomcount++, room->x, room->y, room->name);
-            add_buf(output, buf);
-        }
-    }
-    else
-    {
-        add_buf(output, "  {WNone currently loaded.{x\n\r");
-    }
-    */
 
     sprintf(buf, "Loaded Mobiles: %d\n\r", pWilds->loaded_mobs);
     add_buf(output, buf);
@@ -1989,25 +1982,25 @@ void do_mstat(CHAR_DATA *ch, char *argument)
     if (!IS_NPC(victim))
     {
 	sprintf(buf, "{BSubclasses: Mage:{x %s {BCleric:{x %s {BThief:{x %s {BWarrior:{x %s\n\r",
-	    victim->pcdata->sub_class_mage <= 0 ? "none" :
+	    victim->pcdata->sub_class_mage < 0 ? "none" :
 	        sub_class_table[victim->pcdata->sub_class_mage].name[victim->sex],
-	    victim->pcdata->sub_class_cleric <= 0 ? "none" :
+	    victim->pcdata->sub_class_cleric < 0 ? "none" :
 	        sub_class_table[victim->pcdata->sub_class_cleric].name[victim->sex],
-	    victim->pcdata->sub_class_thief <= 0 ? "none" :
+	    victim->pcdata->sub_class_thief < 0 ? "none" :
 	        sub_class_table[victim->pcdata->sub_class_thief].name[victim->sex],
-	    victim->pcdata->sub_class_warrior <= 0 ? "none" :
+	    victim->pcdata->sub_class_warrior < 0 ? "none" :
 	        sub_class_table[victim->pcdata->sub_class_warrior].name[victim->sex]);
 	send_to_char(buf, ch);
 	if (IS_REMORT(victim))
 	{
 	    sprintf(buf, "{BRemort Subclasses: Mage:{x %s {BCleric:{x %s {BThief:{x %s {BWarrior:{x %s\n\r",
-		    victim->pcdata->second_sub_class_mage <= 0 ? "none" :
+		    victim->pcdata->second_sub_class_mage < 0 ? "none" :
 		    sub_class_table[victim->pcdata->second_sub_class_mage].name[victim->sex],
-		    victim->pcdata->second_sub_class_cleric <= 0 ? "none" :
+		    victim->pcdata->second_sub_class_cleric < 0 ? "none" :
 		    sub_class_table[victim->pcdata->second_sub_class_cleric].name[victim->sex],
-		    victim->pcdata->second_sub_class_thief <= 0 ? "none" :
+		    victim->pcdata->second_sub_class_thief < 0 ? "none" :
 		    sub_class_table[victim->pcdata->second_sub_class_thief].name[victim->sex],
-		    victim->pcdata->second_sub_class_warrior <= 0 ? "none" :
+		    victim->pcdata->second_sub_class_warrior < 0 ? "none" :
 		    sub_class_table[victim->pcdata->second_sub_class_warrior].name[victim->sex]);
 	    send_to_char(buf, ch);
 	}
@@ -2066,11 +2059,12 @@ void do_mstat(CHAR_DATA *ch, char *argument)
 
 void do_tstat(CHAR_DATA *ch, char *argument)
 {
-    char arg[MSL], buf[MSL], buf2[MSL], arg2[MSL];
+    char arg[MSL], buf[MSL], buf2[MSL], arg2[MSL], arg3[MSL];
     TOKEN_DATA *token = NULL;
     CHAR_DATA *victim;
     int i;
-    long vnum = 0;
+    long vnum = 0, count;
+
     BUFFER *buffer;
 
     argument = one_argument(argument, arg);
@@ -2086,18 +2080,19 @@ void do_tstat(CHAR_DATA *ch, char *argument)
 	return;
     }
 
-    if (arg2[0] != '\0') {
-	vnum = atol(arg2);
+	count = number_argument(arg2, arg3);
+    if (arg3[0] != '\0') {
+		vnum = atol(arg3);
 
-	if (get_token_index(vnum) == NULL) {
-	    send_to_char("That token vnum does not exist.\n\r", ch);
-	    return;
-	}
+		if (get_token_index(vnum) == NULL) {
+			send_to_char("That token vnum does not exist.\n\r", ch);
+			return;
+		}
 
-	if ((token = get_token_char(victim, vnum)) == NULL) {
-	    act("$N doesn't have that token.", ch, NULL, victim, TO_CHAR);
-	    return;
-	}
+		if ((token = get_token_char(victim, vnum, count)) == NULL) {
+			act("$N doesn't have that token.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+			return;
+		}
     }
 
     buffer = new_buf();
@@ -2106,9 +2101,9 @@ void do_tstat(CHAR_DATA *ch, char *argument)
     add_buf(buffer, buf);
 
     for (i = 0; i < MAX_TOKEN_VALUES; i++) {
-	sprintf(buf2, "Value%d", i);
-	sprintf(buf, "%-20s", buf2);
-	add_buf(buffer, buf);
+		sprintf(buf2, "Value%d", i);
+		sprintf(buf, "%-20s", buf2);
+		add_buf(buffer, buf);
     }
 
     add_buf(buffer, "{x\n\r");
@@ -2125,7 +2120,7 @@ void do_tstat(CHAR_DATA *ch, char *argument)
 
 		strcat(buf, buf2);
 		for (i = 0; i < MAX_TOKEN_VALUES; i++) {
-		    sprintf(buf2, "{b[{x%-7.7s{b]{x %-9ld ", token->pIndexData->value_name[i], token->value[i]);
+		    sprintf(buf2, "{b[{x%-7.7s{b]{x %-9ld ", token_index_getvaluename(token->pIndexData, i), token->value[i]);
 		    strcat(buf, buf2);
 		}
 
@@ -2142,7 +2137,7 @@ void do_tstat(CHAR_DATA *ch, char *argument)
 
 	strcat(buf, buf2);
 	for (i = 0; i < MAX_TOKEN_VALUES; i++) {
-	    sprintf(buf2, "{b[{x%-7.7s{b]{x %-9ld ", token->pIndexData->value_name[i], token->value[i]);
+	    sprintf(buf2, "{b[{x%-7.7s{b]{x %-9ld ", token_index_getvaluename(token->pIndexData, i), token->value[i]);
 	    strcat(buf, buf2);
 	}
 
@@ -2517,7 +2512,7 @@ void do_mwhere(CHAR_DATA *ch, char *argument)
     }
 
     if (!found)
-	act("You didn't find any $T.", ch, NULL, argument, TO_CHAR);
+	act("You didn't find any $T.", ch, NULL, NULL, NULL, NULL, NULL, argument, TO_CHAR);
     else
     	page_to_char(buf_string(buffer),ch);
 
@@ -2615,11 +2610,19 @@ void do_shutdown(CHAR_DATA *ch, char *argument)
     CHAR_DATA *vch, *tch;
     TOKEN_DATA *token, *token_next;
 
-    sprintf(buf, "Shutdown by %s.", ch->name);
+    if( IS_NULLSTR(argument) )
+    	sprintf(buf, "Shutdown by %s.", ch->name);
+    else
+    {
+		sprintf(buf, "Shutdown by %s, Reason: %s", ch->name, argument);
+		append_file(ch, MAINTENANCE_FILE, buf);
+	}
     append_file(ch, SHUTDOWN_FILE, buf);
 
     strcat(buf, "\n\r");
     do_function(ch, &do_echo, buf);
+
+
 
     /* remove any PURGE_REBOOT tokens on any characters */
     for (tch = char_list; tch != NULL; tch = tch->next) {
@@ -2662,6 +2665,7 @@ void do_shutdown(CHAR_DATA *ch, char *argument)
     write_chat_rooms();
     write_gq();
     write_permanent_objs();
+    persist_save();
     save_projects();
 }
 
@@ -2741,7 +2745,7 @@ void do_snoop(CHAR_DATA *ch, char *argument)
     sprintf(buf,"$N starts snooping on %s",
 	(IS_NPC(ch) ? victim->short_descr : victim->name));
     wiznet(buf,ch,NULL,WIZ_SNOOPS,WIZ_SECURE,get_trust(ch));
-    act("Now snooping $N.", ch, NULL, victim, TO_CHAR);
+    act("Now snooping $N.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 }
 
 
@@ -2810,7 +2814,7 @@ void do_switch(CHAR_DATA *ch, char *argument)
         victim->prompt = str_dup(ch->prompt);
     victim->comm = ch->comm;
     victim->lines = ch->lines;
-    act("Switched into $n.", victim, NULL, NULL, TO_CHAR);
+    act("Switched into $n.", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
     SET_BIT(victim->act, PLR_COLOUR);
 }
 
@@ -2931,8 +2935,8 @@ void do_clone(CHAR_DATA *ch, char *argument)
 	    obj_to_room(clone,ch->in_room);
  	recursive_clone(ch,obj,clone);
 
-	act("$n has created $p.",ch,clone,NULL,TO_ROOM);
-	act("You clone $p.",ch,clone,NULL,TO_CHAR);
+	act("$n has created $p.",ch, NULL, NULL,clone,NULL, NULL, NULL,TO_ROOM);
+	act("You clone $p.",ch, NULL, NULL,clone, NULL, NULL, NULL,TO_CHAR);
 	wiznet("$N clones $p.",ch,clone,WIZ_LOAD,WIZ_SECURE,get_trust(ch));
 	return;
     }
@@ -2948,8 +2952,7 @@ void do_clone(CHAR_DATA *ch, char *argument)
 	    return;
 	}
 
-	clone = create_mobile(mob->pIndexData);
-	clone_mobile(mob,clone);
+	clone = clone_mobile(mob);
 
 	for (obj = mob->carrying; obj != NULL; obj = obj->next_content)
 	{
@@ -2960,8 +2963,8 @@ void do_clone(CHAR_DATA *ch, char *argument)
 		new_obj->wear_loc = obj->wear_loc;
 	}
 	char_to_room(clone,ch->in_room);
-        act("$n has created $N.",ch,NULL,clone,TO_ROOM);
-        act("You clone $N.",ch,NULL,clone,TO_CHAR);
+        act("$n has created $N.",ch,clone, NULL, NULL, NULL, NULL, NULL,TO_ROOM);
+        act("You clone $N.",ch,clone, NULL, NULL, NULL, NULL, NULL,TO_CHAR);
 	sprintf(buf,"$N clones %s.",clone->short_descr);
 	wiznet(buf,ch,NULL,WIZ_LOAD,WIZ_SECURE,get_trust(ch));
         return;
@@ -3037,7 +3040,7 @@ void do_mload(CHAR_DATA *ch, char *argument)
     sprintf(buf, "Loaded %s (%ld)",
         pMobIndex->short_descr,
         pMobIndex->vnum);
-    act(buf, ch, NULL, NULL, TO_CHAR);
+    act(buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
     victim = create_mobile(pMobIndex);
 
@@ -3045,9 +3048,9 @@ void do_mload(CHAR_DATA *ch, char *argument)
         char_to_room(victim, ch->in_room);
     else
         char_to_vroom(victim, ch->in_wilds, ch->at_wilds_x, ch->at_wilds_y);
-    p_percent_trigger(victim, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_REPOP);
+    p_percent_trigger(victim, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_REPOP, NULL);
 
-    act("$n has created $N!", ch, NULL, victim, TO_ROOM);
+    act("$n has created $N!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
     sprintf(buf,"$N loads %s.",victim->short_descr);
     wiznet(buf,ch,NULL,WIZ_LOAD,WIZ_SECURE,get_trust(ch));
 }
@@ -3123,14 +3126,14 @@ void do_oload(CHAR_DATA *ch, char *argument)
                 obj_to_vroom(obj, ch->in_room->wilds, ch->at_wilds_x, ch->at_wilds_y);
             }
 
-	act("$n has created $p!", ch, obj, NULL, TO_ROOM);
+	act("$n has created $p!", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 	sprintf(buf, "Loaded $p (%ld)", obj->pIndexData->vnum);
-	act(buf, ch, obj, NULL, TO_CHAR);
+	act(buf, ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 	wiznet("$N loads $p.",ch,obj,WIZ_LOAD,WIZ_SECURE,get_trust(ch));
 
 	obj->loaded_by = str_dup(ch->name);
 
-	p_percent_trigger(NULL, obj, NULL, NULL, NULL, NULL, NULL, TRIG_REPOP);
+	p_percent_trigger(NULL, obj, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_REPOP, NULL);
     }
     else
     {
@@ -3143,15 +3146,15 @@ void do_oload(CHAR_DATA *ch, char *argument)
 		obj_to_room(obj, ch->in_room);
 	    obj->loaded_by = str_dup(ch->name);
 
-	    p_percent_trigger(NULL, obj, NULL, NULL, NULL, NULL, NULL, TRIG_REPOP);
+	    p_percent_trigger(NULL, obj, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_REPOP, NULL);
 	}
 
 	sprintf(buf, "{Y({G%d{Y){x $n has created %s!", amt,
 	    pObjIndex->short_descr);
-	act(buf, ch, NULL, NULL, TO_ROOM);
+	act(buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	sprintf(buf, "{Y({G%d{Y){x Loaded %s (%ld)",
 	    amt, pObjIndex->short_descr, pObjIndex->vnum);
-	act(buf, ch, NULL, NULL, TO_CHAR);
+	act(buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	sprintf(buf, "{Y({G%d{Y){x $N loads %s.", amt, pObjIndex->short_descr);
 	wiznet(buf, ch, NULL, WIZ_LOAD, WIZ_SECURE, get_trust(ch));
     }
@@ -3199,8 +3202,8 @@ void do_purge(CHAR_DATA *ch, char *argument)
 	    extract_obj(obj);
 	}
 
-	act("$n purges the room!", ch, NULL, NULL, TO_ROOM);
-	act("Purged $T.", ch, NULL, ch->in_room->name, TO_CHAR);
+	act("$n purges the room!", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+	act("Purged $T.", ch, NULL, NULL, NULL, NULL, NULL, ch->in_room->name, TO_CHAR);
 	return;
     }
 
@@ -3212,7 +3215,7 @@ void do_purge(CHAR_DATA *ch, char *argument)
 	    return;
 	}
 
-	act("Extracted $N.", ch, NULL, victim, TO_CHAR);
+	act("Extracted $N.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	extract_char(victim, TRUE);
 	return;
     }
@@ -3228,13 +3231,13 @@ void do_purge(CHAR_DATA *ch, char *argument)
 		    }
 	}
 
-	act("Extracted $p.", ch, obj, NULL, TO_CHAR);
+	act("Extracted $p.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 	extract_obj(obj);
 	return;
     }
     else
     {
-	act("Target not found.", ch, NULL, NULL, TO_CHAR);
+	act("Target not found.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	return;
     }
 }
@@ -3322,7 +3325,7 @@ void do_advance(CHAR_DATA *ch, char *argument)
 		}
 
 		if(level < LEVEL_IMMORTAL) {
-			act("$N has been deleted from the immortal list.", ch, NULL, victim, TO_CHAR);
+			act("$N has been deleted from the immortal list.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 			/* Remove it from the global list */
 			last = NULL;
 			for (tmp = immortal_list; tmp != NULL; tmp = tmp->next) {
@@ -3379,12 +3382,13 @@ void do_advance(CHAR_DATA *ch, char *argument)
 	/* SYN -- add IMMORTAL_DATA here!! */
 
 	olevel = victim->tot_level;
-	if (olevel < LEVEL_IMMORTAL - 1 && level >= LEVEL_IMMORTAL)
+	if (olevel < (LEVEL_IMMORTAL - 1) && level >= LEVEL_IMMORTAL)
 	{
 		IMMORTAL_DATA *immortal = new_immortal();
 
 		immortal->name = str_dup(victim->name);
 		immortal->imm_flag = str_dup("{R  Immortal  {x");
+		immortal->created = current_time;
 
 		/* start them off as unassigned */
 		immortal->next = immortal_list;
@@ -3414,7 +3418,7 @@ void do_advance(CHAR_DATA *ch, char *argument)
     }
 
 	/* Again, only display if the victim is not a newly minted 150.*/
-	if (level != 150)
+	if (level != LEVEL_IMMORTAL)
 	{
     sprintf(buf,"You are now level %d.\n\r",victim->level);
     send_to_char(buf,victim);
@@ -3496,7 +3500,7 @@ void do_restore(CHAR_DATA *ch, char *argument)
 	    if (vch->maze_time_left > 0)
 		return_from_maze(vch);
 
-            act("$n has restored you.",ch,NULL,vch,TO_VICT);
+            act("$n has restored you.",ch,vch, NULL, NULL, NULL, NULL, NULL,TO_VICT);
         }
 
         sprintf(buf, "$N restored room %ld.", ch->in_room->vnum);
@@ -3533,7 +3537,7 @@ void do_restore(CHAR_DATA *ch, char *argument)
 	    if (victim->maze_time_left > 0)
 		return_from_maze(victim);
 
-	    act("$n has restored you.",ch,NULL,victim,TO_VICT);
+	    act("$n has restored you.",ch,victim, NULL, NULL, NULL, NULL, NULL,TO_VICT);
         }
 
 	send_to_char("All active players restored.\n\r",ch);
@@ -3562,8 +3566,8 @@ void do_restore(CHAR_DATA *ch, char *argument)
     if (victim->maze_time_left > 0)
 	return_from_maze(victim);
 
-    act("Restored $N.", ch, NULL, victim, TO_CHAR);
-    act("$n has restored you.", ch, NULL, victim, TO_VICT);
+    act("Restored $N.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+    act("$n has restored you.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
     sprintf(buf, "$N restored %s.",
 	IS_NPC(victim) ? victim->short_descr : victim->name);
     wiznet(buf,ch,NULL,WIZ_RESTORE,WIZ_SECURE,get_trust(ch));
@@ -3782,6 +3786,23 @@ void do_newlock(CHAR_DATA *ch, char *argument)
     }
 }
 
+void do_testport(CHAR_DATA *ch, char *argument)
+{
+    extern bool is_test_port;
+    is_test_port = !is_test_port;
+
+    if (is_test_port)
+    {
+		wiznet("$N enables Test Port Mode.",ch,NULL,0,0,0);
+		send_to_char("Test Port Mode enabled.\n\r", ch);
+    }
+    else
+    {
+		wiznet("$N disables Test Port Mode.",ch,NULL,0,0,0);
+		send_to_char("Test Port Mode disabled.\n\r", ch);
+    }
+}
+
 /*
 void do_slookup(CHAR_DATA *ch, char *argument)
 {
@@ -3922,14 +3943,14 @@ void do_set(CHAR_DATA *ch, char *argument)
 void do_tkset(CHAR_DATA *ch, char *argument)
 {
     char arg[MSL];
-    char arg2[MSL];
+    char arg2[MSL], arg2b[MSL];
     char arg3[MSL];
     char arg4[MSL];
     char arg5[MSL];
     char buf[MSL];
     CHAR_DATA *victim;
     TOKEN_DATA *token;
-    long vnum, value;
+    long vnum, value, count;
     int value_num;
 
     argument = one_argument(argument, arg);
@@ -3939,41 +3960,41 @@ void do_tkset(CHAR_DATA *ch, char *argument)
     argument = one_argument(argument, arg5);
 
     if (arg[0] == '\0' || arg2[0] == '\0' || arg3[0] == '\0' || arg4[0] == '\0' || arg5[0] == '\0') {
-	send_to_char("Syntax:\n\r  set token <char name> <token vnum> <v#|timer> <op> <value>\n\r", ch);
-	return;
+		send_to_char("Syntax:\n\r  set token <char name> <token vnum> <v#|timer> <op> <value>\n\r", ch);
+		return;
     }
 
     if ((victim = get_char_world(NULL, arg)) == NULL) {
-	send_to_char("Character not found.\n\r", ch);
-	return;
+		send_to_char("Character not found.\n\r", ch);
+		return;
     }
 
-    vnum = atol(arg2);
+	count = number_argument(arg2,arg2b);
+    vnum = atol(arg2b);
 
-    if ((token = get_token_char(victim, vnum)) == NULL) {
-	send_to_char("Character doesn't have that token vnum.\n\r", ch);
-	return;
+    if ((token = get_token_char(victim, vnum, count)) == NULL) {
+		send_to_char("Character doesn't have that token vnum.\n\r", ch);
+		return;
     }
 
     if (!str_cmp(arg3, "timer"))
-	value_num = -1;
+		value_num = -1;
     else if (is_number(arg3))
-	value_num = atoi(arg3);
-    else
-    {
-	send_to_char("Invalid value argument.\n\r", ch );
-	return;
+		value_num = atoi(arg3);
+    else {
+		send_to_char("Invalid value argument.\n\r", ch );
+		return;
     }
 
     if (value_num < -1 || value_num >= MAX_TOKEN_VALUES) {
-	send_to_char("Invalid value number.\n\r", ch);
-	return;
+		send_to_char("Invalid value number.\n\r", ch);
+		return;
     }
 
     value = atol(arg5);
     if (value < -2000000000 || value > 2000000000) {
-	send_to_char("Value out of range.\n\r", ch);
-	return;
+		send_to_char("Value out of range.\n\r", ch);
+		return;
     }
 
     if (value_num == -1)
@@ -4002,7 +4023,7 @@ void do_tkset(CHAR_DATA *ch, char *argument)
 
 	    case '%':
 		if (value == 0) {
-		    bug("do_tkset: adjust called with operator % and value 0", 0);
+		    bug("do_tkset: adjust called with operator %% and value 0", 0);
 		    return;
 		}
 		token->timer %= value;
@@ -4017,8 +4038,8 @@ void do_tkset(CHAR_DATA *ch, char *argument)
 		bug(buf, 0);
 	}
 
-	sprintf(buf, "Adjusted token %s(%ld) on char %s, timer %c %ld\n\r",
-	    token->name, token->pIndexData->vnum, HANDLE(victim),
+	sprintf(buf, "Adjusted token %s(%ld.%ld) on char %s, timer %c %ld\n\r",
+	    token->name, count, token->pIndexData->vnum, HANDLE(victim),
 	    arg4[0], value);
 	send_to_char(buf, ch);
     }
@@ -4063,8 +4084,8 @@ void do_tkset(CHAR_DATA *ch, char *argument)
 		bug(buf, 0);
 	}
 
-	sprintf(buf, "Adjusted token %s(%ld) on char %s, value %s %c %ld\n\r",
-	    token->name, token->pIndexData->vnum, HANDLE(victim),
+	sprintf(buf, "Adjusted token %s(%ld.%ld) on char %s, value %s %c %ld\n\r",
+	    token->name, count, token->pIndexData->vnum, HANDLE(victim),
 	    token->pIndexData->value_name[value_num], arg4[0], value);
 	send_to_char(buf, ch);
     }
@@ -4483,7 +4504,7 @@ void do_chset(CHAR_DATA *ch, char *argument)
 	church->key = atol(arg3);
 	return;
     }
-
+/*
     if (!str_cmp(arg2, "treasure"))
     {
 	if (get_room_index(atol(arg3)) == NULL)
@@ -4498,7 +4519,7 @@ void do_chset(CHAR_DATA *ch, char *argument)
 	    get_room_index(church->treasure_room)->name);
 	send_to_char(buf, ch);
 	return;
-    }
+    }*/
 }
 
 
@@ -4559,24 +4580,21 @@ void do_mset(CHAR_DATA *ch, char *argument)
 
     if (!str_cmp(arg2, "security"))	/* OLC */
     {
+		int security = UMAX(9, ch->pcdata->security);
         if (IS_NPC(victim))
         {
             send_to_char("Not on NPC's.\n\r", ch);
             return;
         }
 
-	if (value > ch->pcdata->security || value < 0)
-	{
-	    if (ch->pcdata->security != 0)
-	    {
-		sprintf(buf, "Valid security is 0-%d.\n\r",
-		    ch->pcdata->security);
-		send_to_char(buf, ch);
-	    }
-	    else
-	    {
-		send_to_char("Valid security is 0 only.\n\r", ch);
-	    }
+
+
+	if (value > security || value < 0) {
+	    if (security > 0) {
+			sprintf(buf, "Valid security is 0-%d.\n\r", security);
+			send_to_char(buf, ch);
+	    } else
+			send_to_char("Valid security is 0 only.\n\r", ch);
 	    return;
 	}
 	victim->pcdata->security = value;
@@ -5032,9 +5050,17 @@ void do_mset(CHAR_DATA *ch, char *argument)
 	}
 
 	victim->race = race;
-	victim->imm_flags = race_table[ch->race].imm;
-	victim->res_flags = race_table[ch->race].res;
-	victim->vuln_flags = race_table[ch->race].vuln;
+	victim->affected_by_perm = race_table[victim->race].aff;
+	victim->affected_by2_perm = race_table[victim->race].aff2;
+    victim->imm_flags_perm = race_table[victim->race].imm;
+    victim->res_flags_perm = race_table[victim->race].res;
+    victim->vuln_flags_perm = race_table[victim->race].vuln;
+    affect_fix_char(victim);
+
+    victim->form        = race_table[victim->race].form;
+    victim->parts       = race_table[victim->race].parts;
+    victim->lostparts	= 0;
+
 	return;
     }
 
@@ -5063,7 +5089,7 @@ void do_string(CHAR_DATA *ch, char *argument)
 {
     char arg[MAX_INPUT_LENGTH];
     char arg2[MAX_INPUT_LENGTH];
-    char buf[MSL];
+//    char buf[MSL];
     OBJ_DATA *obj;
 
     smash_tilde(argument);
@@ -5088,8 +5114,7 @@ void do_string(CHAR_DATA *ch, char *argument)
     {
 	free_string(obj->name);
 	obj->name = str_dup(argument);
-	sprintf(buf, "Strung $p's name to '%s'.", argument);
-	act(buf, ch, obj, argument, TO_CHAR);
+	act("Strung $p's name to '$t'.", ch, NULL, NULL, obj, NULL, argument, NULL, TO_CHAR);
 	return;
     }
 
@@ -5097,8 +5122,7 @@ void do_string(CHAR_DATA *ch, char *argument)
     {
 	free_string(obj->short_descr);
 	obj->short_descr = str_dup(argument);
-	sprintf(buf, "Strung $p's short desc to '%s'.", argument);
-	act(buf, ch, obj, argument, TO_CHAR);
+	act("Strung $p's short to '$t'.", ch, NULL, NULL, obj, NULL, argument, NULL, TO_CHAR);
 	return;
     }
 
@@ -5106,8 +5130,7 @@ void do_string(CHAR_DATA *ch, char *argument)
     {
 	free_string(obj->description);
 	obj->description = str_dup(argument);
-	sprintf(buf, "Strung $p's long desc to '%s'.", argument);
-	act(buf, ch, obj, argument, TO_CHAR);
+	act("Strung $p's long to '$t'.", ch, NULL, NULL, obj, NULL, argument, NULL, TO_CHAR);
 	return;
     }
 
@@ -5475,7 +5498,7 @@ void do_force(CHAR_DATA *ch, char *argument)
 	    victim_next = victim->next_in_room;
 
 	    if (victim != ch && victim->tot_level < ch->tot_level) {
-		act(buf, ch, NULL, victim, TO_VICT);
+		act(buf, ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
 		interpret(victim, argument);
 	    }
 	}
@@ -5500,7 +5523,7 @@ void do_force(CHAR_DATA *ch, char *argument)
 	    if (desc->connected == CON_PLAYING
 	    &&  get_trust(desc->character) < get_trust(ch))
 	    {
-		act(buf, ch, NULL, desc->character, TO_VICT);
+		act(buf, ch, desc->character, NULL, NULL, NULL, NULL, NULL, TO_VICT);
 		interpret(desc->character, argument);
 	    }
 	}
@@ -5523,7 +5546,7 @@ void do_force(CHAR_DATA *ch, char *argument)
 	    &&  get_trust(desc->character) < get_trust(ch)
             &&  desc->character->level >= LEVEL_HERO)
 	    {
-		act(buf, ch, NULL, desc->character, TO_VICT);
+		act(buf, ch, desc->character, NULL, NULL, NULL, NULL, NULL, TO_VICT);
 		interpret(desc->character, argument);
 	    }
         }
@@ -5560,9 +5583,9 @@ void do_force(CHAR_DATA *ch, char *argument)
 	    return;
 	}
 
-	act(buf, ch, NULL, victim, TO_VICT);
+	act(buf, ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
 	interpret(victim, argument);
-	act("Forced $N to \"$t\".", ch, argument, victim, TO_CHAR);
+	act("Forced $N to \"$t\".", ch, victim, NULL, NULL, NULL, argument, NULL, TO_CHAR);
     }
 
     return;
@@ -5582,13 +5605,13 @@ void do_invis(CHAR_DATA *ch, char *argument)
       if (ch->invis_level)
       {
 	  ch->invis_level = 0;
-	  act("$n slowly fades into existence.", ch, NULL, NULL, TO_ROOM);
+	  act("$n slowly fades into existence.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	  send_to_char("You slowly fade back into existence.\n\r", ch);
       }
       else
       {
 	  ch->invis_level = get_trust(ch);
-	  act("$n slowly fades into thin air.", ch, NULL, NULL, TO_ROOM);
+	  act("$n slowly fades into thin air.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	  send_to_char("You slowly vanish into thin air.\n\r", ch);
       }
     else
@@ -5604,7 +5627,7 @@ void do_invis(CHAR_DATA *ch, char *argument)
       {
 	  ch->reply = NULL;
           ch->invis_level = level;
-          act("$n slowly fades into thin air.", ch, NULL, NULL, TO_ROOM);
+          act("$n slowly fades into thin air.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
           send_to_char("You slowly vanish into thin air.\n\r", ch);
       }
     }
@@ -5626,13 +5649,13 @@ void do_incognito(CHAR_DATA *ch, char *argument)
       if (ch->incog_level)
       {
           ch->incog_level = 0;
-          act("$n is no longer cloaked.", ch, NULL, NULL, TO_ROOM);
+          act("$n is no longer cloaked.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
           send_to_char("You are no longer cloaked.\n\r", ch);
       }
       else
       {
           ch->incog_level = get_trust(ch);
-          act("$n cloaks $s presence.", ch, NULL, NULL, TO_ROOM);
+          act("$n cloaks $s presence.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
           send_to_char("You cloak your presence.\n\r", ch);
       }
     else
@@ -5648,7 +5671,7 @@ void do_incognito(CHAR_DATA *ch, char *argument)
       {
           ch->reply = NULL;
           ch->incog_level = level;
-          act("$n cloaks $s presence.", ch, NULL, NULL, TO_ROOM);
+          act("$n cloaks $s presence.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
           send_to_char("You cloak your presence.\n\r", ch);
       }
     }
@@ -5822,7 +5845,7 @@ void do_mlevel(CHAR_DATA *ch, char *argument)
 	}
 	if (!found)
 		act("You didn't find any mob of level $T.",
-				ch, NULL, argument, TO_CHAR);
+				ch, NULL, NULL, NULL, NULL, NULL, argument, TO_CHAR);
 	else
 		page_to_char(buf_string(buffer),ch);
 
@@ -5882,7 +5905,7 @@ void do_immortalise(CHAR_DATA *ch, char *argument)
 
     if (victim->tot_level < LEVEL_HERO)
     {
-	act("$N must be at max level to remort.", ch, NULL, victim, TO_CHAR);
+	act("$N must be at max level to remort.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	return;
     }
 
@@ -5904,7 +5927,7 @@ void do_immortalise(CHAR_DATA *ch, char *argument)
 
     if (!can_choose_subclass(victim, i))
     {
-	act("$N cannot choose that subclass.", ch, NULL, victim, TO_CHAR);
+	act("$N cannot choose that subclass.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	return;
     }
 
@@ -5960,24 +5983,27 @@ void do_immortalise(CHAR_DATA *ch, char *argument)
     /* take off equipment*/
     for (obj = victim->carrying; obj != NULL; obj = obj->next_content)
     {
-	if (obj->wear_loc != WEAR_NONE)
-	    unequip_char(victim, obj, FALSE);
+		if (obj->wear_loc != WEAR_NONE)
+		    unequip_char(victim, obj, FALSE);
     }
 
     /* take off remaining affects*/
     while (victim->affected)
-	affect_remove(victim, victim->affected);
+		affect_remove(victim, victim->affected);
 
     /* lower their stats significantly*/
     for (i = 0; i < MAX_STATS; i++)
 	victim->perm_stat[i] = UMAX(victim->perm_stat[i] - number_range(4,6), 13);
 
-    victim->affected_by = victim->affected_by|race_table[victim->race].aff;
-    victim->imm_flags   = victim->imm_flags|race_table[victim->race].imm;
-    victim->res_flags   = victim->res_flags|race_table[victim->race].res;
-    victim->vuln_flags  = victim->vuln_flags|race_table[victim->race].vuln;
+	victim->affected_by_perm = race_table[victim->race].aff;
+	victim->affected_by2_perm = race_table[victim->race].aff2;
+    victim->imm_flags_perm = race_table[victim->race].imm;
+    victim->res_flags_perm = race_table[victim->race].res;
+    victim->vuln_flags_perm = race_table[victim->race].vuln;
+
     victim->form        = race_table[victim->race].form;
     victim->parts       = race_table[victim->race].parts;
+    victim->lostparts	= 0;	// Restore anything lost
 
     /* add skills for remort race*/
     for (i = 0; pc_race_table[victim->race].skills[i] != NULL; i++)
@@ -6001,6 +6027,9 @@ void do_immortalise(CHAR_DATA *ch, char *argument)
 
     victim->tot_level = 1;
     victim->level = 1;
+
+	// Reset base affects - will reset affected_by, affected_by2, imm_flags, res_flags and vuln_flags
+    affect_fix_char(victim);
 
     char_from_room(victim);
     char_to_room(victim, get_room_index(ROOM_VNUM_SCHOOL));
@@ -6121,7 +6150,7 @@ void do_immortalise(CHAR_DATA *ch, char *argument)
     buf2[0] = UPPER(buf2[0]);
     sprintf(buf, "All congratulate %s, who is now a%s %s!",
         victim->name, (buf2[0] == 'A' || buf2[0] == 'I' || buf2[0] == 'E' || buf2[0] == 'U'
-	    || buf2[0] == '0') ? "n" : "", buf2);
+	    || buf2[0] == 'O') ? "n" : "", buf2);
     crier_announce(buf);
     double_xp(victim);
 }
@@ -6493,7 +6522,7 @@ void do_junk(CHAR_DATA *ch, char *argument)
  	         && obj->pIndexData->vnum == atol(arg2))
 	    || (is_name(arg2, obj->name)))
 	    {
-		    act("Extracted $p from $N.", ch, obj, victim, TO_CHAR);
+		    act("Extracted $p from $N.", ch, victim, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 		    extract_obj(obj);
 		    found = TRUE;
 		    if (!fAll) break;
@@ -6794,7 +6823,7 @@ void do_vislist(CHAR_DATA *ch, char *argument)
 
     if (found)
     {
-	act("Removed $t from vis list.", ch, string->string, NULL, TO_CHAR);
+	act("Removed $t from vis list.", ch, NULL, NULL, NULL, NULL, string->string, NULL, TO_CHAR);
 	if (string_prev != NULL)
 	    string_prev->next = string->next;
 	else
@@ -6845,7 +6874,7 @@ void do_vislist(CHAR_DATA *ch, char *argument)
 
 	string = new_string_data();
 	string->string = str_dup(arg);
-	act("Added $t to your vis list.", ch, string->string, NULL, TO_CHAR);
+	act("Added $t to your vis list.", ch, NULL, NULL, NULL, NULL, string->string, NULL, TO_CHAR);
 	string->next = ch->pcdata->vis_to_people;
 	ch->pcdata->vis_to_people = string;
     }
@@ -6855,10 +6884,6 @@ void do_vislist(CHAR_DATA *ch, char *argument)
 /* dummy command for whatever, used in debugging only */
 void do_test(CHAR_DATA *ch, char *argument)
 {
-    char buf[MSL];
-
-    if (!str_cmp(ch->name, "Syn") && !str_cmp(argument, "crash"))
-	sprintf(buf, "%s", get_obj_index(1234324)->name);
 }
 
 
@@ -6900,7 +6925,7 @@ void do_assignhelper(CHAR_DATA * ch, char *argument)
 	    send_to_char("You are no longer a helper.\n\r", ch);
 	else
 	{
-	    act("$N is no longer a helper.", ch, NULL, victim, TO_CHAR);
+	    act("$N is no longer a helper.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	    send_to_char("You are no longer a helper.\n\r", victim);
 	}
     }
@@ -6912,7 +6937,7 @@ void do_assignhelper(CHAR_DATA * ch, char *argument)
 	    send_to_char("You are now a helper.\n\r", ch);
 	else
 	{
-	    act("$N is now a helper.", ch, NULL, victim, TO_CHAR);
+	    act("$N is now a helper.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	    send_to_char("You are now a helper.\n\r", victim);
 	}
     }
@@ -6947,11 +6972,11 @@ void do_otransfer(CHAR_DATA *ch, char *argument)
     if (obj->carried_by != NULL
     || obj->in_room == NULL)
     {
-	act("$p isn't on the ground.", ch, obj, NULL, TO_CHAR);
+	act("$p isn't on the ground.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 	return;
     }
 
-    act("Transferred $p.", ch, obj, NULL, TO_CHAR);
+    act("Transferred $p.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 
     if (arg2[0] == '\0')
     {
@@ -7051,7 +7076,7 @@ void do_addcommand(CHAR_DATA *ch, char *argument)
     }
 
     if (cmd_table[i].level <= vch->tot_level) {
-        act("$N can already use that command due to $S level.", ch, NULL, vch, TO_CHAR);
+        act("$N can already use that command due to $S level.", ch, vch, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	return;
     }
 
@@ -7208,72 +7233,201 @@ void do_token(CHAR_DATA *ch, char *argument)
     char arg[MSL];
     char arg2[MSL];
     char arg3[MSL];
+    char arg4[MSL], arg4b[MSL];
     char buf[MSL];
-    CHAR_DATA *victim;
-    long vnum;
+    long vnum, count;
     TOKEN_DATA *token;
     TOKEN_INDEX_DATA *token_index;
 
     argument = one_argument(argument, arg);
     argument = one_argument(argument, arg2);
     argument = one_argument(argument, arg3);
+    argument = one_argument(argument, arg4);
 
     if (arg[0] == '\0' || arg2[0] == '\0' || arg3[0] == '\0') {
-	send_to_char("Syntax:  token <give|junk> <character> <vnum>\n\r", ch);
-	return;
+		send_to_char("Syntax:  token <give|junk> char <character> [#.]<vnum>\n\r", ch);
+		send_to_char("         token <give|junk> obj <object> [#.]<vnum>\n\r", ch);
+		send_to_char("         token <give|junk> room [#.]<vnum>\n\r", ch);
+		return;
     }
 
-    if ((victim = get_char_world(NULL, arg2)) == NULL) {
-	send_to_char("Character not found.\n\r", ch);
-	return;
-    }
-
-    vnum = atol(arg3);
-
-    if (!str_cmp(arg, "give"))
-    {
-	    if(ch->tot_level < (MAX_LEVEL - 1) && ch != victim) {
-		    send_to_char("You may not give tokens to other people.\n\r",ch);
-		    return;
-	    }
-
-	if ((token = get_token_char(victim, vnum)) != NULL)
+	if( !str_cmp(arg2, "char") && arg4[0] != '\0')
 	{
-	    send_to_char("Victim already has that token.\n\r", ch);
-	    return;
+	    CHAR_DATA *victim;
+
+		if ((victim = get_char_world(NULL, arg3)) == NULL) {
+			send_to_char("Character not found.\n\r", ch);
+			return;
+		}
+
+		count = number_argument(arg4, arg4b);
+	    vnum = atol(arg4b);
+
+		if (!str_cmp(arg, "give")) {
+			if(ch->tot_level < (MAX_LEVEL - 1) && ch != victim && !IS_NPC(victim)) {
+				send_to_char("You may not give tokens to other players.\n\r",ch);
+				return;
+			}
+
+			if ((token_index = get_token_index(vnum)) == NULL) {
+				send_to_char("That token doesn't exist.\n\r", ch);
+				return;
+			}
+
+			if (is_singular_token(token_index)) {
+				if ((token = get_token_char(victim, vnum, 1)) != NULL) {
+					send_to_char("Only one copy of this token can be given.\n\r", ch);
+					return;
+				}
+			}
+
+			if (IS_SET(token_index->flags, TOKEN_PERMANENT)) {
+
+				if( ch->pcdata->security < 10 ) {
+					if( !is_test_port ) {
+						send_to_char("You may not give permanent tokens.\n\r", ch);
+						return;
+					}
+					else
+						send_to_char("{WWARNING: Assigning a permanent token.  This is only allowed while in Test Port Mode.{x\n\r", ch);
+				}
+			}
+
+			give_token(token_index, victim, NULL, NULL);
+			sprintf(buf, "Gave token %s(%ld) to character %s\n\r",
+				token_index->name, token_index->vnum, HANDLE(victim));
+			send_to_char(buf, ch);
+			if (IS_SET(token_index->flags, TOKEN_PERMANENT))
+			{
+				send_to_char("{YWARNING:{R Token is {WPERMANENT{R.  It may only be removed by a system script or pfile editting.{x\n\r", ch);
+			}
+
+		} else if (!str_cmp(arg, "junk")) {
+			if(ch->tot_level < (MAX_LEVEL - 1) && ch != victim && !IS_NPC(victim)) {
+				send_to_char("You may not take tokens take other people.\n\r",ch);
+				return;
+			}
+
+			if ((token = get_token_char(victim, vnum, count)) == NULL) {
+				send_to_char("Token not found on victim.\n\r", ch);
+				return;
+			}
+
+			if( token && IS_SET(token->flags, TOKEN_PERMANENT) ) {
+				if( ch->pcdata->security < 10 ) {
+					if( !is_test_port ) {
+						send_to_char("Token is flagged permanent.  Only the server may remove it.\n\r", ch);
+						return;
+					}
+					else
+						send_to_char("{WWARNING: Removing a permanent token.  This is only allowed while in Test Port Mode.{x\n\r", ch);
+				}
+			}
+
+			sprintf(buf, "Removed token %s(%ld.%ld) from character %s\n\r",
+				token->name, count, token->pIndexData->vnum, HANDLE(victim));
+			send_to_char(buf, ch);
+
+			token_from_char(token);
+			free_token(token);
+		} else
+			send_to_char("Syntax:  token <give|junk> char <character> [#.]<vnum>\n\r", ch);
+
+	} else if(!str_cmp(arg2, "obj") && arg4[0] != '\0') {
+		OBJ_DATA *obj;
+
+		if( !(obj = get_obj_world(ch, arg3)) ) {
+			send_to_char("Object not found.\n\r", ch);
+			return;
+		}
+
+		count = number_argument(arg4, arg4b);
+	    vnum = atol(arg4b);
+
+		if (!str_cmp(arg, "give")) {
+			if ((token_index = get_token_index(vnum)) == NULL) {
+				send_to_char("That token doesn't exist.\n\r", ch);
+				return;
+			}
+
+			if (is_singular_token(token_index)) {
+				if ((token = get_token_obj(obj, vnum, 1)) != NULL) {
+					send_to_char("Only one copy of this token can be given.\n\r", ch);
+					return;
+				}
+			}
+
+			give_token(token_index, NULL, obj, NULL);
+			sprintf(buf, "Gave token %s(%ld) to object %s\n\r", token_index->name, token_index->vnum, obj->short_descr);
+			send_to_char(buf, ch);
+
+		} else if (!str_cmp(arg, "junk")) {
+			if ((token = get_token_obj(obj, vnum, count)) == NULL) {
+				send_to_char("Token not found on object.\n\r", ch);
+				return;
+			}
+
+			sprintf(buf, "Removed token %s(%ld.%ld) from object %s\n\r",
+				token->name, count, token->pIndexData->vnum, obj->short_descr);
+			send_to_char(buf, ch);
+
+			token_from_obj(token);
+			free_token(token);
+		} else
+			send_to_char("Syntax:  token <give|junk> obj <object> [#.]<vnum>\n\r", ch);
+	} else if(!str_cmp(arg2, "room") ) {
+		count = number_argument(arg3, arg4b);
+	    vnum = atol(arg4b);
+
+		if (!str_cmp(arg, "give")) {
+			if ((token_index = get_token_index(vnum)) == NULL) {
+				send_to_char("That token doesn't exist.\n\r", ch);
+				return;
+			}
+
+			if (is_singular_token(token_index)) {
+				if ((token = get_token_room(ch->in_room, vnum, 1)) != NULL) {
+					send_to_char("Only one copy of this token can be given.\n\r", ch);
+					return;
+				}
+			}
+
+			give_token(token_index, NULL, NULL, ch->in_room);
+			if( ch->in_room->wilds && IS_SET(ch->in_room->room2_flags, ROOM_VIRTUAL_ROOM))
+				sprintf(buf, "Gave token %s(%ld) to wilds room %ld @ (%d, %d)\n\r", token_index->name, token_index->vnum, ch->in_room->wilds->uid, ch->in_room->x, ch->in_room->y);
+			else if( ch->in_room->source )
+				sprintf(buf, "Gave token %s(%ld) to clone room %ld ID(%lu:%lu)\n\r", token_index->name, token_index->vnum, ch->in_room->source->vnum, ch->in_room->id[0], ch->in_room->id[1]);
+			else
+				sprintf(buf, "Gave token %s(%ld) to room %ld\n\r", token_index->name, token_index->vnum, ch->in_room->vnum);
+			send_to_char(buf, ch);
+
+		} else if (!str_cmp(arg, "junk")) {
+			if ((token = get_token_room(ch->in_room, vnum, count)) == NULL) {
+				send_to_char("Token not found on object.\n\r", ch);
+				return;
+			}
+
+			if( ch->in_room->wilds && IS_SET(ch->in_room->room2_flags, ROOM_VIRTUAL_ROOM))
+				sprintf(buf, "Removed token %s(%ld.%ld) from wilds room %ld @ (%d, %d)\n\r", token->name, count, token->pIndexData->vnum, ch->in_room->wilds->uid, ch->in_room->x, ch->in_room->y);
+			else if( ch->in_room->source )
+				sprintf(buf, "Removed token %s(%ld.%ld) from clone room %ld ID(%lu:%lu)\n\r", token->name, count, token->pIndexData->vnum, ch->in_room->source->vnum, ch->in_room->id[0], ch->in_room->id[1]);
+			else
+				sprintf(buf, "Removed token %s(%ld.%ld) from room %ld\n\r", token->name, count, token->pIndexData->vnum, ch->in_room->vnum);
+			send_to_char(buf, ch);
+
+			token_from_room(token);
+			free_token(token);
+		} else
+			send_to_char("Syntax:  token <give|junk> room [#.]<vnum>\n\r", ch);
+
+	}
+	else
+	{
+		send_to_char("Syntax:  token <give|junk> char <character> [#.]<vnum>\n\r", ch);
+		send_to_char("         token <give|junk> obj <object> [#.]<vnum>\n\r", ch);
+		send_to_char("         token <give|junk> room [#.]<vnum>\n\r", ch);
 	}
 
-	if ((token_index = get_token_index(vnum)) == NULL) {
-	    send_to_char("That token doesn't exist.\n\r", ch);
-	    return;
-	}
-
-	give_token(token_index, victim);
-	sprintf(buf, "Gave token %s(%ld) to character %s\n\r",
-		token_index->name, token_index->vnum, HANDLE(victim));
-	send_to_char(buf, ch);
-    }
-    else if (!str_cmp(arg, "junk"))
-    {
-	    if(ch->tot_level < (MAX_LEVEL - 1) && ch != victim) {
-		    send_to_char("You may not take tokens take other people.\n\r",ch);
-		    return;
-	    }
-
-	if ((token = get_token_char(victim, vnum)) == NULL) {
-	    send_to_char("Token not found on victim.\n\r", ch);
-	    return;
-	}
-
-	sprintf(buf, "Removed token %s(%ld) from character %s\n\r",
-		token->name, token->pIndexData->vnum, HANDLE(victim));
-	send_to_char(buf, ch);
-
-	token_from_char(token);
-	free_token(token);
-    }
-    else
-	send_to_char("Syntax:  token <give|junk> <character> <vnum>\n\r", ch);
 }
 
 
@@ -7287,6 +7441,7 @@ void do_aload(CHAR_DATA *ch, char *argument)
     char arg[MSL];
     FILE *fp;
     AREA_DATA *area;
+    LIST_AREA_DATA *link;
 
     argument = one_argument(argument, arg);
 
@@ -7305,12 +7460,20 @@ void do_aload(CHAR_DATA *ch, char *argument)
 	    return;
 	}
 
-	area = read_area_new(fp);
-	area->next = NULL;
+	link = (LIST_AREA_DATA *)alloc_mem(sizeof(LIST_AREA_DATA));
+	if( list_appendlink(loaded_areas, link) && (area = read_area_new(fp))) {
+		area->next = NULL;
 
-	area_last->next = area;
-	area_last = area;
-	act("Loaded area $T.", ch, NULL, area->name, TO_CHAR);
+		area_last->next = area;
+		area_last = area;
+
+		// Add to script usable list
+		link->area = area;
+		link->uid = area->uid;
+
+		act("Loaded area $T.", ch, NULL, NULL, NULL, NULL, NULL, area->name, TO_CHAR);
+	} else
+		free_mem( link, sizeof(LIST_AREA_DATA));
 	fclose(fp);
     } else {
 	/* Syn - will add in replacement of current area when I have time. */
@@ -7338,6 +7501,6 @@ void do_immflag(CHAR_DATA *ch, char *argument)
 
     free_string(ch->pcdata->immortal->imm_flag);
     ch->pcdata->immortal->imm_flag = str_dup(argument);
-    act("Your immortal flag has been set to $T.", ch, NULL, argument, TO_CHAR);
+    act("Your immortal flag has been set to $T.", ch, NULL, NULL, NULL, NULL, NULL, argument, TO_CHAR);
 }
 

@@ -248,8 +248,8 @@ void do_mailadd(CHAR_DATA *ch, char *argument)
 	if (!can_put_obj(ch, obj, NULL, mail, FALSE))
 	    return;
 
-	act("You put $p in your package.", ch, obj, NULL, TO_CHAR);
-	act("$n puts $p in $s package.", ch, obj, NULL, TO_ROOM);
+	act("You put $p in your package.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+	act("$n puts $p in $s package.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 
 	obj_from_char(obj);
 	obj_to_mail(obj, mail);
@@ -297,10 +297,10 @@ void do_mailadd(CHAR_DATA *ch, char *argument)
 			if (i > 0 && match_obj != NULL)
 			{
 			    sprintf(buf, "{Y({G%2d{Y) {x$n puts $p in $s package.", i);
-			    act(buf, ch, match_obj, NULL, TO_ROOM);
+			    act(buf, ch, NULL, NULL, match_obj, NULL, NULL, NULL, TO_ROOM);
 
 			    sprintf(buf, "{Y({G%2d{Y) {xYou put $p in your package.", i);
-			    act(buf, ch, match_obj, NULL, TO_CHAR);
+			    act(buf, ch, NULL, NULL, match_obj, NULL, NULL, NULL, TO_CHAR);
 			}
 
 			send_to_char("Your mail package is at the maximum allowable weight.\n\r", ch);
@@ -312,10 +312,10 @@ void do_mailadd(CHAR_DATA *ch, char *argument)
 			if (i > 0 && match_obj != NULL)
 			{
 			    sprintf(buf, "{Y({G%2d{Y) {x$n puts $p in $s package.", i);
-			    act(buf, ch, match_obj, NULL, TO_ROOM);
+			    act(buf, ch, NULL, NULL, match_obj, NULL, NULL, NULL, TO_ROOM);
 
 			    sprintf(buf, "{Y({G%2d{Y) {xYou put $p in your package.", i);
-			    act(buf, ch, match_obj, NULL, TO_CHAR);
+			    act(buf, ch, NULL, NULL, match_obj, NULL, NULL, NULL, TO_CHAR);
 			}
 
 			send_to_char("Your mail package has the maximum allowable number of items.\n\r", ch);
@@ -333,10 +333,10 @@ void do_mailadd(CHAR_DATA *ch, char *argument)
 		if (i > 0 && match_obj != NULL)
 		{
 		    sprintf(buf, "{Y({G%2d{Y) {x$n puts $p in $s package.", i);
-		    act(buf, ch, match_obj, NULL, TO_ROOM);
+		    act(buf, ch, NULL, NULL, match_obj, NULL, NULL, NULL, TO_ROOM);
 
 		    sprintf(buf, "{Y({G%2d{Y) {xYou put $p in your package.", i);
-		    act(buf, ch, match_obj, NULL, TO_CHAR);
+		    act(buf, ch, NULL, NULL, match_obj, NULL, NULL, NULL, TO_CHAR);
 		}
 	    }
 	    else
@@ -344,9 +344,9 @@ void do_mailadd(CHAR_DATA *ch, char *argument)
 		if (!any)
 		{
 		    if (arg[3] == '\0')
-			act("You have nothing you can put in your package.", ch, NULL, NULL, TO_CHAR);
+			act("You have nothing you can put in your package.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		    else
-			act("You're not carrying any $T you can put in your package.", ch, NULL, &arg[4], TO_CHAR);
+			act("You're not carrying any $T you can put in your package.", ch, NULL, NULL, NULL, NULL, NULL, &arg[4], TO_CHAR);
 		}
 	    }
 	}
@@ -380,15 +380,15 @@ void do_mailrem(CHAR_DATA *ch, char *argument)
     {
 	if ((obj = get_obj_list(ch, arg, mail->objects)) == NULL)
 	{
-	    act("There's no $t in the package.", ch, arg, NULL, TO_CHAR);
+	    act("There's no $t in the package.", ch, NULL, NULL, NULL, NULL, arg, NULL, TO_CHAR);
 	    return;
 	}
 
 	if (!can_get_obj(ch, obj, NULL, mail, FALSE))
 	    return;
 
-	act("You take $p out of the package.", ch, obj, NULL, TO_CHAR);
-	act("$n takes $p out of $s package.", ch, obj, NULL, TO_ROOM);
+	act("You take $p out of the package.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+	act("$n takes $p out of $s package.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 
 	obj_from_mail(obj);
 	obj_to_char(obj, ch);
@@ -438,10 +438,10 @@ void do_mailrem(CHAR_DATA *ch, char *argument)
 			if (i > 0 && match_obj != NULL)
 			{
 			    sprintf(buf, "{Y({G%2d{Y) {x$n takes $p out of $s package.", i);
-			    act(buf, ch, match_obj, NULL, TO_ROOM);
+			    act(buf, ch, NULL, NULL, match_obj, NULL, NULL, NULL, TO_ROOM);
 
 			    sprintf(buf, "{Y({G%2d{Y) {xYou take $p out of your package.", i);
-			    act(buf, ch, match_obj, NULL, TO_CHAR);
+			    act(buf, ch, NULL, NULL, match_obj, NULL, NULL, NULL, TO_CHAR);
 
 			    send_to_char("You can't carry any more.\n\r", ch);
 			}
@@ -454,10 +454,10 @@ void do_mailrem(CHAR_DATA *ch, char *argument)
 			if (i > 0 && match_obj != NULL)
 			{
 			    sprintf(buf, "{Y({G%2d{Y) {x$n takes $p out of $s package.", i);
-			    act(buf, ch, match_obj, NULL, TO_ROOM);
+			    act(buf, ch, NULL, NULL, match_obj, NULL, NULL, NULL, TO_ROOM);
 
 			    sprintf(buf, "{Y({G%2d{Y) {xYou take $p out of your package.", i);
-			    act(buf, ch, match_obj, NULL, TO_CHAR);
+			    act(buf, ch, NULL, NULL, match_obj, NULL, NULL, NULL, TO_CHAR);
 
 			    send_to_char("Your hands are full.\n\r", ch);
 			}
@@ -476,10 +476,10 @@ void do_mailrem(CHAR_DATA *ch, char *argument)
 		if (i > 0 && match_obj != NULL)
 		{
 		    sprintf(buf, "{Y({G%2d{Y) {x$n takes $p out of $s package.", i);
-		    act(buf, ch, match_obj, NULL, TO_ROOM);
+		    act(buf, ch, NULL, NULL, match_obj, NULL, NULL, NULL, TO_ROOM);
 
 		    sprintf(buf, "{Y({G%2d{Y) {xYou take $p out of your package.", i);
-		    act(buf, ch, match_obj, NULL, TO_CHAR);
+		    act(buf, ch, NULL, NULL, match_obj, NULL, NULL, NULL, TO_CHAR);
 		}
 	    }
 	    else
@@ -487,9 +487,9 @@ void do_mailrem(CHAR_DATA *ch, char *argument)
 		if (!any)
 		{
 		    if (arg[3] == '\0')
-			act("You have nothing in your package.", ch, NULL, NULL, TO_CHAR);
+			act("You have nothing in your package.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		    else
-			act("There is no $T in your package.", ch, NULL, &arg[4], TO_CHAR);
+			act("There is no $T in your package.", ch, NULL, NULL, NULL, NULL, NULL, &arg[4], TO_CHAR);
 		}
 	    }
 	}
@@ -514,7 +514,7 @@ void do_mailcancel(CHAR_DATA *ch, char *argument)
     {
 	obj_next = obj->next_content;
 
-	act("You take $p out of the package.", ch, obj, NULL, TO_CHAR);
+	act("You take $p out of the package.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 	obj_from_mail(obj);
 	obj_to_char(obj, ch);
     }
@@ -804,7 +804,7 @@ void check_new_mail(CHAR_DATA *ch)
 
 	sprintf(buf, "{xYou receive a package from %s.\n\r", mail->sender);
 	send_to_char(buf, ch);
-        act ("$n picks up a package.", ch, NULL, NULL, TO_ROOM);
+        act ("$n picks up a package.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
 	while (mail->objects)
 	{
@@ -829,10 +829,10 @@ void check_new_mail(CHAR_DATA *ch)
 	    if (i > 1)
 	    {
 		sprintf(buf, "{Y({G%2d{Y) {xYou take $p out of the package.", i);
-		act(buf, ch, prototype, NULL, TO_CHAR);
+		act(buf, ch, NULL, NULL, prototype, NULL, NULL, NULL, TO_CHAR);
 	    }
 	    else
-		act("You take $p out of the package.", ch, prototype, NULL, TO_CHAR);
+		act("You take $p out of the package.", ch, NULL, NULL, prototype, NULL, NULL, NULL, TO_CHAR);
 	}
 
 	mail->picked_up = TRUE;
@@ -857,8 +857,8 @@ void check_new_mail(CHAR_DATA *ch)
 	    parchment->full_description = str_dup(mail->message);
 
 	    obj_to_char(parchment, ch);
-	    act("You take $p out of the package.", ch, parchment, NULL, TO_CHAR);
-	    act("$n takes $p out of the package.", ch, parchment, NULL, TO_ROOM);
+	    act("You take $p out of the package.", ch, NULL, NULL, parchment, NULL, NULL, NULL, TO_CHAR);
+	    act("$n takes $p out of the package.", ch, NULL, NULL, parchment, NULL, NULL, NULL, TO_ROOM);
 	}
 	//free_mail(mail);
     }

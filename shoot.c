@@ -164,7 +164,7 @@ void do_shoot( CHAR_DATA *ch, char *argument )
 	if ( direction == -1 )
 	    send_to_char("You don't see anyone like that around.\n\r", ch );
 	else
-	    act("You don't see anyone like that to the $t.", ch, dir_name[direction], NULL, TO_CHAR );
+	    act("You don't see anyone like that to the $t.", ch, NULL, NULL, NULL, NULL, dir_name[direction], NULL, TO_CHAR );
 
 	return;
     }
@@ -187,23 +187,23 @@ void do_shoot( CHAR_DATA *ch, char *argument )
 	    sprintf( buf, "$n draws %s from %s and takes careful aim at $N.",
 		obj->short_descr,
 		quiver->short_descr );
-	    act( buf, ch, NULL, victim, TO_NOTVICT );
+	    act( buf, ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT );
 
 	    sprintf( buf, "{R$n draws %s from %s and takes careful aim at you!{x",
 		obj->short_descr,
 		quiver->short_descr );
-	    act( buf, ch, NULL, victim, TO_VICT );
+	    act( buf, ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT );
 	}
 	else // ranged attack
 	{
 	    sprintf(buf, "$n draws %s from %s and takes careful aim %swards.",
 		    obj->short_descr, quiver->short_descr, dir_name[ direction ] );
-	    act( buf, ch, NULL, NULL, TO_ROOM);
+	    act( buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	}
 
 	sprintf(buf, "You draw %s from %s and take careful aim at %s.",
 	    obj->short_descr, quiver->short_descr, pers(victim, ch));
-	act( buf, ch, NULL, NULL, TO_CHAR);
+	act( buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
     }
     else
     { // no quiver
@@ -212,22 +212,22 @@ void do_shoot( CHAR_DATA *ch, char *argument )
 	    sprintf( buf, "$n takes %s and aims carefully at $N.",
 		obj->short_descr );
 
-	    act( buf, ch, NULL, victim, TO_NOTVICT );
+	    act( buf, ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT );
 
 	    sprintf( buf, "{R$n takes %s and aims carefully at you!{x",
 		obj->short_descr );
-	    act( buf, ch, NULL, victim, TO_VICT );
+	    act( buf, ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT );
 	}
 	else
 	{
 	    sprintf(buf, "$n takes %s and aims carefully %swards.",
 		    obj->short_descr, dir_name[ direction ] );
-	    act( buf, ch, NULL, NULL, TO_ROOM);
+	    act( buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	}
 
 	sprintf(buf, "You take %s and aim carefully at %s.",
 	    obj->short_descr, pers(victim, ch));
-	act( buf, ch, NULL, NULL, TO_CHAR);
+	act( buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
     }
 
     // If arrow from quiver then faster to load and aim
@@ -354,10 +354,9 @@ void ranged_end( CHAR_DATA *ch )
     if ( number_percent() > skill )
     {
 	send_to_char("You fumble your weapon as you attempt to fire it.\n\r", ch );
-	act("{R$n attempts to fire $p, but fumbles.{x", ch, bow, NULL, TO_ROOM );
+	act("{R$n attempts to fire $p, but fumbles.{x", ch, NULL, NULL, bow, NULL, NULL, NULL, TO_ROOM );
 
-	act("{B$p falls onto the ground.{x", ch, obj, NULL, TO_ROOM);
-	act("{B$p falls onto the ground.{x", ch, obj, NULL, TO_CHAR);
+	act("{B$p falls onto the ground.{x", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ALL);
 	obj_from_char( obj );
 	obj_to_room( obj, ch->in_room );
 	check_improve( ch, sn, FALSE, 1 );
@@ -407,9 +406,9 @@ void ranged_end( CHAR_DATA *ch )
     // ch and victim in the same room
     if ( ch->in_room == victim->in_room )
     {
-	act("{Y$n fires $p{Y at you!{x", ch, obj, victim, TO_VICT);
-	act("{Y$n fires $p{Y at $N!{x", ch, obj, victim, TO_NOTVICT);
-	act("{YYou fire $p{Y at $N.{x", ch, obj, victim, TO_CHAR);
+	act("{Y$n fires $p{Y at you!{x", ch, victim, NULL, obj, NULL, NULL, NULL, TO_VICT);
+	act("{Y$n fires $p{Y at $N!{x",  ch, victim, NULL, obj, NULL, NULL, NULL, TO_NOTVICT);
+	act("{YYou fire $p{Y at $N.{x",  ch, victim, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 
 	// If we killed them make the victim null
 	if ( damage( ch, victim, dam, gsn_archery, dt, TRUE))
@@ -438,10 +437,10 @@ void ranged_end( CHAR_DATA *ch )
 
     // ranged firing section
     sprintf( buf, "{YYou fire $p %swards.{x", dir_name[direction] );
-    act( buf, ch, obj, NULL, TO_CHAR);
+    act( buf, ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 
     sprintf( buf, "{Y$n fires $p %swards.{x", dir_name[direction] );
-    act( buf, ch, obj, NULL, TO_ROOM);
+    act( buf, ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 
     target_room = ch->in_room->exit[direction]->u1.to_room;
 
@@ -515,16 +514,16 @@ void ranged_end( CHAR_DATA *ch )
 	switch( number_range(0, 3) )
 	{
 	    case 0:
-		act("{Y$p thumps into the ground next to you!{x\n\r", victim, obj, NULL, TO_CHAR);
+		act("{Y$p thumps into the ground next to you!{x\n\r", victim, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 		break;
 	    case 1:
-		act("{Y$p skids along the ground next you!{x\n\r", victim, obj, NULL, TO_CHAR);
+		act("{Y$p skids along the ground next you!{x\n\r", victim, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 		break;
 	    case 2:
-		act("{Y$p thuds into the ground next to you!{x\n\r", victim, obj, NULL, TO_CHAR);
+		act("{Y$p thuds into the ground next to you!{x\n\r", victim, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 		break;
 	    case 3:
-		act("{YYou hear a swish as $p barely misses your head!{x\n\r", victim, obj, NULL, TO_CHAR);
+		act("{YYou hear a swish as $p barely misses your head!{x\n\r", victim, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 		break;
 	}
 
@@ -570,7 +569,7 @@ void ranged_end( CHAR_DATA *ch )
 
         if (IS_AWAKE(victim)) {
 	    hunt_char(victim,ch);
-	    act("You hear an angry snarl.", ch, NULL, NULL, TO_CHAR );
+	    act("You hear an angry snarl.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR );
 	}
     }
 
@@ -745,11 +744,11 @@ void do_throw( CHAR_DATA *ch, char *argument )
 	if ( obj != NULL && obj->item_type == ITEM_SMOKE_BOMB )
 	{
 	    act("{YYou throw down $p and it explodes into a cloud of noxious "
-		"smoke!{x", ch, obj, NULL, TO_CHAR );
+		"smoke!{x", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR );
 	    act("{Y$n throws $p down and it explodes into a cloud of noxious "
-		"smoke!{x", ch, obj, NULL, TO_ROOM );
+		"smoke!{x", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM );
 	    act("{YYou choke and gag as the fumes begin to take effect!",
-		NULL, NULL, NULL, TO_ROOM );
+		ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ALL );
 
 	    if ( get_obj_index( OBJ_VNUM_STINKING_CLOUD ) == NULL )
 	    {
@@ -820,7 +819,7 @@ void do_throw( CHAR_DATA *ch, char *argument )
 	if ( arg3[0] == '\0' )
 	    send_to_char("You don't see anyone like that around.\n\r", ch );
 	else
-	    act("You don't see anyone like that to the $t.", ch, arg3, NULL, TO_CHAR );
+	    act("You don't see anyone like that to the $t.", ch, NULL, NULL, NULL, NULL, arg3, NULL, TO_CHAR );
 	return;
     }
 
@@ -840,7 +839,7 @@ void do_throw( CHAR_DATA *ch, char *argument )
     if ( number_percent() > (skill + get_curr_stat( ch, STAT_DEX )/2) )
     {
 	send_to_char("You fumble your throw.\n\r", ch );
-	act("$n attempts to throw $p, but fumbles.", ch, obj, NULL, TO_ROOM);
+	act("$n attempts to throw $p, but fumbles.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 
             p_give_trigger( NULL, obj, NULL, ch, obj, TRIG_THROW );
             p_give_trigger( NULL, NULL, ch->in_room, ch, obj, TRIG_THROW );
@@ -856,9 +855,9 @@ void do_throw( CHAR_DATA *ch, char *argument )
 
     if ( ch->in_room == victim->in_room )
     {
-	act("$n throws $s $p at you!", ch, obj, victim, TO_VICT);
-	act("$n throws $s $p at $N!", ch, obj, victim, TO_NOTVICT);
-	act("You throw $p at $N!", ch, obj, victim, TO_CHAR);
+	act("$n throws $s $p at you!", ch, victim, NULL, obj, NULL, NULL, NULL, TO_VICT);
+	act("$n throws $s $p at $N!",  ch, victim, NULL, obj, NULL, NULL, NULL, TO_NOTVICT);
+	act("You throw $p at $N!",     ch, victim, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 
 	if ( damage( ch, victim, dam, gsn_throw, obj->value[3], TRUE ) == FALSE )
 	    victim = NULL;
@@ -882,9 +881,9 @@ void do_throw( CHAR_DATA *ch, char *argument )
     /* ranged firing section */
     {
 	sprintf( buf, "{YYou throw $p{Y %swards.{x", dir_name[dir] );
-	act( buf, ch, obj, NULL, TO_CHAR);
+	act( buf, ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 	sprintf( buf, "{Y$n throw $s $p{Y %swards.{x", dir_name[dir] );
-	act( buf, ch, obj, NULL, TO_ROOM);
+	act( buf, ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 
 	target_room = ch->in_room->exit[dir]->u1.to_room;
 
@@ -902,7 +901,7 @@ void do_throw( CHAR_DATA *ch, char *argument )
 	    {
 		send_to_char( "Your throw fell short of its target.\n\r", ch );
 		act( "{W$p flies in from the $T and skitters along the ground.{x",
-		    ch, obj, dir_name[rev_dir[dir]], TO_ROOM);
+		    ch, NULL, NULL, obj, NULL, NULL, dir_name[rev_dir[dir]], TO_ROOM);
 
 		obj_from_char( obj );
 		obj_to_room( obj, target_room );
@@ -920,13 +919,11 @@ void do_throw( CHAR_DATA *ch, char *argument )
 	if ( str_cmp( dir_name[rev_dir[dir]], "up" )
 	&& str_cmp( dir_name[rev_dir[dir]], "down" ) )
 	{
-	    act( "{W$p flies in from the $T!{x", ch, obj,
-		    dir_name[rev_dir[dir]],  TO_ROOM );
+	    act( "{W$p flies in from the $T!{x", ch, NULL, NULL, obj, NULL, NULL, dir_name[rev_dir[dir]],  TO_ROOM );
 	}
 	else
 	{
-	    act( "{W$p flies in from $Twards!{x",
-		    ch, obj, dir_name[rev_dir[dir]], TO_ROOM);
+	    act( "{W$p flies in from $Twards!{x", ch, NULL, NULL, obj, NULL, NULL, dir_name[rev_dir[dir]], TO_ROOM);
 	}
 
 	//send_to_char( "Your throw had enough range...\n\r", ch );
@@ -944,16 +941,16 @@ void do_throw( CHAR_DATA *ch, char *argument )
 		switch( number_range(0, 2) )
                 {
 		    case 0:
-		        act("$p skitters across the ground near you!", victim, obj, NULL, TO_CHAR);
-		        act("$p skitters across the ground near $n!", victim, obj, NULL, TO_ROOM);
+		        act("$p skitters across the ground near you!", victim, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+		        act("$p skitters across the ground near $n!", victim, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
                         break;
                     case 1:
-		        act("$p bounces in out of nowhere!", victim, obj, NULL, TO_CHAR);
-		        act("$p bounces in out of nowhere!", victim, obj, NULL, TO_ROOM);
+		        act("$p bounces in out of nowhere!", victim, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+		        act("$p bounces in out of nowhere!", victim, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
                         break;
                     case 2:
-		        act("$p crashes to the ground next to you!", victim, obj, NULL, TO_CHAR);
-		        act("$p crashes to the ground next to $n!", victim, obj, NULL, TO_ROOM);
+		        act("$p crashes to the ground next to you!", victim, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+		        act("$p crashes to the ground next to $n!", victim, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
                         break;
 		}
             }
@@ -990,7 +987,7 @@ void do_throw( CHAR_DATA *ch, char *argument )
 	if ( victim != NULL && IS_NPC(victim) && victim->hit > victim->max_hit/5 )
 	{
 	    hunt_char(victim,ch);
-	    act("You hear an angry snarl.", ch, NULL, NULL, TO_CHAR );
+	    act("You hear an angry snarl.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR );
 	}
 
         if ( victim )

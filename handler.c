@@ -411,7 +411,7 @@ int get_skill(CHAR_DATA *ch, int sn)
 
         for (i = 0; pc_race_table[ch->race].skills[i] != NULL; i++)
         {
-            if (skill_table[sn].name == pc_race_table[ch->race].skills[i]) {
+            if (!str_cmp(skill_table[sn].name,pc_race_table[ch->race].skills[i])) {
 		    skill = ch->pcdata->learned[sn];
 		    if(skill <= 0) return skill;
 		    skill += ch->pcdata->mod_learned[sn];
@@ -968,6 +968,78 @@ bool is_exact_name(char *str, char *namelist)
     }
 }
 
+void affect_fix_char(CHAR_DATA *ch)
+{
+	AFFECT_DATA *paf;
+	OBJ_DATA *obj;
+
+	// Reset flags
+	ch->affected_by = ch->affected_by_perm;
+	ch->affected_by2 = ch->affected_by2_perm;
+	ch->imm_flags = ch->imm_flags_perm;
+	ch->res_flags = ch->res_flags_perm;
+	ch->vuln_flags = ch->vuln_flags_perm;
+
+	ch->deathsight_vision = ( IS_SET(ch->affected_by2_perm, AFF2_DEATHSIGHT) ) ? ch->tot_level : 0;
+
+	// Iterate through affects on character
+	for(paf = ch->affected; paf = paf->next)
+	{
+		switch(paf->where)
+		{
+		    case TO_AFFECTS:
+				SET_BIT(ch->affected_by, paf->bitvector);
+				SET_BIT(ch->affected_by2, paf->bitvector2);
+
+				if( IS_SET(paf->bitvector2, AFF2_DEATHSIGHT) && (paf->level > ch->deathsight_vision) )
+					ch->deathsight_vision = paf->level;
+
+				break;
+		    case TO_IMMUNE:
+				SET_BIT(ch->imm_flags,paf->bitvector);
+				break;
+		    case TO_RESIST:
+				SET_BIT(ch->res_flags,paf->bitvector);
+				break;
+		    case TO_VULN:
+				SET_BIT(ch->vuln_flags,paf->bitvector);
+				break;
+		}
+	}
+
+	// Iterate through all worn objects
+	for(obj = ch->carrying; obj; obj = obj->next_content)
+	{
+		if( !obj->locker && obj->wear_loc != WEAR_NONE )
+		{
+			for(paf = obj->affected; paf; paf = paf->next)
+			{
+				switch (paf->where)
+				{
+					case TO_AFFECTS:
+						SET_BIT(ch->affected_by, paf->bitvector);
+						SET_BIT(ch->affected_by2, paf->bitvector2);
+
+						if( IS_SET(paf->bitvector2, AFF2_DEATHSIGHT) && (paf->level > ch->deathsight_vision) )
+							ch->deathsight_vision = paf->level;
+
+						break;
+					case TO_IMMUNE:
+						SET_BIT(ch->imm_flags,paf->bitvector);
+						break;
+					case TO_RESIST:
+						SET_BIT(ch->res_flags,paf->bitvector);
+						break;
+					case TO_VULN:
+						SET_BIT(ch->vuln_flags,paf->bitvector);
+						break;
+				}
+			}
+		}
+	}
+
+}
+
 
 /*
  * Apply or remove an affect to a character.
@@ -983,39 +1055,43 @@ void affect_modify(CHAR_DATA *ch, AFFECT_DATA *paf, bool fAdd)
     /* add an affect to a char */
     if (fAdd)
     {
-	switch (paf->where)
-	{
-	    case TO_AFFECTS:
-		SET_BIT(ch->affected_by, paf->bitvector);
-		SET_BIT(ch->affected_by2, paf->bitvector2);
-		break;
-	    case TO_IMMUNE:
-		SET_BIT(ch->imm_flags,paf->bitvector);
-		break;
-	    case TO_RESIST:
-		SET_BIT(ch->res_flags,paf->bitvector);
-		break;
-	    case TO_VULN:
-		SET_BIT(ch->vuln_flags,paf->bitvector);
-		break;
-	}
+		switch (paf->where)
+		{
+			case TO_AFFECTS:
+			SET_BIT(ch->affected_by, paf->bitvector);
+			SET_BIT(ch->affected_by2, paf->bitvector2);
+
+			if( IS_SET(paf->bitvector2, AFF2_DEATHSIGHT) && (paf->level > ch->deathsight_vision) )
+				ch->deathsight_vision = paf->level;
+
+			break;
+			case TO_IMMUNE:
+			SET_BIT(ch->imm_flags,paf->bitvector);
+			break;
+			case TO_RESIST:
+			SET_BIT(ch->res_flags,paf->bitvector);
+			break;
+			case TO_VULN:
+			SET_BIT(ch->vuln_flags,paf->bitvector);
+			break;
+		}
     }
     else /* take an affect from a char */
     {
         switch (paf->where)
 	{
 	    case TO_AFFECTS:
-		REMOVE_BIT(ch->affected_by, paf->bitvector);
-		REMOVE_BIT(ch->affected_by2, paf->bitvector2);
+		MERGE_BIT(ch->affected_by, ch->affected_by_perm, paf->bitvector);
+		MERGE_BIT(ch->affected_by2, ch->affected_by2_perm, paf->bitvector2);
 		break;
 	    case TO_IMMUNE:
-		REMOVE_BIT(ch->imm_flags,paf->bitvector);
+		MERGE_BIT(ch->imm_flags,ch->imm_flags_perm,paf->bitvector);
 		break;
 	    case TO_RESIST:
-		REMOVE_BIT(ch->res_flags,paf->bitvector);
+		MERGE_BIT(ch->res_flags,ch->res_flags_perm,paf->bitvector);
 		break;
 	    case TO_VULN:
-		REMOVE_BIT(ch->vuln_flags,paf->bitvector);
+		MERGE_BIT(ch->vuln_flags,ch->vuln_flags_perm,paf->bitvector);
 		break;
 	}
 	mod = 0 - mod; /* reverse modifier */
@@ -1069,8 +1145,8 @@ void affect_modify(CHAR_DATA *ch, AFFECT_DATA *paf, bool fAdd)
 	if (depth == 0)
 	{
 	    depth++;
-	    act("You drop $p.", ch, wield, NULL, TO_CHAR);
-	    act("$n drops $p.", ch, wield, NULL, TO_ROOM);
+	    act("You drop $p.", ch, NULL, NULL, wield, NULL, NULL, NULL, TO_CHAR);
+	    act("$n drops $p.", ch, NULL, NULL, wield, NULL, NULL, NULL, TO_ROOM);
 	    obj_from_char(wield);
 	    obj_to_room(wield, ch->in_room);
 	    depth--;
@@ -1100,7 +1176,7 @@ void affect_check(CHAR_DATA *ch, int where, long vector, long vector2)
     AFFECT_DATA *paf;
     OBJ_DATA *obj;
 
-    if (where == TO_OBJECT || where == TO_WEAPON)
+    if (where == TO_OBJECT || where == TO_OBJECT2 || where == TO_OBJECT3 || where == TO_OBJECT4 || where == TO_WEAPON)
 	return;
 
     for (paf = ch->affected; paf != NULL; paf = paf->next)
@@ -1217,11 +1293,20 @@ void affect_to_obj(OBJ_DATA *obj, AFFECT_DATA *paf)
         switch (paf->where)
         {
 	    case TO_OBJECT:
-		SET_BIT(obj->extra_flags,paf->bitvector);
-		break;
+			SET_BIT(obj->extra_flags,paf->bitvector);
+			break;
+	    case TO_OBJECT2:
+			SET_BIT(obj->extra2_flags,paf->bitvector);
+			break;
+	    case TO_OBJECT3:
+			SET_BIT(obj->extra3_flags,paf->bitvector);
+			break;
+	    case TO_OBJECT4:
+			SET_BIT(obj->extra4_flags,paf->bitvector);
+			break;
 	    case TO_WEAPON:
-		if (obj->item_type == ITEM_WEAPON)
-		    SET_BIT(obj->value[4],paf->bitvector);
+			if (obj->item_type == ITEM_WEAPON)
+			    SET_BIT(obj->value[4],paf->bitvector);
 		break;
         }
     }
@@ -1301,25 +1386,30 @@ void affect_remove(CHAR_DATA *ch, AFFECT_DATA *paf)
     }
 
     free_affect(paf);
-    affect_check(ch,where,vector,vector2);
+    affect_fix_char(ch);
+    //affect_check(ch,where,vector,vector2);
     return;
 }
 
 
-void affect_remove_obj(OBJ_DATA *obj, AFFECT_DATA *paf)
+bool affect_remove_obj(OBJ_DATA *obj, AFFECT_DATA *paf)
 {
     int where;
     int vector;
     int vector2;
+    bool reset_ch = FALSE;
 
     if (obj->affected == NULL)
     {
         bug("Affect_remove_object: no affects on object.", 0);
-        return;
+        return FALSE;
     }
 
     if (obj->carried_by != NULL && obj->wear_loc != -1)
-	affect_modify(obj->carried_by, paf, FALSE);
+    {
+		affect_modify(obj->carried_by, paf, FALSE);
+		reset_ch = TRUE;
+	}
 
     where = paf->where;
     vector = paf->bitvector;
@@ -1330,11 +1420,20 @@ void affect_remove_obj(OBJ_DATA *obj, AFFECT_DATA *paf)
     switch(paf->where)
     {
 	case TO_OBJECT:
-	    REMOVE_BIT(obj->extra_flags,paf->bitvector);
+	    MERGE_BIT(obj->extra_flags,obj->extra_flags_perm,paf->bitvector);
+	    break;
+	case TO_OBJECT2:
+	    MERGE_BIT(obj->extra2_flags,obj->extra2_flags_perm,paf->bitvector);
+	    break;
+	case TO_OBJECT3:
+	    MERGE_BIT(obj->extra3_flags,obj->extra3_flags_perm,paf->bitvector);
+	    break;
+	case TO_OBJECT4:
+	    MERGE_BIT(obj->extra4_flags,obj->extra4_flags_perm,paf->bitvector);
 	    break;
 	case TO_WEAPON:
 	    if (obj->item_type == ITEM_WEAPON)
-		REMOVE_BIT(obj->value[4],paf->bitvector);
+			MERGE_BIT(obj->value[4],obj->weapon_flags_perm,paf->bitvector);
 	    break;
     }
 
@@ -1356,14 +1455,19 @@ void affect_remove_obj(OBJ_DATA *obj, AFFECT_DATA *paf)
         if (prev == NULL)
         {
             bug("Affect_remove_object: cannot find paf.", 0);
-            return;
+            return reset_ch;
         }
     }
 
     free_affect(paf);
 
     if (obj->carried_by != NULL && obj->wear_loc != -1)
-	affect_check(obj->carried_by,where,vector,vector2);
+    {
+		//affect_check(obj->carried_by,where,vector,vector2);
+		affect_fix_char(obj->carried_by);
+	}
+
+	return reset_ch;
 }
 
 
@@ -1687,19 +1791,19 @@ void char_from_room(CHAR_DATA *ch)
 	ch->in_room->people = ch->next_in_room;
     else
     {
-	CHAR_DATA *prev;
+		CHAR_DATA *prev;
 
-	for (prev = ch->in_room->people; prev; prev = prev->next_in_room)
-	{
-	    if (prev->next_in_room == ch)
-	    {
-		prev->next_in_room = ch->next_in_room;
-		break;
-	    }
-	}
+		for (prev = ch->in_room->people; prev; prev = prev->next_in_room)
+		{
+			if (prev->next_in_room == ch)
+			{
+			prev->next_in_room = ch->next_in_room;
+			break;
+			}
+		}
 
-	if (prev == NULL)
-	    bug("Char_from_room: ch not found.", 0);
+		if (prev == NULL)
+			bug("Char_from_room: ch not found.", 0);
     }
 
     if (ch->in_wilds)
@@ -1707,6 +1811,9 @@ void char_from_room(CHAR_DATA *ch)
         if (!ch->in_room->people && !ch->in_room->contents)
             destroy_wilds_vroom(ch->in_room);
     }
+
+    list_remlink(ch->in_room->lpeople, ch);
+    list_remlink(ch->in_room->lentity, ch);
 
     ch->in_room = NULL;
     ch->in_wilds = NULL;        /* Vizz - wilds */
@@ -1766,6 +1873,9 @@ void char_to_room(CHAR_DATA *ch, ROOM_INDEX_DATA *pRoomIndex)
 
     ch->next_in_room	= pRoomIndex->people;
     pRoomIndex->people	= ch;
+
+    list_addlink(pRoomIndex->lpeople, ch);
+    list_addlink(pRoomIndex->lentity, ch);
 
     // Prevent catastrophes
     if (ch->next_in_room == ch)
@@ -1869,7 +1979,7 @@ void char_to_room(CHAR_DATA *ch, ROOM_INDEX_DATA *pRoomIndex)
             	!IS_AFFECTED(vch,AFF_PLAGUE) && number_bits(6) == 0)
             {
             	send_to_char("You feel hot and feverish.\n\r",vch);
-            	act("$n shivers and looks very ill.",vch,NULL,NULL,TO_ROOM);
+            	act("$n shivers and looks very ill.",vch,NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
             	affect_join(vch,&plague);
             }
         }
@@ -1890,6 +2000,9 @@ void obj_to_locker(OBJ_DATA *obj, CHAR_DATA *ch)
     obj->in_room         = NULL;
     obj->in_obj          = NULL;
     obj->locker	 	 = TRUE;
+
+    list_addlink(ch->llocker, obj);
+
 }
 
 
@@ -1940,12 +2053,14 @@ void obj_to_char(OBJ_DATA *obj, CHAR_DATA *ch)
 	return;
     }
 
+    list_addlink(ch->lcarrying, obj);
+
     if (!IS_NPC(ch))
         check_quest_retrieve_obj(ch, obj);
 
     if (objRepop == TRUE)
     {
-	p_percent_trigger(NULL, obj, NULL, NULL, NULL, NULL, NULL, TRIG_REPOP);
+	p_percent_trigger(NULL, obj, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_REPOP, NULL);
 	objRepop = FALSE;
     }
 }
@@ -2010,6 +2125,8 @@ void obj_from_locker(OBJ_DATA *obj)
     obj->carried_by      = NULL;
     obj->next_content    = NULL;
     obj->locker	 	 = FALSE;
+
+    list_remlink(ch->llocker, obj);
 }
 
 
@@ -2053,6 +2170,7 @@ void obj_from_char(OBJ_DATA *obj)
     obj->next_content	 = NULL;
     ch->carry_number	-= get_obj_number(obj);
     ch->carry_weight	-= get_obj_weight(obj);
+    list_remlink(ch->lcarrying, obj);
 }
 
 
@@ -2131,8 +2249,8 @@ void equip_char(CHAR_DATA *ch, OBJ_DATA *obj, int iWear)
     ||   (IS_OBJ_STAT(obj, ITEM_ANTI_GOOD)    && IS_GOOD(ch)   )
     ||   (IS_OBJ_STAT(obj, ITEM_ANTI_NEUTRAL) && IS_NEUTRAL(ch)))
     {
-	act("You are zapped by $p and drop it.", ch, obj, NULL, TO_CHAR);
-	act("$n is zapped by $p and drops it.",  ch, obj, NULL, TO_ROOM);
+	act("You are zapped by $p and drop it.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+	act("$n is zapped by $p and drops it.",  ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 
         REMOVE_BIT(obj->extra2_flags, ITEM_KEPT);
 
@@ -2144,7 +2262,7 @@ void equip_char(CHAR_DATA *ch, OBJ_DATA *obj, int iWear)
     obj->wear_loc	 = iWear;
 
     /* Wear trigger */
-    p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, TRIG_WEAR);
+    p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_WEAR, NULL);
 
 	// Concealed items do nothing to the wearer's stats and affects.
 	if(wear_params[iWear][WEAR_PARAM_AFFECTS]) {
@@ -2220,9 +2338,11 @@ int unequip_char(CHAR_DATA *ch, OBJ_DATA *obj, bool show)
 
 	    for (paf = obj->affected; paf != NULL; paf = paf->next)
 	    {
-		affect_modify(ch, paf, FALSE);
-		affect_check(ch, paf->where, paf->bitvector, paf->bitvector2);
+			affect_modify(ch, paf, FALSE);
+//			affect_check(ch, paf->where, paf->bitvector, paf->bitvector2);
 	    }
+
+	    affect_fix_char(ch);
 
 	    if (obj->item_type == ITEM_LIGHT
 	    &&  obj->value[2] != 0
@@ -2277,7 +2397,7 @@ int unequip_char(CHAR_DATA *ch, OBJ_DATA *obj, bool show)
     }
 
     /* Remove trigger */
-    return (p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, TRIG_REMOVE));
+    return (p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_REMOVE, NULL));
 }
 
 
@@ -2352,11 +2472,12 @@ void obj_from_room(OBJ_DATA *obj)
 	return;
     }
 
-    if (obj->item_type == ITEM_SHIP)
-
     for (ch = in_room->people; ch != NULL; ch = ch->next_in_room)
 	if (ch->on == obj)
 	    ch->on = NULL;
+
+	list_remlink(in_room->lcontents, obj);
+	list_remlink(in_room->lentity, obj);
 
     if (obj == in_room->contents)
 	in_room->contents = obj->next_content;
@@ -2404,6 +2525,9 @@ void obj_to_room(OBJ_DATA *obj, ROOM_INDEX_DATA *pRoomIndex)
     obj->carried_by		= NULL;
     obj->in_obj			= NULL;
 
+    list_addlink(pRoomIndex->lcontents, obj);
+    list_addlink(pRoomIndex->lentity, obj);
+
     if (obj->item_type == ITEM_SHIP)
 
     if (pRoomIndex == NULL)
@@ -2411,7 +2535,7 @@ void obj_to_room(OBJ_DATA *obj, ROOM_INDEX_DATA *pRoomIndex)
 
     if (objRepop == TRUE)
     {
-	p_percent_trigger(NULL, obj, NULL, NULL, NULL, NULL, NULL, TRIG_REPOP);
+	p_percent_trigger(NULL, obj, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_REPOP, NULL);
 	objRepop = FALSE;
     }
 }
@@ -2442,6 +2566,8 @@ void obj_to_vroom(OBJ_DATA *obj, WILDS_DATA *pWilds, int x, int y)
         obj->in_obj                 = NULL;
         obj->next_content           = pWildsRoom->contents;
         pWildsRoom->contents        = obj;
+        list_addlink(pWildsRoom->lcontents, obj);
+        list_addlink(pWildsRoom->lentity, obj);
     }
     else
     {
@@ -2457,7 +2583,7 @@ void obj_to_vroom(OBJ_DATA *obj, WILDS_DATA *pWilds, int x, int y)
 
     if (objRepop == TRUE)
     {
-	p_percent_trigger(NULL, obj, NULL, NULL, NULL, NULL, NULL, TRIG_REPOP);
+	p_percent_trigger(NULL, obj, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_REPOP, NULL);
 	objRepop = FALSE;
     }
 }
@@ -2636,6 +2762,8 @@ void extract_church(CHURCH_DATA *church)
 	}
     }
 
+    list_remlink(list_churches, church);
+
     free_church(church);
     return;
 }
@@ -2659,7 +2787,11 @@ void extract_obj(OBJ_DATA *obj)
 
     if(obj->progs) {
 	    SET_BIT(obj->progs->entity_flags,PROG_NODESTRUCT);
-	    p_percent_trigger(NULL, obj, NULL, NULL, NULL, NULL, NULL, TRIG_EXTRACT);
+	    if(obj->progs->script_ref > 0) {
+			obj->progs->extract_when_done = TRUE;
+			return;
+		}
+	    p_percent_trigger(NULL, obj, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_EXTRACT, NULL);
     }
 
     // Deal with all clone rooms here while the object's location still exists
@@ -2749,7 +2881,12 @@ void extract_char(CHAR_DATA *ch, bool fPull)
 
     if(IS_NPC(ch) && ch->progs) {
 	    SET_BIT(ch->progs->entity_flags,PROG_NODESTRUCT);
-	    p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_EXTRACT);
+		if(ch->progs->script_ref > 0) {
+			ch->progs->extract_when_done = TRUE;
+			ch->progs->extract_fPull = ch->progs->extract_fPull || fPull;
+			return;
+		}
+	    p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_EXTRACT, NULL);
     }
 
     nuke_pets(ch);
@@ -2913,6 +3050,28 @@ void extract_char(CHAR_DATA *ch, bool fPull)
 
     free_char(ch);
     return;
+}
+
+void extract_token(TOKEN_DATA *token)
+{
+    if(token->progs) {
+	    SET_BIT(token->progs->entity_flags,PROG_NODESTRUCT);
+		if(token->progs->script_ref > 0) {
+			token->progs->extract_when_done = TRUE;
+			return;
+		}
+	    p_percent_trigger(NULL, NULL, NULL, token, NULL, NULL, NULL, NULL, NULL, TRIG_EXTRACT, NULL);
+    }
+
+    if(token->player)
+    	token_from_char(token);
+    else if (token->object)
+    	token_from_obj(token);
+    else if (token->room)
+    	token_from_room(token);
+
+	free_token(token);
+	return;
 }
 
 
@@ -3309,7 +3468,7 @@ OBJ_DATA *create_money(int gold, int silver)
     if (gold < 0 || silver < 0 || (gold == 0 && silver == 0))
     {
 	bug("Create_money: zero or negative money.",UMIN(gold,silver));
-	gold = UMAX(1,gold);
+	gold = UMAX(0,gold);
 	silver = UMAX(1,silver);
     }
 
@@ -3552,82 +3711,74 @@ bool has_light(CHAR_DATA *ch)
  */
 bool can_see(CHAR_DATA *ch, CHAR_DATA *victim)
 {
-    STRING_DATA *string;
+	STRING_DATA *string;
 
-    if (victim == NULL || ch == NULL)
-	return FALSE;
+	if (victim == NULL || ch == NULL)
+		return FALSE;
 
-    /* imms w/ holylight can see everyone except higher level invis imms */
-    if (!IS_NPC(ch)
-    &&  IS_SET(ch->act, PLR_HOLYLIGHT)
-    &&  victim->invis_level <= get_trust(ch))
-	return TRUE;
+	/* imms w/ holylight can see everyone except higher level invis imms */
+	if (!IS_NPC(ch) && IS_SET(ch->act, PLR_HOLYLIGHT) && victim->invis_level <= get_trust(ch))
+		return TRUE;
 
-    // these types of mobs can see everybody.
-    if (IS_NPC(ch)
-    &&  (IS_SET(ch->act2, ACT2_SEE_ALL)
-         || IS_SET(ch->act, ACT_IS_BANKER)
-	 || IS_SET(ch->act, ACT_IS_CHANGER)
-	 || IS_SET(ch->act, ACT_QUESTOR)))
-        return TRUE;
+	// these types of mobs can see everybody.
+	if (IS_NPC(ch) && (IS_SET(ch->act2, ACT2_SEE_ALL) || IS_SET(ch->act, ACT_IS_BANKER) || IS_SET(ch->act, ACT_IS_CHANGER) || IS_SET(ch->act, ACT_QUESTOR)))
+		return TRUE;
 
-    if (IS_AFFECTED(ch, AFF_BLIND))
-	return FALSE;
+	if (IS_AFFECTED(ch, AFF_BLIND))
+		return FALSE;
 
-    if (is_darked(ch->in_room))
-	return FALSE;
+	if (is_darked(ch->in_room))
+		return FALSE;
 
-    if (ch->in_room && IS_SET(ch->in_room->room_flags, ROOM_DARK) && (!IS_AFFECTED(ch, AFF_INFRARED) || has_light(ch)) && IS_AFFECTED2(victim,AFF2_DARK_SHROUD))
-	return FALSE;
+	if (ch->in_room && IS_SET(ch->in_room->room_flags, ROOM_DARK))
+	{
+		(!IS_AFFECTED(ch, AFF_INFRARED) || has_light(ch)) && IS_AFFECTED2(victim,AFF2_DARK_SHROUD)
+
+		if( IS_AFFECTED2(victim,AFF2_DARK_SHROUD) )
+			return FALSE;
+
+		if( !IS_AFFECTED(ch, AFF_INFRARED) && !has_light(ch) )
+			return FALSE;
+	}
 
 	if(!IS_AFFECTED2(victim,AFF2_DARK_SHROUD)) {
-		if (IS_SET(victim->affected_by2, AFF2_CLOAK_OF_GUILE) && IS_NPC(ch) &&
-			!IS_SET(ch->affected_by2, AFF2_SEE_CLOAK))
-		return FALSE;
+		if (IS_SET(victim->affected_by2, AFF2_CLOAK_OF_GUILE) && IS_NPC(ch) && !IS_SET(ch->affected_by2, AFF2_SEE_CLOAK))
+			return FALSE;
 
-		if ((IS_AFFECTED(victim, AFF_INVISIBLE) || IS_AFFECTED2(victim, AFF2_IMPROVED_INVIS)) &&
-			!IS_AFFECTED(ch, AFF_DETECT_INVIS))
-		return FALSE;
+		if ((IS_AFFECTED(victim, AFF_INVISIBLE) || IS_AFFECTED2(victim, AFF2_IMPROVED_INVIS)) && !IS_AFFECTED(ch, AFF_DETECT_INVIS))
+			return FALSE;
 	}
 
-    if (IS_AFFECTED(victim, AFF_HIDE)
-    &&   !IS_AFFECTED(ch, AFF_DETECT_HIDDEN)
-    &&   !IS_SAGE(ch)
-    &&   victim->fighting == NULL)
-	return FALSE;
+	if (IS_AFFECTED(victim, AFF_HIDE) && !IS_AFFECTED(ch, AFF_DETECT_HIDDEN) && !IS_SAGE(ch) && victim->fighting == NULL)
+		return FALSE;
 
 	// @@@ Nib 20070715 : Changed so that you need deathsight to see anyone that is dead...
-    if (IS_DEAD(victim) && !IS_DEAD(ch) && !IS_AFFECTED2(ch,AFF2_DEATHSIGHT))
-    	return FALSE;
+	if (IS_DEAD(victim) && !IS_DEAD(ch) && (!IS_AFFECTED2(ch,AFF2_DEATHSIGHT) || victim->tot_level > ch->deathsight_vision))
+		return FALSE;
 
-    if (ch == victim)
-	return TRUE;
-
-    /* allow imms to be vis to some people */
-    if (!IS_NPC(victim))
-    {
-	for (string = victim->pcdata->vis_to_people; string != NULL;
-  	      string = string->next)
-	{
-	    if (!str_cmp(ch->name, string->string))
+	if (ch == victim)
 		return TRUE;
+
+	/* allow imms to be vis to some people */
+	if (!IS_NPC(victim))
+	{
+		for (string = victim->pcdata->vis_to_people; string != NULL; string = string->next)
+		{
+			if (!str_cmp(ch->name, string->string))
+				return TRUE;
+		}
 	}
-    }
 
-    if (ch->tot_level < victim->invis_level)
-	return FALSE;
+	if (ch->tot_level < victim->invis_level)
+		return FALSE;
 
-    if (!IS_IMMORTAL(ch)
-    &&  IS_NPC(victim)
-    &&  IS_SET(victim->act2, ACT2_WIZI_MOB)
-    &&  !IS_SET(ch->act2, ACT2_SEE_WIZI))
-	return FALSE;
+	if (!IS_IMMORTAL(ch) && IS_NPC(victim) && IS_SET(victim->act2, ACT2_WIZI_MOB) && !IS_SET(ch->act2, ACT2_SEE_WIZI))
+		return FALSE;
 
-    if (get_trust(ch) < victim->incog_level
-    && ch->in_room != victim->in_room)
-	return FALSE;
+	if (get_trust(ch) < victim->incog_level && ch->in_room != victim->in_room)
+		return FALSE;
 
-    return TRUE;
+	return TRUE;
 }
 
 
@@ -3975,7 +4126,7 @@ void stop_hunt(CHAR_DATA *ch, bool dead)
 
     if (!dead && ch->home_room != NULL)
     {
-    	act("$n wanders off.", ch, NULL, NULL, TO_ROOM);
+    	act("$n wanders off.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	char_from_room(ch);
 	char_to_room(ch, ch->home_room);
     }
@@ -4158,17 +4309,17 @@ bool is_darked(ROOM_INDEX_DATA *room)
 char *pers(CHAR_DATA *ch, CHAR_DATA *looker)
 {
     if (!can_see(looker, ch))
-	return "someone";
+		return "someone";
 
     if (IS_NPC(ch) || IS_SWITCHED(ch))
-	return ch->short_descr;
+		return ch->short_descr;
 
     if (IS_MORPHED(ch) || IS_SHIFTED(ch))
     {
-	if (can_see_shift(looker, ch))
-	    return ch->name;
-	else
-	    return ch->short_descr;
+		if (can_see_shift(looker, ch))
+		    return ch->name;
+		else
+		    return ch->short_descr;
     }
 
     return ch->name;
@@ -4600,7 +4751,7 @@ void return_from_maze(CHAR_DATA *ch)
 
     ch->maze_time_left = 0;
 
-    act("{W$n plummets to the ground with a loud THUD!{x", ch, NULL, NULL, TO_ROOM);
+    act("{W$n plummets to the ground with a loud THUD!{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 }
 
 
@@ -4881,6 +5032,20 @@ int count_exits(ROOM_INDEX_DATA *room)
     return exits;
 }
 
+// Is the room PK? (allows for ignoring ARENA)
+bool is_room_pk(ROOM_INDEX_DATA *room, bool arena)
+{
+	if( room != NULL ) {
+		if( IS_SET(room->room_flags, ROOM_PK) || IS_SET(room->room_flags, ROOM_CPK) )
+			return TRUE;
+
+		// Only count ARENA (LPK) if desired
+		if( arena && IS_SET(room->room_flags, ROOM_ARENA) )
+			return TRUE;
+	}
+
+	return FALSE;
+}
 
 // Is a person PK? Covers all possible cases (PK flag, room PK, etc)
 bool is_pk(CHAR_DATA *ch)
@@ -4890,10 +5055,8 @@ bool is_pk(CHAR_DATA *ch)
     if (ch->church != NULL && ch->church->pk == TRUE)
 	return TRUE;
 
-    if (ch->in_room != NULL
-    &&   (IS_SET(ch->in_room->room_flags, ROOM_PK)
-          || IS_SET(ch->in_room->room_flags, ROOM_CPK)))
-	return TRUE;
+    if (is_room_pk(ch->in_room, FALSE))
+		return TRUE;
 
     if (ch->pk_timer > 0)
     	return TRUE;
@@ -5357,7 +5520,7 @@ bool can_give_obj(CHAR_DATA *ch, OBJ_DATA *obj, CHAR_DATA *victim, bool silent)
     if (obj->wear_loc != WEAR_NONE)
     {
 	if (!silent)
-	    act("You'll have to remove $p first.", ch, obj, NULL, TO_CHAR);
+	    act("You'll have to remove $p first.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 
 	return FALSE;
     }
@@ -5366,7 +5529,7 @@ bool can_give_obj(CHAR_DATA *ch, OBJ_DATA *obj, CHAR_DATA *victim, bool silent)
     &&  get_obj_vnum_carry(victim, obj->pIndexData->vnum, victim) != NULL)
     {
 	if (!silent)
-	    act("A mysterious force prevents you from giving $p to $N.", ch, obj, victim, TO_CHAR);
+	    act("A mysterious force prevents you from giving $p to $N.", ch, victim, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 
 	return FALSE;
     }
@@ -5374,7 +5537,7 @@ bool can_give_obj(CHAR_DATA *ch, OBJ_DATA *obj, CHAR_DATA *victim, bool silent)
     if (IS_NPC(victim) && victim->pIndexData->pShop != NULL)
     {
 	if (!silent)
-	    act("{R$N tells you 'Sorry, you'll have to sell that.{x'", ch, NULL, victim, TO_CHAR);
+	    act("{R$N tells you 'Sorry, you'll have to sell that.{x'", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
 	return FALSE;
     }
@@ -5436,7 +5599,7 @@ bool can_drop_obj(CHAR_DATA *ch, OBJ_DATA *obj, bool silent)
     if (obj->wear_loc != WEAR_NONE)
     {
 	if (!silent)
-	    act("You must remove $p first.", ch, obj, NULL, TO_CHAR);
+	    act("You must remove $p first.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 
 	return FALSE;
     }
@@ -5455,7 +5618,7 @@ bool can_drop_obj(CHAR_DATA *ch, OBJ_DATA *obj, bool silent)
     if (IS_SET(obj->extra_flags, ITEM_NODROP))
     {
 	if (!silent)
-	    act("You can't let go of $p.", ch, obj, NULL, TO_CHAR);
+	    act("You can't let go of $p.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 
 	return FALSE;
     }
@@ -5496,13 +5659,13 @@ bool can_get_obj(CHAR_DATA *ch, OBJ_DATA *obj, OBJ_DATA *container, MAIL_DATA *m
 	return FALSE;
 
     if (ch->carry_number + get_obj_number(obj) > can_carry_n(ch))
-	MSG(act("$p: you can't carry that many items.", ch, obj, NULL, TO_CHAR))
+	MSG(act("$p: you can't carry that many items.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR))
 
     if (IS_SET(obj->extra2_flags, ITEM_SINGULAR)
     &&  get_obj_vnum_carry(ch, obj->pIndexData->vnum, ch) != NULL)
     {
 	if (!silent)
-	    act("A mysterious force prevents you from picking up $p.", ch, obj, NULL, TO_CHAR);
+	    act("A mysterious force prevents you from picking up $p.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 
 	return FALSE;
     }
@@ -5530,8 +5693,7 @@ bool can_get_obj(CHAR_DATA *ch, OBJ_DATA *obj, OBJ_DATA *container, MAIL_DATA *m
 	{
 	    if (!silent)
 	    {
-		act("You can't take items from $N's cart.",
-		    ch, NULL, get_cart_pulled(container), TO_CHAR);
+		act("You can't take items from $N's cart.", ch, get_cart_pulled(container), NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	    }
 
 	    return FALSE;
@@ -5541,12 +5703,12 @@ bool can_get_obj(CHAR_DATA *ch, OBJ_DATA *obj, OBJ_DATA *container, MAIL_DATA *m
 	&&  IS_SET(container->value[1], CONT_CLOSED))
 	{
 	    if (!silent)
-		act("The $d is closed.", ch, NULL, container->name, TO_CHAR);
+		act("The $d is closed.", ch, NULL, NULL, NULL, NULL, NULL, container->name, TO_CHAR);
 
 	    return FALSE;
 	}
 
-	if(p_percent_trigger_phrase(NULL,container,NULL,NULL,ch,obj,NULL,TRIG_PREGET,silent?"silent":NULL))
+	if(p_percent_trigger(NULL,container,NULL,NULL,ch, NULL, NULL,obj,NULL,TRIG_PREGET,silent?"silent":NULL))
 		return FALSE;
 
     }
@@ -5554,7 +5716,7 @@ bool can_get_obj(CHAR_DATA *ch, OBJ_DATA *obj, OBJ_DATA *container, MAIL_DATA *m
     if (mail)
     {
 	if (get_carry_weight(ch) + get_obj_weight(obj) > can_carry_w(ch))
-	    MSG(act("$p: you can't carry that much weight.", ch, obj, NULL, TO_CHAR))
+	    MSG(act("$p: you can't carry that much weight.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR))
     }
 
     // Get an item from the ground or from a container on the ground
@@ -5569,7 +5731,7 @@ bool can_get_obj(CHAR_DATA *ch, OBJ_DATA *obj, OBJ_DATA *container, MAIL_DATA *m
 	}
 
 	if (get_carry_weight(ch) + get_obj_weight(obj) > can_carry_w(ch))
-	    MSG(act("$p: you can't carry that much weight.", ch, obj, NULL, TO_CHAR))
+	    MSG(act("$p: you can't carry that much weight.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR))
 
 	if (obj_room(obj))
 	{
@@ -5578,7 +5740,7 @@ bool can_get_obj(CHAR_DATA *ch, OBJ_DATA *obj, OBJ_DATA *container, MAIL_DATA *m
 		if (gch->on == obj)
 		{
 		    if (!silent)
-			act("$N appears to be using $p.", ch, obj, gch, TO_CHAR);
+			act("$N appears to be using $p.", ch, gch, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 
 		    return FALSE;
 		}
@@ -5588,13 +5750,13 @@ bool can_get_obj(CHAR_DATA *ch, OBJ_DATA *obj, OBJ_DATA *container, MAIL_DATA *m
 	if (obj->item_type == ITEM_CART)
 	{
 	    if (!silent)
-		act("$p is far too heavy.", ch, obj, NULL, TO_CHAR);
+		act("$p is far too heavy.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 
 	    return FALSE;
 	}
     }
 
-	return !p_percent_trigger_phrase(NULL,obj,NULL,NULL,ch,container,NULL,TRIG_PREGET,silent?"silent":NULL);
+	return !p_percent_trigger(NULL,obj,NULL,NULL,ch, NULL, NULL,container,NULL,TRIG_PREGET,silent?"silent":NULL);
 }
 
 
@@ -5661,7 +5823,7 @@ bool can_put_obj(CHAR_DATA *ch, OBJ_DATA *obj, OBJ_DATA *container, MAIL_DATA *m
 	&&  IS_SET(container->value[1], CONT_CLOSED))
 	{
 	    if (!silent)
-		act("$p is closed.", ch, container, NULL, TO_CHAR);
+		act("$p is closed.", ch, NULL, NULL, container, NULL, NULL, NULL, TO_CHAR);
 	    return FALSE;
 	}
 
@@ -5686,7 +5848,7 @@ bool can_put_obj(CHAR_DATA *ch, OBJ_DATA *obj, OBJ_DATA *container, MAIL_DATA *m
 	    (IS_SET(obj->extra_flags, ITEM_NOUNCURSE) && IS_SET(obj->extra_flags, ITEM_NODROP)))
 	{
 	    if (!silent)
-		act("You can't put $p in $P.", ch, obj, container, TO_CHAR);
+		act("You can't put $p in $P.", ch, NULL, NULL, obj, container, NULL, NULL, TO_CHAR);
 
 	    return FALSE;
 	}
@@ -5722,7 +5884,7 @@ bool can_put_obj(CHAR_DATA *ch, OBJ_DATA *obj, OBJ_DATA *container, MAIL_DATA *m
 	if (obj->timer > 0)
 	{
 	    if (!silent)
-		act("You can't send $p through the mail.", ch, obj, NULL, TO_CHAR);
+		act("You can't send $p through the mail.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 
 	    return FALSE;
 	}
@@ -5739,7 +5901,7 @@ bool can_put_obj(CHAR_DATA *ch, OBJ_DATA *obj, OBJ_DATA *container, MAIL_DATA *m
 	if (IS_SET(obj->extra_flags, ITEM_NOUNCURSE) && IS_SET(obj->extra_flags, ITEM_NODROP))
 	{
 	    if (!silent)
-		act("You can't let go of $p.", ch, obj, NULL, TO_CHAR);
+		act("You can't let go of $p.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 
 	    return FALSE;
 	}
@@ -5765,7 +5927,7 @@ bool can_put_obj(CHAR_DATA *ch, OBJ_DATA *obj, OBJ_DATA *container, MAIL_DATA *m
 
     }
 
-    return !p_percent_trigger_phrase(NULL,container,NULL,NULL,ch,obj,NULL,TRIG_PREPUT,silent?"silent":NULL);
+    return !p_percent_trigger(NULL,container,NULL,NULL,ch, NULL, NULL,obj,NULL,TRIG_PREPUT,silent?"silent":NULL);
 }
 
 
@@ -5781,7 +5943,7 @@ bool can_sacrifice_obj(CHAR_DATA *ch, OBJ_DATA *obj, bool silent)
     ||  (obj->item_type == ITEM_CORPSE_PC && obj->contains))
     {
 	if (!silent)
-	    act("$p is not an acceptable sacrifice.", ch, obj, 0, TO_CHAR);
+	    act("$p is not an acceptable sacrifice.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 
 	return FALSE;
     }
@@ -5790,7 +5952,7 @@ bool can_sacrifice_obj(CHAR_DATA *ch, OBJ_DATA *obj, bool silent)
     && obj->contains && !IS_SET(ch->act2, PLR_SACRIFICE_ALL))
     {
 	if (!silent)
-	    act("You must rid $p of its belongings before sacrificing it.", ch, obj, NULL, TO_CHAR);
+	    act("You must rid $p of its belongings before sacrificing it.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 
 	return FALSE;
     }
@@ -5802,7 +5964,7 @@ bool can_sacrifice_obj(CHAR_DATA *ch, OBJ_DATA *obj, bool silent)
 	    if (gch->on == obj)
 	    {
 		if (!silent)
-		    act("$N appears to be using $p.", ch, obj, gch, TO_CHAR);
+		    act("$N appears to be using $p.", ch, gch, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 
 		return FALSE;
 	    }
@@ -5895,100 +6057,281 @@ bool can_clear_exit(ROOM_INDEX_DATA *room)
 
 
 /* set up a token and give it to a char */
-void give_token(TOKEN_INDEX_DATA *token_index, CHAR_DATA *ch)
+TOKEN_DATA *give_token(TOKEN_INDEX_DATA *token_index, CHAR_DATA *ch, OBJ_DATA *obj, ROOM_INDEX_DATA *room)
 {
-    TOKEN_DATA *token;
-    int i;
+	TOKEN_DATA *token;
+	int i;
 
-    token = new_token();
-    token->pIndexData = token_index;
-    token->player = ch;
-    token->name = str_dup(token_index->name);
-    token->description = str_dup(token_index->description);
-    token->flags = token_index->flags;
-    token->timer = token_index->timer;
-    token->progs = new_prog_data();
-    token->progs->progs = token_index->progs;
-    token_index->loaded++;	// @@@NIB : 20070127 : for "tokenexists" ifcheck
-    token->id[0] = token->id[1] = 0;
-    get_token_id(token);
+	if(!ch && !obj && !room) return NULL;
 
-    variable_copylist(&token_index->index_vars,&token->progs->vars,FALSE);
+	if( (ch && obj) || (ch && room) || (obj && room) ) return NULL;
 
-    for (i = 0; i < MAX_TOKEN_VALUES; i++)
-	token->value[i] = token_index->value[i];
+	token = new_token();
+	token->pIndexData = token_index;
+	token->type = token_index->type;
+	token->name = str_dup(token_index->name);
+	token->description = str_dup(token_index->description);
+	token->flags = token_index->flags;
+	token->timer = token_index->timer;
+	token->progs = new_prog_data();
+	token->progs->progs = token_index->progs;
+	token_index->loaded++;	// @@@NIB : 20070127 : for "tokenexists" ifcheck
+	token->id[0] = token->id[1] = 0;
+	token->global_next = global_tokens;
+	global_tokens = token;
 
-    token_to_char(token, ch);
+	get_token_id(token);
+
+	variable_copylist(&token_index->index_vars,&token->progs->vars,FALSE);
+
+	for (i = 0; i < MAX_TOKEN_VALUES; i++)
+		token->value[i] = token_index->value[i];
+
+	if(ch)
+		token_to_char(token, ch);
+	else if(obj)
+		token_to_obj(token, obj);
+	else if(room)
+		token_to_room(token, room);
+
+	return token;
 }
 
 
 void token_from_char(TOKEN_DATA *token)
 {
-    TOKEN_DATA *token_tmp, *token_prev;
-    char buf[MSL];
+	TOKEN_DATA *token_tmp, *token_prev;
+	char buf[MSL];
 
-    if (token->player == NULL) {
-	bug("token_from_char: called on token with no player", 0);
-	return;
-    }
+	if (token->player == NULL) {
+		bug("token_from_char: called on token with no player", 0);
+		return;
+	}
 
-    token_prev = NULL;
-    for (token_tmp = token->player->tokens; token_tmp != NULL; token_tmp = token_tmp->next) {
-	if (token_tmp == token)
-	    break;
+	token_prev = NULL;
+	for (token_tmp = token->player->tokens; token_tmp != NULL; token_tmp = token_tmp->next) {
+		if (token_tmp == token)
+			break;
 
-	token_prev = token_tmp;
-    }
+		token_prev = token_tmp;
+	}
 
-    if(token->player->cast_token == token)
-	stop_casting(token->player,TRUE);
+	if(token->player->cast_token == token)
+		stop_casting(token->player,TRUE);
 
-    sprintf(buf, "token_from_char: removed token %s(%ld) from char %s(%ld)",
-	    token->name, token->pIndexData->vnum,
-	    HANDLE(token->player), IS_NPC(token->player) ? token->player->pIndexData->vnum : 0);
-    log_string(buf);
+	if(token->type == TOKEN_SKILL) skill_entry_removeskill(token->player, 0, token);
+	else if(token->type == TOKEN_SPELL) skill_entry_removespell(token->player, 0, token);
 
-    if (token_prev == NULL)
-	token_tmp->player->tokens = token_tmp->next;
-    else
-	token_prev->next = token->next;
+	sprintf(buf, "token_from_char: removed token %s(%ld) from char %s(%ld)",
+		token->name, token->pIndexData->vnum,
+		HANDLE(token->player), IS_NPC(token->player) ? token->player->pIndexData->vnum : 0);
+	log_string(buf);
+
+	list_remlink(token->player->ltokens, token);
+
+	if (token_prev == NULL)
+		token_tmp->player->tokens = token_tmp->next;
+	else
+		token_prev->next = token->next;
+
+	token->player = NULL;
 }
 
 
 /* transfers a token to a char */
 void token_to_char(TOKEN_DATA *token, CHAR_DATA *ch)
 {
-    char buf[MSL];
+	char buf[MSL];
 
-    if (token == NULL || ch == NULL) {
-	bug("token_to_char: NULL", 0);
-	return;
-    }
+	if (token == NULL || ch == NULL) {
+		bug("token_to_char: NULL", 0);
+		return;
+	}
 
-    token->player = ch;
-    token->next = ch->tokens;
-    ch->tokens = token;
+	token->player = ch;
+	token->object = NULL;
+	token->room = NULL;
+	token->next = ch->tokens;
+	ch->tokens = token;
 
-    sprintf(buf, "token_to_char: gave token %s(%ld) to char %s(%ld)",
-	    token->name, token->pIndexData->vnum,
-	    HANDLE(ch), IS_NPC(ch) ? ch->pIndexData->vnum : 0);
-    log_string(buf);
+	list_addlink(ch->ltokens, token);
+
+	// Do sorted lists
+	if(token->type == TOKEN_SKILL) skill_entry_addskill(token->player, 0, token);
+	else if(token->type == TOKEN_SPELL) skill_entry_addspell(token->player, 0, token);
+
+	sprintf(buf, "token_to_char: gave token %s(%ld) to char %s(%ld)",
+		token->name, token->pIndexData->vnum,
+		HANDLE(ch), IS_NPC(ch) ? ch->pIndexData->vnum : 0);
+	log_string(buf);
+}
+
+TOKEN_DATA *get_token_list(LIST *tokens, long vnum, int count)
+{
+	TOKEN_DATA *token;
+	ITERATOR it;
+
+	count = UMAX(1,count);
+
+	iterator_start(&it, tokens);
+	while( (token = (TOKEN_DATA*)iterator_nextdata(&it)) ) {
+		if( token->pIndexData->vnum == vnum && !--count )
+			break;
+	}
+	iterator_stop(&it);
+
+	return token;
+}
+
+/* finds a token on an object given the vnum */
+TOKEN_DATA *get_token_char(CHAR_DATA *ch, long vnum, int count)
+{
+	return get_token_list(ch->ltokens, vnum, count);
+}
+
+void token_from_obj(TOKEN_DATA *token)
+{
+	TOKEN_DATA *token_tmp, *token_prev;
+	char buf[MSL];
+
+	if (token->object == NULL) {
+		bug("token_from_obj: called on token with no object", 0);
+		return;
+	}
+
+	token_prev = NULL;
+	for (token_tmp = token->object->tokens; token_tmp != NULL; token_tmp = token_tmp->next) {
+		if (token_tmp == token)
+			break;
+
+		token_prev = token_tmp;
+	}
+
+	sprintf(buf, "token_from_obj: removed token %s(%ld) from object %s(%ld)",
+		token->name, token->pIndexData->vnum, token->object->short_descr, VNUM(token->object));
+	log_string(buf);
+
+	list_remlink(token->object->ltokens, token);
+
+	if (token_prev == NULL)
+		token_tmp->object->tokens = token_tmp->next;
+	else
+		token_prev->next = token->next;
+
+	token->object = NULL;
+}
+
+
+/* transfers a token to an object */
+void token_to_obj(TOKEN_DATA *token, OBJ_DATA *obj)
+{
+	char buf[MSL];
+
+	if (token == NULL || obj == NULL) {
+		bug("token_to_obj: NULL", 0);
+		return;
+	}
+
+	token->player = NULL;
+	token->object = obj;
+	token->room = NULL;
+	token->next = obj->tokens;
+	obj->tokens = token;
+
+	list_addlink(obj->ltokens, token);
+
+	sprintf(buf, "token_to_obj: gave token %s(%ld) to object %s(%ld)",
+		token->name, token->pIndexData->vnum, obj->short_descr, VNUM(obj));
+	log_string(buf);
 }
 
 
 /* finds a token on a char given the vnum */
-TOKEN_DATA *get_token_char(CHAR_DATA *ch, long vnum)
+TOKEN_DATA *get_token_obj(OBJ_DATA *obj, long vnum, int count)
 {
-    TOKEN_DATA *token;
-
-    for (token = ch->tokens; token != NULL; token = token->next)
-    {
-	if (token->pIndexData->vnum == vnum)
-	    break;
-    }
-
-    return token;
+	return get_token_list(obj->ltokens, vnum, count);
 }
+
+void token_from_room(TOKEN_DATA *token)
+{
+	TOKEN_DATA *token_tmp, *token_prev;
+	char buf[MSL];
+
+	if (token->room == NULL) {
+		bug("token_from_room: called on token with no room", 0);
+		return;
+	}
+
+	token_prev = NULL;
+	for (token_tmp = token->room->tokens; token_tmp != NULL; token_tmp = token_tmp->next) {
+		if (token_tmp == token)
+			break;
+
+		token_prev = token_tmp;
+	}
+
+	if( token->room->wilds )
+		sprintf(buf, "token_from_room: removed token %s(%ld) from vroom <%ld, %ld, %ld>",
+			token->name, token->pIndexData->vnum, token->room->wilds->uid, token->room->x, token->room->y);
+	else if( token->room->source )
+		sprintf(buf, "token_from_room: removed token %s(%ld) from croom %s(%ld %08lX:%08lX)",
+			token->name, token->pIndexData->vnum, token->room->name, token->room->source->vnum, token->room->id[0], token->room->id[1]);
+	else
+		sprintf(buf, "token_from_room: removed token %s(%ld) from room %s(%ld)",
+			token->name, token->pIndexData->vnum, token->room->name, token->room->vnum);
+
+	sprintf(buf, "token_from_obj: removed token %s(%ld) from room %s(%ld)",
+		token->name, token->pIndexData->vnum, token->room->name, token->room->vnum);
+	log_string(buf);
+
+	list_remlink(token->object->ltokens, token);
+
+	if (token_prev == NULL)
+		token_tmp->object->tokens = token_tmp->next;
+	else
+		token_prev->next = token->next;
+
+	token->room = NULL;
+}
+
+
+/* transfers a token to a room*/
+void token_to_room(TOKEN_DATA *token, ROOM_INDEX_DATA *room)
+{
+	char buf[MSL];
+
+	if (token == NULL || room == NULL) {
+		bug("token_to_room: NULL", 0);
+		return;
+	}
+
+	token->player = NULL;
+	token->object = NULL;
+	token->room = room;
+	token->next = room->tokens;
+	room->tokens = token;
+
+	list_addlink(room->ltokens, token);
+
+	if( room->wilds )
+		sprintf(buf, "token_to_room: gave token %s(%ld) to vroom <%ld, %ld, %ld>",
+			token->name, token->pIndexData->vnum, room->wilds->uid, room->x, room->y);
+	else if( room->source )
+		sprintf(buf, "token_to_room: gave token %s(%ld) to croom %s(%ld %08lX:%08lX)",
+			token->name, token->pIndexData->vnum, room->name, room->source->vnum, room->id[0], room->id[1]);
+	else
+		sprintf(buf, "token_to_room: gave token %s(%ld) to room %s(%ld)",
+			token->name, token->pIndexData->vnum, room->name, room->vnum);
+	log_string(buf);
+}
+
+
+/* finds a token on a char given the vnum */
+TOKEN_DATA *get_token_room(ROOM_INDEX_DATA *room, long vnum, int count)
+{
+	return get_token_list(room->ltokens, vnum, count);
+}
+
 
 
 /* Syn - this function fixes the problems with staves, potions, scrolls, and wands.
@@ -6283,20 +6626,19 @@ int get_perm_group_stat(CHAR_DATA *ch, int stat)
 //			is a mobile or churchless, the count will be zero.
 int get_church_online_count(CHAR_DATA *ch)
 {
-	DESCRIPTOR_DATA *d;
-	int sum = 0;
+//	DESCRIPTOR_DATA *d;
 
 	if(ch && !IS_NPC(ch) && ch->church)
-		for (d = descriptor_list; d; d = d->next)
-			if (d->connected == CON_PLAYING && ch->church == d->character->church)
-				++sum;
+		return list_size(ch->church->online_players);
 
-	return sum;
+
+	return 0;
 }
 
 // @@@NIB : 20070120 : Totals up the weight of either the people or
 //			objects, or both, in the specified room.
 // @@@NIB : 20070121 : Added a 'ground' flag to exclude flying/floating entities
+// @@@ASH : 20111231 : Changed the flying/float check to use the flying check function
 int get_room_weight(ROOM_INDEX_DATA *room, bool mobs, bool objs, bool ground)
 {
 	CHAR_DATA *ch;
@@ -6306,8 +6648,7 @@ int get_room_weight(ROOM_INDEX_DATA *room, bool mobs, bool objs, bool ground)
 	if(!room) return 0;
 
 	if(mobs) for(ch = room->people; ch; ch = ch->next_in_room) {
-		if(ground && (IS_SET(ch->affected_by, AFF_FLYING) ||
-	    		(ch->riding && ch->mount && IS_SET(ch->mount->affected_by, AFF_FLYING))))
+		if(ground && mobile_is_flying(ch))
 	    		continue;
 
 		weight += get_carry_weight(ch);
@@ -6363,6 +6704,9 @@ int has_catalyst(CHAR_DATA *ch,ROOM_INDEX_DATA *room,int type,int method,int min
 				(IS_SET(method,CATALYST_WORN) && obj->wear_loc != WEAR_NONE) ||
 				IS_SET(method,(CATALYST_CARRY))) {
 					for(aff = obj->catalyst; aff; aff = aff->next) if(aff->level >= min_strength && aff->level <= max_strength && aff->type == type) {
+						if( IS_SET(method, CATALYST_ACTIVE) && (aff->where != TO_CATALYST_ACTIVE))
+							continue;
+
 						if(aff->duration < 0) return -1;	// Negative is treated as a "source"
 
 						total += aff->duration;
@@ -6372,6 +6716,8 @@ int has_catalyst(CHAR_DATA *ch,ROOM_INDEX_DATA *room,int type,int method,int min
 				for (objNest = obj->contains; objNest; objNest = nextNest) {
 					nextNest = objNest->next_content;
 					for(aff = objNest->catalyst; aff; aff = aff->next) if(aff->level >= min_strength && aff->level <= max_strength && aff->type == type) {
+						if( IS_SET(method, CATALYST_ACTIVE) && (aff->where != TO_CATALYST_ACTIVE))
+							continue;
 						if(aff->duration < 0) return -1;	// Negative is treated as a "source"
 
 						total += aff->duration;
@@ -6385,12 +6731,16 @@ int has_catalyst(CHAR_DATA *ch,ROOM_INDEX_DATA *room,int type,int method,int min
 	if(IS_SET(method,CATALYST_ROOM)) {
 		for(obj = room->contents; obj; obj = obj->next_content) {
 			for(aff = obj->catalyst; aff; aff = aff->next) if(aff->level >= min_strength && aff->level <= max_strength && aff->type == type) {
+					if( IS_SET(method, CATALYST_ACTIVE) && (aff->where != TO_CATALYST_ACTIVE))
+						continue;
 				if(aff->duration < 0) return -1;	// Negative is treated as a "source"
 				total += aff->duration;
 			}
 			for (objNest = obj->contains; objNest; objNest = nextNest) {
 				nextNest = objNest->next_content;
 				for(aff = objNest->catalyst; aff; aff = aff->next) if(aff->level >= min_strength && aff->level <= max_strength && aff->type == type) {
+					if( IS_SET(method, CATALYST_ACTIVE) && (aff->where != TO_CATALYST_ACTIVE))
+						continue;
 					if(aff->duration < 0) return -1;	// Negative is treated as a "source"
 						total += aff->duration;
 				}
@@ -6401,7 +6751,7 @@ int has_catalyst(CHAR_DATA *ch,ROOM_INDEX_DATA *room,int type,int method,int min
 	return total;
 }
 
-int use_catalyst_obj(CHAR_DATA *ch,ROOM_INDEX_DATA *room,OBJ_DATA *obj,int type,int left,int min_strength, int max_strength, bool show)
+int use_catalyst_obj(CHAR_DATA *ch,ROOM_INDEX_DATA *room,OBJ_DATA *obj,int type,int left,int min_strength, int max_strength, bool active, bool show)
 {
 	bool used;
 	int total = 0;
@@ -6417,9 +6767,11 @@ int use_catalyst_obj(CHAR_DATA *ch,ROOM_INDEX_DATA *room,OBJ_DATA *obj,int type,
 	for(prev = NULL, aff = obj->catalyst; aff && total < left; aff = next) {
 		next = aff->next;
 		if(aff->level >= min_strength && aff->level <= max_strength && aff->type == type) {
+			if( active && (aff->where != TO_CATALYST_ACTIVE) ) continue;
+
 			if(aff->duration < 0) {
-				if(show && !p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, TRIG_CATALYST_SOURCE))
-					act("$p pulsates brightly.",room->people,obj,NULL,TO_ALL);
+				if(show && !p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_CATALYST_SOURCE, NULL))
+					act("$p pulsates brightly.",room->people, NULL, NULL,obj, NULL, NULL,NULL,TO_ALL);
 				return -1;
 			}
 
@@ -6431,8 +6783,8 @@ int use_catalyst_obj(CHAR_DATA *ch,ROOM_INDEX_DATA *room,OBJ_DATA *obj,int type,
 				free_affect(aff);
 
 				if(!obj->catalyst) {	// All catalyst affects have been exhausted
-					if(show && !p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, TRIG_CATALYST_FULL) && ch)
-						act("$p flares brightly and vanishes!",room->people,obj,NULL,TO_ALL);
+					if(show && !p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_CATALYST_FULL, NULL) && ch)
+						act("$p flares brightly and vanishes!",room->people, NULL, NULL,obj, NULL, NULL,NULL,TO_ALL);
 					extract_obj(obj);
 					return total;
 				}
@@ -6445,13 +6797,13 @@ int use_catalyst_obj(CHAR_DATA *ch,ROOM_INDEX_DATA *room,OBJ_DATA *obj,int type,
 		}
 	}
 
-	if(show && used && !p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, TRIG_CATALYST)) {
-		act("$p shimmers brightly, but only dims back to normal.",room->people,obj,NULL,TO_ALL);
+	if(show && used && !p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_CATALYST, NULL)) {
+		act("$p shimmers brightly, but only dims back to normal.",room->people, NULL, NULL,obj, NULL, NULL,NULL,TO_ALL);
 	}
 	return total;
 }
 
-int use_catalyst_here(CHAR_DATA *ch,ROOM_INDEX_DATA *room,int type,int amount,int min_strength, int max_strength, bool show)
+int use_catalyst_here(CHAR_DATA *ch,ROOM_INDEX_DATA *room,int type,int amount,int min_strength, int max_strength, bool active, bool show)
 {
 	int total = 0, total2;
 	OBJ_DATA *obj;
@@ -6462,13 +6814,13 @@ int use_catalyst_here(CHAR_DATA *ch,ROOM_INDEX_DATA *room,int type,int amount,in
 	if(!room) room = ch->in_room;
 
 	for(obj = room->contents; obj && total < amount; obj = obj->next_content) {
-		total2 = use_catalyst_obj(ch,room,obj,type,amount - total,min_strength,max_strength,show);
+		total2 = use_catalyst_obj(ch,room,obj,type,amount - total,min_strength,max_strength,active,show);
 		if(total2 < 0) return -1;
 
 		total += total2;
 		for (objNest = obj->contains; objNest && total < amount; objNest = nextNest) {
 			nextNest = objNest->next_content;
-			total2 = use_catalyst_obj(ch,room,objNest,type,amount - total,min_strength,max_strength,show);
+			total2 = use_catalyst_obj(ch,room,objNest,type,amount - total,min_strength,max_strength,active,show);
 			if(total2 < 0) return -1;
 
 			total += total2;
@@ -6483,28 +6835,30 @@ int use_catalyst(CHAR_DATA *ch,ROOM_INDEX_DATA *room,int type,int method,int amo
 	int total, total2;
 	OBJ_DATA *obj, *next;
 	OBJ_DATA *objNest, *nextNest;
+	bool active;
 
 	if(!ch && !room) return 0;
 
-	if(!room) room = ch->in_room;
+ 	if(!room) room = ch->in_room;
 
 	if(!room) return 0;
 
 	total = 0;
+	active = IS_SET(method, CATALYST_ACTIVE);
 
 	for (obj = ch->carrying; obj && total < amount; obj = next) {
 		next = obj->next_content;
 		if((IS_SET(method,CATALYST_HOLD) && obj->wear_loc == WEAR_HOLD) ||
 			(IS_SET(method,CATALYST_WORN) && obj->wear_loc != WEAR_NONE) ||
 			IS_SET(method,(CATALYST_CARRY))) {
-				total2 = use_catalyst_obj(ch,room,obj,type,amount - total,min_strength,max_strength,show);
+				total2 = use_catalyst_obj(ch,room,obj,type,amount - total,min_strength,max_strength,active,show);
 				if(total2 < 0) return amount;
 
 				total += total2;
 		} else if(obj->contains && IS_SET(method,CATALYST_CONTAINERS)) {	/* look in bags too */
 			for (objNest = obj->contains; objNest; objNest = nextNest) {
 				nextNest = objNest->next_content;
-				total2 = use_catalyst_obj(ch,room,objNest,type,amount - total,min_strength,max_strength,show);
+				total2 = use_catalyst_obj(ch,room,objNest,type,amount - total,min_strength,max_strength,active,show);
 				if(total2 < 0) return amount;
 
 				total += total2;
@@ -6513,7 +6867,7 @@ int use_catalyst(CHAR_DATA *ch,ROOM_INDEX_DATA *room,int type,int method,int amo
 	}
 
 	if(IS_SET(method,CATALYST_ROOM) && total < amount) {
-		int htotal = use_catalyst_here(ch,room,type,amount - total,min_strength,max_strength,show);
+		int htotal = use_catalyst_here(ch,room,type,amount - total,min_strength,max_strength,active,show);
 		if(htotal < 0) return amount;
 		total += htotal;
 	}
@@ -6547,17 +6901,17 @@ void move_cart(CHAR_DATA *ch, ROOM_INDEX_DATA *room, bool delay)
 
 unsigned long last_visited_room = 0;
 
-void visit_room_recurse(ROOM_INDEX_DATA *room, VISIT_FUNC *func, int depth, void *argv[], int argc, bool closed, int door)
+void visit_room_recurse(LIST *visited, ROOM_INDEX_DATA *room, VISIT_FUNC *func, int depth, void *argv[], int argc, bool closed, int door)
 {
 	EXIT_DATA *ex;
 	int i;
 
-	if(room->visited < last_visited_room) {
-		room->visited = last_visited_room;
+	if(!list_hasdata(visited, room)) {
+		list_appendlink(visited, room);
 		if((*func)(room,argv,argc,depth,door) && depth > 0) {
 			for(i = 0; i < MAX_DIR; i++) if((ex = room->exit[i])) {
 				if(ex->u1.to_room && (!closed || !IS_SET(ex->exit_info, EX_CLOSED)))
-					visit_room_recurse(ex->u1.to_room, func, depth - 1, argv, argc, closed, i);
+					visit_room_recurse(visited, ex->u1.to_room, func, depth - 1, argv, argc, closed, i);
 			}
 		}
 	}
@@ -6565,9 +6919,11 @@ void visit_room_recurse(ROOM_INDEX_DATA *room, VISIT_FUNC *func, int depth, void
 
 void visit_rooms(ROOM_INDEX_DATA *room, VISIT_FUNC *func, int depth, void *argv[], int argc, bool closed)
 {
-	last_visited_room++;
+	LIST *visited = list_create(TRUE);
 
-	visit_room_recurse(room,func,depth,argv,argc,closed,MAX_DIR);
+	visit_room_recurse(visited, room,func,depth,argv,argc,closed,MAX_DIR);
+
+	list_destroy(visited);
 }
 
 bool char_exists(CHAR_DATA *ch)
@@ -6605,6 +6961,51 @@ OBJ_DATA *idfind_object(unsigned long id1, unsigned long id2)
 	for (obj = object_list; obj; obj = obj->next)
 		if(obj->id[0] == id1 && obj->id[1] == id2)
 			return obj;
+	return NULL;
+}
+
+TOKEN_DATA *idfind_token(register unsigned long id1, register unsigned long id2)
+{
+	register TOKEN_DATA *token;
+	for (token = global_tokens; token; token = token->global_next)
+		if(token->id[0] == id1 && token->id[1] == id2)
+			return token;
+	return NULL;
+}
+
+TOKEN_DATA *idfind_token_char(CHAR_DATA *ch, register unsigned long id1, register unsigned long id2)
+{
+	register TOKEN_DATA *token;
+
+	if( !ch ) return FALSE;
+
+	for (token = ch->tokens; token; token = token->next)
+		if(token->id[0] == id1 && token->id[1] == id2)
+			return token;
+	return NULL;
+}
+
+TOKEN_DATA *idfind_token_object(OBJ_DATA *obj, register unsigned long id1, register unsigned long id2)
+{
+	register TOKEN_DATA *token;
+
+	if( !obj ) return FALSE;
+
+	for (token = obj->tokens; token; token = token->next)
+		if(token->id[0] == id1 && token->id[1] == id2)
+			return token;
+	return NULL;
+}
+
+TOKEN_DATA *idfind_token_room(ROOM_INDEX_DATA *room, register unsigned long id1, register unsigned long id2)
+{
+	register TOKEN_DATA *token;
+
+	if( !room ) return FALSE;
+
+	for (token = room->tokens; token; token = token->next)
+		if(token->id[0] == id1 && token->id[1] == id2)
+			return token;
 	return NULL;
 }
 
@@ -6720,6 +7121,7 @@ void get_random_room_target(ROOM_INDEX_DATA *room, OBJ_DATA **obj, CHAR_DATA **c
 }
 
 
+// @@@REMOVEME: This function is invalid (id1 is used as a vnum and an id part)
 ROOM_INDEX_DATA *idfind_vroom(register unsigned long id1, register unsigned long id2)
 {
 	ROOM_INDEX_DATA *room;
@@ -6752,11 +7154,15 @@ ROOM_INDEX_DATA *get_environment(ROOM_INDEX_DATA *room)
 
 ROOM_INDEX_DATA *get_environment_deep(ROOM_INDEX_DATA *room)
 {
+	ROOM_INDEX_DATA *environ;
+	if(!room) return NULL;
+
 	if(!room_is_clone(room)) return room;
 
-	while((room = get_environment(room)) && PROG_FLAG(room,PROG_NODESTRUCT));
+	if((environ = get_environment(room)) && PROG_FLAG(environ,PROG_NODESTRUCT))
+		return get_environment_deep(environ);
 
-	return room;
+	return NULL;
 }
 
 
@@ -6766,7 +7172,7 @@ bool recursive_environment(ROOM_INDEX_DATA *loc, CHAR_DATA *mob, OBJ_DATA *obj, 
 	if(!loc) return FALSE;
 
 	// static or virtual rooms that are floating [aka wilds vrooms] are NOT recursive
-	if(!IS_SET(loc->room2_flags,ROOM_VIRTUAL_ROOM) || loc->environ_type == ENVIRON_NONE) return FALSE;
+	if(IS_SET(loc->room2_flags,ROOM_VIRTUAL_ROOM) || loc->environ_type == ENVIRON_NONE) return FALSE;
 
 	if(loc->environ_type == ENVIRON_ROOM && loc->environ.room && room) {
 		if(loc->environ.room == room) return TRUE;
@@ -6799,7 +7205,7 @@ bool check_recursive_char(ROOM_INDEX_DATA *room, CHAR_DATA *ch)
 	save_room = ch->in_room;
 	ch->in_room = room;
 
-	safe = recursive_environment(room,ch,NULL,NULL);
+	safe = !recursive_environment(room,ch,NULL,NULL);
 
 	ch->in_room = save_room;
 	return safe;
@@ -6839,13 +7245,14 @@ bool check_vision(CHAR_DATA *ch, ROOM_INDEX_DATA *room, bool blind, bool dark)
 void room_from_environment(ROOM_INDEX_DATA *room)
 {
 	ROOM_INDEX_DATA **prev = NULL;
+	LIST *lclones = NULL;
 
 	if(!room || !room_is_clone(room)) return;
 
 	switch(room->environ_type) {
-	case ENVIRON_ROOM: prev = &room->environ.room->clone_rooms; break;
-	case ENVIRON_MOBILE: prev = &room->environ.mob->clone_rooms; break;
-	case ENVIRON_OBJECT: prev = &room->environ.obj->clone_rooms; break;
+	case ENVIRON_ROOM: prev = &room->environ.room->clone_rooms; lclones = room->environ.room->lclonerooms; break;
+	case ENVIRON_MOBILE: prev = &room->environ.mob->clone_rooms; lclones = room->environ.mob->lclonerooms; break;
+	case ENVIRON_OBJECT: prev = &room->environ.obj->clone_rooms; lclones = room->environ.obj->lclonerooms; break;
 	default: return;
 	}
 
@@ -6856,6 +7263,8 @@ void room_from_environment(ROOM_INDEX_DATA *room)
 		}
 		prev = &(*prev)->next_clone;
 	}
+
+	list_remlink(lclones, room);
 
 	// The object now has no clones
 	if(room->environ_type == ENVIRON_OBJECT && !room->environ.obj->clone_rooms)
@@ -6873,6 +7282,10 @@ bool room_to_environment(ROOM_INDEX_DATA *clone,CHAR_DATA *mob, OBJ_DATA *obj, R
 	if(mob) {
 		clone->next_clone = mob->clone_rooms;
 		mob->clone_rooms = clone;
+		if( !list_appendlink(mob->lclonerooms, clone) ) {
+			bug("Failed to add clone room to environment due to memory issues with 'list_appendlink',", 0);
+			abort();
+		}
 		clone->environ.mob = mob;
 		clone->environ_type = ENVIRON_MOBILE;
 		return true;
@@ -6882,6 +7295,10 @@ bool room_to_environment(ROOM_INDEX_DATA *clone,CHAR_DATA *mob, OBJ_DATA *obj, R
 	if(obj) {
 		clone->next_clone = obj->clone_rooms;
 		obj->clone_rooms = clone;
+		if( !list_appendlink(obj->lclonerooms, clone) ) {
+			bug("Failed to add clone room to environment due to memory issues with 'list_appendlink',", 0);
+			abort();
+		}
 
 		// This is the only clone.. hence, the object used to have no clones anchored
 		if(!clone->next_clone) obj_update_nest_clones(obj);
@@ -6894,6 +7311,10 @@ bool room_to_environment(ROOM_INDEX_DATA *clone,CHAR_DATA *mob, OBJ_DATA *obj, R
 	if(room && room != clone && room->environ_type != ENVIRON_ROOM) {
 		clone->next_clone = room->clone_rooms;
 		room->clone_rooms = clone;
+		if( !list_appendlink(room->lclonerooms, clone) ) {
+			bug("Failed to add clone room to environment due to memory issues with 'list_appendlink',", 0);
+			abort();
+		}
 		clone->environ.room = room;
 		clone->environ_type = ENVIRON_ROOM;
 		return true;
@@ -6940,7 +7361,7 @@ void obj_update_nest_clones(OBJ_DATA *obj)
 }
 
 
-LIST *list_create(void)
+LIST *list_create(bool purge)
 {
 	LIST *lp = alloc_mem(sizeof(LIST));
 
@@ -6948,21 +7369,109 @@ LIST *list_create(void)
 		lp->next = NULL;
 		lp->head = NULL;
 		lp->ref = 0;
+		lp->size = 0;
 		lp->valid = TRUE;
+		lp->purge = purge;
+		lp->deleter = NULL;
 	}
 
 	return lp;
+}
+
+LIST *list_createx(bool purge, LISTCOPY_FUNC copier, LISTDESTROY_FUNC deleter)
+{
+	LIST *lp = list_create(purge);
+
+	if( lp ) {
+		lp->copier = copier;
+		lp->deleter = deleter;
+	}
+
+	return lp;
+}
+
+
+LIST *list_copy(LIST *src)
+{
+	if( src == NULL || !src->valid || src->purge ) return NULL;
+
+	LIST *cpy = list_create(src->purge);
+
+	if( cpy ) {
+		register LIST_LINK *cur, *next;
+		bool valid = TRUE;
+
+		cpy->copier = src->copier;
+		cpy->deleter = src->deleter;
+
+		for( cur = src->head; cur; cur = next ) {
+			if( cur->data ) {
+				void *data = cur->data;
+
+				if( cpy->copier )
+					data = (*cpy->copier)(data);
+
+				if( !data || !list_appendlink(cpy, data) ) {
+					if( data && cpy->deleter )
+						(*cpy->deleter)(data);
+
+					valid = FALSE;
+					break;
+				}
+			}
+		}
+
+		if( !valid ) {
+			list_destroy(cpy);
+			cpy = NULL;
+		}
+	}
+
+	return cpy;
+}
+
+void list_purge(LIST *lp)
+{
+	register LIST_LINK *cur, *next;
+	if( lp && !lp->valid && lp->ref < 1) {
+		for( cur = lp->head; cur; cur = next ) {
+			next = cur->next;
+
+			if( lp->deleter && cur->data )
+				(*lp->deleter)(cur->data);
+
+			free_mem(cur, sizeof(LIST_LINK));
+		}
+		lp->head = NULL;
+		lp->tail = NULL;
+	}
+}
+
+void list_destroy(LIST *lp)
+{
+	if(lp && lp->valid ) {
+		if( lp->ref > 0 )
+			lp->valid = FALSE;
+		else {
+			// This point is only ever reached if the list has not references at the time this list is destroyed
+			// If the list is in-use, the purging/freeing is handled when the references are cleared.
+			list_purge(lp);
+			free(lp);
+		}
+	}
 }
 
 void list_cull(LIST *lp)
 {
 	register LIST_LINK **prev, *cur;
 
-	if(lp && !lp->ref) {
+	if(lp && lp->ref < 1) {
 		// Cull any null data nodes
 		for(prev = &lp->head, cur = lp->head; cur;) {
 			if(!cur->data) {
 				do {
+					if( lp->tail == cur )
+						lp->tail = NULL;
 					*prev = cur->next;
 					free_mem(cur,sizeof(LIST_LINK));
 					cur = *prev;
@@ -6971,6 +7480,14 @@ void list_cull(LIST *lp)
 				prev = &cur->next;
 				cur = *prev;
 			}
+		}
+
+		if(!lp->tail && lp->head ) {
+			if( lp->head->next ) {
+				for(cur = lp->head; cur->next; cur = cur->next );
+				lp->tail = cur;
+			} else
+				lp->tail = lp->head;
 		}
 	}
 }
@@ -6985,21 +7502,50 @@ void list_remref(LIST *lp)
 	if(lp) {
 		--lp->ref;
 		list_cull(lp);
+
+		if(lp->ref < 1 && !lp->valid) {
+			list_purge(lp);
+			free(lp);
+		} else if(lp->ref < 1 && lp->purge)
+			list_destroy(lp);
 	}
 }
 
-void list_addlink(LIST *lp, void *data)
+bool list_addlink(LIST *lp, void *data)
 {
 	LIST_LINK *link;
 
-	if(lp && (link = alloc_mem(sizeof(LIST_LINK)))) {
+	if(lp && lp->valid && (link = alloc_mem(sizeof(LIST_LINK)))) {
 
 		// No need to worry about the linkage and reference
 		link->next = lp->head;
 		lp->head = link;
 
 		link->data = data;
+		lp->size++;
+		return true;
 	}
+	return false;
+}
+
+bool list_appendlink(LIST *lp, void *data)
+{
+	LIST_LINK *link;
+
+	if(lp && lp->valid && (link = alloc_mem(sizeof(LIST_LINK)))) {
+//		log_stringf("list_appendlink: Adding data %016X to list %016X.", lp, data);
+		// First one?
+		if( !lp->head )
+			lp->head = link;
+		else
+			lp->tail->next = link;
+		lp->tail = link;
+
+		link->data = data;
+		lp->size++;
+		return true;
+	}
+	return false;
 }
 
 // Nulls out any data pointer that matches the supplied pointer
@@ -7010,19 +7556,97 @@ void list_remlink(LIST *lp, void *data)
 
 	if(lp && data) {
 		for(link = lp->head; link; link = link->next)
-			if(link->data == data)
+			if(link->data == data) {
+				if( lp->deleter )
+					(*lp->deleter)(data);
+
 				link->data = NULL;
+				lp->size--;
+			}
 	}
 }
 
+void *list_nthdata(LIST *lp, register int nth)
+{
+	register LIST_LINK *link = NULL;
+
+	if(lp && lp->valid) {
+		if( nth < 0 ) nth = lp->size + nth;
+		for(link = lp->head; link && nth > 0; link = link->next)
+			if(link->data)
+				--nth;
+	}
+
+	return (link && !nth) ? link->data : NULL;
+}
+
+bool list_hasdata(LIST *lp, register void *ptr)
+{
+	ITERATOR it;
+	void *data;
+
+	if(!lp || !lp->valid || !ptr) return FALSE;
+
+	iterator_start(&it, lp);
+	while((data = iterator_nextdata(&it)) && (data != ptr));
+
+	iterator_stop(&it);
+
+	return data && TRUE;
+}
+
+int list_size(LIST *lp)
+{
+	ITERATOR it;
+	int size;
+
+	if(!lp || !lp->valid) return 0;
+
+	size = 0;
+	iterator_start(&it, lp);
+	while((iterator_nextdata(&it))) ++size;
+
+	iterator_stop(&it);
+
+	return size;
+}
+
+bool list_isvalid(LIST *lp)
+{
+	return lp && lp->valid;
+}
 
 // ITERATORs can just be straight variables.  No allocation is needed.
 void iterator_start(ITERATOR *it, LIST *lp)
 {
 	if(it) {
 		if(lp && lp->valid) {
+//			log_stringf("iterator_start: list =  %016lX.", lp);
 			it->list = lp;
 			it->current = lp->head;
+
+			list_addref(lp);
+		} else {
+			it->list = NULL;
+			it->current = NULL;
+		}
+	}
+}
+
+void iterator_start_nth(ITERATOR *it, LIST *lp, int nth)
+{
+	register LIST_LINK *link;
+
+	if(it) {
+		if(lp && lp->valid) {
+			it->list = lp;
+
+			if( nth < 0 ) nth = lp->size + nth;
+			for(link = lp->head; link && nth > 0; link = link->next)
+				if(link->data)
+					--nth;
+
+			it->current = link;
 
 			list_addref(lp);
 		} else {
@@ -7036,12 +7660,39 @@ LIST_LINK *iterator_next(ITERATOR *it)
 {
 	register LIST_LINK *link = NULL;
 	if(it && it->list && it->list->valid && it->current) {
-		for(link = it->current->next; link && !link->data; link = link->next);
+		for(link = it->current; link && !link->data; link = link->next);
 
-		it->current = link;
+//		log_stringf("iterator_next: list =  %016lX, link = %016lX.", it->list, link);
+		it->current = link ? link->next : NULL;
 	}
 
 	return link;
+}
+
+void *iterator_nextdata(ITERATOR *it)
+{
+	register LIST_LINK *link = NULL;
+	register LIST_LINK *next = NULL;
+	if(it && it->list && it->list->valid && it->current) {
+		for(link = it->current; link && !link->data; link = link->next);
+
+//		log_stringf("iterator_nextdata: list =  %016lX, link = %016lX.", it->list, link);
+		it->current = link ? link->next : NULL;
+	}
+
+	return link ? link->data : NULL;
+}
+
+void iterator_remcurrent(ITERATOR *it)
+{
+	if(it && it->list && it->current && it->current->data)
+	{
+		// Delete the data using specific deleter if it is defined
+		if( it->list->deleter )
+			(*it->list->deleter)(it->current->data);
+
+		it->current->data = NULL;
+	}
 }
 
 void iterator_reset(ITERATOR *it)
@@ -7167,8 +7818,8 @@ ROOM_INDEX_DATA *get_recall_room(CHAR_DATA *ch)
 	// Do not reset the recall point here, as it may have been set by other means.
 	// Simply call the recall triggers to see if they MODIFY it.
 
-	if(!p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RECALL))
-		p_percent_trigger(NULL, NULL, ch->in_room, NULL, NULL, NULL, NULL, TRIG_RECALL);
+	if(!p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RECALL, NULL))
+		p_percent_trigger(NULL, NULL, ch->in_room, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RECALL, NULL);
 
 	loc = location_to_room(&ch->recall);
 	memset(&ch->recall,0,sizeof(LOCATION));

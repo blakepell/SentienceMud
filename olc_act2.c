@@ -10,7 +10,7 @@
 #include "recycle.h"
 #include "scripts.h"
 
-bool edit_deltrigger(PROG_LIST **list, int index);
+//bool edit_deltrigger(LIST **list, int index);
 
 
 REDIT(redit_addcdesc)
@@ -603,7 +603,7 @@ HEDIT(hedit_edit)
 
     if (help == NULL)
     {
-	act("Couldn't find a helpfile with keyword $t.", ch, argument, NULL, TO_CHAR);
+	act("Couldn't find a helpfile with keyword $t.", ch, NULL, NULL, NULL, NULL, argument, NULL, TO_CHAR);
 	return FALSE;
     }
 
@@ -690,7 +690,7 @@ HEDIT(hedit_move)
 
 	insert_help(help, &hCatDest->inside_helps);
 
-	act("Moved help $t into category $T.", ch, help->keyword,
+	act("Moved help $t into category $T.", ch, NULL, NULL, NULL, NULL, help->keyword,
 	    hCatDest == topHelpCat ? "root category" : hCatDest->name, TO_CHAR);
     }
     else /* moving a category */
@@ -733,7 +733,7 @@ HEDIT(hedit_move)
 	}
 
 	hCat->up = hCatDest->up;
-	act("Moved category $t into category $T.", ch, hCat->name,
+	act("Moved category $t into category $T.", ch, NULL, NULL, NULL, NULL, hCat->name,
 	    hCatDest == topHelpCat ? "root category" : hCatDest->name, TO_CHAR);
     }
 
@@ -799,12 +799,12 @@ HEDIT(hedit_opencat)
 
     if ((hCat = find_help_category(argument, ch->desc->hCat->inside_cats)) == NULL)
     {
-        act("No category by the name of $t.", ch, argument, NULL, TO_CHAR);
+        act("No category by the name of $t.", ch, NULL, NULL, NULL, NULL, argument, NULL, TO_CHAR);
 	return FALSE;
     }
 
     ch->desc->hCat = hCat;
-    act("Opened category $t.", ch, hCat->name, NULL, TO_CHAR);
+    act("Opened category $t.", ch, NULL, NULL, NULL, NULL, hCat->name, NULL, TO_CHAR);
     return FALSE;
 }
 
@@ -825,7 +825,7 @@ HEDIT(hedit_upcat)
 
     ch->desc->hCat = ch->desc->hCat->up;
 
-    act("Switched categories to $t.", ch,
+    act("Switched categories to $t.", ch, NULL, NULL, NULL, NULL,
         ch->desc->hCat == topHelpCat ? "root category" : ch->desc->hCat->name, NULL, TO_CHAR);
     return FALSE;
 }
@@ -865,7 +865,7 @@ HEDIT(hedit_remcat)
     else
 	ch->desc->hCat->inside_cats = hCat->next;
 
-    act("Removed category $t.", ch, hCat->name, NULL, TO_CHAR);
+    act("Removed category $t.", ch, NULL, NULL, NULL, NULL, hCat->name, NULL, TO_CHAR);
     free_help_category(hCat);
     return TRUE;
 }
@@ -925,7 +925,7 @@ HEDIT(hedit_shiftcat)
 	else
 	    ch->desc->hCat->inside_cats = hcat;
 
-	act("Shifted category $t left in the list.", ch, hcat->name, NULL, TO_CHAR);
+	act("Shifted category $t left in the list.", ch, NULL, NULL, NULL, NULL, hcat->name, NULL, TO_CHAR);
     }
     else
     {
@@ -952,7 +952,7 @@ HEDIT(hedit_shiftcat)
 	else
 	    ch->desc->hCat->inside_cats = hcattmp;
 
-	act("Shifted category $t right in the list.", ch, hcat->name, NULL, TO_CHAR);
+	act("Shifted category $t right in the list.", ch, NULL, NULL, NULL, NULL, hcat->name, NULL, TO_CHAR);
     }
 
     hedit_show(ch, "");
@@ -1088,7 +1088,7 @@ HEDIT(hedit_level)
 	    }
 
 	    ch->desc->hCat->min_level = atoi(argument);
-	    act("Current category's level set.", ch, NULL, NULL, TO_CHAR);
+	    act("Current category's level set.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	    return TRUE;
 	}
     }
@@ -1131,7 +1131,7 @@ HEDIT(hedit_security)
 	}
 	else {
 	    ch->desc->hCat->security = arg;
-	    act("Current category's security set.", ch, NULL, NULL, TO_CHAR);
+	    act("Current category's security set.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	    return TRUE;
 	}
     }
@@ -1200,11 +1200,12 @@ HEDIT(hedit_builder)
 		return FALSE;
 	    }
 
+
 	    buf[0] = '\0';
 
 	    if (!player_exists(name) && str_cmp(name, "All"))
 	    {
-		act("There is no character by the name of $t.", ch, name, NULL, TO_CHAR);
+		act("There is no character by the name of $t.", ch, NULL, NULL, NULL, NULL, name, NULL, TO_CHAR);
 		return FALSE;
 	    }
 
@@ -1229,8 +1230,14 @@ HEDIT(hedit_builder)
 	    return TRUE;
 	}
     }
-    else
+    else if(help != NULL)
     {
+
+	    if (!has_access_help(ch, help)) {
+		send_to_char("Insufficient security - access denied.\n\r", ch);
+		return FALSE;
+	    }
+
 	if (strstr(help->builders, name) != '\0')
 	{
 	    help->builders = string_replace(help->builders, name, "\0");
@@ -1250,7 +1257,7 @@ HEDIT(hedit_builder)
 
 	    if (!player_exists(name) && str_cmp(name, "All"))
 	    {
-		act("There is no character by the name of $t.", ch, name, NULL, TO_CHAR);
+		act("There is no character by the name of $t.", ch, NULL, NULL, NULL, NULL, name, NULL, TO_CHAR);
 		return FALSE;
 	    }
 
@@ -1303,7 +1310,7 @@ HEDIT(hedit_addtopic)
 
     if (lookup_help_exact(argument, ch->tot_level, topHelpCat) == NULL)
     {
-	act("There is no helpfile with keywords $t.", ch, argument, NULL, TO_CHAR);
+	act("There is no helpfile with keywords $t.", ch, NULL, NULL, NULL, NULL, argument, NULL, TO_CHAR);
 	return FALSE;
     }
 
@@ -1337,7 +1344,7 @@ HEDIT(hedit_addtopic)
 	    pHelp->related_topics = topic;
     }
 
-    act("Related topic $t added.", ch, argument, NULL, TO_CHAR);
+    act("Related topic $t added.", ch, NULL, NULL, NULL, NULL, argument, NULL, TO_CHAR);
     return TRUE;
 }
 
@@ -1421,7 +1428,7 @@ HEDIT(hedit_delete)
     }
 
     if (pHelp == NULL) {
-	act("Didn't find a file with keyword $t.", ch, argument, NULL, TO_CHAR);
+	act("Didn't find a file with keyword $t.", ch, NULL, NULL, NULL, NULL, argument, NULL, TO_CHAR);
 	return FALSE;
     }
 
@@ -1435,7 +1442,7 @@ HEDIT(hedit_delete)
     else
 	hCat->inside_helps = pHelp->next;
 
-    act("Help file $t deleted.", ch, pHelp->keyword, NULL, TO_CHAR);
+    act("Help file $t deleted.", ch, NULL, NULL, NULL, NULL, pHelp->keyword, NULL, TO_CHAR);
     free_help(pHelp);
     return TRUE;
 }
@@ -2248,7 +2255,8 @@ TEDIT(tedit_create)
 TEDIT(tedit_show)
 {
     TOKEN_INDEX_DATA *token_index;
-    PROG_LIST *list;
+    ITERATOR it;
+    PROG_LIST *trigger;
     char buf[MSL];
     int i;
 
@@ -2292,7 +2300,7 @@ TEDIT(tedit_show)
     for (i = 0; i < MAX_TOKEN_VALUES; i++) {
     	sprintf(buf,
 		"Value {Y[{x%d{Y]:{x %-20s {Y[{x%ld{Y]{x\n\r",
-		i, token_index->value_name[i], token_index->value[i]);
+		i, token_index_getvaluename(token_index, i), token_index->value[i]);
 
 	send_to_char(buf, ch);
     }
@@ -2300,7 +2308,7 @@ TEDIT(tedit_show)
 	int cnt, slot;
 
 	for (cnt = 0, slot = 0; slot < TRIGSLOT_MAX; slot++)
-		if(token_index->progs[slot]) ++cnt;
+		if(list_size(token_index->progs[slot]) > 0) ++cnt;
 
 	if (cnt > 0) {
 		sprintf(buf, "{R%-6s %-20s %-10s %-10s\n\r{x", "Number", "TokProg Vnum", "Trigger", "Phrase");
@@ -2310,13 +2318,15 @@ TEDIT(tedit_show)
 		send_to_char(buf, ch);
 
 		for (cnt = 0, slot = 0; slot < TRIGSLOT_MAX; slot++) {
-			for (list = token_index->progs[slot]; list; list=list->next) {
+			iterator_start(&it, token_index->progs[slot]);
+			while(( trigger = (PROG_LIST *)iterator_nextdata(&it))) {
 				sprintf(buf, "{C[{W%4d{C]{x %-20ld %-10s %-6s\n\r", cnt,
-					list->vnum,trigger_name(list->trig_type),
-					trigger_phrase(list->trig_type,list->trig_phrase));
+					trigger->vnum,trigger_name(trigger->trig_type),
+					trigger_phrase(trigger->trig_type,trigger->trig_phrase));
 				send_to_char(buf, ch);
 				cnt++;
 			}
+			iterator_stop(&it);
 		}
 	}
     }
@@ -2376,7 +2386,7 @@ TEDIT(tedit_name)
     free_string(token_index->name);
     token_index->name = str_dup(argument);
     send_to_char("Name set.\n\r", ch);
-    return FALSE;
+    return TRUE;
 }
 
 
@@ -2409,7 +2419,7 @@ TEDIT(tedit_type)
 	}
 
     token_index->type = token_table[i].type;
-    act("Set token type to $t.", ch, token_table[i].name, NULL, TO_CHAR);
+    act("Set token type to $t.", ch, NULL, NULL, NULL, NULL, token_table[i].name, NULL, TO_CHAR);
     return TRUE;
 }
 
@@ -2708,7 +2718,42 @@ TEDIT(tedit_value)
 			send_to_char("Minimum position set.\n\r", ch);
 			break;
 		default:
-			return FALSE;
+			// Need to check for various things.
+			value_value = atol(arg2);
+
+			sprintf(buf, "Set value %d to %ld.\n\r", value_num, value_value);
+			send_to_char(buf, ch);
+			break;
+		}
+
+		token_index->value[value_num] = value_value;
+	} else if(token_index->type == TOKEN_SKILL) {
+		switch(value_num) {
+		case TOKVAL_SPELL_RATING:			// Max rating
+			value_value = atoi(arg2);
+			if(value_value < 0 || value_value > 1000000) {
+				send_to_char("Max rating must be within range of 0 (for 100%%) to 1000000.\n\r", ch);
+				return FALSE;
+			}
+
+			send_to_char("Max rating set.\n\r", ch);
+			break;
+		case TOKVAL_SPELL_DIFFICULTY:			// Difficulty
+			value_value = atoi(arg2);
+			if(value_value < 1 || value_value > 1000000) {
+				send_to_char("Difficulty must be within range of 1 to 1000000.\n\r", ch);
+				return FALSE;
+			}
+
+			send_to_char("Difficulty set.\n\r", ch);
+			break;
+		default:
+			// Need to check for various things.
+			value_value = atol(arg2);
+
+			sprintf(buf, "Set value %d to %ld.\n\r", value_num, value_value);
+			send_to_char(buf, ch);
+			break;
 		}
 
 		token_index->value[value_num] = value_value;
@@ -2788,7 +2833,7 @@ TEDIT (tedit_addtprog)
 	return FALSE;
     }
 
-    value = trigger_table[tindex].value;
+    value = tindex;//trigger_table[tindex].value;
     slot = trigger_table[tindex].slot;
 
 	if(value == TRIG_SPELLCAST) {
@@ -2818,10 +2863,11 @@ TEDIT (tedit_addtprog)
     list->vnum            = atol(num);
     list->trig_type       = tindex;
     list->trig_phrase     = str_dup(phrase);
+	list->trig_number		= atoi(list->trig_phrase);
+    list->numeric		= is_number(list->trig_phrase);
     list->script          = code;
     //SET_BIT(token_index->mprog_flags,value);
-    list->next            = token_index->progs[slot];
-    token_index->progs[slot]     = list;
+    list_appendlink(token_index->progs[slot], list);
 
     send_to_char("Tprog Added.\n\r",ch);
     return TRUE;
@@ -2938,5 +2984,23 @@ TEDIT(tedit_varclear)
 
     send_to_char("Variable cleared.\n\r", ch);
     return TRUE;
+}
+
+char *token_index_getvaluename(TOKEN_INDEX_DATA *token, int v)
+{
+	if(token->type == TOKEN_SPELL )
+	{
+		if( v == TOKVAL_SPELL_RATING ) return "Rating";
+		else if( v == TOKVAL_SPELL_DIFFICULTY ) return "Difficulty";
+		else if( v == TOKVAL_SPELL_TARGET ) return "Spell Target";
+		else if( v == TOKVAL_SPELL_POSITION ) return "Min Position";
+	}
+	else if( token->type == TOKEN_SKILL )
+	{
+		if( v == TOKVAL_SPELL_RATING ) return "Rating";
+		else if( v == TOKVAL_SPELL_DIFFICULTY ) return "Difficulty";
+	}
+
+	return token->value_name[v];
 }
 

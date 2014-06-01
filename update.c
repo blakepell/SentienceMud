@@ -9,6 +9,7 @@
 #include "tables.h"
 #include "wilds.h"
 
+extern void persist_save(void);
 
 // Global variables
 int save_number = 0;
@@ -70,6 +71,7 @@ void update_handler(void)
         pulse_area = PULSE_AREA;
 	area_update(FALSE);
 	write_permanent_objs();
+	persist_save();
 	save_npc_ships();
 	write_mail();
 	save_projects();
@@ -129,8 +131,8 @@ void update_handler(void)
 	//update_invasion_quest(); Syn - don't do this. it seems to eat a lot of CPU time.
 	obj_update();
 	quest_update();
-//    	pneuma_relic_update();
-//	relic_update();
+    	pneuma_relic_update();
+	relic_update();
 	update_area_trade();
 	/* 2006-07-27 This is now redundant, and this function seems to loop (Syn).
 	   Wilderness exits are cleaned up in char_from_room, which is much easier and more elegant.
@@ -305,7 +307,7 @@ void gain_exp(CHAR_DATA *ch, int gain)
 		ch->exp += gain;
 
 		if(ch->exp >= ch->maxexp) {
-			if( !p_percent_trigger(ch, NULL, NULL, NULL, ch, NULL, NULL,TRIG_LEVEL) ) {
+			if( !p_percent_trigger(ch, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL,TRIG_LEVEL, NULL) ) {
 				ch->exp = 0;
 
 				ch->level += 1;
@@ -345,7 +347,7 @@ void gain_exp(CHAR_DATA *ch, int gain)
 
 			save_char_obj(ch);
 
-			p_percent_trigger(ch, NULL, NULL, NULL, ch, NULL, NULL,TRIG_LEVEL);
+			p_percent_trigger(ch, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL,TRIG_LEVEL, NULL);
 		}
 	}
 }
@@ -358,92 +360,69 @@ int hit_gain(CHAR_DATA *ch)
     long amount;
     char buf[MAX_STRING_LENGTH];
 
-    if (ch->in_room == NULL)
-    {
-        sprintf(buf, "hit_gain: %s had null in_room!",
-	    IS_NPC(ch) ? ch->short_descr : ch->name);
-	    bug(buf, 0);
-	return 0;
+    if (ch->in_room == NULL) {
+		sprintf(buf, "hit_gain: %s had null in_room!", IS_NPC(ch) ? ch->short_descr : ch->name);
+		bug(buf, 0);
+		return 0;
     }
 
-    if (IS_NPC(ch))
-    {
-	gain =  5 + ch->level;
-	if (IS_AFFECTED(ch,AFF_REGENERATION))
-	    gain *= 2;
+    if (IS_NPC(ch)) {
+		gain =  5 + ch->level;
+		if (IS_AFFECTED(ch,AFF_REGENERATION))
+		    gain *= 2;
 
-	switch(ch->position)
-	{
+		switch(ch->position) {
 	    default: 		gain /= 2;		break;
 	    case POS_SLEEPING: 	gain = 3 * gain/2;    	break;
 	    case POS_RESTING:  				break;
 	    case POS_FIGHTING:	gain /= 3;		break;
-	}
-    }
-    else
-    {
-	gain = UMAX(3,get_curr_stat(ch,STAT_CON) - 3 + ch->tot_level/2);
-	gain += class_table[get_profession(ch, CLASS_CURRENT)].hp_max - 10;
-	number = number_percent();
-	if (number < get_skill(ch,gsn_fast_healing))
-	{
-	    gain += number * gain / 100;
-	    if (ch->hit < ch->max_hit)
-		check_improve(ch,gsn_fast_healing,TRUE,8);
-	}
+		}
+    } else {
+		gain = UMAX(3,get_curr_stat(ch,STAT_CON) - 3 + ch->tot_level/2);
+		gain += class_table[get_profession(ch, CLASS_CURRENT)].hp_max - 10;
+		number = number_percent();
+		if (number < get_skill(ch,gsn_fast_healing)) {
+		    gain += number * gain / 100;
+		    if (ch->hit < ch->max_hit)
+				check_improve(ch,gsn_fast_healing,TRUE,8);
+		}
 
-	switch (ch->position)
-	{
+		switch (ch->position) {
 	    default:	   	gain = 3 * gain / 2;	break;
 	    case POS_SLEEPING: 	gain = 3 * gain;	break;
 	    case POS_RESTING:   gain = gain * 2; 	break;
 	    case POS_FIGHTING: 	gain /= 2;		break;
-	}
+		}
 
-	if (ch->pcdata->condition[COND_HUNGER] == 0)
-	    gain /= 2;
+		if (ch->pcdata->condition[COND_HUNGER] == 0)
+		    gain /= 2;
 
-	if (ch->pcdata->condition[COND_THIRST] == 0)
-	    gain /= 2;
+		if (ch->pcdata->condition[COND_THIRST] == 0)
+		    gain /= 2;
     }
 
     if (ch->in_room->heal_rate > 0)
-	gain = gain * ch->in_room->heal_rate / 100;
+		gain = gain * ch->in_room->heal_rate / 100;
 
-    if (ch->on != NULL
-    && ch->on->item_type == ITEM_FURNITURE
-    && ch->on->value[3] > 0)
-	gain = gain * ch->on->value[3] / 100;
+    if (ch->on && ch->on->item_type == ITEM_FURNITURE && ch->on->value[3] > 0)
+		gain = gain * ch->on->value[3] / 100;
 
     if (IS_AFFECTED(ch, AFF_POISON))
-	gain /= 4;
+		gain /= 4;
 
     if (IS_AFFECTED(ch, AFF_PLAGUE))
-	gain /= 8;
+		gain /= 8;
 
-    if (IS_AFFECTED(ch,AFF_REGENERATION)
-    || (ch->tot_level < 31 && !IS_REMORT(ch)))
-	gain *= 2;
+    if (IS_AFFECTED(ch,AFF_REGENERATION) || (ch->tot_level < 31 && !IS_REMORT(ch)))
+		gain *= 2;
 
     // Druids get 33% more in nature
-    if (get_profession(ch, SUBCLASS_CLERIC) == CLASS_CLERIC_DRUID
-    &&   is_in_nature(ch))
-	gain += gain/3;
+    if (get_profession(ch, SUBCLASS_CLERIC) == CLASS_CLERIC_DRUID && is_in_nature(ch))
+		gain += gain/3;
 
-   /* If you have the relic you get 25% more */
-   if (ch->church != NULL)
-   {
-	ROOM_INDEX_DATA *room;
-	room = get_room_index(ch->church->treasure_room);
-	if (room != NULL)
-	{
-	    if (is_hp_regen_relic_in_room(room))
-	    {
+	/* If you have the relic you get 25% more */
+	if (ch->church && vnum_in_treasure_room(ch->church, OBJ_VNUM_RELIC_HP_REGEN))
 		gain += gain / 4;
-		//send_to_char("25% more regen!\n\r", ch);
-	    }
-	}
-   }
 
    amount = UMIN(gain, ch->max_hit - ch->hit);
    return amount;
@@ -529,20 +508,8 @@ int mana_gain(CHAR_DATA *ch)
     &&   is_in_nature(ch))
 	gain += gain/3;
 
-   /* If you have the relic you get 25% more */
-   if (ch->church != NULL)
-   {
-	ROOM_INDEX_DATA *room;
-	room = get_room_index(ch->church->treasure_room);
-	if (room != NULL)
-	{
-	    if (is_mana_regen_relic_in_room(room))
-	    {
+	if (ch->church && vnum_in_treasure_room(ch->church, OBJ_VNUM_RELIC_MANA_REGEN))
 		gain += gain / 4;
-		//send_to_char("25% more regen!\n\r", ch);
-	    }
-	}
-   }
 
    if (IS_ELF(ch))
        gain *= 2;
@@ -708,6 +675,11 @@ void gain_condition(CHAR_DATA *ch, int iCond, int value)
     if (condition == -1)
 	return;
 
+	// When draining hunger/thirst, they have a CON% chance of not losing it.
+	if( (value < 0) && (iCond == COND_HUNGER || iCond == COND_THIRST) &&
+		(number_percent() < get_curr_stat(ch, STAT_CON)))
+		return;
+
     ch->pcdata->condition[iCond] = URANGE(0, condition + value, 48);
 
     if (ch->pcdata->condition[iCond] == 0)
@@ -754,14 +726,14 @@ void mobile_update(void)
 	// Done to allow for TOKEN random type scripts on players, but only if they have tokens!
 	if (!IS_NPC(ch)) {
 	    if(ch->tokens) {
-		if(p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RANDOM)) continue;
+		if(p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RANDOM, NULL)) continue;
 
 		// Prereckoning
-		if (pre_reckoning > 0 && reckoning_timer > 0 && p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_PRERECKONING))
+		if (pre_reckoning > 0 && reckoning_timer > 0 && p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_PRERECKONING, NULL))
 		    continue;
 
 		// Reckoning
-		if (!pre_reckoning && reckoning_timer > 0 && p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RECKONING))
+		if (!pre_reckoning && reckoning_timer > 0 && p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RECKONING, NULL))
 		    continue;
 	    }
 	    continue;
@@ -814,23 +786,23 @@ void mobile_update(void)
 	{
 	    if (--ch->progs->delay <= 0)
 	    {
-		p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_DELAY);
+		p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_DELAY, NULL);
 		continue;
 	    }
 	}
 
         // Random
-	if (p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RANDOM)) continue;
+	if (p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RANDOM, NULL)) continue;
 
 	// Prereckoning
 	if (pre_reckoning > 0 && reckoning_timer > 0) {
-	    if(p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_PRERECKONING))
+	    if(p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_PRERECKONING, NULL))
 	    continue;
 	}
 
 	// Reckoning
 	if (pre_reckoning == 0 && reckoning_timer > 0) {
-	    if (p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RECKONING))
+	    if (p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RECKONING, NULL))
 		continue;
 	}
 
@@ -888,7 +860,7 @@ void mobile_update(void)
 	    {
 		obj_from_room(obj_best);
 		obj_to_char(obj_best, ch);
-		act("$n gets $p.", ch, obj_best, NULL, TO_ROOM);
+		act("$n gets $p.", ch, NULL, NULL, obj_best, NULL, NULL, NULL, TO_ROOM);
 	    }
 	}
 
@@ -1469,7 +1441,7 @@ void make_npc_ship_board_ship(NPC_SHIP_DATA *npc_ship, SHIP_DATA *ship)
 
         mob->boarded_ship = ship;
 
-            p_percent_trigger( mob,NULL, NULL, NULL, captain, NULL, NULL, TRIG_BOARD );
+            p_percent_trigger( mob,NULL, NULL, NULL, captain, NULL, NULL, NULL, NULL, TRIG_BOARD , NULL);
 	}
     }
 
@@ -1481,7 +1453,7 @@ void make_npc_ship_board_ship(NPC_SHIP_DATA *npc_ship, SHIP_DATA *ship)
 
     sprintf(buf, "\n\r{YThrough the smoke and yelling you see %s board the vessel!{x", npc_ship->captain->short_descr);
     boat_echo(ship, buf);
-        p_percent_trigger( npc_ship->captain,NULL, NULL, NULL, captain, NULL, NULL, TRIG_BOARD );
+        p_percent_trigger( npc_ship->captain,NULL, NULL, NULL, captain, NULL, NULL, NULL, NULL, TRIG_BOARD , NULL);
 
     // All mobs on attacked ship must know they are being attacked
     for (mob = ship->crew_list; mob != NULL; mob = mob->next_in_crew)
@@ -2565,7 +2537,7 @@ void update_scuttle()
                 {
 		    if (!IS_NPC(ch))
                     {
-			act("You hear a whistle as the air around you ignites tearing your body apart!", ch, NULL, NULL, TO_CHAR);
+			act("You hear a whistle as the air around you ignites tearing your body apart!", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
                     }
 			     raw_kill( ch, FALSE, TRUE, RAWKILL_EXPLODE );
                  }
@@ -3301,7 +3273,7 @@ void char_update(void)
 			    token->name, token->pIndexData->vnum, HANDLE(ch), IS_NPC(ch) ? ch->pIndexData->vnum :
 			    0);
 		    log_string(buf);
-		    p_percent_trigger(NULL, NULL, NULL, token, NULL, NULL, NULL, TRIG_EXPIRE);
+		    p_percent_trigger(NULL, NULL, NULL, token, NULL, NULL, NULL, NULL, NULL, TRIG_EXPIRE, NULL);
 		    token_from_char(token);
 		    free_token(token);
 		}
@@ -3327,7 +3299,7 @@ void char_update(void)
 	    &&  !IS_SET(ch->act,ACT_SENTINEL)
 	    &&  number_percent() < 1)
             {
-		act("$n wanders on home.", ch, NULL, NULL, TO_ROOM);
+		act("$n wanders on home.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		if(ch->home_room == NULL) {
 		    extract_char(ch, TRUE);
 		    continue;
@@ -3359,7 +3331,7 @@ void char_update(void)
 	if (!IS_NPC(ch))
 	{
 	    if (ch->in_room->parent != -1)
-		p_percent_trigger(NULL, NULL, ch->in_room, NULL, NULL, NULL, NULL, TRIG_RANDOM);
+		p_percent_trigger(NULL, NULL, ch->in_room, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RANDOM, NULL);
 	}
 	#endif
 
@@ -3373,7 +3345,7 @@ void char_update(void)
 	&&  !IS_IMMORTAL(ch))
 	{
 	    send_to_char("You choke and gag as your lungs fill with water!\n\r", ch);
-	    act("$n thrashes about in the water gasping for air!", ch, NULL, NULL, TO_ROOM);
+	    act("$n thrashes about in the water gasping for air!", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	    damage(ch, ch, ch->hit/2, TYPE_UNDEFINED, DAM_DROWNING,FALSE);
 	}
 
@@ -3438,13 +3410,13 @@ void char_update(void)
 		if (--obj->value[2] <= 0 && ch->in_room != NULL)
 		{
 		    --ch->in_room->light;
-		    act("$p goes out.", ch, obj, NULL, TO_ROOM);
-		    act("$p flickers and goes out.", ch, obj, NULL, TO_CHAR);
+		    act("$p goes out.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
+		    act("$p flickers and goes out.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 		    log_string("it went out");
 		    extract_obj(obj);
 		}
 	 	else if (obj->value[2] <= 5 && ch->in_room != NULL)
-		    act("$p flickers.",ch,obj,NULL,TO_CHAR);
+		    act("$p flickers.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
 	    }
 
 	    // Limbo timer (doesn't apply to imms)
@@ -3468,16 +3440,24 @@ void char_update(void)
 
 		if (ch->was_in_room == NULL && ch->in_room != NULL)
 		{
+			ch->was_in_room = ch->in_room;
+
 			if(ch->in_wilds) {
 				ch->was_in_wilds = ch->in_wilds;
 				ch->was_at_wilds_x = ch->at_wilds_x;
 				ch->was_at_wilds_y = ch->at_wilds_y;
-			} else
-		    		ch->was_in_room = ch->in_room;
+			}
+			else if(ch->in_room->source)
+			{
+				ch->was_in_room_id[0] = ch->in_room->id[0];
+				ch->was_in_room_id[1] = ch->in_room->id[1];
+			}
+
+
 		    if (ch->fighting != NULL)
 			stop_fighting(ch, TRUE);
 
-		    act("{D$n disappears into the void.{x", ch, NULL, NULL, TO_ROOM);
+		    act("{D$n disappears into the void.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		    send_to_char("{DYou disappear into the void.\n\r{x", ch);
 
 		    if (ch->level > 1)
@@ -3502,27 +3482,27 @@ void char_update(void)
 		    switch(num)
 		    {
 			case 0:
-			    act("{YLightning forks down into the earth from above.{x", ch, NULL, NULL, TO_CHAR);
+			    act("{YLightning forks down into the earth from above.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 			    break;
 			case 1:
-			    act("{MThe wind howls loudly then knocks you to your knees!{x", ch, NULL, NULL, TO_CHAR);
+			    act("{MThe wind howls loudly then knocks you to your knees!{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 			    ch->position = POS_RESTING;
 			    break;
 			case 2:
-			    act("{MThe sky groans loudly as the clouds above swirl chaotically.{x", ch, NULL, NULL, TO_CHAR);
+			    act("{MThe sky groans loudly as the clouds above swirl chaotically.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 			    break;
 			case 3:
-			    act("{YLightning crashes to the ground next to you!{x", ch, NULL, NULL, TO_CHAR);
+			    act("{YLightning crashes to the ground next to you!{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 			    break;
 			case 4:
 			    if (number_percent() < 5 && !IS_SET(ch->in_room->room_flags, ROOM_SAFE) && ch->fighting == NULL)
 			    {
-				act("{YZAAAAAAAAAAAAAAP! You are struck by a bolt from the sky...{x", ch, NULL, NULL, TO_CHAR);
+				act("{YZAAAAAAAAAAAAAAP! You are struck by a bolt from the sky...{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 				damage(ch, ch, number_range(500,30000), sn, DAM_LIGHTNING, FALSE);
 			    }
 			    break;
 			case 5:
-			    act("{YThe wind screams around you, threatening to blow you over.{x", ch, NULL, NULL, TO_CHAR);
+			    act("{YThe wind screams around you, threatening to blow you over.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 			    break;
 		    }
 		}
@@ -3719,16 +3699,16 @@ void char_update(void)
 		switch(number_range(0,4))
 		{
 		    case 0:
-			act("$n snorts and shakes some of the rancid mucus from $s body.", ch, NULL, NULL, TO_ROOM);
+			act("$n snorts and shakes some of the rancid mucus from $s body.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 			break;
 		    case 1:
-			act("$n's lets out a deep chilling growl.", ch, NULL, NULL, TO_ROOM);
+			act("$n's lets out a deep chilling growl.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 			break;
 		    case 2:
-			act("$n nibbles on $s long sharp claws.", ch, NULL, NULL, TO_ROOM);
+			act("$n nibbles on $s long sharp claws.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 			break;
 		    case 3:
-			act("$n growls at you intimidatingly.", ch, NULL, NULL, TO_ROOM);
+			act("$n growls at you intimidatingly.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 			break;
 		}
 	    }
@@ -3747,8 +3727,8 @@ void char_update(void)
 
 		if (player != NULL && ch != player)
 		{
-		    act("$n snorts loudly then viciously attacks $N!", ch, NULL, player, TO_ROOM);
-		    act("You lash out at $N uncontrollably!", ch, NULL, player, TO_CHAR);
+		    act("$n snorts loudly then viciously attacks $N!", ch, player, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+		    act("You lash out at $N uncontrollably!", ch, player, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		    set_fighting(ch, player);
 		}
 	    }
@@ -3763,7 +3743,7 @@ void char_update(void)
 		|| (ch->alignment > 0 && IS_OBJ_STAT(obj, ITEM_ANTI_GOOD)))
 		{
 		    sprintf(buf, "{R$n is scorched by %s!{x", obj->short_descr);
-		    act(buf, ch, NULL, NULL, TO_ROOM);
+		    act(buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		    sprintf(buf, "{RYou are scorched by %s!{x\n\r", obj->short_descr);
 		    send_to_char(buf, ch);
 
@@ -3783,9 +3763,9 @@ void char_update(void)
 	    &&   !IS_NPC(ch)
 	    &&   is_affected(ch, gsn_fly))
 	    {
-		act("{MThe air sparks as the ocean's magical shield dispels your ability to fly.{x", ch, NULL, NULL, TO_CHAR);
-		act("You plummet into the ocean.", ch, NULL, NULL, TO_CHAR);
-		act("{MThe air around $n sparks, $n plummets into the ocean.{x", ch, NULL, NULL, TO_ROOM);
+		act("{MThe air sparks as the ocean's magical shield dispels your ability to fly.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		act("You plummet into the ocean.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		act("{MThe air around $n sparks, $n plummets into the ocean.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		affect_strip(ch, gsn_fly);
 	    }
 
@@ -3831,13 +3811,13 @@ void char_update(void)
 					ch->in_room->sector_type == SECT_WATER_SWIM ||
 					ch->in_room->sector_type == SECT_UNDERWATER ||
 					ch->in_room->sector_type == SECT_DEEP_UNDERWATER) {
-					act("$t, you plummet into the water below.", ch, reason, NULL, TO_CHAR);
-					act("$t, $n plummets into the water below.", ch, reason, NULL, TO_ROOM);
+					act("$t, you plummet into the water below.", ch, NULL, NULL, NULL, NULL, reason, NULL, TO_CHAR);
+					act("$t, $n plummets into the water below.", ch, NULL, NULL, NULL, NULL, reason, NULL, TO_ROOM);
 					damage(ch, ch, number_range(10,100), TYPE_UNDEFINED, IS_AFFECTED(ch,AFF_SWIM)?DAM_WATER:DAM_DROWNING, FALSE);
 					if(RIDDEN(ch)) damage(RIDDEN(ch), RIDDEN(ch), number_range(10,100), TYPE_UNDEFINED, IS_AFFECTED(RIDDEN(ch),AFF_SWIM)?DAM_WATER:DAM_DROWNING, FALSE);
 				} else {
-					act("$t, you plummet to the ground below.", ch, reason, NULL, TO_CHAR);
-					act("$t, $n plummets to the ground below.", ch, reason, NULL, TO_ROOM);
+					act("$t, you plummet to the ground below.", ch, NULL, NULL, NULL, NULL, reason, NULL, TO_CHAR);
+					act("$t, $n plummets to the ground below.", ch, NULL, NULL, NULL, NULL, reason, NULL, TO_ROOM);
 					damage(ch, ch, number_range(20,250), TYPE_UNDEFINED, DAM_BASH, FALSE);
 					if(RIDDEN(ch)) damage(RIDDEN(ch), RIDDEN(ch), number_range(20,250), TYPE_UNDEFINED, DAM_BASH, FALSE);
 				}
@@ -3851,14 +3831,13 @@ void char_update(void)
 	    &&   ch->move <= 50
 	    &&   !IS_AFFECTED(ch, AFF_FLYING))
 	    {
-		act("Completely exhausted, you find little energy to keep swimming.",
-				ch, NULL, NULL, TO_CHAR);
-		act("Completely exhausted, $n stops swimming from lack of energy.", ch, NULL, NULL, TO_ROOM);
+		act("Completely exhausted, you find little energy to keep swimming.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		act("Completely exhausted, $n stops swimming from lack of energy.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
 		if (!IS_AFFECTED(ch, AFF_SWIM))
 		{
-		    act("You cough and splutter as you breath in a lung full of water.", ch, NULL, NULL, TO_CHAR);
-		    act("$n coughs and splutters as $s breaths in a lung full of water.", ch, NULL, NULL, TO_ROOM);
+		    act("You cough and splutter as you breath in a lung full of water.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		    act("$n coughs and splutters as $s breaths in a lung full of water.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
 		    damage(ch, ch, 30000, TYPE_UNDEFINED, DAM_DROWNING, FALSE);
 		}
@@ -3881,7 +3860,7 @@ void char_update(void)
 		if (ch->hit <= 0)
 		{
 		    send_to_char("You feel yourself disintegrate into dust.\n\r", ch);
-		    act("$n disintegrates into dust.", ch, NULL, NULL, TO_ROOM);
+		    act("$n disintegrates into dust.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		    raw_kill(ch, FALSE, TRUE, RAWKILL_INCINERATE);
 		}
 
@@ -3942,13 +3921,8 @@ void char_update(void)
 	    gain_condition(ch, COND_FULL, -1);
 	    gain_condition(ch, COND_STONED, -1);
 
-	    // Remorts have to eat and drink less
-	    if (!is_sustained(ch)
-	    &&  (!IS_REMORT(ch) || (IS_REMORT(ch) && number_percent() < 50)))
-	    {
 		gain_condition(ch, COND_THIRST, -1);
 		gain_condition(ch, COND_HUNGER, -1);
-	    }
 	}
 
 	// Update affects on the character
@@ -4011,7 +3985,7 @@ void char_update(void)
 
 	    if (poison != NULL)
 	    {
-		act("$n shivers and suffers.", ch, NULL, NULL, TO_ROOM);
+		act("$n shivers and suffers.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		send_to_char("You shiver and suffer.\n\r", ch);
 		ch->set_death_type = DEATHTYPE_TOXIN;
 		damage(ch, ch, poison->level/10 + 1, gsn_poison, DAM_POISON, FALSE);
@@ -4033,7 +4007,7 @@ void char_update(void)
 	    save_char_obj(ch);
 
         if (ch == ch_quit)
-            do_function(ch, &do_quit, "");
+            do_function(ch, &do_quit, NULL);
     }
 }
 
@@ -4041,280 +4015,233 @@ void char_update(void)
 // Update all objs (performance-sensitive)
 void obj_update(void)
 {
-    OBJ_DATA *obj, *obj_next;
-    AFFECT_DATA *paf, *paf_next;
-    CHAR_DATA *rch, *rch_next;
-    char *message;
-    char buf[MAX_STRING_LENGTH];
-    bool nuke_obj;
-    int spill_contents;
-    log_string("Update objects...");
+	ITERATOR tit;
+	TOKEN_DATA *token;
+	OBJ_DATA *obj, *obj_next;
+	AFFECT_DATA *paf, *paf_next;
+	CHAR_DATA *rch, *rch_next;
+	char *message;
+	char buf[MAX_STRING_LENGTH];
+	bool nuke_obj;
+	int spill_contents;
+	long uid[2];
 
-    for (obj = object_list; obj != NULL; obj = obj_next)
-    {
-	obj_next = obj->next;
+	log_string("Update objects...");
 
-        // Adjust obj affects - except for people in social
-	if (obj->carried_by == NULL || !IS_SOCIAL(obj->carried_by))
-	for (paf = obj->affected; paf != NULL; paf = paf_next)
-        {
-            paf_next = paf->next;
+	for (obj = object_list; obj != NULL; obj = obj_next) {
+		obj_next = obj->next;
 
-            if (paf->duration > 0)
-            {
-                paf->duration--;
+		// Adjust obj affects - except for people in social
+		if (obj->carried_by == NULL || !IS_SOCIAL(obj->carried_by)) {
+			for (paf = obj->affected; paf != NULL; paf = paf_next) {
+				paf_next = paf->next;
 
-		// Affect strength fades with time
-		if (number_range(0,4) == 0 && paf->level > 0)
-		    paf->level--;
-            }
-            else if (paf->duration < 0)
-                ;
-            else // Affect wears off, send message if applicable
-            {
-                if (paf_next == NULL
-                ||   paf_next->type != paf->type
-                ||   paf_next->duration > 0)
-                {
-                    if (paf->type > 0 && skill_table[paf->type].msg_obj)
-                    {
-			if (obj->carried_by != NULL)
-			{
-			    rch = obj->carried_by;
-			    act(skill_table[paf->type].msg_obj, rch, obj, NULL, TO_CHAR);
+				if (paf->duration > 0) {
+					paf->duration--;
+
+					// Affect strength fades with time
+					if (number_range(0,4) == 0 && paf->level > 0)
+					paf->level--;
+
+				// Affect wears off, send message if applicable
+				} else if (!paf->duration) {
+					if (!paf_next || paf_next->type != paf->type || paf_next->duration > 0) {
+						if (paf->type > 0 && skill_table[paf->type].msg_obj) {
+							if (obj->carried_by != NULL) {
+								rch = obj->carried_by;
+								act(skill_table[paf->type].msg_obj, rch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+							} else if (obj->in_room && obj->in_room->people) {
+								rch = obj->in_room->people;
+								act(skill_table[paf->type].msg_obj, rch, NULL, NULL, obj, NULL, NULL, NULL, TO_ALL);
+							}
+						}
+					}
+					affect_remove_obj(obj, paf);
+				}
 			}
-			else
-			if (obj->in_room != NULL
-			&&  obj->in_room->people != NULL)
-			{
-			    rch = obj->in_room->people;
-			    act(skill_table[paf->type].msg_obj, rch, obj, NULL, TO_ALL);
-			}
-                    }
-                }
-
-                affect_remove_obj(obj, paf);
-
-		if (paf->type == skill_lookup("third eye"))
-		{
-		    if (obj->pIndexData->vnum == OBJ_VNUM_SKULL)
-		    {
-			if ((rch = obj->carried_by) != NULL)
-			    act("$p flares and vanishes.", rch, obj, NULL, TO_CHAR);
-			else if (obj->in_room != NULL)
-			{
-			    sprintf(buf, "%s flares and vanishes.", obj->short_descr);
-			    room_echo(obj->in_room, buf);
-			}
-
-			extract_obj(obj);
-		    }
-		    else // Golden skull
-		    {
-			if (--obj->condition <= 0)
-			{
-			    if ((rch = obj->carried_by) != NULL)
-				act("$p fumes violently and explodes!", rch, obj, NULL, TO_CHAR);
-			    else if (obj->in_room != NULL)
-			    {
-				sprintf(buf, "%s fumes violently and explodes!", obj->short_descr);
-				room_echo(obj->in_room, buf);
-			    }
-
-			    extract_obj(obj);
-			}
-			else
-			{
-			    if ((rch = obj->carried_by) != NULL)
-				act("The dark enchantment upon $p wears off.", rch, obj, NULL, TO_CHAR);
-			    else if (obj->in_room != NULL)
-			    {
-				sprintf(buf, "The dark enchantment upon %s wears off.", obj->short_descr);
-				room_echo(obj->in_room, buf);
-			    }
-			}
-		    }
 		}
-            }
-        }
 
-	// Oprog triggers - need a room to function in
-	if (obj_room(obj) != NULL)
-	{
-	    if (obj->progs->delay > 0)
-	    {
-		if (--obj->progs->delay <= 0)
-		    p_percent_trigger(NULL, obj, NULL, NULL, NULL, NULL, NULL, TRIG_DELAY);
-	    }
+		uid[0] = obj->id[0];
+		uid[1] = obj->id[1];
+		// Oprog triggers - need a room to function in
+		if (obj_room(obj) != NULL) {
+			if (obj->progs->delay > 0) {
+				if (--obj->progs->delay <= 0)
+					p_percent_trigger(NULL, obj, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_DELAY, NULL);
 
-	    if (!obj->locker)
-		p_percent_trigger(NULL, obj, NULL, NULL, NULL, NULL, NULL, TRIG_RANDOM);
-	 }
+				// Make sure the object is still there before proceeding
+				if(!obj->valid || obj->id[0] != uid[0] || obj->id[1] != uid[1])
+					continue;
+			}
 
-	// Make sure the object is still there before proceeding
-	if (obj == NULL)
-	    continue;
+			if (!obj->locker)
+				p_percent_trigger(NULL, obj, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RANDOM, NULL);
+		}
 
-#if 0
-	// Ship's position in the sea
-        if (obj->in_room != NULL
-	&&   obj->item_type == ITEM_SHIP
-	&&   obj->in_room->vnum == ROOM_VNUM_SEA_SHALLOW)
-	{
-	    boat_echo(obj->ship, "{YThe vessel begins to shake as it grinds along the bottom.{x");
-	    boat_damage(obj->ship, number_percent(), SHIP_DAMAGE_GRIND);
-	    continue;
-	}
-#endif
-
-	// Argyle's ring, healing locket items
-	if ((obj->pIndexData->vnum == OBJ_VNUM_ARGYLE_RING
-	     || obj->pIndexData->vnum == OBJ_VNUM_HEALING_LOCKET)
-	&& obj->carried_by != NULL
-	&& obj->wear_loc != WEAR_NONE)
-	    locket_update(obj);
-
-	// Make seeds grow.
-	if (obj->item_type == ITEM_SEED
-        &&   obj->in_room != NULL
-        &&   IS_OBJ_STAT(obj, ITEM_PLANTED))
-	{
-	    obj->value[0]--;
-	    if (obj->value[0] <= 0)
-	    {
-		if (obj->value[1] == 0)
-		    bug("Seed has 0 vnum.", obj->pIndexData->vnum);
-		else
-		{
-		    OBJ_DATA *new_obj;
-		    if (get_obj_index(obj->value[1]) == NULL)
-		    {
-			bug("Seed is buggered. Value 1 doesn't match anything:", obj->pIndexData->vnum);
+		// Make sure the object is still there before proceeding
+		if(!obj->valid || obj->id[0] != uid[0] || obj->id[1] != uid[1])
 			continue;
-		    }
 
-		    new_obj = create_object(get_obj_index(obj->value[1]), obj->level, TRUE);
-		    obj_to_room(new_obj, obj->in_room);
-		    extract_obj(obj);
-		}
-	    }
-	}
-
-	// Ice storms - work in PK rooms
-	if (obj->in_room != NULL
-	&&  obj->item_type == ITEM_ICE_STORM
-        &&  (IS_SET(obj->in_room->room_flags, ROOM_PK)
-             || IS_SET(obj->in_room->room_flags, ROOM_CPK)
-             || IS_SET(obj->in_room->room_flags, ROOM_ARENA)))
-	{
-	    for (rch = obj->in_room->people; rch != NULL; rch = rch_next)
-	    {
-		rch_next = rch->next_in_room;
-
-		switch (check_immune(rch, DAM_COLD))
-		{
-		    case IS_IMMUNE:
-			break;
-
-		    case IS_RESISTANT:
-			act("You shiver a bit, but are able to withstand the cold.",
-			    rch, NULL, NULL, TO_CHAR);
-			act("$n shivers a bit, but is able to withstand the cold.",
-			    rch, NULL, NULL, TO_ROOM);
-			break;
-
-		    default:
-			act("You shiver from the intense ice storm.",
-			    rch, NULL, NULL, TO_CHAR);
-			act("$n shivers from the intense ice storm.",
-			    rch, NULL, NULL, TO_ROOM);
-			break;
-		}
-	    }
-
-	    cold_effect(obj->in_room, 1, dice(4,8), TARGET_ROOM);
-	}
-
-	// Handle timers for decaying objs, etc
-	if ((obj->timer <= 0 || --obj->timer > 0))
-	    continue;
-
-	nuke_obj = TRUE;
-	spill_contents = 100;
-
-	switch (obj->item_type)
-	{
-	    default:              	message = "$p crumbles into dust."; break;
-	    case ITEM_FOUNTAIN:   	message = "$p dries up."; break;
-	    case ITEM_CORPSE_NPC:
-	    case ITEM_CORPSE_PC:
-		message = corpse_info_table[CORPSE_TYPE(obj)].decay_message;
-		if (obj->carried_by) act(message, obj->carried_by, obj, NULL, TO_CHAR);
-		else if (obj->in_room && obj->in_room->people)
-			act(message, obj->in_room->people, obj, NULL, TO_ALL);
-		message = NULL;
-
-		if(corpse_info_table[CORPSE_TYPE(obj)].decay_type != RAWKILL_NOCORPSE) {
-			spill_contents = corpse_info_table[CORPSE_TYPE(obj)].decay_spill_chance;
-			set_corpse_data(obj,corpse_info_table[CORPSE_TYPE(obj)].decay_type);
-			spill_contents += corpse_info_table[CORPSE_TYPE(obj)].decay_spill_chance;
-			spill_contents /= 2;	// Split the difference
-			nuke_obj = FALSE;
-		}
-	    	break;
-	    case ITEM_ROOM_FLAME:      	message = "{DThe flames die down and disappear.{x"; break;
-	    case ITEM_ROOM_DARKNESS:   	message = "{YThe light returns.{x"; break;
-	    case ITEM_ROOM_ROOMSHIELD: 	message = "{YThe energy field shielding the room fades away.{X"; break;
-	    case ITEM_STINKING_CLOUD:  	message = "{YThe poisonous haze disappears.{x"; break;
-	    case ITEM_WITHERING_CLOUD: 	message = "{YThe poisonous haze disappears.{x"; break;
-	    case ITEM_FOOD:      	message = "$p decomposes."; break;
-	    case ITEM_ICE_STORM:  	message = "{W$p dies down and melts.{x"; break;
-	    case ITEM_POTION:     	message = "$p has evaporated from disuse.";break;
-	    case ITEM_TATTOO:     	message = "$p fades away as the ink dries.";break;
-	    case ITEM_PORTAL:     	message = "$p fades out of existence."; break;
-	    case ITEM_CONTAINER:
-                if (CAN_WEAR(obj,ITEM_WEAR_FLOAT))
-		    if (obj->contains)
-		        message = "$p flickers and vanishes, spilling its contents on the floor.";
-		    else
-		        message = "$p flickers and vanishes.";
-		    else
-		        message = "$p crumbles into dust.";
-		    break;
-	}
-
-	if(message) {
-		if (obj->carried_by) act(message, obj->carried_by, obj, NULL, TO_CHAR);
-		else if (obj->in_room && obj->in_room->people)
-			act(message, obj->in_room->people, obj, NULL, TO_ALL);
-	}
-
-	// Send the contents of decaying corpses somewhere, depending on where the corpse is.
-	if (spill_contents > 0 && (obj->item_type == ITEM_CORPSE_PC || obj->item_type == ITEM_CORPSE_NPC) && obj->contains) {
-	    OBJ_DATA *t_obj, *next_obj;
-
-	    for (t_obj = obj->contains; t_obj != NULL; t_obj = next_obj) {
-		next_obj = t_obj->next_content;
-
-		if(spill_contents >= 100 || number_percent() < spill_contents) {
-			obj_from_obj(t_obj);
-
-			if (obj->in_obj) // in another object
-				obj_to_obj(t_obj,obj->in_obj);
-			else if (obj->carried_by)
-				obj_to_char(t_obj,obj->carried_by);
-			else if (obj->in_room != NULL) // to the room
-				obj_to_room(t_obj,obj->in_room);
-			else { // junk it
-				bug("obj_update: decaying corpse room was null!@!# extracted", 0);
-				extract_obj(t_obj);
+		// Update tokens on object. Remove the one for which the timer has run out.
+		iterator_start(&tit, obj->ltokens);
+		while((token = (TOKEN_DATA *)iterator_nextdata(&tit))) {
+			if (IS_SET(token->flags, TOKEN_REVERSETIMER)) {
+				++token->timer;
+			} else if (token->timer > 0) {
+				--token->timer;
+				if (token->timer <= 0) {
+					sprintf(buf, "obj update: token %s(%ld) obj %s(%ld) was extracted because of timer",
+							token->name, token->pIndexData->vnum, obj->short_descr, obj->pIndexData->vnum);
+					log_string(buf);
+					p_percent_trigger(NULL, NULL, NULL, token, NULL, NULL, NULL, NULL, NULL, TRIG_EXPIRE, NULL);
+					token_from_obj(token);
+					free_token(token);
+				}
 			}
 		}
-	    }
-	}
+		iterator_stop(&tit);
 
-	if (nuke_obj && obj) extract_obj(obj);
-    }
+		// Make seeds grow.
+		if (obj->item_type == ITEM_SEED && obj->in_room != NULL && IS_OBJ_STAT(obj, ITEM_PLANTED)) {
+			obj->value[0]--;
+			if (obj->value[0] <= 0) {
+
+				// Force this object to prevent its own destruction as it will be destroyed by default
+				SET_BIT(obj->progs->entity_flags,PROG_NODESTRUCT);
+
+				if( !p_percent_trigger(NULL, obj, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_GROW, NULL) )
+				{
+					if (obj->value[1] == 0)
+						bug("Seed has 0 vnum.", obj->pIndexData->vnum);
+					else {
+						OBJ_DATA *new_obj;
+						if (get_obj_index(obj->value[1]) == NULL) {
+							bug("Seed is buggered. Value 1 doesn't match anything:", obj->pIndexData->vnum);
+							continue;
+						}
+
+						new_obj = create_object(get_obj_index(obj->value[1]), obj->level, TRUE);
+						obj_to_room(new_obj, obj->in_room);
+
+						p_percent_trigger(NULL, new_obj, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_REPOP, NULL);
+					}
+				}
+				extract_obj(obj);
+			}
+		}
+
+		// Ice storms - work in PK rooms
+		if (obj->in_room != NULL && obj->item_type == ITEM_ICE_STORM && is_room_pk(obj->in_room, TRUE)) {
+			for (rch = obj->in_room->people; rch != NULL; rch = rch_next) {
+				rch_next = rch->next_in_room;
+
+				switch (check_immune(rch, DAM_COLD)) {
+				case IS_IMMUNE:
+					break;
+
+				case IS_RESISTANT:
+					act("You shiver a bit, but are able to withstand the cold.", rch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+					act("$n shivers a bit, but is able to withstand the cold.",  rch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+					break;
+
+				default:
+					act("You shiver from the intense ice storm.", rch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+					act("$n shivers from the intense ice storm.", rch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+					break;
+				}
+			}
+
+			cold_effect(obj->in_room, 1, dice(4,8), TARGET_ROOM);
+		}
+
+		// Handle timers for decaying objs, etc
+		if ((obj->timer <= 0 || --obj->timer > 0))
+			continue;
+
+		nuke_obj = TRUE;
+		spill_contents = 100;
+
+		switch (obj->item_type)
+		{
+		// Simple messages
+		default:					message = "$p crumbles into dust."; break;
+		case ITEM_FOUNTAIN:			message = "$p dries up."; break;
+		case ITEM_ROOM_FLAME:		message = "{DThe flames die down and disappear.{x"; break;
+		case ITEM_ROOM_DARKNESS:	message = "{YThe light returns.{x"; break;
+		case ITEM_ROOM_ROOMSHIELD:	message = "{YThe energy field shielding the room fades away.{X"; break;
+		case ITEM_STINKING_CLOUD:	message = "{YThe poisonous haze disappears.{x"; break;
+		case ITEM_WITHERING_CLOUD:	message = "{YThe poisonous haze disappears.{x"; break;
+		case ITEM_FOOD:				message = "$p decomposes."; break;
+		case ITEM_ICE_STORM:		message = "{W$p dies down and melts.{x"; break;
+		case ITEM_POTION:			message = "$p has evaporated from disuse.";break;
+		case ITEM_TATTOO:			message = "$p fades away as the ink dries.";break;
+		case ITEM_PORTAL:			message = "$p fades out of existence."; break;
+
+		// Corpse decaying
+		case ITEM_CORPSE_NPC:
+		case ITEM_CORPSE_PC:
+			message = corpse_info_table[CORPSE_TYPE(obj)].decay_message;
+
+			if (obj->carried_by)
+				act(message, obj->carried_by, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+			else if (obj->in_room && obj->in_room->people)
+				act(message, obj->in_room->people, NULL, NULL, obj, NULL, NULL, NULL, TO_ALL);
+			message = NULL;
+
+			if(corpse_info_table[CORPSE_TYPE(obj)].decay_type != RAWKILL_NOCORPSE) {
+				spill_contents = corpse_info_table[CORPSE_TYPE(obj)].decay_spill_chance;
+				set_corpse_data(obj,corpse_info_table[CORPSE_TYPE(obj)].decay_type);
+				spill_contents += corpse_info_table[CORPSE_TYPE(obj)].decay_spill_chance;
+				spill_contents /= 2;	// Split the difference
+				nuke_obj = FALSE;
+			}
+			break;
+
+		case ITEM_CONTAINER:
+			if (CAN_WEAR(obj,ITEM_WEAR_FLOAT)) {
+				if (obj->contains)
+					message = "$p flickers and vanishes, spilling its contents on the floor.";
+				else
+					message = "$p flickers and vanishes.";
+			} else
+				message = "$p crumbles into dust.";
+			break;
+		}
+
+		// Do we have any message to process?
+		if(!IS_NULLSTR(message)) {
+			if (obj->carried_by)
+				act(message, obj->carried_by, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+			else if (obj->in_room && obj->in_room->people)
+				act(message, obj->in_room->people, NULL, NULL, obj, NULL, NULL, NULL, TO_ALL);
+		}
+
+		// Send the contents of decaying corpses somewhere, depending on where the corpse is.
+		if (spill_contents > 0 && (obj->item_type == ITEM_CORPSE_PC || obj->item_type == ITEM_CORPSE_NPC) && obj->contains) {
+			OBJ_DATA *t_obj, *next_obj;
+
+			for (t_obj = obj->contains; t_obj != NULL; t_obj = next_obj) {
+				next_obj = t_obj->next_content;
+
+				if(spill_contents >= 100 || number_percent() < spill_contents) {
+					obj_from_obj(t_obj);
+
+					if (obj->in_obj) // in another object
+						obj_to_obj(t_obj,obj->in_obj);
+					else if (obj->carried_by)
+						obj_to_char(t_obj,obj->carried_by);
+					else if (obj->in_room != NULL) // to the room
+						obj_to_room(t_obj,obj->in_room);
+					else { // junk it
+						bug("obj_update: decaying corpse room was null!@!# extracted", 0);
+						extract_obj(t_obj);
+					}
+				}
+			}
+		}
+
+		if (nuke_obj && obj) extract_obj(obj);
+	}
 }
 
 
@@ -4364,7 +4291,7 @@ void aggr_update(void)
 		if (wch->bashed <= 0)
 		{
 		    send_to_char("You scramble to your feet!\n\r", wch);
-		    act("$n scrambles to $s feet.", wch, NULL, NULL, TO_ROOM);
+		    act("$n scrambles to $s feet.", wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
 		    wch->on = NULL;
 
@@ -4450,7 +4377,7 @@ void aggr_update(void)
 							send_to_char("{xYou cough uncontrollably from the toxic fumes.\n\r", wch);
 						else
 							send_to_char("{xYou inhale the toxic fumes, coughing uncontrollably.\n\r", wch);
-						act("{x$n coughs uncontrollably from toxic fumes.", wch, NULL, NULL, TO_ROOM);
+						act("{x$n coughs uncontrollably from toxic fumes.", wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 					}
 				} else {
 					// Change all affects to non-permanent
@@ -4462,7 +4389,7 @@ void aggr_update(void)
 					if(number_percent() < 4) {
 						cough = TRUE;
 						send_to_char("{xYou cough uncontrollably.\n\r", wch);
-						act("{x$n coughs uncontrollably.", wch, NULL, NULL, TO_ROOM);
+						act("{x$n coughs uncontrollably.", wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 					}
 				}
 
@@ -4514,7 +4441,7 @@ void aggr_update(void)
 	    {
 		send_to_char("You feel the power of movement coming back to your muscles.\n\r", wch);
 		act("$n feels the power of movement coming back to $s muscles.",
-			wch, NULL, NULL, TO_ROOM);
+			wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		wch->paralyzed = 0;
 	    }
 	}
@@ -4536,9 +4463,9 @@ void aggr_update(void)
 		    if (number_percent() <= 2)
 		    {
 			act("{RYou are scorched by flames!{x",
-				wch, NULL, NULL, TO_CHAR);
+				wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 			act("{R$n is scorched by flames!{x",
-				wch, NULL, NULL, TO_ROOM);
+				wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 			damage(wch, wch, number_range(50, 500),
 				TYPE_UNDEFINED, DAM_FIRE, FALSE);
 		    }
@@ -4549,9 +4476,9 @@ void aggr_update(void)
 			if (!IS_SET(wch->affected_by, AFF_BLIND)) {
 
 			    act("{DYou are blinded by smoke!{x",
-				    wch, NULL, NULL, TO_CHAR);
+				    wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 			    act("{D$n is blinded by smoke!{x",
-				    wch, NULL, NULL, TO_ROOM);
+				    wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
 			    af.where     = TO_AFFECTS;
 			    af.group     = AFFGROUP_PHYSICAL;
@@ -4569,9 +4496,9 @@ void aggr_update(void)
 		    if (number_percent() <= 2)
 		    {
 			act("{RYou are scorched by flames!{x",
-				wch, NULL, NULL, TO_CHAR);
+				wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 			act("{R$n is scorched by flames!{x",
-				wch, NULL, NULL, TO_ROOM);
+				wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 			fire_effect((void *) wch,obj->level,	number_range(0, wch->tot_level * 10),TARGET_CHAR);
 		    }
 		}
@@ -4581,14 +4508,14 @@ void aggr_update(void)
 		{
 		    if (number_percent() <= 2)
 		    {
-			act("You splutter and gag!", wch, NULL, NULL, TO_CHAR);
-			act("$n splutters and gags!", wch, NULL, NULL, TO_ROOM);
+			act("You splutter and gag!", wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+			act("$n splutters and gags!", wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		    }
 		    else
 		    if (number_percent() <= 2)
 		    {
-			act("You cough and splutter!", wch, NULL, NULL, TO_CHAR);
-			act("$n coughs and splutters violently!", wch, NULL, NULL, TO_ROOM);
+			act("You cough and splutter!", wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+			act("$n coughs and splutters violently!", wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		    }
 		    if (number_percent() <= 2 && wch->fighting == NULL
 		    && IS_AWAKE(wch) && wch->position == POS_STANDING
@@ -4596,18 +4523,18 @@ void aggr_update(void)
 		    &&  !(!IS_NPC(wch) && IS_IMMORTAL(wch)))
 		    {
 			act("$n stumbles about choking and gagging!",
-				wch, NULL, NULL, TO_ROOM);
+				wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 			act("You stumble about choking and gagging!",
-				wch, NULL, NULL, TO_CHAR);
+				wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 			do_function(wch, &do_flee, "anyway");
 		    }
 		    else
 		    if (number_percent() <= 2)
 		    {
 			act("$n is blinded by the toxic haze!",
-				wch, NULL, NULL, TO_ROOM);
+				wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 			act("You are blinded by the toxic haze around you!",
-				wch, NULL, NULL, TO_CHAR);
+				wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 			af.where     = TO_AFFECTS;
 			af.type      = gsn_blindness;
 			af.level     = obj->level;
@@ -4623,9 +4550,9 @@ void aggr_update(void)
 		    && check_immune(wch, DAM_POISON) != IS_IMMUNE)
 		    {
 			act("$n is poisoned by the toxic haze!",
-				wch, NULL, NULL, TO_ROOM);
+				wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 			act("You are poisoned by the toxic haze around you!",
-				wch, NULL, NULL, TO_CHAR);
+				wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 			af.where     = TO_AFFECTS;
 			af.type      = gsn_poison;
 			af.level     = obj->level * 3/4;
@@ -4666,8 +4593,8 @@ void aggr_update(void)
 			    &&  victim->position == POS_STANDING
 			    &&  number_percent() < 20)
 			    {
-				act("{GYou choke on the acrid fumes from $p!{x", victim, obj, NULL, TO_CHAR);
-				act("{G$n chokes on the acrid fumes from $p!{x", victim, obj, NULL, TO_ROOM);
+				act("{GYou choke on the acrid fumes from $p!{x", victim, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+				act("{G$n chokes on the acrid fumes from $p!{x", victim, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 				do_flee(victim, "anyway");
 			    }
 			}
@@ -4959,13 +4886,13 @@ void update_hunting(void)
 	    switch(result)
 	    {
 		case 0:
-		    act("{DYou get the feeling something is following you...{x", mob->hunting, NULL, NULL, TO_CHAR);
+		    act("{DYou get the feeling something is following you...{x", mob->hunting, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	   	    break;
 		case 1:
-		    act("{DYou hear footsteps behind you...{x", mob->hunting, NULL, NULL, TO_CHAR);
+		    act("{DYou hear footsteps behind you...{x", mob->hunting, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	   	    break;
 		case 2:
-		    act("{DYou hear noises as if something is looking for you...{x", mob->hunting, NULL, NULL, TO_CHAR);
+		    act("{DYou hear noises as if something is looking for you...{x", mob->hunting, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	   	    break;
 	    }
         }
@@ -5015,7 +4942,7 @@ void update_hunting_pc(CHAR_DATA *ch)
     if (number_percent() > chance && number_percent() < 25)
     {
 	send_to_char("You lost the trail.\n\r", ch);
-	act("$n has lost the trail.", ch, NULL, NULL, TO_ROOM);
+	act("$n has lost the trail.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	ch->hunting = NULL;
 	return;
     }
@@ -5035,30 +4962,30 @@ void update_hunting_pc(CHAR_DATA *ch)
 	    if (number_percent() < 20)
 	    {
 		send_to_char("You stop and sniff the air.\n\r", ch);
-		act("$n stops and sniffs the air.", ch, NULL, NULL, TO_ROOM);
+		act("$n stops and sniffs the air.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	    }
 	    else
 	    if (number_percent() < 40)
 	    {
 		send_to_char("You analyze some tracks.\n\r", ch);
-		act("$n analyzes some tracks.", ch, NULL, NULL, TO_ROOM);
+		act("$n analyzes some tracks.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	    }
 	    else
 	    if (number_percent() < 60)
 	    {
 		send_to_char("You look around warily.\n\r", ch);
-		act("$n looks around warily.", ch, NULL, NULL, TO_ROOM);
+		act("$n looks around warily.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	    }
 	    else
 	    if (number_percent() < 80)
 	    {
-		act("You scan the horizons for $N.", ch, NULL, victim, TO_CHAR);
-		act("$n scans the horizons for $N.", ch, NULL, victim, TO_ROOM);
+		act("You scan the horizons for $N.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		act("$n scans the horizons for $N.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	    }
 	    else
 	    {
-		act("You move towards $N.", ch, NULL, victim, TO_CHAR);
-		act("$n moves towards $N.", ch, NULL, victim, TO_ROOM);
+		act("You move towards $N.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		act("$n moves towards $N.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	    }
 	}
 
@@ -5150,6 +5077,7 @@ void relic_update(void)
 // Check if a relic needs to vanish from a treasure room.
 void check_relic_vanish(OBJ_DATA *relic)
 {
+	ITERATOR cit, rit, oit;
     ROOM_INDEX_DATA *to_room;
     CHURCH_DATA *church;
     ROOM_INDEX_DATA *treasure_room;
@@ -5158,42 +5086,42 @@ void check_relic_vanish(OBJ_DATA *relic)
     int chance1 = 5;
     int chance2 = 3;
 
-    if (number_percent() < chance1 && number_percent() < chance2)
-    {
-	to_room = get_random_room(NULL, 0);
+    if (number_percent() < chance1 && number_percent() < chance2) {
+		to_room = get_random_room(NULL, 0);
 
-	sprintf(buf, "{M%s vanishes in a swirl of purple mist.{x\n\r", relic->short_descr);
-	buf[2] = UPPER(buf[2]);
-	room_echo(relic->in_room, buf);
+		sprintf(buf, "{M%s vanishes in a swirl of purple mist.{x\n\r", relic->short_descr);
+		buf[2] = UPPER(buf[2]);
+		room_echo(relic->in_room, buf);
 
-	// Inform church the relic has vanished
-	for (church = church_list; church != NULL; church = church->next)
-	{
-	    if ((treasure_room = get_room_index(church->treasure_room)) != NULL)
-	    {
-		for (obj = treasure_room->contents; obj != NULL; obj = obj->next_content)
-		{
-		    if (obj == relic)
-		    {
-			sprintf(buf,
-			"{Y[You feel an ancient power depart your church as %s vanishes from your treasure room.]{x\n\r",
-			    obj->short_descr);
-
-			buf[3] = UPPER(buf[3]);
-			church_echo(church, buf);
-		    }
+		// Inform church the relic has vanished
+		iterator_start(&cit, list_churches);
+		while((church = (CHURCH_DATA *)iterator_nextdata(&cit))) {
+			iterator_start(&rit, church->treasure_rooms);
+			while(( treasure_room = (ROOM_INDEX_DATA *)iterator_nextdata(&rit))) {
+				iterator_start(&oit, treasure_room->lcontents);
+				while(( obj = (OBJ_DATA *)iterator_nextdata(&oit))) {
+					if (obj == relic) {
+						sprintf(buf,
+							"{Y[You feel an ancient power depart your church as %s vanishes from your treasure room.]{x\n\r",
+								obj->short_descr);
+						church_echo(church, buf);
+						break;
+					}
+				}
+				iterator_stop(&oit);
+			}
+			iterator_stop(&rit);
 		}
-	    }
-	}
+		iterator_stop(&cit);
 
-	obj_from_room(relic);
-	obj_to_room(relic, to_room);
+		obj_from_room(relic);
+		obj_to_room(relic, to_room);
 
-	sprintf(buf, "relic_update: %s has vanished to %s (%ld)",
-	    relic->short_descr,
-	    to_room->name,
-	    to_room->vnum);
-	log_string(buf);
+		sprintf(buf, "relic_update: %s has vanished to %s (%ld)",
+			relic->short_descr,
+			to_room->name,
+			to_room->vnum);
+		log_string(buf);
     }
 }
 
@@ -5211,26 +5139,26 @@ void bitten_update(CHAR_DATA *ch)
 	    send_to_char("{RYou feel slightly uncomfortable.{x\n\r",
 		    ch);
 	    act("{R$n begins to look uncomfortable.{x", ch,
-		    NULL, NULL, TO_ROOM);
+		    NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	}
 	else if (percent > 80)
 	{
 	    send_to_char("{RYou feel feverish.{x\n\r", ch);
 	    act("{R$n sneezes, looking feverish.{x", ch,
-		    NULL, NULL, TO_ROOM);
+		    NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	}
 	else if (percent > 70)
 	{
 	    sprintf(buf, "{RYou pale as the toxins race through your veins.{x\n\r");
 	    act("{R$n pales as venomous toxins race through $s body.{x", ch,
-		    NULL, NULL, TO_ROOM);
+		    NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	    send_to_char(buf , ch);
 	}
 	else if (percent > 60)
 	{
 	    send_to_char("{RDizzy, you swoon back and forth.{x\n\r", ch);
 	    act("{R$n swoons back and forth, dizzy.{x", ch,
-		    NULL, NULL, TO_ROOM);
+		    NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	}
 	else if (percent > 50)
 	{
@@ -5239,7 +5167,7 @@ void bitten_update(CHAR_DATA *ch)
 	else if (percent > 40)
 	{
 	    send_to_char("{RYou twitch nervously as you feel an unfamiliar venom in your body.{x\n\r", ch);
-	    act("{R$n twitches nervously.{x", ch, NULL, NULL, TO_ROOM);
+	    act("{R$n twitches nervously.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	}
 	else if (percent > 30)
 	{
@@ -5252,7 +5180,7 @@ void bitten_update(CHAR_DATA *ch)
 	else if (percent > 10)
 	{
 	    send_to_char("{RYour eyes roll back in your head.{x\n\r", ch);
-	    act("{R$n's eyes roll back in $s head.", ch, NULL, NULL, TO_ROOM);
+	    act("{R$n's eyes roll back in $s head.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	}
     }
 
@@ -5286,6 +5214,7 @@ void toxin_update(CHAR_DATA *ch)
 // Update the healing locket/ring of argyle evenhand.
 void locket_update(OBJ_DATA *obj)
 {
+#if 0
     CHAR_DATA *ch;
     int sn;
 
@@ -5298,9 +5227,9 @@ void locket_update(OBJ_DATA *obj)
 	sn = skill_lookup("cure poison");
 
 	act("$p shimmers softly.",
-		ch, obj, NULL, TO_CHAR);
+		ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 	act("$n's $p shimmers softly.",
-		ch, obj, NULL, TO_ROOM);
+		ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 
 	obj_cast_spell(sn , ch->level * 2, ch,
 		ch, obj);
@@ -5515,6 +5444,7 @@ void locket_update(OBJ_DATA *obj)
 		}
 	}
     }
+#endif
 }
 
 
@@ -5557,19 +5487,14 @@ void scare_update(CHAR_DATA *ch)
 	    {
 		if (can_see(victim, ch))
 		{
-		    act("You balk with fear at the sight of $n!",
-		    	ch, NULL, victim, TO_VICT);
-		    act("$N balks with fear at the sight of you!",
-			    ch, NULL, victim, TO_CHAR);
-		    act("$N balks with fear at the sight of $n!",
-			    ch, NULL, victim, TO_NOTVICT);
+		    act("You balk with fear at the sight of $n!",  ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
+		    act("$N balks with fear at the sight of you!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		    act("$N balks with fear at the sight of $n!",  ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
 		}
 		else
 		{
-		    act("You balk with terror at a terrifying ominous presence in the room!",
-			    ch, NULL, victim, TO_VICT);
-		    act("$n balks with terror at a terrifying ominous presence in the room!",
-			    victim, NULL, NULL, TO_ROOM);
+		    act("You balk with terror at a terrifying ominous presence in the room!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
+		    act("$n balks with terror at a terrifying ominous presence in the room!", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		}
 
 		do_flee(victim, "anyway");

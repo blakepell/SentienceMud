@@ -32,7 +32,7 @@ void do_war(CHAR_DATA *ch, char *argument)
 	    REMOVE_BIT( ch->comm, COMM_NOAUTOWAR );
 	    send_to_char("WAR channel on.\n\r", ch );
 	}
-	
+
 	return;
     }
 
@@ -79,14 +79,14 @@ void do_war(CHAR_DATA *ch, char *argument)
 	/* Check how many players are in each team */
 	char_to_team( ch );
 
-	act( "{D$n disappears in a puff of smoke.{x", ch, NULL, NULL, TO_ROOM );
+	act( "{D$n disappears in a puff of smoke.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM );
 
 	char_from_room( ch );
 	char_to_room( ch, get_room_index( ROOM_VNUM_AUTO_WAR ) );
 
 	send_to_char( "{YYou have joined the battle!{x\n\r", ch );
-	act( "{Y$n has joined the battle!{x", ch, NULL, NULL, TO_ROOM );
-	act( "{D$n appears in a puff of smoke.{x", ch, NULL, NULL, TO_ROOM );
+	act( "{Y$n has joined the battle!{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM );
+	act( "{D$n appears in a puff of smoke.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM );
 
 	do_function(ch, &do_look, "auto");
 	return;
@@ -109,14 +109,14 @@ void do_war(CHAR_DATA *ch, char *argument)
 		    "\n\rThe minimum number of players required is {G%d{x.\n\r"
 		    "\n\rThere is still approximately {Y%d{x minutes remaining before the start.\n\r"
 		    "\n\rThe following players have entered the war:\n\r",
-		    auto_war_table[ auto_war->war_type ].name, 
-		    auto_war->min, 
-		    auto_war->max, 
+		    auto_war_table[ auto_war->war_type ].name,
+		    auto_war->min,
+		    auto_war->max,
 		    auto_war->min_players,
 		    auto_war_timer );
 	    send_to_char( buf, ch );
 
-	    if ( auto_war->team_players == NULL ) 
+	    if ( auto_war->team_players == NULL )
 	    {
 		send_to_char( "No players have currently entered.\n\r", ch );
 		return;
@@ -125,8 +125,8 @@ void do_war(CHAR_DATA *ch, char *argument)
 	    for ( wch = auto_war->team_players; wch != NULL; wch = wch->next_in_auto_war )
 	    {
 		sprintf( buf, "{B[%s%-3ld%%{B] {B[{G%-3d{B:{G%3d{B] {B[ {R%-10s {B] {G%-36s{x\n\r",
-			wch->hit < wch->max_hit * 2 / 3 ?  
-			( wch->hit < wch->max_hit / 2  ? 
+			wch->hit < wch->max_hit * 2 / 3 ?
+			( wch->hit < wch->max_hit / 2  ?
 			  (wch->hit < wch->max_hit / 3 ? "{r" : "{R" ) : "{Y" )
 			: "{G",
 			((100 * wch->hit) / wch->max_hit),
@@ -145,13 +145,13 @@ void do_war(CHAR_DATA *ch, char *argument)
 		    "\n\rThis is a {Y%s{x war for levels {Y%d{x - {Y%d{x.\n\r"
 		    "\n\rThe war has started. There is {Y%d{x minutes remaining till the end.\n\r"
 		    "\n\rThe following players have entered the war:\n\r",
-		    auto_war_table[ auto_war->war_type ].name, 
-		    auto_war->min, 
-		    auto_war->max, 
+		    auto_war_table[ auto_war->war_type ].name,
+		    auto_war->min,
+		    auto_war->max,
 		    auto_war_battle_timer );
 	    send_to_char( buf, ch );
 
-	    if ( auto_war->team_players == NULL ) 
+	    if ( auto_war->team_players == NULL )
 	    {
 		send_to_char( "No players are currently in the war.\n\r", ch );
 		return;
@@ -160,8 +160,8 @@ void do_war(CHAR_DATA *ch, char *argument)
 	    for ( wch = auto_war->team_players; wch != NULL; wch = wch->next_in_auto_war )
 	    {
 		sprintf( buf, "{B[%s%-3d%%{B] {B[{G%-3d{B:{G%3d{B] {B[ {R%-10s {B] {G%-36s{x\n\r",
-			wch->hit < wch->max_hit * 2 / 3 ?  
-			( wch->hit < wch->max_hit / 2  ? 
+			wch->hit < wch->max_hit * 2 / 3 ?
+			( wch->hit < wch->max_hit / 2  ?
 			  (wch->hit < wch->max_hit / 3 ? "{r" : "{R" ) : "{Y" )
 			: "{G",
 			(int)(wch->hit / wch->max_hit * 100),
@@ -196,8 +196,8 @@ void scatter_players()
 	    pRoom = get_random_room_area(ch, pArea);
 	while (pRoom == NULL || pRoom->vnum == ROOM_VNUM_AUTO_WAR);
 
-	act( "{D$n disappears in a puff of smoke.{x", ch, NULL, NULL, TO_ROOM );
-	act( "{YYou have been transferred to the battlefield!{x", ch, NULL, NULL, TO_CHAR );
+	act( "{D$n disappears in a puff of smoke.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM );
+	act( "{YYou have been transferred to the battlefield!{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR );
 
 	char_from_room(ch);
 	char_to_room(ch, pRoom);
@@ -211,7 +211,7 @@ void auto_war_echo( char *message)
 {
     CHAR_DATA *ch = NULL;
 
-    if ( auto_war == NULL ) 
+    if ( auto_war == NULL )
 	return;
 
     for (ch = auto_war->team_players; ch != NULL; ch = ch->next_in_auto_war)
@@ -236,7 +236,7 @@ void start_war()
 	free_auto_war( auto_war );
 	return;
     }
-    
+
     switch (auto_war->war_type)
     {
 	case AUTO_WAR_FREE_FOR_ALL:
@@ -254,7 +254,7 @@ void start_war()
 
 	    break;
 
-	case AUTO_WAR_GENOCIDE:    
+	case AUTO_WAR_GENOCIDE:
 	    race = auto_war->team_players->race;
 	    for ( wch = auto_war->team_players; wch != NULL; wch = wch->next_in_auto_war )
 	    {
@@ -271,7 +271,7 @@ void start_war()
 	    }
 
 	    break;
-	
+
 	case AUTO_WAR_JIHAD:
 	    evil = 0;
 	    good = 0;
@@ -283,7 +283,7 @@ void start_war()
 		if ( wch->alignment > 0 || IS_CHURCH_GOOD(wch))
 		    good++;
 	    }
-	
+
 	    if (evil == 0 || good == 0)
 	    {
 		sprintf( buf, "{RDue to a lack of players, the war has been cancelled.{x\n\r" );
@@ -376,8 +376,8 @@ void auto_war_time_finish()
 	    {
 		quest_points = 50;
 		sprintf( buf, "{WYou have been awarded {Y%d{W quest points!{x", quest_points );
-		act( buf, wch, NULL, NULL, TO_CHAR );
-		wch->questpoints += quest_points; 
+		act( buf, wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR );
+		wch->questpoints += quest_points;
 		wch->wars_won++;
 	    }
 	}
@@ -424,8 +424,8 @@ void auto_war_time_finish()
 		{
 		    quest_points = 50;
 		    sprintf( buf, "{WYou have been awarded {Y%d{W quest points!{x", quest_points );
-		    act( buf, wch, NULL, NULL, TO_CHAR );
-		    wch->questpoints += quest_points; 
+		    act( buf, wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR );
+		    wch->questpoints += quest_points;
 		    wch->wars_won++;
 		}
 	    }
@@ -444,8 +444,8 @@ void auto_war_time_finish()
 		{
 		    quest_points = 50;
 		    sprintf( buf, "{WYou have been awarded {Y%d{W quest points!{x", quest_points );
-		    act( buf, wch, NULL, NULL, TO_CHAR );
-		    wch->questpoints += quest_points; 
+		    act( buf, wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR );
+		    wch->questpoints += quest_points;
 		    wch->wars_won++;
 		}
 	    }
@@ -472,7 +472,7 @@ void test_for_end_of_war()
     /* Test for Free For All */
     if ( auto_war->war_type == AUTO_WAR_FREE_FOR_ALL )
     {
-	int quest_points = 0; 
+	int quest_points = 0;
 	CHAR_DATA *wch;
 
 	/* End of war is when only one race is left */
@@ -496,8 +496,8 @@ void test_for_end_of_war()
 	/* Reward winners*/
 	quest_points = 50;
 	sprintf( buf, "{WYou have been awarded {Y%d{W quest points!{x", quest_points );
-	act( buf, wch, NULL, NULL, TO_CHAR );
-	wch->questpoints += quest_points; 
+	act( buf, wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR );
+	wch->questpoints += quest_points;
 	wch->wars_won++;
 
 	free_auto_war( auto_war );
@@ -528,7 +528,7 @@ void test_for_end_of_war()
 
 	if ( ended )
 	{
-	    int quest_points = 0; 
+	    int quest_points = 0;
 
 	    sprintf( buf, "{RThe winners of the {Y%s{R war were the {W%ss{R!{x\n\r",
 		    auto_war_table[ auto_war->war_type ].name,
@@ -542,8 +542,8 @@ void test_for_end_of_war()
 		{
 		    quest_points = 50;
 		    sprintf( buf, "{WYou have been awarded {Y%d{W quest points!{x", quest_points );
-		    act( buf, wch, NULL, NULL, TO_CHAR );
-		    wch->questpoints += quest_points; 
+		    act( buf, wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR );
+		    wch->questpoints += quest_points;
 		    wch->wars_won++;
 		}
 	    }
@@ -601,8 +601,8 @@ void test_for_end_of_war()
 		    {
 			quest_points = 50;
 			sprintf( buf, "{WYou have been awarded {Y%d{W quest points!{x", quest_points );
-			act( buf, wch, NULL, NULL, TO_CHAR );
-			wch->questpoints += quest_points; 
+			act( buf, wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR );
+			wch->questpoints += quest_points;
 			wch->wars_won++;
 		    }
 		}
@@ -622,8 +622,8 @@ void test_for_end_of_war()
 			{
 			    quest_points = 50;
 			    sprintf( buf, "{WYou have been awarded {Y%d{W quest points!{x", quest_points );
-			    act( buf, wch, NULL, NULL, TO_CHAR );
-			    wch->questpoints += quest_points; 
+			    act( buf, wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR );
+			    wch->questpoints += quest_points;
 			    wch->wars_won++;
 			}
 		    }

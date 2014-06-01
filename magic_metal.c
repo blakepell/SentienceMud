@@ -19,9 +19,9 @@ SPELL_FUNC(spell_deathbarbs)
 	int roll;
 	int people;
 
-	act("{YYou shoot a swarm of razor sharp barbs toward $N!{x", ch, NULL, victim, TO_CHAR);
-	act("{Y$n shoots a swarm of razor sharp barbs toward you!{x", ch, NULL, victim, TO_VICT);
-	act("{Y$n shoots a swarm of razor sharp barbs toward $N!{x", ch, NULL, victim, TO_NOTVICT);
+	act("{YYou shoot a swarm of razor sharp barbs toward $N!{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+	act("{Y$n shoots a swarm of razor sharp barbs toward you!{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
+	act("{Y$n shoots a swarm of razor sharp barbs toward $N!{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
 
 	if (check_shield_block_projectile(ch, victim, "deathbarbs", NULL))
 		return FALSE;
@@ -37,9 +37,9 @@ SPELL_FUNC(spell_deathbarbs)
 			next = temp_char->next_in_room;
 			if (temp_char != victim && is_same_group(temp_char, victim) &&
 				!is_safe_spell(ch, temp_char, FALSE)) {
-				act("{YThe barbs fan out, hitting $N!{x", ch, NULL, temp_char, TO_CHAR);
-				act("{YThe barbs fan out, hitting you!{x", ch, NULL, temp_char, TO_VICT);
-				act("{YThe barbs fan out, hitting $N!{x", ch, NULL, temp_char, TO_NOTVICT);
+				act("{YThe barbs fan out, hitting $N!{x", ch,  temp_char, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+				act("{YThe barbs fan out, hitting you!{x", ch, temp_char, NULL, NULL, NULL, NULL, NULL, TO_VICT);
+				act("{YThe barbs fan out, hitting $N!{x", ch,  temp_char, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
 				damage(ch, temp_char, dam, sn, DAM_PIERCE, TRUE);
 			}
 		}

@@ -35,14 +35,14 @@ SPELL_FUNC(spell_animate_dead)
 		}
 
 		if (IS_SET(obj->extra2_flags, ITEM_NO_RESURRECT)) {
-			act("$p seems to be immune to your necromantic magic.", ch, obj, NULL, TO_CHAR);
+			act("$p seems to be immune to your necromantic magic.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 			return FALSE;
 		}
 
 		corpse = CORPSE_TYPE(obj);
 
 		if (!IS_SET(CORPSE_PARTS(obj),PART_HEAD) && !corpse_info_table[corpse].animate_headless) {
-			act("Your magic is not powerful enough.", ch, obj, NULL, TO_CHAR);
+			act("Your magic is not powerful enough.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 			return FALSE;
 		}
 
@@ -60,12 +60,12 @@ SPELL_FUNC(spell_animate_dead)
 		}
 
 		if(number_range(1,10000) > chance) {
-			act("Your magic is not powerful enough.", ch, obj, NULL, TO_CHAR);
+			act("Your magic is not powerful enough.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 			return FALSE;
 		}
 
 		if (obj->level > lvl) {
-			act("Your magic is not powerful enough.", ch, obj, NULL, TO_CHAR);
+			act("Your magic is not powerful enough.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 			return FALSE;
 		}
 
@@ -105,12 +105,12 @@ SPELL_FUNC(spell_animate_dead)
 		victim->parts = CORPSE_PARTS(obj);
 		char_to_room(victim, ch->in_room);
 		victim->pIndexData->count--;  // Animated mobs dont add to world count.
-		act("$p twitches then thrashes violently before rising to its feet!", victim, obj, NULL, TO_ROOM);
+		act("$p twitches then thrashes violently before rising to its feet!", victim, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 
 		add_follower(victim, ch, TRUE);
 		REMOVE_BIT(victim->act, ACT_PET);
 		if (!add_grouped(victim, ch, TRUE)) {
-			act("$n falls back to the ground.", victim, NULL, NULL, TO_ROOM);
+			act("$n falls back to the ground.", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 			char_from_room(victim);
 			extract_char(victim, TRUE);
 			return TRUE;
@@ -142,7 +142,7 @@ SPELL_FUNC(spell_death_grip)
 	memset(&af,0,sizeof(af));
 
 	if (!get_eq_char(victim, WEAR_WIELD)) {
-		act("$n's fingers slip through thin air.", victim, NULL, ch, TO_ROOM);
+		act("$n's fingers slip through thin air.", victim, ch, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		send_to_char("Your fingers slip through thin air.\n\r", victim);
 		return FALSE;
 	}
@@ -158,7 +158,7 @@ SPELL_FUNC(spell_death_grip)
 		if (victim == ch)
 			send_to_char("Your grip won't get any tighter.\n\r",ch);
 		else
-			act("$N is already blessed with death grip.",ch,NULL,victim,TO_CHAR);
+			act("$N is already blessed with death grip.",ch,victim, NULL, NULL, NULL, NULL, NULL,TO_CHAR);
 		return FALSE;
 	}
 
@@ -173,7 +173,7 @@ SPELL_FUNC(spell_death_grip)
 	af.bitvector2 = 0;
 	affect_to_char(victim, &af);
 
-	act("{D$n's weapon grip tightens as in death.{x", victim, NULL, NULL, TO_ROOM);
+	act("{D$n's weapon grip tightens as in death.{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	send_to_char("{DYour grip tightens and locks into place.{x\n\r", victim);
 
 	return TRUE;
@@ -199,7 +199,7 @@ SPELL_FUNC(spell_deathsight)
 		if(victim == ch)
 			send_to_char("You already sense the world of the dead.\n\r",ch);
 		else
-			act("$N can already sense the dead.",ch,NULL,victim,TO_CHAR);
+			act("$N can already sense the dead.",ch,victim, NULL, NULL, NULL, NULL, NULL,TO_CHAR);
 		return FALSE;
 	}
 
@@ -214,7 +214,7 @@ SPELL_FUNC(spell_deathsight)
 	af.bitvector2 = AFF2_DEATHSIGHT;
 	affect_to_char(ch, &af);
 	send_to_char("{DYour mind opens up to the world of the dead.\n\r", victim);
-	act("{D$n's eyes momentarily flicker darker.{x", victim, NULL, NULL, TO_ROOM);
+	act("{D$n's eyes momentarily flicker darker.{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	return TRUE;
 }
 
@@ -224,13 +224,13 @@ SPELL_FUNC(spell_kill)
 	CHAR_DATA *victim = (CHAR_DATA *) vo;
 	int chance;
 
-	act ("{YDark shadows loom around $N as you utter the power word 'kill'.{x", ch, NULL, victim, TO_CHAR);
-	act ("{YDark shadows loom around you as $n utters the power word 'kill'.{x", ch, NULL, victim, TO_VICT);
-	act ("{YDark shadows loom around $N as $n utters the power word 'kill'.{x", ch, NULL, victim, TO_NOTVICT);
+	act ("{YDark shadows loom around $N as you utter the power word 'kill'.{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+	act ("{YDark shadows loom around you as $n utters the power word 'kill'.{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
+	act ("{YDark shadows loom around $N as $n utters the power word 'kill'.{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
 
 	if (!IS_NPC(victim) && IS_IMMORTAL(victim)) {
-		act("{WYour immortal presence causes the shadows to flee in terror.{x",victim,NULL,NULL,TO_CHAR);
-		act("{WPowerful forces surround $n drive the shadows away!{x",victim,NULL,NULL,TO_ROOM);
+		act("{WYour immortal presence causes the shadows to flee in terror.{x",victim,NULL,NULL, NULL, NULL, NULL, NULL,TO_CHAR);
+		act("{WPowerful forces surround $n drive the shadows away!{x",victim,NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
 		return FALSE;
 	}
 
@@ -247,18 +247,18 @@ SPELL_FUNC(spell_kill)
 		chance /= 2;
 
 	if (IS_AFFECTED2(victim,AFF2_LIGHT_SHROUD)) {
-		act("The shroud of light around $N deflects your dark power!", ch, NULL, victim, TO_CHAR);
-		act("The shroud of light surrounding you deflects $n's dark power!", ch, NULL, victim, TO_VICT);
-		act("The shroud of light around $N deflects $n's dark power!", ch,NULL,victim, TO_NOTVICT);
+		act("The shroud of light around $N deflects your dark power!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		act("The shroud of light surrounding you deflects $n's dark power!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
+		act("The shroud of light around $N deflects $n's dark power!", ch,victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
 		return FALSE;
 	}
 
 	if (IS_AFFECTED(victim, AFF_SANCTUARY) || number_percent () >= chance || IS_SET(victim->imm_flags, IMM_KILL)) {
 
-		act("{DThe dark shadows disperse.{x", victim, NULL, NULL, TO_ROOM);
-		act("{DThe dark shadows disperse.{x", victim, NULL, NULL, TO_CHAR);
-		act("$n appears unaffected.", victim, NULL, NULL, TO_ROOM);
-		act("You are unaffected.", victim, NULL, NULL, TO_CHAR);
+		act("{DThe dark shadows disperse.{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+		act("{DThe dark shadows disperse.{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		act("$n appears unaffected.", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+		act("You are unaffected.", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		return FALSE;
 	}
 
@@ -267,16 +267,16 @@ SPELL_FUNC(spell_kill)
 		return FALSE;
 	}
 
-	act("{R$n keels over and dies as $s heart stops instantly.{x", victim, NULL, NULL, TO_ROOM);
-	act("{RYou keel over and die as your heart stops instantly.{x", victim, NULL, NULL, TO_CHAR);
+	act("{R$n keels over and dies as $s heart stops instantly.{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+	act("{RYou keel over and die as your heart stops instantly.{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
 	victim->set_death_type = DEATHTYPE_ALIVE;
 	victim->death_type = DEATHTYPE_KILLSPELL;
 
 	here = victim->in_room;
 	victim->position = POS_STANDING;
-	if(!p_percent_trigger(victim, NULL, NULL, NULL, ch, NULL, victim, TRIG_DEATH))
-		p_percent_trigger(NULL, NULL, here, NULL, ch, NULL, victim, TRIG_DEATH);
+	if(!p_percent_trigger(victim, NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_DEATH,NULL))
+		p_percent_trigger(NULL, NULL, here, NULL, ch, victim, NULL, NULL, NULL, TRIG_DEATH,NULL);
 
 	if (!IS_NPC(ch) && !IS_NPC(victim))
 		player_kill(ch, victim);
@@ -305,28 +305,28 @@ SPELL_FUNC(spell_raise_dead)
 		}
 
 		if (IS_SET(obj->extra2_flags, ITEM_NO_RESURRECT)) {
-			act("$p seems to be immune to your necromantic magic.", ch, obj, NULL, TO_CHAR);
+			act("$p seems to be immune to your necromantic magic.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 			return FALSE;
 		}
 
 		if (IS_OBJ_STAT(obj, ITEM_NOSKULL)) {
-			act("$p is missing its head.", ch, obj, NULL, TO_CHAR);
+			act("$p is missing its head.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 			return FALSE;
 		}
 
 		if (obj->level > ch->tot_level) {
-			act("You are not powerful enough to raise this being.", ch, obj, NULL, TO_CHAR);
+			act("You are not powerful enough to raise this being.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 			return FALSE;
 		}
 
 
-		act("{DThe light within the surrounding area dims and an intense chill sets in.{x", NULL, NULL, NULL, TO_ROOM);
+		act("{DThe light within the surrounding area dims and an intense chill sets in.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
 		if (obj->item_type == ITEM_CORPSE_PC) {
 			victim = get_char_world(ch,obj->owner);
 			if (!victim) {
 				sprintf(buf, "The soul of %s is no longer within this world.", obj->owner);
-				act(buf, ch, NULL, NULL, TO_CHAR);
+				act(buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 				return FALSE;
 			}
 		} else
@@ -335,12 +335,12 @@ SPELL_FUNC(spell_raise_dead)
 		if (!IS_NPC(victim)) {
 			if (!IS_DEAD(victim)) {
 				sprintf(buf, "The soul of %s has already been resurrected.", obj->owner);
-				act(buf, ch, NULL, NULL, TO_CHAR);
+				act(buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 				return FALSE;
 			}
 
 			if (obj != victim->pcdata->corpse) {
-				act("You can only raise $N's most current corpse.", ch, NULL, victim, TO_CHAR);
+				act("You can only raise $N's most current corpse.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 				return FALSE;
 			}
 
@@ -359,7 +359,7 @@ SPELL_FUNC(spell_raise_dead)
 		}
 
 		if ((!IS_NPC(victim)) && (victim->church != ch->church || !ch->church || !victim->church)) {
-			act("As $N is not a member of your church, the spell drains your life energies.", ch,NULL, victim, TO_CHAR);
+			act("As $N is not a member of your church, the spell drains your life energies.", ch,victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 			ch->hit = 1;
 			ch->mana = 1;
 			ch->move = 1;
@@ -367,15 +367,15 @@ SPELL_FUNC(spell_raise_dead)
 
 		char_to_room(victim, ch->in_room);
 
-		act("A dark haze forms around $p.", victim, obj, NULL, TO_ROOM);
+		act("A dark haze forms around $p.", victim, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 
-		act("You feel mortal once more as your soul is raised from the dead!", victim, NULL, NULL, TO_CHAR);
-		act("You cough and splutter.", victim, NULL, NULL, TO_CHAR);
+		act("You feel mortal once more as your soul is raised from the dead!", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		act("You cough and splutter.", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
-		act("The eyes of $n flick open.", victim, NULL, NULL, TO_ROOM);
-		act("$n begins to cough and splutter.", victim, NULL, NULL, TO_ROOM);
+		act("The eyes of $n flick open.", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+		act("$n begins to cough and splutter.", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
-		act("$n has been raised from the dead!", victim, NULL, NULL, TO_ROOM);
+		act("$n has been raised from the dead!", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
 		// Give back the stuff on the corpse
 		for (in = obj->contains; in != NULL; in = in_next) {

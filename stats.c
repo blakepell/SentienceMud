@@ -15,7 +15,7 @@ STAT_DATA stat_table[10];
 
 /* Declare local functions */
 
-void do_stats( CHAR_DATA *ch, char *argument ) 
+void do_stats( CHAR_DATA *ch, char *argument )
 {
     char arg[MAX_STRING_LENGTH];
     BUFFER *output = NULL;
@@ -79,7 +79,7 @@ BUFFER *get_stats( int type)
 
     buf[0] = '\0';
     output = new_buf();
-    
+
     if ( stat_table[type].report_name == NULL )
     {
 	sprintf( buf, "Sorry, these stats are currently unavailable.\n\r" );
@@ -93,7 +93,7 @@ BUFFER *get_stats( int type)
     add_buf(output, stat_table[type].description);
     add_buf(output, "\r\n\r\n");
 
-    sprintf( buf2, "Rank %%-%ds %%s\r\n", 44 - strlen( stat_table[type].column[1] ) / 2 ); 
+    sprintf( buf2, "Rank %%-%ds %%s\r\n", 44 - (int)strlen( stat_table[type].column[1] ) / 2 );
     sprintf( buf, buf2, stat_table[type].column[0], stat_table[type].column[1] );
     add_buf(output, buf);
 
@@ -124,8 +124,8 @@ BUFFER *get_stats_for_html( int type)
     add_buf(output, "\r\n\r\n{w");
     add_buf(output, stat_table[type].description);
 
-    //sprintf( buf2, "<table width=\"80%\" border=\"0\" style=\"padding: 15px; padding-top: 10px;\"><tr><td width=\"10%\">Rank</td><td width=\"70%\">%%-%ds</td><td width=\"20%\">%%s</td></td></tr>", 44 - strlen( stat_table[type].column[1] ) / 2 ); 
-    sprintf( buf2, "</td></tr><tr><td valign=\"top\"><table width=\"80%%\" border=\"0\" style=\"padding: 15px;\"><tr><td width=\"10%%\">Rank</td><td width=\"70%%\">%%-%ds</td><td width=\"20%%\">%%s</td></td></tr>", 44 - strlen( stat_table[type].column[1] ) / 2 ); 
+    //sprintf( buf2, "<table width=\"80%\" border=\"0\" style=\"padding: 15px; padding-top: 10px;\"><tr><td width=\"10%\">Rank</td><td width=\"70%\">%%-%ds</td><td width=\"20%\">%%s</td></td></tr>", 44 - strlen( stat_table[type].column[1] ) / 2 );
+    sprintf( buf2, "</td></tr><tr><td valign=\"top\"><table width=\"80%%\" border=\"0\" style=\"padding: 15px;\"><tr><td width=\"10%%\">Rank</td><td width=\"70%%\">%%-%ds</td><td width=\"20%%\">%%s</td></td></tr>", 44 - (int)strlen( stat_table[type].column[1] ) / 2 );
     sprintf( buf, buf2, stat_table[type].column[0], stat_table[type].column[1] );
     add_buf(output, buf);
 

@@ -595,36 +595,35 @@ void show_char_to_char_0(CHAR_DATA * victim, CHAR_DATA * ch)
     if (RIDDEN(victim))
 	return;
 
-    if (IS_AFFECTED(victim, AFF_INVISIBLE)
-    || IS_AFFECTED2(victim, AFF2_IMPROVED_INVIS))
-	strcat(buf, "{B*{G");
+    if (IS_AFFECTED(victim, AFF_INVISIBLE) || IS_AFFECTED2(victim, AFF2_IMPROVED_INVIS))
+		strcat(buf, "{B*{G");
     if (!IS_NPC(victim) && victim->desc == NULL)
-	strcat(buf, "{Y[Lost Link]{G ");
+		strcat(buf, "{Y[Lost Link]{G ");
     if (IS_SET(victim->comm, COMM_AFK))
-	strcat(buf, "{Y[AFK] {G");
+		strcat(buf, "{Y[AFK] {G");
     if (victim->invis_level >= LEVEL_HERO)
-	strcat(buf, "{B({WW{Ri{Yz{Gi{B) {G");
+		strcat(buf, "{B({WW{Ri{Yz{Gi{B) {G");
     if (IS_NPC(victim) && IS_SET(victim->act2, ACT2_WIZI_MOB))
- 	strcat(buf, "{B({WW{Ri{Yz{Gi{GMOB{B) {G");
+ 		strcat(buf, "{B({WW{Ri{Yz{Gi{GMOB{B) {G");
     if (IS_AFFECTED(victim, AFF_CHARM))
-	strcat(buf, "{Y(Charmed) {G");
+		strcat(buf, "{Y(Charmed) {G");
     if (IS_AFFECTED(victim, AFF_PASS_DOOR))
-	strcat(buf, "{C(Translucent) {G");
+		strcat(buf, "{C(Translucent) {G");
     if (IS_AFFECTED(victim, AFF_FAERIE_FIRE))
-	strcat(buf, "{M(Pink Aura) {G");
+		strcat(buf, "{M(Pink Aura) {G");
     if (IS_EVIL(victim) && (IS_AFFECTED(ch, AFF_DETECT_EVIL) || (!IS_NPC(ch) && IS_REMORT(ch))))
-	strcat(buf, "{R(Red Aura) {G");
+		strcat(buf, "{R(Red Aura) {G");
     if (IS_GOOD(victim) && (IS_AFFECTED(ch, AFF_DETECT_GOOD) || (!IS_NPC(ch) && IS_REMORT(ch))))
-	strcat(buf, "{y(Gold Aura) {G");
+		strcat(buf, "{y(Gold Aura) {G");
     if (IS_AFFECTED2(victim,AFF2_DARK_SHROUD))
     	strcat(buf, "{D(Dark Shroud) {G");
     if (victim->pk_timer > 0)
     	strcat(buf, "{r(Blood Aura) {G");
 
     if (IS_DEAD(victim))
-	strcat(buf, "{DThe shadow of ");
+		strcat(buf, "{DThe shadow of ");
     else
-	strcat(buf, "{G");
+		strcat(buf, "{G");
 
     if (IS_QUESTING(ch) && IS_NPC(victim))
     {
@@ -926,11 +925,11 @@ void show_char_to_char_1(CHAR_DATA * victim, CHAR_DATA * ch)
     if (can_see(victim, ch) && ch->invis_level < 150)
     {
 	if (ch == victim)
-	    act("$n looks at $mself.", ch, NULL, NULL, TO_ROOM);
+	    act("$n looks at $mself.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	else
 	{
-	    act("$n looks at you.", ch, NULL, victim, TO_VICT);
-	    act("$n looks at $N.", ch, NULL, victim, TO_NOTVICT);
+	    act("$n looks at you.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
+	    act("$n looks at $N.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
 	}
     }
 
@@ -940,7 +939,7 @@ void show_char_to_char_1(CHAR_DATA * victim, CHAR_DATA * ch)
     }
     else
     {
-	act("You see nothing special about $M.", ch, NULL, victim,
+	act("You see nothing special about $M.", ch, victim, NULL, NULL, NULL, NULL, NULL,
 	    TO_CHAR);
     }
 
@@ -1014,7 +1013,7 @@ void show_char_to_char_1(CHAR_DATA * victim, CHAR_DATA * ch)
     if (IS_NPC(victim) && number_percent() < get_skill(ch, gsn_mob_lore))
     {
         if (IS_SET(victim->act, ACT_NO_LORE))
-	    act("\n\r{R$N is too powerful for you to lore.{x", ch, NULL, victim, TO_CHAR);
+	    act("\n\r{R$N is too powerful for you to lore.{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	else
 	{
 	    long avg;
@@ -1044,14 +1043,14 @@ void show_char_to_char_1(CHAR_DATA * victim, CHAR_DATA * ch)
 			    avg);
 	    send_to_char(buf, ch);
 
-	    p_percent_trigger(victim, NULL, NULL, NULL, ch, NULL, NULL, TRIG_LORE);
+	    p_percent_trigger(victim, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_LORE, NULL);
 
 	    check_improve(ch, gsn_mob_lore, TRUE, 7);
 	}
     }
 
     if (IS_NPC(victim) && !IS_SET(victim->act, ACT_NO_LORE))
-	p_percent_trigger(victim, NULL, NULL, NULL, ch, NULL, NULL, TRIG_LORE_EX);
+	p_percent_trigger(victim, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_LORE_EX, NULL);
 
     return;
 }
@@ -1297,12 +1296,13 @@ void do_prompt(CHAR_DATA * ch, char *argument)
     if (!strcmp(argument, "all"))
 	strcpy(buf, "{B<%h{Bhp %m{Bm %v{Bmv>{x ");
     else {
+	//if (strlen(argument) > 50)
+	//    argument[50] = '\0';
 	if (strlen_no_colors(argument) > 50)
 	{
 		send_to_char("That prompt is too long. Must be no more than 50 characters, not counting colour codes.\n\r",ch);
 		return;
 	}
-//	    argument[50] = '\0';
 	strcpy(buf, argument);
 	smash_tilde(buf);
 	if (str_suffix("%c", buf))
@@ -1326,8 +1326,8 @@ void do_survey(CHAR_DATA *ch, char *argument)
     SHIP_DATA *orig_ship;*/
     char arg[MAX_INPUT_LENGTH];
     char buf[MAX_STRING_LENGTH];
-/*    long bonus_view; 
-    long x; 
+/*    long bonus_view;
+    long x;
     long y; */
 
     argument = one_argument(argument, arg);
@@ -1464,7 +1464,7 @@ void do_survey(CHAR_DATA *ch, char *argument)
 
     }
 
-    act("You arn't on a boat.", ch, NULL, NULL, TO_CHAR);
+    act("You aren't on a boat.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 }
 
 void show_room(CHAR_DATA *ch, ROOM_INDEX_DATA *room, bool remote, bool silent)
@@ -1745,26 +1745,18 @@ void show_room(CHAR_DATA *ch, ROOM_INDEX_DATA *room, bool remote, bool silent)
 
 		vp_x = get_squares_to_show_x(ch->wildview_bonus_x);
 		vp_y = get_squares_to_show_y(ch->wildview_bonus_y);
-		show_map_to_char(ch, ch, vp_x, vp_y, FALSE);
+		show_map_to_char_wyx(room->wilds, room->x, room->y, ch, vp_x, vp_y, FALSE);
 	}
 
 	if(!IS_NPC(ch) && !IS_SET(room->room2_flags, ROOM_VIRTUAL_ROOM) &&
 		IS_SET(room->room_flags, ROOM_VIEWWILDS) &&
 		room->viewwilds &&
 		(str_cmp(arg1,"auto") || !IS_SET(ch->comm, COMM_BRIEF))) {
-		ROOM_INDEX_DATA *saveroom;
 		int vp_x, vp_y;
-
-		saveroom = room;
-		char_from_room(ch);
-		char_to_vroom(ch,saveroom->viewwilds,saveroom->x,saveroom->y);
 
 		vp_x = get_squares_to_show_x(ch->wildview_bonus_x);
 		vp_y = get_squares_to_show_y(ch->wildview_bonus_y);
-		show_map_to_char(ch, ch, vp_x, vp_y, FALSE);
-
-		char_from_room(ch);
-		char_to_room(ch,saveroom);
+		show_map_to_char_wyx(room->viewwilds, room->x, room->y, ch, vp_x, vp_y, FALSE);
 	}
 
 	/* Check for the reckoning */
@@ -1883,11 +1875,11 @@ void do_look(CHAR_DATA * ch, char *argument)
 	case ITEM_CORPSE_PC:
 	    if (obj->item_type == ITEM_CONTAINER && IS_SET(obj->value[1], CONT_CLOSED))
 	    {
-		act("$p is closed.", ch, obj, NULL, TO_CHAR);
+		act("$p is closed.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 		break;
 	    }
 
-	    act("$p holds:", ch, obj, NULL, TO_CHAR);
+	    act("$p holds:", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 	    show_list_to_char(obj->contains, ch, TRUE, TRUE);
 	    break;
 	}
@@ -1908,10 +1900,10 @@ void do_look(CHAR_DATA * ch, char *argument)
 				is_name(arg3, obj->name) && (++count == number)) {
 				if (ch != victim) {
 					if(can_see(victim, ch) && ch->invis_level < 150) {
-						act("$n looks at $p on you.", ch, obj, victim, TO_VICT);
-						act("$n looks at $p on $N.", ch, obj, victim, TO_NOTVICT);
+						act("$n looks at $p on you.", ch, victim, NULL, obj, NULL, NULL, NULL, TO_VICT);
+						act("$n looks at $p on $N.", ch, victim, NULL, obj, NULL, NULL, NULL, TO_NOTVICT);
 					}
-					act("{MYou take a look at {W$p{M on {W$N{M.{x", ch, obj, victim, TO_CHAR);
+					act("{MYou take a look at {W$p{M on {W$N{M.{x", ch, victim, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 				}
 				send_to_char(obj->full_description, ch);
 				send_to_char("\n\r", ch);
@@ -1928,7 +1920,7 @@ void do_look(CHAR_DATA * ch, char *argument)
 			send_to_char(buf, ch);
 			return;
 		    }
-		    act("You don't see anything like that on $N.", ch, NULL, victim, TO_CHAR);
+		    act("You don't see anything like that on $N.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	    } else
 		show_char_to_char_1(victim, ch);
 	return;
@@ -1957,11 +1949,10 @@ void do_look(CHAR_DATA * ch, char *argument)
 		    return;
 		}
 
-		act("For a moment in time you see through the eyes of $N!{x", ch, NULL, victim, TO_CHAR);
-		act("You feel a momentary shiver up your spine as if you were being watched.{x", victim, NULL, NULL, TO_CHAR);
-		act("$n peers into the crystal ball.", ch, NULL, NULL,
-		    TO_ROOM);
-		
+		act("For a moment in time you see through the eyes of $N!{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		act("You feel a momentary shiver up your spine as if you were being watched.{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		act("$n peers into the crystal ball.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+
 		//Updated from show_room_to_char to show_room. -- Tieryo 08/18/2010
 		show_room(ch,victim->in_room,true,false);
 		return;
@@ -2031,13 +2022,13 @@ void do_look(CHAR_DATA * ch, char *argument)
 			return;
 		    }
 
-		    act("{YYou look through the eyes of $N:{x", ch, NULL, victim, TO_CHAR);
+		    act("{YYou look through the eyes of $N:{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
 			//Updated show_room_to_char to show_room. -- Tieryo 08/18/2010
 			show_room(ch,victim->in_room,true,false);
 		}
 		else
-		    act("The soul of $T has left this world.", ch, NULL, obj->owner, TO_CHAR);
+		    act("The soul of $T has left this world.", ch, NULL, NULL, NULL, NULL, NULL, obj->owner, TO_CHAR);
 
 		return;
 	    }
@@ -2060,7 +2051,7 @@ void do_look(CHAR_DATA * ch, char *argument)
 			send_to_char ("\n\r{YFrom your studies you can conclude the following information: {X\n\r", ch);
 			spell_identify(gsn_lore, ch->tot_level,ch, (void *) obj, TARGET_OBJ);
 		    }
-		    p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, TRIG_LORE_EX);
+		    p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_LORE_EX, NULL);
 		    check_improve(ch, gsn_lore, TRUE, 10);
 		    return;
 		}
@@ -2080,7 +2071,7 @@ void do_look(CHAR_DATA * ch, char *argument)
 			spell_identify(gsn_lore, ch->tot_level, ch, (void *) obj, TARGET_OBJ);
 		    }
 
-		    p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, TRIG_LORE_EX);
+		    p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_LORE_EX, NULL);
 		    check_improve(ch, gsn_lore, TRUE, 10);
 		    return;
 		}
@@ -2100,7 +2091,7 @@ void do_look(CHAR_DATA * ch, char *argument)
 			spell_identify(gsn_lore, ch->tot_level,ch, (void *) obj, TARGET_OBJ);
 		    }
 
-		    p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, TRIG_LORE_EX);
+		    p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_LORE_EX, NULL);
 		    check_improve(ch, gsn_lore, TRUE, 10);
 		    return;
 		}
@@ -2131,7 +2122,7 @@ void do_look(CHAR_DATA * ch, char *argument)
 			spell_identify(gsn_lore, ch->tot_level, ch, (void *) obj, TARGET_OBJ);
 		    }
 
-		    p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, TRIG_LORE_EX);
+		    p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_LORE_EX, NULL);
 		    check_improve(ch, gsn_lore, TRUE, 10);
 		    return;
 		}
@@ -2147,7 +2138,7 @@ void do_look(CHAR_DATA * ch, char *argument)
 			spell_identify(gsn_lore, ch->tot_level, ch, (void *) obj, TARGET_OBJ);
 		    }
 
-		    p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, TRIG_LORE_EX);
+		    p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_LORE_EX, NULL);
 		    check_improve(ch, gsn_lore, TRUE, 10);
 		    return;
 		}
@@ -2163,7 +2154,7 @@ void do_look(CHAR_DATA * ch, char *argument)
 			spell_identify(gsn_lore, ch->tot_level, ch, (void *) obj, TARGET_OBJ);
 		    }
 
-		    p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, TRIG_LORE_EX);
+		    p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_LORE_EX, NULL);
 		    check_improve(ch, gsn_lore, TRUE, 10);
 		    return;
 		}
@@ -2260,8 +2251,7 @@ void do_look(CHAR_DATA * ch, char *argument)
 	&& pexit->keyword[0] != '\0'
 	&& pexit->keyword[0] != ' ')
 	{
-	    act("You can't see past the $d.", ch, NULL, pexit->keyword,
-		TO_CHAR);
+	    act("You can't see past the $d.", ch, NULL, NULL, NULL, NULL, NULL, pexit->keyword, TO_CHAR);
 	    return;
 	}
 	else
@@ -2294,7 +2284,7 @@ void do_examine(CHAR_DATA * ch, char *argument)
 
     if ((obj = get_obj_here(ch, NULL, arg)) != NULL) {
 
-	if (p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, TRIG_EXAMINE)) return;
+	if (p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_EXAMINE,NULL)) return;
 
 	switch (obj->item_type) {
 	default:
@@ -3515,7 +3505,7 @@ void draw_moon(CHAR_DATA *ch,int color)
 		ld = l - ll;
 
 		if(h < 0.5) {
-			/* New Moon to Full Moon 
+			/* New Moon to Full Moon
 			   Left: Shadow/Nothing, Right: Face */
 
 			send_to_char("{x", ch);
@@ -3672,7 +3662,7 @@ void do_time(CHAR_DATA * ch, char *argument)
 	}
 
 	if(!IS_NPC(ch) && lunar)
-		p_percent_trigger(ch,NULL,NULL,NULL,ch,NULL,NULL,TRIG_MOON);
+		p_percent_trigger(ch,NULL,NULL,NULL,ch, NULL, NULL,NULL,NULL,TRIG_MOON, NULL);
 }
 
 
@@ -4256,7 +4246,7 @@ void do_consider(CHAR_DATA * ch, char *argument)
     else
 	msg = "Death will thank you for your gift.";
 
-    act(msg, ch, NULL, victim, TO_CHAR);
+    act(msg, ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
     return;
 }
 
@@ -4271,12 +4261,12 @@ void set_title(CHAR_DATA * ch, char *title)
 	return;
     }
 
-    if (title[0] != '.' && title[0] != ',' && title[0] != '!'
-	&& title[0] != '?') {
-	buf[0] = ' ';
-	strcpy(buf + 1, title);
+    if (title[0] != '\0' && title[0] != '.' && title[0] != ',' && title[0] != '!' && title[0] != '?')
+    {
+		buf[0] = ' ';
+		strcpy(buf + 1, title);
     } else
-	strcpy(buf, title);
+		strcpy(buf, title);
 
     free_string(ch->pcdata->title);
     ch->pcdata->title = str_dup(buf);
@@ -4326,7 +4316,7 @@ void do_report(CHAR_DATA * ch, char *argument)
 	    ch->hit, ch->max_hit, ch->mana, ch->max_mana, ch->move,
 	    ch->max_move, ch->exp);
 
-    act(buf, ch, NULL, NULL, TO_ROOM);
+    act(buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 }
 
 
@@ -5834,7 +5824,7 @@ void do_scry(CHAR_DATA *ch, char *argument)
 	}
 
 	if (!get_char_world(ch, arg)) {
-		act("You sense no $T in the world.", ch, NULL, arg, TO_CHAR);
+		act("You sense no $T in the world.", ch, NULL, NULL, NULL, NULL, NULL, arg, TO_CHAR);
 		return;
 	}
 
@@ -5873,7 +5863,7 @@ void do_scry(CHAR_DATA *ch, char *argument)
 	}
 
 	if (!found)
-		act("You sense no $T in the world.", ch, NULL, arg, TO_CHAR);
+		act("You sense no $T in the world.", ch, NULL, NULL, NULL, NULL, NULL, arg, TO_CHAR);
 	else
 		page_to_char(buf_string(buffer),ch);
 
@@ -6529,7 +6519,7 @@ void do_dice(CHAR_DATA *ch, char *argument)
     send_to_char(buf, ch);
 
     sprintf(buf, "$n rolled a %d.", result);
-    act(buf, ch, NULL, NULL, TO_ROOM);
+    act(buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 }
 
 /* MOVED: weather/seasons.c */
@@ -6578,7 +6568,7 @@ char *find_desc_for_room(ROOM_INDEX_DATA *room, CHAR_DATA *viewer)
 			case CONDITION_SCRIPT:
 				script = get_script_index(cd->phrase,PRG_RPROG);
 
-				if (script && execute_script(cd->phrase,script,NULL,NULL,room,NULL,viewer,NULL,NULL,NULL,NULL,NULL,NULL) > 0)
+				if (script && execute_script(cd->phrase,script,NULL,NULL,room,NULL,viewer,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0) > 0)
 					best_cd = cd;
 				break;
 			}
