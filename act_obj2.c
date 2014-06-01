@@ -1163,19 +1163,19 @@ void ink_end( CHAR_DATA *ch, CHAR_DATA *victim, sh_int loc, sh_int sn, sh_int sn
     tattoo->spells = spell;
 
     if(sn2 > 0) {
-	spell = new_spell();
-	spell->sn = sn2;
-	spell->level = level/2;
-	spell->next = tattoo->spells;
-	tattoo->spells = spell;
+		spell = new_spell();
+		spell->sn = sn2;
+		spell->level = level/2;
+		spell->next = tattoo->spells;
+		tattoo->spells = spell;
     }
 
     if(sn3 > 0) {
-	spell = new_spell();
-	spell->sn = sn3;
-	spell->level = level/3;
-	spell->next = tattoo->spells;
-	tattoo->spells = spell;
+		spell = new_spell();
+		spell->sn = sn3;
+		spell->level = level/3;
+		spell->next = tattoo->spells;
+		tattoo->spells = spell;
     }
 
     obj_to_char(tattoo, victim);

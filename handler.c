@@ -1094,7 +1094,7 @@ void affect_modify(CHAR_DATA *ch, AFFECT_DATA *paf, bool fAdd)
 		MERGE_BIT(ch->vuln_flags,ch->vuln_flags_perm,paf->bitvector);
 		break;
 	}
-	mod = 0 - mod; /* reverse modifier */
+		mod = -mod; /* reverse modifier */
     }
 
     /* cancel out affects */
@@ -1110,8 +1110,10 @@ void affect_modify(CHAR_DATA *ch, AFFECT_DATA *paf, bool fAdd)
 	case APPLY_MANA:          ch->max_mana			+= mod;	break;
 	case APPLY_HIT:
 	    // Make sure it doesn't make them DEAD
-	    if (ch->max_hit + mod < 1)
-		mod = 0;
+	    if( fAdd && ((ch->max_hit + mod) < 1))
+			mod = 0;
+		else if( !fAdd && ((ch->max_hit - mod) < 1))
+			mod = 0;
 
 	    ch->max_hit						+= mod;	break;
 	case APPLY_MOVE:          ch->max_move			+= mod;	break;
