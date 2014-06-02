@@ -2472,6 +2472,7 @@ void do_wlist(CHAR_DATA *ch, char *argument)
 {
     char buf[MAX_STRING_LENGTH];
     ITERATOR iter;
+	LIST_WILDS_DATA *data;
     WILDS_DATA *pWilds;
     BUFFER *buffer;
     int place_type = 0;
@@ -2483,9 +2484,13 @@ void do_wlist(CHAR_DATA *ch, char *argument)
 
 
 	iterator_start(&iter, loaded_wilds);
-	while((pWilds = (WILDS_DATA *)iterator_nextdata(&iter)))
+	while((data = (LIST_WILDS_DATA *)iterator_nextdata(&iter)))
 	{
-		sprintf(buf,"[%7d] [%-26.26s] [ %5d x %-5d ] %s", pWilds->uid, (IS_NULLSTR(pWilds->name) ? "no name" : pWilds->name), pWilds->map_size_x, pWilds->map_size_y, (((pWilds->pArea == NULL) || IS_NULLSTR(pWilds->pArea->name)) ? "" : pWilds->pArea->name));
+		pWilds = data->wilds;
+		sprintf(buf,"[%7d] [%-26.26s] [ %5d x %-5d ] %s\n\r", pWilds->uid,
+			(IS_NULLSTR(pWilds->name) ? "no name" : pWilds->name),
+			pWilds->map_size_x, pWilds->map_size_y,
+			((!IS_NULLSTR(pWilds->pArea->name)) ? pWilds->pArea->name : ""));
 		add_buf(buffer, buf);
 	}
 	iterator_stop(&iter);

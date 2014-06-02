@@ -591,7 +591,11 @@ void save_token(FILE *fp, TOKEN_INDEX_DATA *token)
 		for(i = 0; i < TRIGSLOT_MAX; i++) if(list_size(token->progs[i]) > 0) {
 			iterator_start(&it, token->progs[i]);
 			while((trigger = (PROG_LIST *)iterator_nextdata(&it)))
-				fprintf(fp, "TokProg %ld %s~ %s~\n", trigger->vnum, trigger_name(trigger->trig_type), trigger_phrase(trigger->trig_type,trigger->trig_phrase));
+			{
+				char *trig_name = trigger_name(trigger->trig_type);
+				char *trig_phrase = trigger_phrase(trigger->trig_type,trigger->trig_phrase);
+				fprintf(fp, "TokProg %ld %s~ %s~\n", trigger->vnum, trig_name, trig_phrase);
+			}
 			iterator_stop(&it);
 		}
     }
