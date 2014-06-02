@@ -313,7 +313,7 @@ typedef struct script_code SCRIPT_CODE;
 typedef struct script_varinfo SCRIPT_VARINFO;
 typedef struct script_control_block SCRIPT_CB;
 typedef struct script_parameter SCRIPT_PARAM;
-typedef bool (*IFC_FUNC)(CHAR_DATA *mob,OBJ_DATA *obj,ROOM_INDEX_DATA *room, TOKEN_DATA *token, int *ret,int argc,SCRIPT_PARAM *argv);
+typedef bool (*IFC_FUNC)(SCRIPT_VARINFO *info, CHAR_DATA *mob,OBJ_DATA *obj,ROOM_INDEX_DATA *room, TOKEN_DATA *token, int *ret,int argc,SCRIPT_PARAM *argv);
 typedef bool (*OPCODE_FUNC)(SCRIPT_CB *block);
 typedef struct entity_field_type ENT_FIELD;
 typedef struct script_var_type VARIABLE, *pVARIABLE, **ppVARIABLE;
@@ -469,8 +469,8 @@ struct list_type {
 	LIST_LINK *tail;
 	unsigned long ref;
 	unsigned long size;
-	LISTCOPY_FUNC copier;
-	LISTDESTROY_FUNC deleter;
+	LISTCOPY_FUNC *copier;
+	LISTDESTROY_FUNC *deleter;
 	bool valid;
 	bool purge;
 };
@@ -5486,7 +5486,7 @@ extern sh_int grn_unique;
 #define TOGGLE_BIT(var, bit)	((var) ^= (bit))
 
 // Forces the 'bit' on 'a' to equal the corresponding 'bit' on 'b'
-#define MERGE_BIT(a, b, bit)	((a) = ((a) ~(bit)) | ((b) & (bit)))
+#define MERGE_BIT(a, b, bit)	((a) = ((a) & ~(bit)) | ((b) & (bit)))
 
 #define IS_NULLSTR(str)		((str) == NULL || (str)[0] == '\0')
 #define ENTRE(min,num,max)	( ((min) < (num)) && ((num) < (max)) )
@@ -6535,7 +6535,7 @@ void	affect_to_char	args( ( CHAR_DATA *ch, AFFECT_DATA *paf ) );
 void	affect_to_obj	args( ( OBJ_DATA *obj, AFFECT_DATA *paf ) );
 void	catalyst_to_obj	args( ( OBJ_DATA *obj, AFFECT_DATA *paf ) );
 void	affect_to_room	args( ( ROOM_INDEX_DATA *room, AFFECT_DATA *paf ) );
-bool	affect_remove	args( ( CHAR_DATA *ch, AFFECT_DATA *paf ) );
+void	affect_remove	args( ( CHAR_DATA *ch, AFFECT_DATA *paf ) );
 bool	affect_remove_obj args( (OBJ_DATA *obj, AFFECT_DATA *paf ) );
 void	affect_strip	args( ( CHAR_DATA *ch, int sn ) );
 void	affect_strip_obj	args( ( OBJ_DATA *obj, int sn ) );
@@ -6783,8 +6783,8 @@ int p_use_on_trigger(CHAR_DATA *ch, OBJ_DATA *obj, int type, char *argument);
 int p_use_with_trigger(CHAR_DATA *ch, OBJ_DATA *obj, int type, OBJ_DATA *obj1, OBJ_DATA *obj2, CHAR_DATA *victim, CHAR_DATA *victim2);
 int p_greet_trigger(CHAR_DATA *ch, int type);
 int	p_hprct_trigger(CHAR_DATA *mob, CHAR_DATA *ch);
-int p_emote_trigger(CHAR_DATA *mob, CHAR_DATA *ch, char *emote);
-int p_emoteat_trigger(CHAR_DATA *ch, char *emote);
+int p_emoteat_trigger(CHAR_DATA *mob, CHAR_DATA *ch, char *emote);
+int p_emote_trigger(CHAR_DATA *ch, char *emote);
 
 
 int	script_login(CHAR_DATA *ch);

@@ -802,7 +802,7 @@ void interpret( CHAR_DATA *ch, char *argument )
 				variables_set_string(var,v,argument,FALSE);
 			}
 
-			ret = execute_script(script->vnum, script, mob, obj, room, tok, ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+			ret = execute_script(script->vnum, script, mob, obj, room, tok, ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL,0,0,0,0,0);
 			if(ret > 0 && !IS_NPC(ch) && ch->pcdata->quit_on_input)
 				do_function(ch, &do_quit, NULL);
 		}
@@ -1507,7 +1507,7 @@ bool check_social( CHAR_DATA *ch, char *command, char *argument )
 
     // 20140508NIB - Adding EMOTE triggering
 
-    if( victim != null )
+    if( victim != NULL )
 		p_emoteat_trigger(victim, ch, social_table[cmd].name);
 	else
 		p_emote_trigger(ch, social_table[cmd].name);

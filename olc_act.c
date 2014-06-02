@@ -4594,7 +4594,7 @@ OEDIT(oedit_addimmune)
 
     for (pAf = pObj->affected; pAf != NULL; pAf = pAf->next)
     {
-		if ((pAf->where == TO_IMMUNE || pAf->where == TO_RESIST || pAf->where == TO_VULN) && ((pAf->bivector & value) != 0))
+		if ((pAf->where == TO_IMMUNE || pAf->where == TO_RESIST || pAf->where == TO_VULN) && ((pAf->bitvector & value) != 0))
 		{
 			sprintf(buf, "There's already an immunity modifier for %s on that item.\n\r",
 				flag_string(imm_flags, value));

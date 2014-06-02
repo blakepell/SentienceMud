@@ -138,33 +138,33 @@ void give_money(CHAR_DATA *ch, OBJ_DATA *container, int gold, int silver, bool i
 
 	if( silver > 0 || gold > 0) {
 		if(gold > 1) {
-			if( new_silver > 1 ) {
+			if( silver > 1 ) {
 				sprintf(buf1, "%s{xYou get %d gold coins and %d silver coins", (indent?"     ":""), gold, silver);
 				sprintf(buf2, "%s{x$n gets %d gold coins and %d silver coins", (indent?"     ":""), gold, silver);
-			} else if( new_silver == 1 ) {
+			} else if( silver == 1 ) {
 				sprintf(buf1, "%s{xYou get %d gold coins and a silver coin", (indent?"     ":""), gold);
 				sprintf(buf2, "%s{x$n gets %d gold coins and a silver coin", (indent?"     ":""), gold);
 			} else {
 				sprintf(buf1, "%s{xYou get %d gold coins", (indent?"     ":""), gold);
 				sprintf(buf2, "%s{x$n gets %d gold coins", (indent?"     ":""), gold);
 			}
-		} else if( new_gold == 1 ) {
-			if( new_silver > 1 ) {
+		} else if( gold == 1 ) {
+			if( silver > 1 ) {
 				sprintf(buf1, "%s{xYou get a gold coin and %d silver coins", (indent?"     ":""), silver);
 				sprintf(buf2, "%s{x$n gets a gold coin and %d silver coins", (indent?"     ":""), silver);
-			} else if( new_silver == 1 ) {
-				strcpy(buf1, "%s{xYou get a gold coin and a silver coin", (indent?"     ":""));
-				strcpy(buf2, "%s{x$n gets a gold coin and a silver coin", (indent?"     ":""));
+			} else if( silver == 1 ) {
+				sprintf(buf1, "%s{xYou get a gold coin and a silver coin", (indent?"     ":""));
+				sprintf(buf2, "%s{x$n gets a gold coin and a silver coin", (indent?"     ":""));
 			} else {
-				strcpy(buf1, "%s{xYou get a gold coin", (indent?"     ":""));
-				strcpy(buf2, "%s{x$n gets a gold coin", (indent?"     ":""));
+				sprintf(buf1, "%s{xYou get a gold coin", (indent?"     ":""));
+				sprintf(buf2, "%s{x$n gets a gold coin", (indent?"     ":""));
 			}
-		} else if(new_silver > 1) {
+		} else if(silver > 1) {
 			sprintf(buf1, "%s{xYou get %d silver coins", (indent?"     ":""), silver);
 			sprintf(buf2, "%s{x$n gets %d silver coins", (indent?"     ":""), silver);
 		} else {
-			strcpy(buf1, "%s{xYou get a silver coin", (indent?"     ":""));
-			strcpy(buf2, "%s{x$n gets a silver coin", (indent?"     ":""));
+			sprintf(buf1, "%s{xYou get a silver coin", (indent?"     ":""));
+			sprintf(buf2, "%s{x$n gets a silver coin", (indent?"     ":""));
 		}
 
 		if( container != NULL ) {
@@ -211,13 +211,12 @@ void get_money_from_obj(CHAR_DATA *ch, OBJ_DATA *container)
 void loot_corpse(CHAR_DATA *ch, OBJ_DATA *corpse)
 {
 	OBJ_DATA *obj, *obj_next;
-	OBJ_DATA *match_obj;
+	//OBJ_DATA *match_obj;
 	OBJ_DATA **objects = NULL;
 	int *counts = NULL;
 	LIST **lists = NULL;
 	ITERATOR it;
 	int i, n_matches, num_objs;
-	char *short_descr;
 	char buf[MSL];
 
 	bool found;
@@ -233,7 +232,7 @@ void loot_corpse(CHAR_DATA *ch, OBJ_DATA *corpse)
 	{
 		objects = (OBJ_DATA**)alloc_mem(num_objs * sizeof(OBJ_DATA *));
 		counts = (int *)alloc_mem(num_objs * sizeof(int));
-		lists = (LIST *)alloc_mem(num_objs * sizeof(LIST *));
+		lists = (LIST **)alloc_mem(num_objs * sizeof(LIST *));
 
 		for( i = 0; i < num_objs; i++ )
 		{
@@ -705,7 +704,7 @@ void do_get(CHAR_DATA *ch, char *argument)
 					act(buf, ch, NULL, NULL, match_obj, container, NULL, NULL, TO_CHAR);
 				}
 
-				give_money(ch, container, gold, silver, TRUE);
+				give_money(ch, container, new_gold, new_silver, TRUE);
 			} else if (!any) {
 				if (arg1[3] == '\0')
 					act("There is nothing in $P.", ch, NULL, NULL, NULL, container, NULL, NULL, TO_CHAR);

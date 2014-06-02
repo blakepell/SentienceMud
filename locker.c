@@ -26,7 +26,7 @@ void do_locker(CHAR_DATA *ch, char* argument)
 	// Level requirements: 153+
 	if( !IS_NPC(ch) && IS_IMMORTAL(ch) && IS_TRUSTED(ch, (MAX_LEVEL - 2)) )
 	{
-		if( !str_cmp(arg1, "forgive") ) {
+		if( !str_cmp(arg1, "forgive") )
 		{
 			CHAR_DATA *player;
 
@@ -49,7 +49,7 @@ void do_locker(CHAR_DATA *ch, char* argument)
 				return;
 			}
 
-			if( player->locker_rent > now_time ) {
+			if( player->locker_rent > current_time ) {
 				send_to_char("That player's locker is currently active.\n\r", ch);
 				return;
 			}
@@ -99,52 +99,52 @@ void do_locker(CHAR_DATA *ch, char* argument)
 		if (ch->locker_rent == 0)
 			ch->locker_rent = current_time;
 
-			rent_time = (struct tm *) localtime(&ch->locker_rent);
-			rent_time->tm_mon += 1;
-			ch->locker_rent = (time_t) mktime(rent_time);
-			send_to_char("Rent extended to:\n\r", ch);
-			send_to_char((char *) ctime(&ch->locker_rent), ch);
-			return;
-		}
+		rent_time = (struct tm *) localtime(&ch->locker_rent);
+		rent_time->tm_mon += 1;
+		ch->locker_rent = (time_t) mktime(rent_time);
+		send_to_char("Rent extended to:\n\r", ch);
+		send_to_char((char *) ctime(&ch->locker_rent), ch);
+		return;
+	}
 
-		if (!str_cmp(arg1, "info"))
+	if (!str_cmp(arg1, "info"))
+	{
+		if (ch->locker_rent == 0)
 		{
-			if (ch->locker_rent == 0)
-			{
-				send_to_char("You have not rented a locker.\n\r", ch);
-				return;
-			}
-			send_to_char("You last paid your locker rent till:\n\r", ch);
-			send_to_char((char *) ctime(&ch->locker_rent), ch);
+			send_to_char("You have not rented a locker.\n\r", ch);
 			return;
 		}
+		send_to_char("You last paid your locker rent till:\n\r", ch);
+		send_to_char((char *) ctime(&ch->locker_rent), ch);
+		return;
+	}
 
-		if (current_time > ch->locker_rent)
-		{
-			send_to_char("You either do not have a locker or it has expired.\n\r", ch);
-			return;
-		}
+	if (current_time > ch->locker_rent)
+	{
+		send_to_char("You either do not have a locker or it has expired.\n\r", ch);
+		return;
+	}
 
-		if (!str_cmp(arg1, "list"))
-		{
-			int i = 0;
+	if (!str_cmp(arg1, "list"))
+	{
+		int i = 0;
 
-			for (obj = ch->locker; obj != NULL; obj = obj->next_content)
-				i++;
+		for (obj = ch->locker; obj != NULL; obj = obj->next_content)
+			i++;
 
-			sprintf(buf, "You look in your locker and see %d items:\n\r", i);
-			send_to_char(buf, ch);
-			show_list_to_char(ch->locker, ch, TRUE, TRUE);
+		sprintf(buf, "You look in your locker and see %d items:\n\r", i);
+		send_to_char(buf, ch);
+		show_list_to_char(ch->locker, ch, TRUE, TRUE);
 
-			act("$n looks over the contents of $s locker.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
-			return;
-		}
+		act("$n looks over the contents of $s locker.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+		return;
+	}
 
-		if (arg2[0] == '\0')
-		{
-			send_to_char("Do what with your locker?\n\r", ch);
-			return;
-		}
+	if (arg2[0] == '\0')
+	{
+		send_to_char("Do what with your locker?\n\r", ch);
+		return;
+	}
 
 	if (!str_cmp(arg1, "store") || !str_cmp(arg1, "put"))
 	{
@@ -210,3 +210,4 @@ void do_locker(CHAR_DATA *ch, char* argument)
 
 	send_to_char("Do what with your locker? (get, put, list)\n\r", ch);
 }
+

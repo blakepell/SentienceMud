@@ -85,9 +85,9 @@ static void *deepcopy_uid(void *src)
 
 static void *deepcopy_exit(void *src)
 {
-	LIST_AREA_DATA *ex = (LIST_AREA_DATA *)src;
+	LIST_EXIT_DATA *ex = (LIST_EXIT_DATA *)src;
 
-	LIST_AREA_DATA *data;
+	LIST_EXIT_DATA *data;
 
 	if( (data = alloc_mem(sizeof(LIST_EXIT_DATA))) )
 	{
@@ -154,7 +154,7 @@ static void *deepcopy_wilds(void *src)
 }
 
 
-static LISTCOPY_FUNC __var_blist_copier[] = {
+static LISTCOPY_FUNC *__var_blist_copier[] = {
 	NULL,
 	deepcopy_room,
 	deepcopy_uid,
@@ -174,7 +174,7 @@ static void deleter_skill(void *data) { free_mem(data, sizeof(LIST_SKILL_DATA));
 static void deleter_area(void *data) { free_mem(data, sizeof(LIST_AREA_DATA)); }
 static void deleter_wilds(void *data) { free_mem(data, sizeof(LIST_WILDS_DATA)); }
 
-static LISTDESTROY_FUNC __var_blist_deleter[] = {
+static LISTDESTROY_FUNC *__var_blist_deleter[] = {
 	NULL,
 	deleter_room,
 	deleter_uid,
@@ -1470,7 +1470,7 @@ void variable_clearfield(int type, void *ptr)
 
 			iterator_start(&it, cur->_.list);
 
-			while( (lroom = (LIST_ROOM_DATA *)iterator_nextdata(&it)) )
+			while( (lroom = (LIST_ROOM_DATA *)iterator_nextdata(&it)) ) {
 				if( lroom->room && lroom->room == ptr ) {
 					iterator_remcurrent(&it);
 					break;
@@ -1485,7 +1485,7 @@ void variable_clearfield(int type, void *ptr)
 
 			iterator_start(&it, cur->_.list);
 
-			while( (luid = (LIST_UID_DATA *)iterator_nextdata(&it)) )
+			while( (luid = (LIST_UID_DATA *)iterator_nextdata(&it)) ) {
 				if( luid->ptr && luid->ptr == ptr ) {
 					iterator_remcurrent(&it);
 					break;

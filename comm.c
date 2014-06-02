@@ -437,7 +437,7 @@ bool parse_options(int argc, char **argv)
 
 	for(i = 1; i < argc; i++ )
 	{
-		if( is_number(argv[i] )
+		if( is_number(argv[i]))
 		{
 			int p = atoi(argv[i]);
 
@@ -2410,7 +2410,7 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 
 	send_to_char("{YThe following races are available to you: \n\r", ch);
 	send_to_char("{GDrow        {B - Dark elves who are masters of tact and dexterity.\n\r", ch);
-	    send_to_char("{GVampire     {B - The walking dead. Lots of extra skills but lots of vulnerabilities.\n\r", ch); -- Disabled by Gairun 20111219
+	    send_to_char("{GVampire     {B - The walking dead. Lots of extra skills but lots of vulnerabilities.\n\r", ch); //-- Disabled by Gairun 20111219
 	send_to_char("{GSith        {B - Half man, half snake. Natural hunt, toxins, and a nasty tail.\n\r", ch);
 	send_to_char("{GMinotaur    {B - The ultimate warrior. Very strong, tough and has a thick warm coat, but vulnerable to fire. \n\r", ch);
 	}
@@ -2422,7 +2422,7 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 
 	    send_to_char("{YThe following races are available to you:\n\r", ch);
 	send_to_char("{GDraconian   {B - Dragon/human cross. Can fly and breathe fire, frost, acid, gas, or lightning.\n\r", ch);
-	    send_to_char("{GSlayer      {B - Ancient holy fighters who can shapeshift into beasts. 25%% extra damage against evil.\n\r", ch); -- Disabled by Gairun 20111219
+	    send_to_char("{GSlayer      {B - Ancient holy fighters who can shapeshift into beasts. 25%% extra damage against evil.\n\r", ch); //-- Disabled by Gairun 20111219
 	send_to_char("{GTitan       {B - Very strong, have an extra attack, vulnerable to lightning.\n\r", ch);
 	send_to_char("{GElf         {B - Very high stats, resistant to magic and fast mana regen.\n\r", ch);
 	}
@@ -2433,7 +2433,7 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 	    send_to_char("\n\r{xYou have chosen to be {GNeutral{x.\n\r\n\r", ch);
 	send_to_char("{GDwarf       {B - Hardy, great at combat, and masters of craftwork.\n\r", ch);
 	send_to_char("{GHuman       {B - Average stats, no particular strengths or vunerabilities.\n\r", ch);
-	    send_to_char("{GLich        {B - Undead lords of magic - many magical powers but physically weak.\n\r", ch); -- Disabled by Gairun 20111219
+	    send_to_char("{GLich        {B - Undead lords of magic - many magical powers but physically weak.\n\r", ch); //-- Disabled by Gairun 20111219
 //	    send_to_char("{DPraxis      {D - Coming soon!\n\r",ch);
 	}
 

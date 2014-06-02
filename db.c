@@ -4969,7 +4969,7 @@ void persist_addroom(register ROOM_INDEX_DATA *room)
 
 	// Clone rooms themselves cannot be made persistant, make the environment persistant
 	// However, wilderness rooms CAN (>.>)
-	if( room->source && !IS_SET(room->source->room2_flag, ROOM_CLONE_PERSIST))
+	if( room->source && !IS_SET(room->source->room2_flags, ROOM_CLONE_PERSIST))
 		return;
 
 	if( list_hasdata(persist_rooms, room)) return;
@@ -5225,7 +5225,7 @@ void persist_save_object(FILE *fp, OBJ_DATA *obj, bool multiple)
 		}
 		else
 		{
-			fprintf(fp, "%s '%s' %3d %3d %3d\n",
+			fprintf(fp, "%s '%s' %3d %3d %3d %s\n",
 				((paf->where == TO_CATALYST_ACTIVE) ? "CataNA" : "CataN"),
 				flag_string( catalyst_types, paf->type ),
 				paf->level,

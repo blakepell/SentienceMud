@@ -1543,7 +1543,7 @@ DECL_IFC_FUN(ifc_ispk);			// if ispk $<player>
 
 DECL_IFC_FUN(ifc_register);		// if register <number> <op> <value>
 DECL_IFC_FUN(ifc_comm);			// if comm $<player> <flags>
-DECL_IFC_FUN(ifc_flagcomm);		// if flagcomm <flags> == <value>
+DECL_IFC_FUN(ifc_flag_comm);		// if flagcomm <flags> == <value>
 
 /* Opcode functions */
 DECL_OPC_FUN(opc_end);
@@ -2060,6 +2060,14 @@ SCRIPT_CMD(do_mppersist);
 SCRIPT_CMD(do_oppersist);
 SCRIPT_CMD(do_rppersist);
 SCRIPT_CMD(do_tppersist);
+SCRIPT_CMD(do_mpskill);
+SCRIPT_CMD(do_opskill);
+SCRIPT_CMD(do_rpskill);
+SCRIPT_CMD(do_tpskill);
+SCRIPT_CMD(do_mpskillgroup);
+SCRIPT_CMD(do_opskillgroup);
+SCRIPT_CMD(do_rpskillgroup);
+SCRIPT_CMD(do_tpskillgroup);
 
 
 #include "tables.h"

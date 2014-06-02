@@ -970,9 +970,9 @@ void do_search(CHAR_DATA *ch, char *argument)
 			return;
 		}
 
-		act("You start searching $p{x...", ch, NULL, container, NULL, NULL, NULL, NULL, TO_CHAR);
+		act("You start searching $p{x...", ch, NULL, NULL, container, NULL, NULL, NULL, TO_CHAR);
 
-		for (obj = container->contents; obj != NULL; obj = obj->next_content)
+		for (obj = container->contains; obj != NULL; obj = obj->next_content)
 		{
 			if (IS_SET(obj->extra_flags, ITEM_HIDDEN) && number_percent() < number_range(60, 90))
 			{
@@ -2413,7 +2413,7 @@ void do_hide(CHAR_DATA *ch, char *argument)
 				if( p_percent_trigger(NULL, container, NULL, NULL, ch, NULL, NULL, obj, NULL, TRIG_PREHIDE_IN, NULL) )
 					return;
 
-				obj_from_char(ch);
+				obj_from_char(obj);
 				obj_to_obj(obj, container);
 
 				p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, container, NULL, TRIG_HIDE, NULL);
@@ -2431,7 +2431,7 @@ void do_hide(CHAR_DATA *ch, char *argument)
 					return;
 				}
 
-				if( (victim == get_char_room(ch, NULL, argument)) == NULL )
+				if( (victim = get_char_room(ch, NULL, argument)) == NULL )
 				{
 					act("They aren't here.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 					return;
@@ -2479,8 +2479,8 @@ void do_hide(CHAR_DATA *ch, char *argument)
 						act("$n hides something on you.", ch, victim, NULL, obj, NULL, NULL, NULL, TO_VICT);
 				}
 
-				obj_from_char(ch);
-				obj_to_char(victim);
+				obj_from_char(obj);
+				obj_to_char(obj,victim);
 
 				p_percent_trigger(NULL, obj, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_HIDE, NULL);
 			}

@@ -983,7 +983,7 @@ void affect_fix_char(CHAR_DATA *ch)
 	ch->deathsight_vision = ( IS_SET(ch->affected_by2_perm, AFF2_DEATHSIGHT) ) ? ch->tot_level : 0;
 
 	// Iterate through affects on character
-	for(paf = ch->affected; paf = paf->next)
+	for(paf = ch->affected; paf; paf = paf->next)
 	{
 		switch(paf->where)
 		{
@@ -3734,7 +3734,7 @@ bool can_see(CHAR_DATA *ch, CHAR_DATA *victim)
 
 	if (ch->in_room && IS_SET(ch->in_room->room_flags, ROOM_DARK))
 	{
-		(!IS_AFFECTED(ch, AFF_INFRARED) || has_light(ch)) && IS_AFFECTED2(victim,AFF2_DARK_SHROUD)
+		//(!IS_AFFECTED(ch, AFF_INFRARED) || has_light(ch)) && IS_AFFECTED2(victim,AFF2_DARK_SHROUD)
 
 		if( IS_AFFECTED2(victim,AFF2_DARK_SHROUD) )
 			return FALSE;
@@ -7407,6 +7407,7 @@ LIST *list_copy(LIST *src)
 		cpy->deleter = src->deleter;
 
 		for( cur = src->head; cur; cur = next ) {
+			next = cur->next;
 			if( cur->data ) {
 				void *data = cur->data;
 

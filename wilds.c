@@ -1456,7 +1456,7 @@ void show_map_to_char(CHAR_DATA * ch, CHAR_DATA * to, int bonus_view_x, int bonu
     else
         pWilds = ch->in_wilds;
 
-	show_map_to_char_wyx(pWilds, ch->in_room->x, ch->in_room->y, to, bonus_view_x, bonus_view_y, old);
+	show_map_to_char_wyx(pWilds, ch->in_room->x, ch->in_room->y, to, bonus_view_x, bonus_view_y, olc);
 }
 
 #if 0

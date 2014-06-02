@@ -6914,12 +6914,12 @@ SCRIPT_CMD(do_mpskillgroup)
 	{
 		if( fAdd )
 		{
-			if( !mob->pcdata_group_known[gn] )
+			if( !mob->pcdata->group_known[gn] )
 				gn_add(mob,gn);
 		}
 		else
 		{
-			if( mob->pcdata_group_known[gn] )
+			if( mob->pcdata->group_known[gn] )
 				gn_remove(mob,gn);
 		}
 	}
