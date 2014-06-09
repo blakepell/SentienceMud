@@ -194,17 +194,17 @@ void do_tpstat(CHAR_DATA *ch, char *argument)
 			return;
 		}
 
-		if (victim && (token = get_token_char(victim, vnum, count))) {
+		if (victim && !(token = get_token_char(victim, vnum, count))) {
 			act("$N doesn't have that token.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 			return;
 		}
 
-		if (object && (token = get_token_obj(object, vnum, count))) {
+		if (object && !(token = get_token_obj(object, vnum, count))) {
 			act("$p doesn't have that token.", ch, NULL, NULL, object, NULL, NULL, NULL, TO_CHAR);
 			return;
 		}
 
-		if (room && (token = get_token_room(room, vnum, count))) {
+		if (room && !(token = get_token_room(room, vnum, count))) {
 			send_to_char("The room doesn't have that token.", ch);
 			return;
 		}

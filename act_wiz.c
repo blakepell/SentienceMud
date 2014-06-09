@@ -3319,7 +3319,7 @@ void do_advance(CHAR_DATA *ch, char *argument)
 
 		immortal = victim->pcdata->immortal;
 
-		if (victim->tot_level == MAX_LEVEL && str_cmp(ch->name, "Syn")) {
+		if (victim->tot_level == MAX_LEVEL) {
 			send_to_char("You may not delete implementors.\n\r", ch);
 			return;
 		}
@@ -3634,7 +3634,7 @@ void do_log(CHAR_DATA *ch, char *argument)
     one_argument(argument, arg);
 
     /* This command is strict */
-    if (str_cmp(ch->name, "Syn") && str_cmp(ch->name, "Whisp") && str_cmp(ch->name,"Madcow") && str_cmp(ch->name, "Ertai"))
+    if (ch->tot_level < MAX_LEVEL)
     {
 	send_to_char("Huh?\n\r", ch);
 	return;

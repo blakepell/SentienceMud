@@ -1268,91 +1268,119 @@ void reset_area(AREA_DATA *pArea)
 	}
 }
 
+void room_update(ROOM_INDEX_DATA *room)
+{
+	char buf[MAX_STRING_LENGTH];
+
+	TOKEN_DATA *token;
+	ITERATOR it;
+	if (room->progs->delay > 0 && --room->progs->delay <= 0)
+		p_percent_trigger(NULL, NULL, room, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_DELAY, NULL);
+
+	p_percent_trigger(NULL, NULL, room, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RANDOM, NULL);
+
+	// Update tokens on room. Remove the one for which the timer has run out.
+	iterator_start(&it, room->ltokens);
+	while((token=(TOKEN_DATA*)iterator_nextdata(&it)))
+	{
+		if (IS_SET(token->flags, TOKEN_REVERSETIMER))
+		{
+			++token->timer;
+		}
+		else if (token->timer > 0)
+		{
+			--token->timer;
+			if (token->timer <= 0) {
+				if( room->source )
+					sprintf(buf, "room update: token %s(%ld) clone room %s(%ld, %1d:%1d) was extracted because of timer",
+						token->name, token->pIndexData->vnum, room->name, room->vnum, room->id[0], room->id[1]);
+				else if( room->wilds )
+					sprintf(buf, "room update: token %s(%ld) wilds room %s(%ld, %ld, %ld) was extracted because of timer",
+						token->name, token->pIndexData->vnum, room->name, room->wilds->uid, room->x, room->y);
+				else
+					sprintf(buf, "room update: token %s(%ld) room %s(%ld) was extracted because of timer",
+						token->name, token->pIndexData->vnum, room->name, room->vnum);
+				log_string(buf);
+				p_percent_trigger(NULL, NULL, NULL, token, NULL, NULL, NULL, NULL, NULL, TRIG_EXPIRE, NULL);
+				token_from_room(token);
+				free_token(token);
+			}
+		}
+	}
+	iterator_stop(&it);
+}
 
 void area_update(bool fBoot)
 {
-    AREA_DATA *pArea;
-    char buf[MAX_STRING_LENGTH];
-    int hash;
-    ROOM_INDEX_DATA *room;
-    /* VIZZWILDS */
-    WILDS_DATA *pWilds;
+	ITERATOR it;
+	AREA_DATA *pArea;
+	char buf[MAX_STRING_LENGTH];
+	int hash;
+	ROOM_INDEX_DATA *room;
+	/* VIZZWILDS */
+	WILDS_DATA *pWilds;
 
-    /* Loop through every area*/
-    for (pArea = area_first; pArea != NULL; pArea = pArea->next)
-    {
-        /* Increment the area's age*/
-	pArea->age++;
-
-	/* Check area's age and reset if necessary*/
-	if (fBoot
-            || (pArea->age >= pArea->repop
-	        || (pArea->repop == 0 && pArea->age > 15)
-	        || pArea->age >= 120))
+	/* Loop through every area*/
+	for (pArea = area_first; pArea != NULL; pArea = pArea->next)
 	{
-            plogf("db.c, area_update: Resetting area %s.", pArea->name);
-	    reset_area(pArea);
-	    sprintf(buf,"%s has just been reset.",pArea->name);
-	    wiznet(buf,NULL,NULL,WIZ_RESETS,0,0);
-	    pArea->age = 0;
+		/* Increment the area's age*/
+		pArea->age++;
 
-	    if (pArea->nplayer == 0)
-		pArea->empty = TRUE;
-
-            /* If the area contains wilds sectors*/
-	    if (pArea->wilds)
-            {
-                /* Loop through all wilds in this area*/
-                for(pWilds = pArea->wilds;pWilds;pWilds = pWilds->next)
-                {
-                    if (fBoot)
-                        continue;
-
-                    pWilds->age++;
-
-                    if (pWilds->age >= pWilds->repop)
-                    {
-                        plogf("Resetting wilds uid %ld, '%s'...", pWilds->uid, pWilds->name);
-                        pWilds->age = 0;
-                    }
-                }
-            }
-	}
-    }
-
-    for (hash = 0; hash < MAX_KEY_HASH; hash++)
-    {
-		for (room = room_index_hash[hash]; room; room = room->next)
+		/* Check area's age and reset if necessary*/
+		if (fBoot || (pArea->age >= pArea->repop || (pArea->repop == 0 && pArea->age > 15) || pArea->age >= 120))
 		{
-			TOKEN_DATA *token;
-			ITERATOR it;
-			if (!room->area->empty || IS_SET(room->room2_flags, ROOM_ALWAYS_UPDATE)) {
-				if (room->progs->delay > 0 && --room->progs->delay <= 0)
-					p_percent_trigger(NULL, NULL, room, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_DELAY, NULL);
+			plogf("db.c, area_update: Resetting area %s.", pArea->name);
+			reset_area(pArea);
+			sprintf(buf,"%s has just been reset.",pArea->name);
+			wiznet(buf,NULL,NULL,WIZ_RESETS,0,0);
+			pArea->age = 0;
 
-				p_percent_trigger(NULL, NULL, room, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RANDOM, NULL);
+			if (pArea->nplayer == 0)
+				pArea->empty = TRUE;
 
-				// Update tokens on room. Remove the one for which the timer has run out.
-				iterator_start(&it, room->ltokens);
-				while((token=(TOKEN_DATA*)iterator_nextdata(&it))) {
-					if (IS_SET(token->flags, TOKEN_REVERSETIMER)) {
-						++token->timer;
-					} else if (token->timer > 0) {
-						--token->timer;
-						if (token->timer <= 0) {
-							sprintf(buf, "area/room update: token %s(%ld) room %s(%ld) was extracted because of timer",
-								token->name, token->pIndexData->vnum, room->name, room->vnum);
-							log_string(buf);
-							p_percent_trigger(NULL, NULL, NULL, token, NULL, NULL, NULL, NULL, NULL, TRIG_EXPIRE, NULL);
-							token_from_room(token);
-							free_token(token);
-						}
+			/* If the area contains wilds sectors*/
+			if (pArea->wilds)
+			{
+				/* Loop through all wilds in this area*/
+				for(pWilds = pArea->wilds;pWilds;pWilds = pWilds->next)
+				{
+					if (fBoot)
+						continue;
+
+					pWilds->age++;
+
+					if (pWilds->age >= pWilds->repop)
+					{
+						plogf("Resetting wilds uid %ld, '%s'...", pWilds->uid, pWilds->name);
+						pWilds->age = 0;
+
+						// This.. doesn't do anything?
 					}
 				}
-				iterator_stop(&it);
 			}
 		}
-    }
+	}
+
+	for (hash = 0; hash < MAX_KEY_HASH; hash++)
+	{
+		for (room = room_index_hash[hash]; room; room = room->next)
+		{
+			// Persistant rooms are handled separately!
+
+			if (!room->persist && (!room->area->empty || IS_SET(room->room2_flags, ROOM_ALWAYS_UPDATE)))
+			{
+				room_update(room);
+			}
+		}
+	}
+
+	// Update persistant rooms at all times
+	iterator_start(&it, persist_rooms);
+	while(( room = (ROOM_INDEX_DATA *)iterator_nextdata(&it) ))
+	{
+		room_update(room);
+	}
+	iterator_stop(&it);
 }
 
 
@@ -1371,7 +1399,8 @@ void reset_room(ROOM_INDEX_DATA *pRoom)
     int i;
     int c;
 
-    if (!pRoom)
+// Invalid room or the room is persistant
+    if (!pRoom || pRoom->persist)
         return;
 
     pMob = NULL;

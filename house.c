@@ -223,7 +223,7 @@ void do_evict(CHAR_DATA *ch, char *argument)
 
 	   save_char_obj(d.character);
 
-	   do_quit(d.character,"");
+	   do_quit(d.character,NULL);
 	   return;
        }
     }
@@ -253,7 +253,7 @@ void do_housemove(CHAR_DATA *ch, char *argument)
     argument = one_argument(argument, arg);
     argument = one_argument_norm(argument, arg2);
 
-    if ( ch->tot_level < 155 && str_cmp(ch->name,"Emma") && str_cmp(ch->name,"Nimue"))
+    if ( ch->tot_level < MAX_LEVEL)
     {
 	send_to_char("You don't have clearance to do this.\n\r", ch );
 	return;
@@ -290,7 +290,7 @@ void do_housemove(CHAR_DATA *ch, char *argument)
 	    act( buf, ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR );
 
 	    char_to_room( victim, get_room_index( 1 ) );
-	    do_quit(victim,"");
+	    do_quit(victim,NULL);
 	    return;
 	}
     }
