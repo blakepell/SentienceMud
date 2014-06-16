@@ -3839,12 +3839,8 @@ void do_who_new(CHAR_DATA * ch, char *argument)
 
 	if(wch->race >= MAX_PC_RACE)
 		strcpy(racestr, "       ");
-	else if(!IS_IMMORTAL(wch) || wch->race == grn_shaper)
-		strcpy(racestr, pc_race_table[wch->race].who_name);
-	else if(wch->sex == SEX_FEMALE)
-		strcpy(racestr, "Goddess");
 	else
-		strcpy(racestr, "  God  ");
+		strcpy(racestr, pc_race_table[wch->race].who_name);
 	racelen = 7 + strlen(racestr) - strlen_no_colors(racestr);
 
 	nMatch++;
