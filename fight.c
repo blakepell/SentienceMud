@@ -5593,7 +5593,7 @@ void do_flee(CHAR_DATA *ch, char *argument)
 	ROOM_INDEX_DATA *was_in;
 	ROOM_INDEX_DATA *now_in;
 	CHAR_DATA *fleeing_from;
-	char arg[MAX_STRING_LENGTH], buf[MSL];
+	char buf[MSL];
 	int attempt;
 	bool flee_lag = FALSE;
 	int door = -1;

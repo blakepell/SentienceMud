@@ -4957,7 +4957,7 @@ SCRIPT_CMD(do_tpdestroyroom)
 SCRIPT_CMD(do_tpshowroom)
 {
 	CHAR_DATA *viewer = NULL, *next;
-	ROOM_INDEX_DATA *room = NULL, *dest, *save_room;
+	ROOM_INDEX_DATA *room = NULL, *dest;
 	WILDS_DATA *wilds = NULL;
 	SCRIPT_PARAM arg;
 	long mapid;

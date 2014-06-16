@@ -7390,7 +7390,7 @@ void do_token(CHAR_DATA *ch, char *argument)
 
 			give_token(token_index, NULL, NULL, ch->in_room);
 			if( ch->in_room->wilds && IS_SET(ch->in_room->room2_flags, ROOM_VIRTUAL_ROOM))
-				sprintf(buf, "Gave token %s(%ld) to wilds room %ld @ (%d, %d)\n\r", token_index->name, token_index->vnum, ch->in_room->wilds->uid, ch->in_room->x, ch->in_room->y);
+				sprintf(buf, "Gave token %s(%ld) to wilds room %ld @ (%ld, %ld)\n\r", token_index->name, token_index->vnum, ch->in_room->wilds->uid, ch->in_room->x, ch->in_room->y);
 			else if( ch->in_room->source )
 				sprintf(buf, "Gave token %s(%ld) to clone room %ld ID(%lu:%lu)\n\r", token_index->name, token_index->vnum, ch->in_room->source->vnum, ch->in_room->id[0], ch->in_room->id[1]);
 			else
@@ -7404,7 +7404,7 @@ void do_token(CHAR_DATA *ch, char *argument)
 			}
 
 			if( ch->in_room->wilds && IS_SET(ch->in_room->room2_flags, ROOM_VIRTUAL_ROOM))
-				sprintf(buf, "Removed token %s(%ld.%ld) from wilds room %ld @ (%d, %d)\n\r", token->name, count, token->pIndexData->vnum, ch->in_room->wilds->uid, ch->in_room->x, ch->in_room->y);
+				sprintf(buf, "Removed token %s(%ld.%ld) from wilds room %ld @ (%ld, %ld)\n\r", token->name, count, token->pIndexData->vnum, ch->in_room->wilds->uid, ch->in_room->x, ch->in_room->y);
 			else if( ch->in_room->source )
 				sprintf(buf, "Removed token %s(%ld.%ld) from clone room %ld ID(%lu:%lu)\n\r", token->name, count, token->pIndexData->vnum, ch->in_room->source->vnum, ch->in_room->id[0], ch->in_room->id[1]);
 			else

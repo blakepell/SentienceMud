@@ -187,6 +187,7 @@ static LISTDESTROY_FUNC *__var_blist_deleter[] = {
 	NULL
 };
 
+/*
 static int __var_blist_size[] = {
 	0,
 	sizeof(LIST_ROOM_DATA),
@@ -199,10 +200,11 @@ static int __var_blist_size[] = {
 	sizeof(LIST_WILDS_DATA),
 	0
 };
+*/
 
 void variable_freedata (pVARIABLE v)
 {
-	ITERATOR it;
+	//ITERATOR it;
 
 	switch( v->type ) {
 	case VAR_STRING:
@@ -325,6 +327,7 @@ void variable_add(ppVARIABLE list,pVARIABLE var)
 	}
 }
 
+/*
 static void variable_dump_list(pVARIABLE list, char *prefix)
 {
 	while(list) {
@@ -333,6 +336,7 @@ static void variable_dump_list(pVARIABLE list, char *prefix)
 		list = list->global_next;
 	}
 }
+*/
 
 pVARIABLE variable_create(ppVARIABLE list,char *name, bool index, bool clear)
 {
@@ -1178,7 +1182,7 @@ bool variable_remove(ppVARIABLE list,char *name)
 bool variable_copy(ppVARIABLE list,char *oldname,char *newname)
 {
 	pVARIABLE oldv, newv;
-	ITERATOR it;
+	//ITERATOR it;
 
 	if(!(oldv = variable_get(*list,oldname))) return FALSE;
 
@@ -1358,7 +1362,7 @@ bool variable_setsave(pVARIABLE vars,char *name,bool state)
 void variable_clearfield(int type, void *ptr)
 {
 	register pVARIABLE cur = variable_head;
-	unsigned long uid[2];
+	//unsigned long uid[2];
 
 	if(!ptr) return;
 

@@ -7675,7 +7675,7 @@ LIST_LINK *iterator_next(ITERATOR *it)
 void *iterator_nextdata(ITERATOR *it)
 {
 	register LIST_LINK *link = NULL;
-	register LIST_LINK *next = NULL;
+	//register LIST_LINK *next = NULL;
 	if(it && it->list && it->list->valid && it->current) {
 		for(link = it->current; link && !link->data; link = link->next);
 

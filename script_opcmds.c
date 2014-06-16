@@ -4824,7 +4824,7 @@ SCRIPT_CMD(do_opdestroyroom)
 SCRIPT_CMD(do_opshowroom)
 {
 	CHAR_DATA *viewer = NULL, *next;
-	ROOM_INDEX_DATA *room = NULL, *dest, *save_room;
+	ROOM_INDEX_DATA *room = NULL, *dest;
 	WILDS_DATA *wilds = NULL;
 	SCRIPT_PARAM arg;
 	long mapid;

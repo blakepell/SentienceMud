@@ -1293,7 +1293,7 @@ void room_update(ROOM_INDEX_DATA *room)
 			if (token->timer <= 0) {
 				if( room->source )
 					sprintf(buf, "room update: token %s(%ld) clone room %s(%ld, %1d:%1d) was extracted because of timer",
-						token->name, token->pIndexData->vnum, room->name, room->vnum, room->id[0], room->id[1]);
+						token->name, token->pIndexData->vnum, room->name, room->vnum, (int)room->id[0], (int)room->id[1]);
 				else if( room->wilds )
 					sprintf(buf, "room update: token %s(%ld) wilds room %s(%ld, %ld, %ld) was extracted because of timer",
 						token->name, token->pIndexData->vnum, room->name, room->wilds->uid, room->x, room->y);

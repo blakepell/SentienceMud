@@ -5124,7 +5124,7 @@ OEDIT(oedit_delaffect)
     AFFECT_DATA *pAf_next;
     char affect[MAX_STRING_LENGTH];
     int  value;
-    int  cnt = 0;
+    //int  cnt = 0;
 
     EDIT_OBJ(ch, pObj);
 
@@ -5184,7 +5184,7 @@ OEDIT(oedit_delimmune)
     AFFECT_DATA *pAf_next;
     char affect[MAX_STRING_LENGTH];
     int  value;
-    int  cnt = 0;
+    //int  cnt = 0;
 
     EDIT_OBJ(ch, pObj);
 

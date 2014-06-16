@@ -336,7 +336,7 @@ void do_get(CHAR_DATA *ch, char *argument)
 	char arg2[MAX_INPUT_LENGTH];
 	char arg3[MAX_INPUT_LENGTH];
 	char buf[MAX_STRING_LENGTH];
-	char short_descr[MSL];
+	//char short_descr[MSL];
 	OBJ_DATA *obj, *obj_next;
 	OBJ_DATA *container;
 	OBJ_DATA *match_obj;
@@ -3421,7 +3421,7 @@ void sacrifice_obj(CHAR_DATA *ch, OBJ_DATA *obj, char *name)
 void do_sacrifice(CHAR_DATA *ch, char *argument)
 {
     char arg[MAX_INPUT_LENGTH];
-    char buf[MAX_STRING_LENGTH];
+    //char buf[MAX_STRING_LENGTH];
     char short_descr[MSL];
     OBJ_DATA *obj;
     OBJ_DATA *obj_next;

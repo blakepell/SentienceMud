@@ -2475,7 +2475,7 @@ void do_wlist(CHAR_DATA *ch, char *argument)
 	LIST_WILDS_DATA *data;
     WILDS_DATA *pWilds;
     BUFFER *buffer;
-    int place_type = 0;
+    //int place_type = 0;
 
     buffer = new_buf();
 
@@ -2487,7 +2487,7 @@ void do_wlist(CHAR_DATA *ch, char *argument)
 	while((data = (LIST_WILDS_DATA *)iterator_nextdata(&iter)))
 	{
 		pWilds = data->wilds;
-		sprintf(buf,"[%7d] [%-26.26s] [ %5d x %-5d ] %s\n\r", pWilds->uid,
+		sprintf(buf,"[%7ld] [%-26.26s] [ %5d x %-5d ] %s\n\r", pWilds->uid,
 			(IS_NULLSTR(pWilds->name) ? "no name" : pWilds->name),
 			pWilds->map_size_x, pWilds->map_size_y,
 			((!IS_NULLSTR(pWilds->pArea->name)) ? pWilds->pArea->name : ""));
