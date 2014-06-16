@@ -1504,11 +1504,11 @@ DECL_OPC_FUN(opc_list)
 		switch(block->loops[lp].d.l.type) {
 		case ENT_STRING:
 			log_stringf("opc_list: list type ENT_STRING");
-			str = block->loops[lp].d.next.str;
+			str = block->loops[lp].d.l.next.str;
 
 			if( IS_NULLSTR(str) )
 			{
-				skip = TRUE:
+				skip = TRUE;
 				break;
 			}
 
@@ -1516,7 +1516,7 @@ DECL_OPC_FUN(opc_list)
 
 			variables_set_string(block->info.var,block->loops[lp].var_name,buf,FALSE);
 
-			block->loops[lp].d.next.str = str;
+			block->loops[lp].d.l.next.str = str;
 			break;
 
 
