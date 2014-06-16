@@ -5985,7 +5985,7 @@ void do_turn(CHAR_DATA *ch, char *argument)
 				act("{RYou scream with pain as your flesh sizzles and melts!{x", ch, vch, NULL, NULL, NULL, NULL, NULL, TO_VICT);
 				act("{R$n screams with pain as $s flesh sizzles and melts!{x", vch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 				damage(ch, vch, dice(ch->tot_level, 8), TYPE_UNDEFINED, DAM_HOLY, FALSE);
-				do_function(vch, &do_flee, "anyway");
+				do_function(vch, &do_flee, NULL);
 				PANIC_STATE(vch, 12);
 				DAZE_STATE(vch, 12);
 			} else {

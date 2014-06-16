@@ -4905,7 +4905,7 @@ OEDIT(oedit_addcatalyst)
 	if(!cat) {
 		pCat = new_affect();
 		pCat->next = NULL;
-		pCat->where = TO_CATALYST_DORMANT;
+		pCat->where = w;
 		pCat->modifier = n;
 		pCat->type = t;
 		pCat->level = s;

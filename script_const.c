@@ -81,18 +81,22 @@ ENT_FIELD entity_types[] = {
 	{"skillinfo",		ENTITY_VAR_SKILLINFO,	ENT_SKILLINFO	},
 	{"aff",				ENTITY_VAR_AFFECT,		ENT_AFFECT		},
 	{"conn",			ENTITY_VAR_CONN,		ENT_CONN		},
+	{"church",			ENTITY_VAR_CHURCH,		ENT_CHURCH		},
 	{"dynlist_exit",	ENTITY_VAR_BLIST_EXIT,	ENT_BLIST_EXIT	},
 	{"dynlist_mob",		ENTITY_VAR_BLIST_MOB,	ENT_BLIST_MOB	},
 	{"dynlist_obj",		ENTITY_VAR_BLIST_OBJ,	ENT_BLIST_OBJ	},
 	{"dynlist_room",	ENTITY_VAR_BLIST_ROOM,	ENT_BLIST_ROOM	},
 	{"dynlist_skill",	ENTITY_VAR_BLIST_SKILL,	ENT_BLIST_SKILL	},
 	{"dynlist_token",	ENTITY_VAR_BLIST_TOK,	ENT_BLIST_TOK	},
+	{"dynlist_area",	ENTITY_VAR_BLIST_AREA,	ENT_BLIST_AREA	},
+	{"dynlist_wilds",	ENTITY_VAR_BLIST_WILDS,	ENT_BLIST_WILDS	},
 	{"list_conn",		ENTITY_VAR_PLIST_CONN,	ENT_PLIST_CONN	},
 	{"list_mob",		ENTITY_VAR_PLIST_MOB,	ENT_PLIST_MOB	},
 	{"list_obj",		ENTITY_VAR_PLIST_OBJ,	ENT_PLIST_OBJ	},
 	{"list_room",		ENTITY_VAR_PLIST_ROOM,	ENT_PLIST_ROOM	},
 	{"list_str",		ENTITY_VAR_PLIST_STR,	ENT_PLIST_STR	},
 	{"list_token",		ENTITY_VAR_PLIST_TOK,	ENT_PLIST_TOK	},
+	{"list_church",		ENTITY_VAR_PLIST_CHURCH,	ENT_PLIST_CHURCH	},
 	{NULL,				0,						ENT_UNKNOWN	}
 };
 
@@ -936,7 +940,7 @@ IFCHECK_DATA ifcheck_table[] = {
 	{ "id2",				IFC_ANY,	"E",	TRUE,	ifc_id2,				"ifcheck id2" },
 	{ "identical",			IFC_ANY,	"EE",	FALSE,	ifc_identical,			"ifcheck identical" },
 	{ "imm",				IFC_ANY,	"ES",	FALSE,	ifc_imm,				"ifcheck imm" },
-	{ "inchurch",			IFC_ANY,	"EE",	FALSE,	ifc_inchurch,			"ifcheck inchurch" },
+//	{ "inchurch",			IFC_ANY,	"EE",	FALSE,	ifc_inchurch,			"ifcheck inchurch" },	// already possible with church
 	{ "innature",			IFC_ANY,	"E",	FALSE,	ifc_innature,			"ifcheck innature" },
 	{ "inputwait",			IFC_ANY,	"E",	FALSE,	ifc_inputwait,			"ifcheck inputwait" },
 	{ "inwilds",			IFC_ANY,	"",		FALSE,	ifc_inwilds,			"ifcheck inwilds" },

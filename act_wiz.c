@@ -3992,10 +3992,12 @@ void do_tkset(CHAR_DATA *ch, char *argument)
     }
 
     value = atol(arg5);
+    /*
     if (value < -2000000000 || value > 2000000000) {
 		send_to_char("Value out of range.\n\r", ch);
 		return;
     }
+    */
 
     if (value_num == -1)
     {
@@ -5429,12 +5431,6 @@ void do_sockets( CHAR_DATA *ch, char *argument )
            else
               sprintf( idle, "  " );
 
-           if (d->character != NULL && (!str_cmp(d->character->name, "arlox")))
-	   sprintf(buf, "{D[{x%3d %s %7s{g %2s{D]{W Arlox{x        136.17.156.20\n\r", d->descriptor, st, s, idle);
-	   else
-	   if (d->character != NULL && (!str_cmp(d->character->name, "zoron")))
-	   sprintf(buf, "{D[{x%3d %s %7s{g %2s{D]{W Zoron{x        196.27.52.10\n\r", d->descriptor, st, s, idle);
-	   else
            sprintf(buf, "{D[{x%3d %s %7s{g %2s{D]{W %-12s{x %-50.50s\n\r",
               d->descriptor,
               st,

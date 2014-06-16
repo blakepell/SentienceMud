@@ -1429,6 +1429,7 @@ ROOM_INDEX_DATA *new_room_index( void )
     pRoom->heal_rate	    =   100;
     pRoom->mana_rate	    =   100;
     pRoom->visited = 0;
+    pRoom->id[0] = pRoom->id[1] = 0;	// Explicitly make this 0,0 until set, or left for static rooms
 
     pRoom->lentity = list_create(FALSE);
     pRoom->lpeople = list_create(FALSE);

@@ -177,8 +177,8 @@ SPELL_FUNC(spell_nexus)
 		portal->value[3] = to_room->vnum;
 		portal->value[4] = 0;
 		portal->value[5] = 0;
-		portal->value[6] = 0;
-		portal->value[7] = 0;
+		portal->value[6] = to_room->id[0];	// If this is a clone room, these will be set
+		portal->value[7] = to_room->id[1];	// otherwise, they will be 0,0
 	}
 
 	obj_to_room(portal,from_room);
@@ -205,8 +205,8 @@ SPELL_FUNC(spell_nexus)
 			portal->value[3] = from_room->vnum;
 			portal->value[4] = 0;
 			portal->value[5] = 0;
-			portal->value[6] = 0;
-			portal->value[7] = 0;
+			portal->value[6] = from_room->id[0];
+			portal->value[7] = from_room->id[1];
 		}
 
 		obj_to_room(portal,to_room);

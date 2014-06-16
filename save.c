@@ -3894,18 +3894,12 @@ void fwrite_token(CHAR_DATA *ch, TOKEN_DATA *token, FILE *fp)
 	fprintf(fp, "Value %d %ld\n", i, token->value[i]);
 
     if(token->progs && token->progs->vars) {
-	pVARIABLE var;
-
-	for(var = token->progs->vars; var; var = var->next) {
-		if(IS_IMMORTAL(ch) && !IS_NPC(ch) && ch->desc)
-			printf_to_char(ch, "Checking variable '%s'...", var->name);
-		if(var->save) {
-			if(IS_IMMORTAL(ch) && !IS_NPC(ch) && ch->desc)
-				send_to_char("SAVING", ch);
-			variable_fwrite(var, fp);
-		}
-			if(IS_IMMORTAL(ch) && !IS_NPC(ch) && ch->desc)
-				send_to_char("\n\r", ch);
+		pVARIABLE var;
+	
+		for(var = token->progs->vars; var; var = var->next) {
+			if(var->save) {
+				variable_fwrite(var, fp);
+			}
 		}
     }
 

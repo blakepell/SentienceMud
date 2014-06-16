@@ -4215,7 +4215,7 @@ void update_pc_timers(CHAR_DATA *ch)
 	{
 	    act("{RPANIC! You are overcome with FEAR and attmpts to FLEE!{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	    act("{R$n is overcome with FEAR and attmpts to FLEE!{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
-	    do_function(ch, &do_flee, "anyway");
+	    do_function(ch, &do_flee, NULL);
 	    ch->panic = 0;
 	}
     }

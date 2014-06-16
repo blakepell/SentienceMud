@@ -1345,8 +1345,8 @@ void do_practice( CHAR_DATA *ch, char *argument )
 		return;
 	}
 
-	if (ch->pcdata->learned[sn] >= 100) {
-		sprintf(buf, "You already know all there is to know about %s!\n\r", skill_table[sn].name);
+	if (ch->pcdata->learned[sn] >= 75) {
+		sprintf(buf, "There is nothing more that you can learn about %s here.\n\r", skill_table[sn].name);
 		send_to_char(buf, ch);
 	} else {
 		this_class = get_this_class(ch, sn);

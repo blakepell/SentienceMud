@@ -300,6 +300,15 @@ void gain_exp(CHAR_DATA *ch, int gain)
 {
 	char buf[MAX_STRING_LENGTH];
 
+	// Allow scripts to affect gaining experience, as well as blocking the use of the xp
+	ch->tempstore[0] = gain;
+	if(p_percent_trigger(ch, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_XPGAIN, NULL))
+		return;
+
+	// Only update gain IF the value is less than what was originally put in, don't allow scripts to boost the XP at this point.
+	if( ch->tempstore[0] < gain )
+		gain = ch->tempstore[0];
+
 	if (IS_IMMORTAL(ch)) return;
 
 	if(IS_NPC(ch)) {
@@ -2684,7 +2693,7 @@ void aggr_update(void)
 				wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 			act("You stumble about choking and gagging!",
 				wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
-			do_function(wch, &do_flee, "anyway");
+			do_function(wch, &do_flee, NULL);
 		    }
 		    else
 		    if (number_percent() <= 2)
@@ -2753,7 +2762,7 @@ void aggr_update(void)
 			    {
 				act("{GYou choke on the acrid fumes from $p!{x", victim, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 				act("{G$n chokes on the acrid fumes from $p!{x", victim, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
-				do_flee(victim, "anyway");
+				do_flee(victim, NULL);
 			    }
 			}
 		    }
@@ -3655,7 +3664,7 @@ void scare_update(CHAR_DATA *ch)
 		    act("$n balks with terror at a terrifying ominous presence in the room!", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		}
 
-		do_flee(victim, "anyway");
+		do_flee(victim, NULL);
 	    }
 	}
     }
