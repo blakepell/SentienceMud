@@ -1024,6 +1024,7 @@ struct loop_data {
 				int door;
 				AFFECT_DATA *aff;
 				void *raw;
+				char *str;
 			} cur, next;
 			struct {
 				LIST *lp;
@@ -1033,6 +1034,8 @@ struct loop_data {
 		} l;
 	} d;
 	char var_name[MIL];
+	int counter;
+	char buf[MSL];
 };
 
 /* Running information used in execution */

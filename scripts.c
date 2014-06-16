@@ -878,6 +878,7 @@ DECL_OPC_FUN(opc_list)
 	bool skip = FALSE;
 	int lp, i;
 	char *str1,*str2, *str;
+	char buf[MSL];
 	LIST_UID_DATA *uid;
 	LIST_ROOM_DATA *lrd;
 	LIST_EXIT_DATA *led;
@@ -920,8 +921,26 @@ DECL_OPC_FUN(opc_list)
 			return FALSE;
 		}
 
+		block->loops[lp].counter = 1;
 
 		switch(arg.type) {
+		case ENT_STRING:
+			log_stringf("opc_list: list type ENT_STRING");
+			if(IS_NULLSTR(arg.d.str))
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+
+			strncpy(block->loops[lp].buf, arg.d.str, MSL-1);
+			str = one_argument_norm(block->loops[lp].buf, buf);
+
+			block->loops[lp].d.l.type = ENT_STRING;
+			block->loops[lp].d.l.cur.str = NULL;
+			block->loops[lp].d.l.next.str = str;
+			block->loops[lp].d.l.owner = NULL;
+
+
+			// Set the variable
+			variables_set_string(block->info.var,block->loops[lp].var_name,buf,FALSE);
+			break;
 		case ENT_EXIT:
 			log_stringf("opc_list: list type ENT_EXIT");
 			if(!arg.d.door.r)
@@ -1479,9 +1498,28 @@ DECL_OPC_FUN(opc_list)
 		block->cond[block->cur_line->level] = TRUE;
 	} else {
 		log_stringf("opc_list: next loop variable '%s'", block->loops[lp].var_name);
+		block->loops[lp].counter++;
 
 		// Continue loop
 		switch(block->loops[lp].d.l.type) {
+		case ENT_STRING:
+			log_stringf("opc_list: list type ENT_STRING");
+			str = block->loops[lp].d.next.str;
+
+			if( IS_NULLSTR(str) )
+			{
+				skip = TRUE:
+				break;
+			}
+
+			str = one_argument_norm(str,buf);
+
+			variables_set_string(block->info.var,block->loops[lp].var_name,buf,FALSE);
+
+			block->loops[lp].d.next.str = str;
+			break;
+
+
 		case ENT_EXIT:
 			log_stringf("opc_list: list type ENT_EXIT");
 			i = block->loops[lp].d.l.cur.door = block->loops[lp].d.l.next.door;
