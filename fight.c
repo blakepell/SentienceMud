@@ -543,6 +543,14 @@ bool one_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt, bool secondary)
 		return FALSE;
 	}
 
+	// If the attacker of one_hit is not fighting and is not what the attacker is fighting
+	if( !ch->fighting && !set_fighting(ch, victim)) {
+
+		// If for some reason, fighting could not be established, bail out.
+		victim->set_death_type = DEATHTYPE_ALIVE;
+		return FALSE;
+	}
+
 	if (!secondary) {
 		wield = get_eq_char(ch, WEAR_WIELD);
 		wield2 = get_eq_char(ch, WEAR_SECONDARY);
@@ -645,9 +653,15 @@ bool one_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt, bool secondary)
 	// Miss.
 	if (!diceroll && (ch->tot_level > LEVEL_NEWBIE || number_percent() > 33)) {
 		victim->set_death_type = DEATHTYPE_ALIVE;
-		damage(ch, victim, 0, dt, dam_type, TRUE);
+
+		dam_message(ch, victim, -1, dt, FALSE);	// Show misses, skip all the damage BS as it's irrelevant here
+		//damage(ch, victim, -1, dt, dam_type, TRUE);
 
 		if (!IS_NPC(ch)) deduct_move(ch, 1);
+
+		if( !victim->fighting && !ch->fighting )
+		{
+		}
 
 		tail_chain();
 		return TRUE;
@@ -1221,15 +1235,27 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 	case(IS_VULNERABLE): dam = dam * 6/5; break;		// Boosts damage by 20%
 	}
 
-	// @@@NIB - DAMAGE TRIGGER... This needs to be resticted
-	//  This has a damage at the deepest level, the last stop before it is be applied to the victim
-	victim->hit_damage = dam;
-	victim->hit_type = dt;
-	if(p_percent_trigger(victim,NULL, NULL, NULL, ch, NULL, NULL, weapon, NULL, TRIG_DAMAGE, show?"visible":"hidden") || victim->hit_damage < 1) {
-		victim->hit_damage = 0;
-		return FALSE;
+	// If already immune, skip damage trigger
+	if( !immune )
+	{
+		// @@@NIB - DAMAGE TRIGGER... This needs to be resticted
+		//  This has a damage at the deepest level, the last stop before it is be applied to the victim
+		victim->hit_damage = dam;
+		victim->hit_type = dt;
+		if(p_percent_trigger(victim,NULL, NULL, NULL, ch, NULL, NULL, weapon, NULL, TRIG_DAMAGE, show?"visible":"hidden")) {
+			victim->hit_damage = 0;
+
+			// the damage script should have posted messages if code reaches here.
+			tail_chain();
+			return FALSE;
+		}
+
+		// Only allow reduction in damage
+		if( victim->hit_damage < dam )
+			dam = victim->hit_damage;
+
+		if( dam < 0 ) dam = 0;
 	}
-	dam = victim->hit_damage;
 
 	// READ-ONLY access to damage and damage type
 	victim->hit_damage = dam;
@@ -1241,6 +1267,9 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 
 	if (dam <= 0) {
 		victim->set_death_type = DEATHTYPE_ALIVE;
+
+		// do a message for no damage
+		tail_chain();
 		return FALSE;
 	}
 
@@ -1345,7 +1374,7 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 
 	victim->hit -= dam;
 
-	// Protect imms
+	// Protect imms - Why just imms?
 	if (!IS_NPC(victim) && IS_IMMORTAL(victim) &&  victim->hit < 1)
 		victim->hit = 1;
 
@@ -2498,47 +2527,50 @@ void update_pos(CHAR_DATA *victim)
 
 
 // Start a fight.
-void set_fighting(CHAR_DATA *ch, CHAR_DATA *victim)
+bool set_fighting(CHAR_DATA *ch, CHAR_DATA *victim)
 {
 	OBJ_DATA *obj;
 	char buf[MAX_STRING_LENGTH];
 
 	if (ch->in_room == NULL || victim->in_room == NULL)
-	return;
+		return FALSE;
 
 	// Fix for do_opcast. Make sure the dummy mob is not attacked.
-	if ((IS_NPC(ch) && ch->pIndexData->vnum == MOB_VNUM_OBJCASTER)
-	||  (IS_NPC(victim) && victim->pIndexData->vnum == MOB_VNUM_OBJCASTER))
-	return;
+	if ((IS_NPC(ch) && ch->pIndexData->vnum == MOB_VNUM_OBJCASTER) ||
+		(IS_NPC(victim) && victim->pIndexData->vnum == MOB_VNUM_OBJCASTER))
+		return FALSE;
 
 	if (ch->fighting != NULL)
 	{
-	sprintf(buf, "Set_fighting: already fighting, ch %s in room %s (%ld), victim %s in room %s (%ld)",
-		 ch->name, ch->in_room->name, ch->in_room->vnum,
-		 IS_NPC(victim) ? victim->short_descr : victim->name,
-		 victim->in_room->name, victim->in_room->vnum);
-	bug(buf, 0);
-	return;
+		/*
+		sprintf(buf, "Set_fighting: already fighting, ch %s in room %s (%ld), victim %s in room %s (%ld)",
+			 ch->name, ch->in_room->name, ch->in_room->vnum,
+			 IS_NPC(victim) ? victim->short_descr : victim->name,
+			 victim->in_room->name, victim->in_room->vnum);
+		bug(buf, 0);
+		*/
+		return FALSE;
 	}
 
 	// Mount character
 	if (IS_NPC(ch) && IS_SET(ch->act, ACT_MOUNT) && MOUNTED(ch))
 	{
-	if (IS_NPC(MOUNTED(ch))
-	||  get_profession(MOUNTED(ch), SECOND_SUBCLASS_WARRIOR) != CLASS_WARRIOR_CRUSADER)
-		return;
+		if (IS_NPC(MOUNTED(ch)) || get_profession(MOUNTED(ch), SECOND_SUBCLASS_WARRIOR) != CLASS_WARRIOR_CRUSADER)
+			return FALSE;
 	}
 
 	// Mount victim
 	if (IS_NPC(victim) && IS_SET(victim->act, ACT_MOUNT) && MOUNTED(victim))
 	{
-	if (IS_NPC(MOUNTED(victim))
-	||  get_profession(MOUNTED(victim), SECOND_SUBCLASS_WARRIOR) != CLASS_WARRIOR_CRUSADER)
-		return;
+		if (IS_NPC(MOUNTED(victim)) || get_profession(MOUNTED(victim), SECOND_SUBCLASS_WARRIOR) != CLASS_WARRIOR_CRUSADER)
+			return FALSE;
 	}
 
 	if (IS_AFFECTED(ch, AFF_SLEEP))
-	affect_strip(ch, gsn_sleep);
+	{
+		affect_strip(ch, gsn_sleep);
+		// Fix their affects?
+	}
 
 	// If victim is pulling a relic make the attacker PK for a little
 	// while... this way victim can fight back against kill/flee attacks
@@ -2552,10 +2584,10 @@ void set_fighting(CHAR_DATA *ch, CHAR_DATA *victim)
 	// Make sure they arn't fading
 	if (ch->fade > 0)
 	{
-	ch->fade = 0;
-	ch->fade_dir = -1;	//@@@NIB : 20071020
-	act("$n fades back into this dimension.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
-	act("You fade back into this dimension.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		ch->fade = 0;
+		ch->fade_dir = -1;	//@@@NIB : 20071020
+		act("$n fades back into this dimension.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+		act("You fade back into this dimension.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	}
 
 	/*
@@ -2572,33 +2604,31 @@ void set_fighting(CHAR_DATA *ch, CHAR_DATA *victim)
 	// Wilderness spear style kicks in here too
 	if (get_skill(victim, gsn_wilderness_spear_style) > 0)
 	{
-	bool found = FALSE;
-	int chance;
+		bool found = FALSE;
+		int chance;
 
-	if ((obj = get_eq_char(victim, WEAR_WIELD)) != NULL
-	&&     obj->item_type == ITEM_WEAPON
-	&&     obj->value[0] == WEAPON_SPEAR)
-		found = TRUE;
-	else
-	if ((obj = get_eq_char(victim, WEAR_SECONDARY)) != NULL
-	&&     obj->item_type == ITEM_WEAPON
-	&&     obj->value[0] == WEAPON_SPEAR)
-		found = TRUE;
+		if ((obj = get_eq_char(victim, WEAR_WIELD)) != NULL &&
+			obj->item_type == ITEM_WEAPON && obj->value[0] == WEAPON_SPEAR)
+			found = TRUE;
+		else if ((obj = get_eq_char(victim, WEAR_SECONDARY)) != NULL &&
+			obj->item_type == ITEM_WEAPON && obj->value[0] == WEAPON_SPEAR)
+			found = TRUE;
 
-		chance = victim->tot_level - ch->tot_level +
-		get_skill(victim, gsn_wilderness_spear_style);
+		chance = victim->tot_level - ch->tot_level + get_skill(victim, gsn_wilderness_spear_style);
 
-	if (found && number_percent() < chance)
-	{
-		act("{Y$N skillfully blocks your attack with $p!{x", ch, victim, NULL, obj, NULL, NULL, NULL, TO_CHAR);
-		act("{Y$N skillfully blocks $n's attack with $p!{x", ch, victim, NULL, obj, NULL, NULL, NULL, TO_NOTVICT);
-		act("{GYou skillfully block $n's attack with $p!{x", ch, victim, NULL, obj, NULL, NULL, NULL, TO_VICT);
-		DAZE_STATE(ch, 12);
-	}
+		if (found && number_percent() < chance)
+		{
+			act("{Y$N skillfully blocks your attack with $p!{x", ch, victim, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+			act("{Y$N skillfully blocks $n's attack with $p!{x", ch, victim, NULL, obj, NULL, NULL, NULL, TO_NOTVICT);
+			act("{GYou skillfully block $n's attack with $p!{x", ch, victim, NULL, obj, NULL, NULL, NULL, TO_VICT);
+			DAZE_STATE(ch, 12);
+		}
 	}
 
 	p_percent_trigger(victim, NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_START_COMBAT, NULL);
 	p_percent_trigger(ch, NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_START_COMBAT, NULL);
+
+	return TRUE;
 }
 
 
@@ -3788,7 +3818,8 @@ void dam_message(CHAR_DATA *ch, CHAR_DATA *victim, int dam,int dt,bool immune)
 	if (ch == NULL || victim == NULL)
 	return;
 
-	 if (percent <=   0) { vs = "miss";	vp = "misses";		}
+	if (dam <   0) { vs = "miss";	vp = "misses";		}
+	else if (dam == 0) { vs = "do nothing";	vp = "does nothing";		}
 	else if (percent <=  .5) { vs = "scratch";	vp = "scratches";	}
 	else if (percent <=  .8) { vs = "graze";	vp = "grazes";		}
 	else if (percent <=   1) { vs = "hit";	vp = "hits";		}
@@ -3822,12 +3853,12 @@ void dam_message(CHAR_DATA *ch, CHAR_DATA *victim, int dam,int dt,bool immune)
 	{
 	if (ch  == victim)
 	{
-		sprintf(buf1, "{Y$n %s {Y$melf%c{x",vp,punct);
+		sprintf(buf1, "{Y{+$n %s {Y$melf%c{x",vp,punct);
 		sprintf(buf2, "{RYou %s {Ryourself%c{x",vs,punct);
 	}
 	else
 	{
-		sprintf(buf1, "{Y$n %s {Y$N%c{x",  vp, punct);
+		sprintf(buf1, "{Y{+$n %s {Y$N%c{x",  vp, punct);
 		if (!str_cmp(vs, "miss"))
 		sprintf(buf2, "{YYou %s {Y$N%c{x", vs, punct);
 			else {
@@ -3836,7 +3867,7 @@ void dam_message(CHAR_DATA *ch, CHAR_DATA *victim, int dam,int dt,bool immune)
 				vs,
 				punct);
 		}
-		sprintf(buf3, "{Y$n %s {Yyou%c{x", vp, punct);
+		sprintf(buf3, "{Y{+$n %s {Yyou%c{x", vp, punct);
 	}
 	}
 	else

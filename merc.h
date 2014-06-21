@@ -6318,7 +6318,7 @@ void player_kill( CHAR_DATA *ch, CHAR_DATA *victim );
 int damage_to_corpse(int dam_type);
 OBJ_DATA *raw_kill( CHAR_DATA *victim, bool has_head, bool messages, int corpse_type);
 void resurrect_end( CHAR_DATA *ch );
-void set_fighting( CHAR_DATA *ch, CHAR_DATA *victim);
+bool set_fighting( CHAR_DATA *ch, CHAR_DATA *victim);
 void stop_fighting( CHAR_DATA *ch, bool fBoth);
 void stop_holdup( CHAR_DATA *ch);
 void update_pos( CHAR_DATA *victim );
