@@ -1541,15 +1541,31 @@ void char_update(void)
 	}
 
 	// Return from dead
-	if (ch->time_left_death > 0)
+	if (!IS_NPC(ch) && ch->time_left_death > 0)
 	{
-	    ch->time_left_death--;
+		bool run_death_timer = TRUE;
+		OBJ_DATA *corpse = ch->pcdata->corpse;
+		ROOM_INDEX_DATA *corpse_room = obj_room(corpse);
+		// Check here, prevent the timer from counting down if the
+		if( p_percent_trigger(ch, NULL, NULL, NULL, ch, ch, NULL, corpse, NULL, TRIG_PRERESURRECT, NULL) )
+			run_death_timer = FALSE;
 
-	    if (ch->time_left_death <= 0)
-	    {
-		send_to_char("{WThe gods take pity on you and return you to your body.\n\r", ch);
-		resurrect_pc(ch);
-	    }
+		if( run_death_timer && IS_VALID(corpse) && p_percent_trigger(NULL, corpse, NULL, NULL, ch, ch, NULL, corpse, NULL, TRIG_PRERESURRECT, NULL) )
+			run_death_timer = FALSE;
+
+		if( run_death_timer && corpse_room && p_percent_trigger(NULL, NULL, corpse_room, NULL, ch, ch, NULL, corpse, NULL, TRIG_PRERESURRECT, NULL) )
+			run_death_timer = FALSE;
+
+		if( run_death_timer )
+		{
+			ch->time_left_death--;
+
+			if (ch->time_left_death <= 0)
+			{
+				send_to_char("{WThe gods take pity on you and return you to your body.\n\r", ch);
+				resurrect_pc(ch);
+			}
+		}
 	}
 
 	/*
@@ -2497,7 +2513,7 @@ void aggr_update(void)
 		if (number_percent() < 95)
 		    continue;
 
-		if (obj->item_type == ITEM_CORPSE_PC && !IS_SET(obj->extra_flags, ITEM_NOSKULL))
+		if (obj->item_type == ITEM_CORPSE_PC && IS_SET(CORPSE_PARTS(obj),PART_HEAD))
 		{
 		    sprintf(buf, "%d.corpse", i);
 		    do_function(wch, &do_skull, buf);

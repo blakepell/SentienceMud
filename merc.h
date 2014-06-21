@@ -2085,6 +2085,8 @@ struct affliction_type {
 #define ITEM_ALWAYS_LOOT	(C)	// Item will always be left behind, overriding both no_loot, no_drop and nouncurse.
 #define ITEM_FORCE_LOOT		(D)	// Temporary version of ITEM_ALWAYS_LOOT, is removed off object when left behind.  Usually used by commands.
 #define ITEM_CAN_DISPEL		(E)	// Allows the 'dispel room' spell to target it.
+#define ITEM_KEEP_EQUIPPED	(F)	// Item will not be unequipped on death.
+#define ITEM_NO_ANIMATE		(G)	// Similar to ITEM_NO_RESURRECT, but designed for animate dead, instead
 
 /*
  * Wear flags.
@@ -2557,6 +2559,9 @@ enum {
 #define WEAR_PARAM_REMOVE	2
 #define WEAR_PARAM_SHIFTED	3
 #define WEAR_PARAM_AFFECTS	4
+#define WEAR_PARAM_UNEQ_DEATH	5
+
+#define WEAR_UNEQUIP_DEATH(x)		(wear_params[(x)][WEAR_PARAM_UNEQ_DEATH])
 
 /*
  * Equipment wear locations.
@@ -2757,6 +2762,7 @@ enum {
 #define CORPSE_FROZEN		(D)
 #define CORPSE_MELTED		(E)
 #define CORPSE_WITHERED		(F)
+#define CORPSE_PKDEATH		(G)	// The corpse was killed in a room with PK allowed, or player was flagged PK
 #define CORPSE_IMMORTAL		(Z)	/* Corpse came from an immortal */
 
 #define DEATHTYPE_ALIVE		0
@@ -4635,6 +4641,7 @@ enum trigger_index_enum {
 	TRIG_ACT,
 	TRIG_AFTERDEATH,	/* Fired just after you die */
 	TRIG_AFTERKILL,		/* Called after someome kills a target.  TODO: Damage will become forbidden in this trigger. */
+	TRIG_ANIMATE,
 	TRIG_ASSIST,
 	TRIG_ATTACK_BACKSTAB,
 	TRIG_ATTACK_BASH,
@@ -4708,6 +4715,7 @@ enum trigger_index_enum {
 	TRIG_MOON,
 	TRIG_MOUNT,
 	TRIG_OPEN,
+	TRIG_PREANIMATE,
 	TRIG_PREASSIST,
 	TRIG_PREBITE,
 	TRIG_PREBUY,
@@ -4732,6 +4740,7 @@ enum trigger_index_enum {
 	TRIG_PRERECKONING,
 	TRIG_PREREMOVE,
 	TRIG_PREREST,
+	TRIG_PRERESURRECT,
 	TRIG_PREROUND,
 	TRIG_PRESELL,
 	TRIG_PRESIT,
@@ -4758,6 +4767,7 @@ enum trigger_index_enum {
 	TRIG_REMOVE,		/* NIB : 20070120 */
 	TRIG_REPOP,
 	TRIG_REST,
+	TRIG_RESURRECT,
 	TRIG_SAVE,
 	TRIG_SAYTO,		/* NIB : 20070121 */
 	TRIG_SIT,
@@ -7193,7 +7203,7 @@ void connection_remove(DESCRIPTOR_DATA *d);
 
 
 /* act_info.c */
-extern int wear_params[MAX_WEAR][5];
+extern int wear_params[MAX_WEAR][6];
 
 char *get_script_prompt_string(CHAR_DATA *ch, char *key);
 bool script_spell_deflection(CHAR_DATA *ch, CHAR_DATA *victim, TOKEN_DATA *token, SCRIPT_DATA *script, int mana);

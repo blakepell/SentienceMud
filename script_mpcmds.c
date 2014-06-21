@@ -12,8 +12,6 @@
 const struct script_cmd_type mob_cmd_table[] = {
 	{ "addaffect",			do_mpaddaffect,			TRUE	},
 	{ "addaffectname",		do_mpaddaffectname,		TRUE	},
-//	{ "airshipaddwaypoint", 	do_mpairshipaddwaypoint,	TRUE	},
-//	{ "airshipsetcrash", 		do_mpairshipsetcrash,		TRUE	},
 	{ "alterexit",			do_mpalterexit,			FALSE	},
 	{ "altermob",			do_mpaltermob,			TRUE	},
 	{ "alterobj",			do_mpalterobj,			TRUE	},
@@ -30,10 +28,10 @@ const struct script_cmd_type mob_cmd_table[] = {
 	{ "call",			do_mpcall,			FALSE	},
 	{ "cancel",			do_mpcancel,			FALSE	},
 	{ "cast",			do_mpcast,			FALSE	},
-//	{ "changevesselname",		do_mpchangevesselname,		TRUE	},
 	{ "chargebank",			do_mpchargebank,		FALSE	},
 	{ "chargemoney",		do_mpchargemoney,		FALSE	},
 	{ "cloneroom",			do_mpcloneroom,			TRUE	},
+	{ "condition",		do_mpcondition,			FALSE	},
 	{ "damage",			do_mpdamage,			FALSE	},
 	{ "decdeity",			do_mpdecdeity,			TRUE	},
 	{ "decpneuma",			do_mpdecpneuma,			TRUE	},
@@ -3199,6 +3197,8 @@ SCRIPT_CMD(do_mpraisedead)
 
 	if(!info || !info->mob || !info->mob->in_room) return;
 
+	info->mob->progs->lastreturn = -1;
+
 	if(!(rest = expand_argument(info,argument,&arg)))
 		return;
 
@@ -3217,7 +3217,6 @@ SCRIPT_CMD(do_mpraisedead)
 		bug(buf, 0);
 
 		info->mob->progs->lastreturn = 0;
-
 //		send_to_char("{WAn intense warmth washes over you momentarily.{x\n\r", victim);
 		return;
 	}
@@ -6925,4 +6924,63 @@ SCRIPT_CMD(do_mpskillgroup)
 	}
 
 	return;
+}
+
+// mob condition $PLAYER <condition> <value>
+// Adjusts the specified condition by the given value
+SCRIPT_CMD(do_mpcondition)
+{
+	char buf[MIL];
+	SCRIPT_PARAM arg;
+	char *rest;
+	CHAR_DATA *mob = NULL;
+	int cond, value;
+
+	if(!info || !info->mob || IS_NULLSTR(argument)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE) return;
+
+	mob = arg.d.mob;
+
+	if( !mob || IS_NPC(mob) ) return;	// only players for now
+
+	if( !*rest) return;
+
+	if(!(rest = expand_argument(info,rest,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING:
+		if( !str_cmp(arg.d.str,"drunk") )		cond = COND_DRUNK;
+		else if( !str_cmp(arg.d.str,"full") )	cond = COND_FULL;
+		else if( !str_cmp(arg.d.str,"thirst") )	cond = COND_THIRST;
+		else if( !str_cmp(arg.d.str,"hunger") )	cond = COND_HUNGER;
+		else if( !str_cmp(arg.d.str,"stoned") )	cond = COND_STONED;
+		else
+			return;
+
+		break;
+	default: return;
+	}
+
+	if(!*rest) return;
+	if(!(rest = expand_argument(info,rest,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING: value = is_number(arg.d.str) ? atoi(arg.d.str) : 0; break;
+	case ENT_NUMBER: value = arg.d.num; break;
+	default: return;
+	}
+
+	if( script_security < 9 )
+	{
+		if( value < -1 ) value = -1;
+		else if(value > 48) value = 48;
+	}
+
+	gain_condition(mob, cond, value);
 }

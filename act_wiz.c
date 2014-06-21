@@ -3500,8 +3500,11 @@ void do_restore(CHAR_DATA *ch, char *argument)
 	    if (vch->maze_time_left > 0)
 		return_from_maze(vch);
 
+        affect_fix_char(vch);
+
             act("$n has restored you.",ch,vch, NULL, NULL, NULL, NULL, NULL,TO_VICT);
         }
+
 
         sprintf(buf, "$N restored room %ld.", ch->in_room->vnum);
         wiznet(buf, ch, NULL, WIZ_RESTORE, WIZ_SECURE, get_trust(ch));
@@ -3537,6 +3540,8 @@ void do_restore(CHAR_DATA *ch, char *argument)
 	    if (victim->maze_time_left > 0)
 		return_from_maze(victim);
 
+		affect_fix_char(victim);
+
 	    act("$n has restored you.",ch,victim, NULL, NULL, NULL, NULL, NULL,TO_VICT);
         }
 
@@ -3565,6 +3570,8 @@ void do_restore(CHAR_DATA *ch, char *argument)
 	resurrect_pc(victim);
     if (victim->maze_time_left > 0)
 	return_from_maze(victim);
+
+	affect_fix_char(victim);
 
     act("Restored $N.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
     act("$n has restored you.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);

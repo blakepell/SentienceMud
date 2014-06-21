@@ -24,6 +24,9 @@ SPELL_FUNC(spell_animate_dead)
 	if (target == TARGET_OBJ) {
 		obj = (OBJ_DATA *) vo;
 
+		bool keep_mob = TRUE;
+		bool restring_mob = TRUE;
+
 		if (obj->item_type == ITEM_CORPSE_PC) {
 			send_to_char("Player corpses cannot be animated.\n\r", ch);
 			return FALSE;
@@ -34,7 +37,7 @@ SPELL_FUNC(spell_animate_dead)
 			return FALSE;
 		}
 
-		if (IS_SET(obj->extra2_flags, ITEM_NO_RESURRECT)) {
+		if (IS_SET(obj->extra3_flags, ITEM_NO_ANIMATE)) {
 			act("$p seems to be immune to your necromantic magic.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 			return FALSE;
 		}
@@ -73,6 +76,31 @@ SPELL_FUNC(spell_animate_dead)
 
 		index = get_mob_index(vnum);
 		victim = create_mobile(index);
+
+		// Do the animate trigger now so that information that might be needed for PREANIMATE is available.
+		if( p_percent_trigger( victim, NULL, NULL, NULL, ch, victim, NULL, obj, NULL, TRIG_ANIMATE, NULL) )
+			restring_mob = FALSE;
+
+		keep_mob = TRUE;
+		// Check the victim if it can be resurrected directly
+		if (p_percent_trigger( victim, NULL, NULL, NULL, ch, victim, NULL, obj, NULL, TRIG_PREANIMATE, NULL) )
+			keep_mob = FALSE;
+
+		// Check the corpse for anything blocking the resurrection
+		if (keep_mob && p_percent_trigger( NULL, obj, NULL, NULL, ch, victim, NULL, obj, NULL, TRIG_PREANIMATE, NULL) )
+			keep_mob = FALSE;
+
+		// Check the ROOM the corpse is in for anything blocking resurrection
+		if (keep_mob && p_percent_trigger( NULL, NULL, ch->in_room, NULL, ch, victim, NULL, obj, NULL, TRIG_PREANIMATE, NULL) )
+			keep_mob = FALSE;
+
+		if( !keep_mob )
+		{
+			extract_char(victim, FALSE);
+			return FALSE;
+		}
+
+
 		victim->max_hit = percent * victim->max_hit / 100;
 		victim->max_mana = percent * victim->max_mana / 100;
 		victim->max_move = percent * victim->max_move / 100;
@@ -80,21 +108,24 @@ SPELL_FUNC(spell_animate_dead)
 		victim->mana = percent * victim->mana / 100;
 		victim->move = percent * victim->move / 100;
 
-		if(corpse_info_table[corpse].animate_name) {
-			sprintf(buf, corpse_info_table[corpse].animate_name, victim->name);
-			free_string(victim->name);
-			victim->name = str_dup(buf);
-		}
+		if( restring_mob )
+		{
+			if(corpse_info_table[corpse].animate_name) {
+				sprintf(buf, corpse_info_table[corpse].animate_name, victim->name);
+				free_string(victim->name);
+				victim->name = str_dup(buf);
+			}
 
-		if(corpse_info_table[corpse].animate_long) {
-			sprintf(buf, corpse_info_table[corpse].animate_long, victim->short_descr);
-			free_string(victim->long_descr);
-			victim->long_descr = str_dup(buf);
-		}
+			if(corpse_info_table[corpse].animate_long) {
+				sprintf(buf, corpse_info_table[corpse].animate_long, victim->short_descr);
+				free_string(victim->long_descr);
+				victim->long_descr = str_dup(buf);
+			}
 
-		if(corpse_info_table[corpse].animate_descr) {
-			free_string(victim->description);
-			victim->description = str_dup(corpse_info_table[corpse].animate_descr);
+			if(corpse_info_table[corpse].animate_descr) {
+				free_string(victim->description);
+				victim->description = str_dup(corpse_info_table[corpse].animate_descr);
+			}
 		}
 
 		victim->comm = COMM_NOTELL|COMM_NOCHANNELS;
@@ -309,7 +340,7 @@ SPELL_FUNC(spell_raise_dead)
 			return FALSE;
 		}
 
-		if (IS_OBJ_STAT(obj, ITEM_NOSKULL)) {
+		if (!IS_SET(CORPSE_PARTS(obj),PART_HEAD)) {
 			act("$p is missing its head.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 			return FALSE;
 		}
@@ -320,8 +351,6 @@ SPELL_FUNC(spell_raise_dead)
 		}
 
 
-		act("{DThe light within the surrounding area dims and an intense chill sets in.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
-
 		if (obj->item_type == ITEM_CORPSE_PC) {
 			victim = get_char_world(ch,obj->owner);
 			if (!victim) {
@@ -329,13 +358,32 @@ SPELL_FUNC(spell_raise_dead)
 				act(buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 				return FALSE;
 			}
-		} else
-			victim = create_mobile(get_mob_index(obj->orig_vnum));
 
-		if (!IS_NPC(victim)) {
 			if (!IS_DEAD(victim)) {
 				sprintf(buf, "The soul of %s has already been resurrected.", obj->owner);
 				act(buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+				return FALSE;
+			}
+
+			// Only allow resurrection of CPK corpses in CPK rooms
+			if( IS_SET(ch->in_room->room_flags, ROOM_CPK) && !IS_SET(CORPSE_FLAGS(obj), CORPSE_CPKDEATH) )
+			{
+				// Any player, or non-holyaura immortal, attempting to do so will be ZOTTED.
+				if( !IS_NPC(ch) && (!IS_IMMORTAL(ch) || !IS_SET(ch->act2, PLR_HOLYAURA)))
+				{
+					send_to_char("{YAttempting to raise a non-CPK corpse in a CPK room is {RFORBIDDEN{Y!{x\n\r", ch);
+					ch->hit = 1;
+					ch->mana = 1;
+					ch->move = 1;
+					return FALSE;
+				}
+			}
+
+			// Only allow resurrection of PK corpses in PK rooms...
+			if( is_room_pk(ch->in_room, TRUE) && !IS_SET(CORPSE_FLAGS(obj), CORPSE_PKDEATH) )
+			{
+				// No penalty here, just failure.
+				act("$p seems to be immune to your divine energies.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 				return FALSE;
 			}
 
@@ -344,26 +392,70 @@ SPELL_FUNC(spell_raise_dead)
 				return FALSE;
 			}
 
-			resurrect_pc(victim);
-			while (victim->affected)
-				affect_remove(victim, victim->affected);
+			// Check the victim if it can be resurrected directly
+			if (p_percent_trigger( victim, NULL, NULL, NULL, ch, victim, NULL, obj, NULL, TRIG_PRERESURRECT, NULL) )
+				return FALSE;
 
-			update_pos(victim);
+			// Check the corpse for anything blocking the resurrection
+			if (p_percent_trigger( NULL, obj, NULL, NULL, ch, victim, NULL, obj, NULL, TRIG_PRERESURRECT, NULL) )
+				return FALSE;
+
+			// Check the ROOM the corpse is in for anything blocking resurrection
+			if (p_percent_trigger( NULL, NULL, ch->in_room, NULL, ch, victim, NULL, obj, NULL, TRIG_PRERESURRECT, NULL) )
+				return FALSE;
+
+
+			resurrect_pc(victim);
+
+			// This is entirely.. redundant
+//			while (victim->affected)
+//				affect_remove(victim, victim->affected);
+
+//			update_pos(victim);
 			char_from_room(victim);
+
+/*
+			if (victim->church != ch->church || !ch->church || !victim->church) {
+				act("As $N is not a member of your church, the spell drains your life energies.", ch,victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+				ch->hit = 1;
+				ch->mana = 1;
+				ch->move = 1;
+			}
+			*/
 		} else {
+			bool keep_mob = TRUE;
+
+			victim = create_mobile(get_mob_index(obj->orig_vnum));
+
 			// Take newly created NPCs items off
 			for (in = victim->carrying; in != NULL; in = in_next) {
 				in_next = in->next_content;
 				extract_obj(in);
 			}
+
+			// Restore information about the victim, then check to see if they can be resurrected
+			p_percent_trigger(victim, NULL, NULL, NULL, ch, NULL, NULL, obj, NULL, TRIG_RESURRECT, NULL);
+
+			// Check the corpse for anything blocking the resurrection
+			if (p_percent_trigger( victim, NULL, NULL, NULL, ch, victim, NULL, obj, NULL, TRIG_PRERESURRECT, NULL) )
+				keep_mob = FALSE;
+
+			// Check the corpse for anything blocking the resurrection
+			if (keep_mob && p_percent_trigger( NULL, obj, NULL, NULL, ch, victim, NULL, obj, NULL, TRIG_PRERESURRECT, NULL) )
+				keep_mob = FALSE;
+
+			// Check the ROOM the corpse is in for anything blocking resurrection
+			if (keep_mob && p_percent_trigger( NULL, NULL, ch->in_room, NULL, ch, victim, NULL, obj, NULL, TRIG_PRERESURRECT, NULL) )
+				keep_mob = FALSE;
+
+			if( !keep_mob )
+			{
+				extract_char(victim, FALSE);
+				return FALSE;
+			}
 		}
 
-		if ((!IS_NPC(victim)) && (victim->church != ch->church || !ch->church || !victim->church)) {
-			act("As $N is not a member of your church, the spell drains your life energies.", ch,victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
-			ch->hit = 1;
-			ch->mana = 1;
-			ch->move = 1;
-		}
+		act("{DThe light within the surrounding area dims and an intense chill sets in.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
 		char_to_room(victim, ch->in_room);
 
@@ -373,9 +465,9 @@ SPELL_FUNC(spell_raise_dead)
 		act("You cough and splutter.", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
 		act("The eyes of $n flick open.", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
-		act("$n begins to cough and splutter.", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+		act("{+$n begins to cough and splutter.", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
-		act("$n has been raised from the dead!", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+		act("{+$n has been raised from the dead!", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
 		// Give back the stuff on the corpse
 		for (in = obj->contains; in != NULL; in = in_next) {

@@ -18,6 +18,7 @@ const struct script_cmd_type obj_cmd_table[] = {
 	{ "cast",       		do_opcast,		FALSE	},
 	{ "chargebank",			do_opchargebank,		FALSE	},
 	{ "cloneroom",			do_opcloneroom,		TRUE	},
+	{ "condition",		do_opcondition,			FALSE	},
 	{ "damage",			do_opdamage,		FALSE	},
 	{ "delay",			do_opdelay,		FALSE	},
 	{ "dequeue",			do_opdequeue,		FALSE	},
@@ -5707,4 +5708,63 @@ SCRIPT_CMD(do_opskillgroup)
 	}
 
 	return;
+}
+
+// obj condition $PLAYER <condition> <value>
+// Adjusts the specified condition by the given value
+SCRIPT_CMD(do_opcondition)
+{
+	char buf[MIL];
+	SCRIPT_PARAM arg;
+	char *rest;
+	CHAR_DATA *mob = NULL;
+	int cond, value;
+
+	if(!info || !info->obj || IS_NULLSTR(argument)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE) return;
+
+	mob = arg.d.mob;
+
+	if( !mob || IS_NPC(mob) ) return;	// only players for now
+
+	if( !*rest) return;
+
+	if(!(rest = expand_argument(info,rest,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING:
+		if( !str_cmp(arg.d.str,"drunk") )		cond = COND_DRUNK;
+		else if( !str_cmp(arg.d.str,"full") )	cond = COND_FULL;
+		else if( !str_cmp(arg.d.str,"thirst") )	cond = COND_THIRST;
+		else if( !str_cmp(arg.d.str,"hunger") )	cond = COND_HUNGER;
+		else if( !str_cmp(arg.d.str,"stoned") )	cond = COND_STONED;
+		else
+			return;
+
+		break;
+	default: return;
+	}
+
+	if(!*rest) return;
+	if(!(rest = expand_argument(info,rest,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING: value = is_number(arg.d.str) ? atoi(arg.d.str) : 0; break;
+	case ENT_NUMBER: value = arg.d.num; break;
+	default: return;
+	}
+
+	if( script_security < 9 )
+	{
+		if( value < -1 ) value = -1;
+		else if(value > 48) value = 48;
+	}
+
+	gain_condition(mob, cond, value);
 }

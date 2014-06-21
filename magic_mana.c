@@ -228,6 +228,7 @@ SPELL_FUNC(spell_dispel_room)
 	ROOM_INDEX_DATA *rev_pRoom;
 	int index;
 	bool exists = FALSE;
+	bool custom = FALSE;
 	char buf[MAX_STRING_LENGTH];
 	char buf2[MAX_STRING_LENGTH];
 
@@ -239,6 +240,8 @@ SPELL_FUNC(spell_dispel_room)
 
 	// Dispel current room
 	for (obj = ch->in_room->contents; obj != NULL; obj = obj->next_content) {
+		exists = FALSE;
+
 		if (obj->item_type == ITEM_ROOM_FLAME) {
 			sprintf(buf, "{DThe flames die down and disappear.{x\n\r");
 			exists = TRUE;
@@ -252,7 +255,16 @@ SPELL_FUNC(spell_dispel_room)
 			sprintf(buf, "{gThe poisonous haze disappears.{x\n\r");
 			exists = TRUE;
 		}
-		//else if(IS_SET(obj->extra3_flag,
+		else if(IS_SET(obj->extra3_flag, ITEM_CAN_DISPEL)) {
+			if(!saves_dispel(ch, NULL, obj->level))
+			{
+				if(p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_SPELL_DISPEL, NULL))
+				{
+					obj_from_room(obj);
+					extract_obj(obj);
+				}
+			}
+		}
 
 
 		if (exists && !saves_dispel(ch, NULL, obj->level)) {
@@ -268,6 +280,7 @@ SPELL_FUNC(spell_dispel_room)
 		if (pexit && ((pRoom = pexit->u1.to_room)) &&
 			!IS_SET(pexit->exit_info, EX_CLOSED)) {
 			for (obj = pRoom->contents; obj; obj = obj->next_content)  {
+				exists = FALSE;
 				if (obj->item_type == ITEM_ROOM_FLAME) {
 					sprintf(buf, "{DThe flames die down and disappear.{x\n\r");
 					sprintf(buf2, "{YYou hear the hissing sound of dying flames from the %s.{x\n\r",	dir_name[ index ]);
@@ -285,6 +298,17 @@ SPELL_FUNC(spell_dispel_room)
 					sprintf(buf2, "{YThe noxious fumes wafting in from the %s dissipate.{x\n\r",	dir_name[ index ]);
 					exists = TRUE;
 				}
+				else if(IS_SET(obj->extra3_flag, ITEM_CAN_DISPEL)) {
+					if(!saves_dispel(ch, NULL, obj->level))
+					{
+						if(p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_SPELL_DISPEL, dir_name[ index ]))
+						{
+							obj_from_room(obj);
+							extract_obj(obj);
+						}
+					}
+				}
+
 
 				if (exists && !saves_dispel(ch, NULL, obj->level)) {
 					room_echo(rev_pRoom, buf2);

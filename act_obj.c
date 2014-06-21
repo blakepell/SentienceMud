@@ -6055,12 +6055,12 @@ void do_skull(CHAR_DATA *ch, char *argument)
 	    return;
 	}
 
-	if (IS_OBJ_STAT(obj, ITEM_NOSKULL)) {
+	if (!IS_SET(CORPSE_PARTS(obj),PART_HEAD)) {
 	    send_to_char("There is no skull to take.\n\r", ch);
 	    return;
 	}
 
-        if (obj->level >= LEVEL_IMMORTAL) {
+	if (obj->level >= LEVEL_IMMORTAL) {
 	    act("$p is protected by powers from above.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 	    return;
 	}
@@ -6085,7 +6085,7 @@ void do_skull(CHAR_DATA *ch, char *argument)
 	    act(corpse_info_table[corpse].skull_fail, ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 	    act(corpse_info_table[corpse].skull_fail_other, ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 	    check_improve(ch, gsn_skull, FALSE, 6);
-	    SET_BIT(obj->extra_flags, ITEM_NOSKULL);
+//	    SET_BIT(obj->extra_flags, ITEM_NOSKULL);
 	    REMOVE_BIT(CORPSE_PARTS(obj),PART_HEAD);
 	    REMOVE_BIT(CORPSE_PARTS(obj),PART_BRAINS);
 	    REMOVE_BIT(CORPSE_PARTS(obj),PART_EAR);
@@ -6121,7 +6121,7 @@ void do_skull(CHAR_DATA *ch, char *argument)
 	else
 	    skull = create_object(get_obj_index(OBJ_VNUM_SKULL), 0, FALSE);
 
-	SET_BIT(obj->extra_flags, ITEM_NOSKULL);
+//	SET_BIT(obj->extra_flags, ITEM_NOSKULL);
 	REMOVE_BIT(CORPSE_PARTS(obj),PART_HEAD);
 	REMOVE_BIT(CORPSE_PARTS(obj),PART_BRAINS);
 	REMOVE_BIT(CORPSE_PARTS(obj),PART_EAR);

@@ -416,6 +416,9 @@ char *extra3_bit_name( long extra3_flags )
     if ( extra3_flags & ITEM_NO_TRANSFER	) strcat( buf, " no_transfer"		);
     if ( extra3_flags & ITEM_ALWAYS_LOOT	) strcat( buf, " always_loot"		);
     if ( extra3_flags & ITEM_FORCE_LOOT		) strcat( buf, " force_loot"		);
+    if ( extra3_flags & ITEM_CAN_DISPEL		) strcat( buf, " can_dispel"		);
+    if ( extra3_flags & ITEM_KEEP_EQUIPPED	) strcat( buf, " keep_equipped"		);
+    if ( extra3_flags & ITEM_NO_ANIMATE		) strcat( buf, " no_animate"		);
     return ( buf[0] != '\0' ) ? buf+1 : "none";
 }
 

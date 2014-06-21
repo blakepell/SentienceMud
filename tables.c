@@ -1280,6 +1280,9 @@ const struct flag_type extra3_flags[] =
     {	"no_transfer",		ITEM_NO_TRANSFER,	TRUE	},
     {	"always_loot",		ITEM_ALWAYS_LOOT,	TRUE	},
     {	"force_loot",		ITEM_FORCE_LOOT,	FALSE	},
+    {	"can_dispel",		ITEM_CAN_DISPEL,	TRUE	},
+    {	"keep_equipped",	ITEM_KEEP_EQUIPPED,	TRUE	},
+    {   "no_animate",		ITEM_NO_ANIMATE,	FALSE   },
     {   NULL,			0,			0	}
 };
 
@@ -2502,3 +2505,13 @@ const struct flag_type moon_phases[] = {
 	{ "waning_crescent",	MOON_WANING_CRESCENT,	TRUE	},
 	{ NULL,			0,			FALSE	}
 };
+
+const struct flag_type player_conditions[] = {
+	{ "drunk",	COND_DRUNK,		TRUE },
+	{ "full",	COND_FULL,		TRUE },
+	{ "thirst",	COND_THIRST,	TRUE },
+	{ "hunger",	COND_HUNGER,	TRUE },
+	{ "stoned",	COND_STONED,	TRUE },
+	{ NULL,		-1,				FALSE }
+};
+

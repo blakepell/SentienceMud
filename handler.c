@@ -2859,6 +2859,15 @@ void extract_obj(OBJ_DATA *obj)
 	}
     }
 
+	// Clear the most recent corpse data on the player owner
+    if( (obj->item_type == ITEM_CORPSE_PC) && !IS_NULLSTR(obj->owner) )
+    {
+		CHAR_DATA *victim = get_char_world(NULL, obj->owner);
+
+		if( victim && !IS_NPC(victim) )
+			victim->pcdata->corpse = NULL;
+	}
+
     --obj->pIndexData->count;
     free_obj(obj);
 }
@@ -4220,11 +4229,8 @@ void resurrect_pc(CHAR_DATA *ch)
     while (ch->affected)
 	affect_remove(ch, ch->affected);
 
-    ch->affected_by = race_table[ch->race].aff;
-    ch->affected_by2 = 0;
-
     if (IS_SAGE(ch))
-	SET_BIT(ch->affected_by, AFF_DETECT_HIDDEN);
+		SET_BIT(ch->affected_by, AFF_DETECT_HIDDEN);
 
     ch->dead = FALSE;
 
@@ -4242,12 +4248,21 @@ void resurrect_pc(CHAR_DATA *ch)
     }
 
     for (obj = ch->carrying; obj != NULL; obj = obj->next_content) {
-	if (IS_SET(obj->extra2_flags, ITEM_UNSEEN))
-	    REMOVE_BIT(obj->extra2_flags, ITEM_UNSEEN);
+		if (IS_SET(obj->extra2_flags, ITEM_UNSEEN))
+		    REMOVE_BIT(obj->extra2_flags, ITEM_UNSEEN);
     }
 
     /*FREE DEATH ITEMS HERE IF ANY */
+
+	affect_fix_char(ch);
+
+    if (IS_SAGE(ch))
+		SET_BIT(ch->affected_by, AFF_DETECT_HIDDEN);
+
     update_pos(ch);
+
+	// Used to handle any post resurrection actions
+    p_percent_trigger(ch, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_RESURRECT, NULL);
 }
 
 

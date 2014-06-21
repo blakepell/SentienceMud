@@ -492,6 +492,7 @@ struct trigger_type trigger_table	[] = {
 {	"act",					NULL,		TRIGSLOT_ACTION,	TRUE,	TRUE,	TRUE,	TRUE	},
 {	"afterdeath",			NULL,		TRIGSLOT_REPOP,		FALSE,	FALSE,	FALSE,	TRUE	},
 {	"afterkill",			NULL,		TRIGSLOT_FIGHT,		TRUE,	TRUE,	TRUE,	TRUE	},
+{	"animate",				NULL,		TRIGSLOT_ANIMATE,	TRUE,	FALSE,	FALSE,	TRUE	},
 {	"assist",				NULL,		TRIGSLOT_FIGHT,		TRUE,	FALSE,	FALSE,	TRUE	},
 {	"attack_backstab",		NULL,		TRIGSLOT_ATTACKS,	TRUE,	FALSE,	FALSE,	TRUE	},
 {	"attack_bash",			NULL,		TRIGSLOT_ATTACKS,	TRUE,	FALSE,	FALSE,	TRUE	},
@@ -565,6 +566,7 @@ struct trigger_type trigger_table	[] = {
 {	"moon",					NULL,		TRIGSLOT_GENERAL,	FALSE,	FALSE,	FALSE,	TRUE	},
 {	"mount",				NULL,		TRIGSLOT_GENERAL,	TRUE,	FALSE,	FALSE,	TRUE	},
 {	"open",					NULL,		TRIGSLOT_GENERAL,	FALSE,  TRUE,   TRUE,	TRUE	},
+{	"preanimate",			NULL,		TRIGSLOT_REPOP,		TRUE,	TRUE,	TRUE,	TRUE	},
 {	"preassist",			NULL,		TRIGSLOT_FIGHT,		TRUE,	FALSE,	FALSE,	TRUE	},
 {	"prebite",				NULL,		TRIGSLOT_GENERAL,	TRUE,	TRUE,	TRUE,	TRUE	},
 {	"prebuy",				NULL,		TRIGSLOT_GENERAL,	TRUE,	FALSE,	FALSE,	TRUE	},
@@ -589,6 +591,7 @@ struct trigger_type trigger_table	[] = {
 {	"prereckoning",			NULL,		TRIGSLOT_RANDOM,	TRUE,	TRUE,	TRUE,	TRUE	},
 {	"preremove",			NULL,		TRIGSLOT_GENERAL,	FALSE,	TRUE,	FALSE,	TRUE	},
 {	"prerest",				NULL,		TRIGSLOT_GENERAL,	TRUE,	TRUE,	TRUE,	TRUE	},
+{	"preresurrect",			NULL,		TRIGSLOT_REPOP,		TRUE,	TRUE,	TRUE,	TRUE	},
 {	"preround",				NULL,		TRIGSLOT_FIGHT,		TRUE,	FALSE,	FALSE,	TRUE	},
 {	"presell",				NULL,		TRIGSLOT_GENERAL,	TRUE,	FALSE,	FALSE,	TRUE	},
 {	"presit",				NULL,		TRIGSLOT_GENERAL,	TRUE,	TRUE,	TRUE,	TRUE	},
@@ -615,6 +618,7 @@ struct trigger_type trigger_table	[] = {
 {	"remove",				NULL,		TRIGSLOT_GENERAL,	FALSE,  TRUE,	FALSE,	TRUE	},
 {	"repop",				NULL,		TRIGSLOT_REPOP,		TRUE,	TRUE,	FALSE,	TRUE	},
 {	"rest",					NULL,		TRIGSLOT_GENERAL,	TRUE,	TRUE,	TRUE,	TRUE	},
+{	"resurrect",			NULL,		TRIGSLOT_REPOP,		TRUE,	FALSE,	FALSE,	TRUE	},
 {	"save",					NULL,		TRIGSLOT_REPOP,		TRUE,	TRUE,	FALSE,	TRUE	},
 {	"sayto",				NULL,		TRIGSLOT_SPEECH,	TRUE,	TRUE,	FALSE,	TRUE	},
 {	"sit",					NULL,		TRIGSLOT_GENERAL,	TRUE,	TRUE,	TRUE,	TRUE	},
@@ -658,6 +662,7 @@ int trigger_slots[] = {
 	TRIGSLOT_REPOP,			// TRIG_AFTERDEATH
 	TRIGSLOT_FIGHT,			// TRIG_AFTERKILL
 	TRIGSLOT_FIGHT,			// TRIG_ASSIST
+	TRIGSLOT_REPOP,			// TRIG_ANIMATE
 	TRIGSLOT_ATTACKS,		// TRIG_ATTACK_BACKSTAB
 	TRIGSLOT_ATTACKS,		// TRIG_ATTACK_BASH
 	TRIGSLOT_ATTACKS,		// TRIG_ATTACK_BEHEAD
@@ -730,6 +735,7 @@ int trigger_slots[] = {
 	TRIGSLOT_GENERAL,		// TRIG_MOON
 	TRIGSLOT_GENERAL,		// TRIG_MOUNT
 	TRIGSLOT_GENERAL,		// TRIG_OPEN
+	TRIGSLOT_REPOP,			// TRIG_PREANIMATE
 	TRIGSLOT_FIGHT,			// TRIG_PREASSIST
 	TRIGSLOT_GENERAL,		// TRIG_PREBITE
 	TRIGSLOT_GENERAL,		// TRIG_PREBUY
@@ -754,6 +760,7 @@ int trigger_slots[] = {
 	TRIGSLOT_RANDOM,		// TRIG_PRERECKONING
 	TRIGSLOT_GENERAL,		// TRIG_PREREMOVE
 	TRIGSLOT_GENERAL,		// TRIG_PREREST
+	TRIGSLOT_REPOP,			// TRIG_PRERESURRECT
 	TRIGSLOT_FIGHT,			// TRIG_PREROUND
 	TRIGSLOT_GENERAL,		// TRIG_PRESELL
 	TRIGSLOT_GENERAL,		// TRIG_PRESIT
@@ -780,6 +787,7 @@ int trigger_slots[] = {
 	TRIGSLOT_GENERAL,		// TRIG_REMOVE
 	TRIGSLOT_REPOP,			// TRIG_REPOP
 	TRIGSLOT_GENERAL,		// TRIG_REST
+	TRIGSLOT_REPOP,			// TRIG_RESURRECT
 	TRIGSLOT_REPOP,			// TRIG_SAVE
 	TRIGSLOT_SPEECH,		// TRIG_SAYTO
 	TRIGSLOT_GENERAL,		// TRIG_SIT
@@ -1115,6 +1123,7 @@ IFCHECK_DATA ifcheck_table[] = {
 	{ "statint",			IFC_ANY,	"E",	TRUE,	ifc_statint,			"ifcheck statint" },
 	{ "statstr",			IFC_ANY,	"E",	TRUE,	ifc_statstr,			"ifcheck statstr" },
 	{ "statwis",			IFC_ANY,	"E",	TRUE,	ifc_statwis,			"ifcheck statwis" },
+	{ "stoned",				IFC_ANY,	"E",	TRUE,	ifc_stoned,				"ifcheck stoned" },
 	{ "strlen",				IFC_ANY,	"E",	TRUE,	ifc_strlen,				"ifcheck strlen" },
 	{ "sublevel",			IFC_ANY,	"E",	TRUE,	ifc_sublevel,			"ifcheck sublevel" },
 	{ "sunlight",			IFC_ANY,	"E",	TRUE,	ifc_sunlight,			"ifcheck sunlight" },

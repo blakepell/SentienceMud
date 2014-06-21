@@ -859,7 +859,7 @@ void do_touch(CHAR_DATA *ch, char *argument)
     OBJ_DATA *obj;
     SPELL_DATA *spell;
 
-    one_argument(argument, arg);
+    argument = one_argument(argument, arg);
 
     if (arg[0] == '\0')
     {
@@ -879,7 +879,7 @@ void do_touch(CHAR_DATA *ch, char *argument)
 	return;
     }
 
-	if(p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_TOUCH, NULL))
+	if(p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_TOUCH, argument))
 		return;
 
     if (!obj->value[0])

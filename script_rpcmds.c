@@ -19,6 +19,7 @@ const struct script_cmd_type room_cmd_table[] = {
 	{ "cancel",		do_rpcancel,		FALSE	},
 	{ "chargebank",		do_rpchargebank,	FALSE	},
 	{ "cloneroom",		do_rpcloneroom,		TRUE	},
+	{ "condition",		do_rpcondition,			FALSE	},
 	{ "damage",		do_rpdamage,		FALSE	},
 	{ "delay",		do_rpdelay,		FALSE	},
 	{ "dequeue",		do_rpdequeue,		FALSE	},
@@ -5341,4 +5342,63 @@ SCRIPT_CMD(do_rpskillgroup)
 	}
 
 	return;
+}
+
+// room condition $PLAYER <condition> <value>
+// Adjusts the specified condition by the given value
+SCRIPT_CMD(do_rpcondition)
+{
+	char buf[MIL];
+	SCRIPT_PARAM arg;
+	char *rest;
+	CHAR_DATA *mob = NULL;
+	int cond, value;
+
+	if(!info || !info->room || IS_NULLSTR(argument)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE) return;
+
+	mob = arg.d.mob;
+
+	if( !mob || IS_NPC(mob) ) return;	// only players for now
+
+	if( !*rest) return;
+
+	if(!(rest = expand_argument(info,rest,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING:
+		if( !str_cmp(arg.d.str,"drunk") )		cond = COND_DRUNK;
+		else if( !str_cmp(arg.d.str,"full") )	cond = COND_FULL;
+		else if( !str_cmp(arg.d.str,"thirst") )	cond = COND_THIRST;
+		else if( !str_cmp(arg.d.str,"hunger") )	cond = COND_HUNGER;
+		else if( !str_cmp(arg.d.str,"stoned") )	cond = COND_STONED;
+		else
+			return;
+
+		break;
+	default: return;
+	}
+
+	if(!*rest) return;
+	if(!(rest = expand_argument(info,rest,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING: value = is_number(arg.d.str) ? atoi(arg.d.str) : 0; break;
+	case ENT_NUMBER: value = arg.d.num; break;
+	default: return;
+	}
+
+	if( script_security < 9 )
+	{
+		if( value < -1 ) value = -1;
+		else if(value > 48) value = 48;
+	}
+
+	gain_condition(mob, cond, value);
 }

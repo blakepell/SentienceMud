@@ -2676,7 +2676,7 @@ void set_corpse_data(OBJ_DATA *corpse, int corpse_type)
 	CORPSE_ANIMATE(corpse) = corpse_info_table[corpse_type].animation_chance;
 
 	if(corpse_info_table[corpse_type].headless) {
-		SET_BIT(corpse->extra_flags, ITEM_NOSKULL);
+//		SET_BIT(corpse->extra_flags, ITEM_NOSKULL);
 		REMOVE_BIT(CORPSE_PARTS(corpse),PART_HEAD);
 		REMOVE_BIT(CORPSE_PARTS(corpse),PART_BRAINS);
 		REMOVE_BIT(CORPSE_PARTS(corpse),PART_EAR);
@@ -2788,7 +2788,10 @@ OBJ_DATA *make_corpse(CHAR_DATA *ch, bool has_head, int corpse_type, bool messag
 		corpse->cost = 0;
 
 		if (IS_SET(ch->act2, ACT2_NO_RESURRECT))
-			SET_BIT(corpse->extra_flags, ITEM_NO_RESURRECT);
+		{
+			SET_BIT(corpse->extra2_flags, ITEM_NO_RESURRECT);
+			SET_BIT(corpse->extra3_flags, ITEM_NO_ANIMATE);
+		}
 	} else { // PCs
 		name		= ch->name;
 		short_desc	= ch->name;
@@ -2812,13 +2815,18 @@ OBJ_DATA *make_corpse(CHAR_DATA *ch, bool has_head, int corpse_type, bool messag
 
 		corpse->cost = 0;
 		if (IS_SET(ch->act, PLR_NO_RESURRECT))
-			SET_BIT(corpse->extra_flags, ITEM_NO_RESURRECT);
+		{
+			SET_BIT(corpse->extra2_flags, ITEM_NO_RESURRECT);
+			SET_BIT(corpse->extra3_flags, ITEM_NO_ANIMATE);
+		}
 
 		if (IS_IMMORTAL(ch))
 			SET_BIT(CORPSE_FLAGS(corpse), CORPSE_IMMORTAL);
 		else {
 			if(IS_SET(ch->in_room->room_flags, ROOM_CPK))
 				SET_BIT(CORPSE_FLAGS(corpse), CORPSE_CPKDEATH);
+			if(is_room_pk(room, TRUE) || is_pk(ch))
+				SET_BIT(CORPSE_FLAGS(corpse), CORPSE_PKDEATH);
 			if (ch->gold > 1 || ch->silver > 1)
 			{
 				obj_to_obj(create_money(ch->gold/2, ch->silver/2), corpse);
@@ -2841,7 +2849,7 @@ OBJ_DATA *make_corpse(CHAR_DATA *ch, bool has_head, int corpse_type, bool messag
 	CORPSE_TYPE(corpse) = corpse_type;
 
 	if(corpse_info_table[corpse_type].headless || !IS_SET(ch->parts,PART_HEAD)) {
-		SET_BIT(corpse->extra_flags, ITEM_NOSKULL);
+//		SET_BIT(corpse->extra_flags, ITEM_NOSKULL);
 		REMOVE_BIT(CORPSE_PARTS(corpse),PART_HEAD);
 		REMOVE_BIT(CORPSE_PARTS(corpse),PART_BRAINS);
 		REMOVE_BIT(CORPSE_PARTS(corpse),PART_EAR);
@@ -2862,8 +2870,13 @@ OBJ_DATA *make_corpse(CHAR_DATA *ch, bool has_head, int corpse_type, bool messag
 	}
 
 	// 20070521 : NIB : If a PC and a CPK Death, mark the corpse as a CPK death
-	if(!IS_NPC(ch) && !IS_DEAD(ch) && !IS_IMMORTAL(ch) && IS_SET(ch->in_room->room_flags,ROOM_CPK))
-		SET_BIT(CORPSE_FLAGS(corpse),CORPSE_CPKDEATH);
+	if(!IS_NPC(ch) && !IS_DEAD(ch) && !IS_IMMORTAL(ch))
+	{
+ 		if(IS_SET(ch->in_room->room_flags,ROOM_CPK))
+			SET_BIT(CORPSE_FLAGS(corpse),CORPSE_CPKDEATH);
+		if(is_room_pk(ch->in_room,TRUE) || is_pk(ch))
+			SET_BIT(CORPSE_FLAGS(corpse),CORPSE_PKDEATH);
+	}
 
 	// NPC death and CPK death for PCs
 	// Don't leave no_loot items in player corpses, just like no_uncurse -- Areo
@@ -3336,8 +3349,10 @@ OBJ_DATA *raw_kill(CHAR_DATA *victim, bool has_head, bool messages, int corpse_t
 
 	/* take their stuff off them while dead */
 	for (obj = victim->carrying; obj != NULL; obj = obj->next_content) {
-	   if (obj->wear_loc != WEAR_NONE)
-	   unequip_char(victim, obj, TRUE);
+		if (obj->wear_loc != WEAR_NONE &&
+			WEAR_UNEQUIP_DEATH(obj->wear_loc) &&
+			!IS_SET(obj->extra3_flags, ITEM_KEEP_EQUIPPED))
+			unequip_char(victim, obj, TRUE);
 	}
 
 	// If switched, switch them back then kill them
@@ -3420,6 +3435,10 @@ OBJ_DATA *raw_kill(CHAR_DATA *victim, bool has_head, bool messages, int corpse_t
 	if (IS_NPC(victim))
 	{
 		victim->pIndexData->killed++;
+
+		// Has a different use for npcs than for players
+		p_percent_trigger(victim, NULL, NULL, NULL, NULL, NULL, NULL, corpse, NULL, TRIG_AFTERDEATH, NULL);
+
 		extract_char(victim, TRUE);
 		return corpse;
 	}
@@ -6348,8 +6367,8 @@ void do_resurrect(CHAR_DATA *ch, char *argument)
 
 	if (arg[0] == '\0')
 	{
-	send_to_char("Resurrect whom?\n\r", ch);
-	return;
+		send_to_char("Resurrect whom?\n\r", ch);
+		return;
 	}
 
 	if (is_dead(ch))
@@ -6359,47 +6378,47 @@ void do_resurrect(CHAR_DATA *ch, char *argument)
 
 	if (get_skill(ch, gsn_resurrect) == 0)
 	{
-	send_to_char("Huh?\n\r", ch);
-	return;
+		send_to_char("Huh?\n\r", ch);
+		return;
 	}
 
 	if (ch->fighting != NULL)
 	{
-	send_to_char("You can't, you are fighting!\n\r", ch);
-	return;
+		send_to_char("You can't, you are fighting!\n\r", ch);
+		return;
 	}
 
 	for (obj = ch->in_room->contents; obj != NULL; obj = obj->next_content)
 	{
-	if (can_see_obj(ch, obj))
-	{
-		if (is_name(arg, obj->name))
-		break;
-	}
+		if (can_see_obj(ch, obj))
+		{
+			if (is_name(arg, obj->name))
+			break;
+		}
 	}
 
 
 	if (obj == NULL)
 	{
-	send_to_char("That doesn't appear to be in the room.\n\r", ch);
-	return;
+		send_to_char("That doesn't appear to be in the room.\n\r", ch);
+		return;
 	}
 
 	if (obj->item_type != ITEM_CORPSE_PC)
 	{
-	send_to_char("You can only resurrect a fresh PC corpse.\n\r", ch);
-	return;
+		send_to_char("You can only resurrect a fresh PC corpse.\n\r", ch);
+		return;
 	}
 
 	if (obj->owner == NULL)
 	{
-	send_to_char("You cannot identify that corpse's owner.\n\r", ch);
-	return;
+		send_to_char("You cannot identify that corpse's owner.\n\r", ch);
+		return;
 	}
 
 	if (!str_cmp(obj->owner, ch->name)) {
-	send_to_char("Doing that would create a paradox even I can't comprehend.\n\r", ch);
-	return;
+		send_to_char("Doing that would create a paradox even I can't comprehend.\n\r", ch);
+		return;
 	}
 
 	corpse = CORPSE_TYPE(obj);
@@ -6411,29 +6430,63 @@ void do_resurrect(CHAR_DATA *ch, char *argument)
 		return;
 	}
 
-	if (IS_OBJ_STAT(obj, ITEM_NOSKULL))
+	if (!IS_SET(CORPSE_PARTS(obj), PART_HEAD))
 	{
-	act("$p is missing its head.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
-	return;
+		act("$p is missing its head.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+		return;
 	}
 
 	victim = get_char_world(ch, obj->owner);
 	if (victim == NULL)
 	{
-	act("The soul of $t is no longer within this world.", ch, NULL, NULL, NULL, NULL, obj->owner, NULL, TO_CHAR);
-	return;
+		act("The soul of $t is no longer within this world.", ch, NULL, NULL, NULL, NULL, obj->owner, NULL, TO_CHAR);
+		return;
 	}
 
-	if (IS_SET(obj->extra_flags, ITEM_NO_RESURRECT))
+	if (IS_SET(obj->extra2_flags, ITEM_NO_RESURRECT))
 	{
-	act("$p seems to be immune to your divine energies.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
-	return;
+		act("$p seems to be immune to your divine energies.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+		return;
+	}
+
+	// Only allow resurrection of CPK corpses in CPK rooms
+	if( IS_SET(ch->in_room->room_flags, ROOM_CPK) && !IS_SET(CORPSE_FLAGS(obj), CORPSE_CPKDEATH) )
+	{
+		// Any player, or non-holyaura immortal, attempting to do so will be ZOTTED.
+		if( !IS_NPC(ch) && (!IS_IMMORTAL(ch) || !IS_SET(ch->act2, PLR_HOLYAURA)))
+		{
+			send_to_char("{YAttempting to resurrect a non-CPK corpse in a CPK room is {RFORBIDDEN{Y!{x\n\r", ch);
+			ch->hit = 1;
+			ch->mana = 1;
+			ch->move = 1;
+			return;
+		}
+	}
+
+	// Only allow resurrection of PK corpses in PK rooms...
+	if( is_room_pk(ch->in_room, TRUE) && !IS_SET(CORPSE_FLAGS(obj), CORPSE_PKDEATH) )
+	{
+		// No penalty here, just failure.
+		act("$p seems to be immune to your divine energies.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+		return;
 	}
 
 	if (!IS_NPC(victim) && obj != victim->pcdata->corpse) {
-	act("You may only resurrect $N's most current corpse.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
-	return;
+		act("You may only resurrect $N's most current corpse.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		return;
 	}
+
+	// Check the victim if it can be resurrected directly
+	if (p_percent_trigger( victim, NULL, NULL, NULL, ch, victim, NULL, obj, NULL, TRIG_PRERESURRECT, NULL) )
+		return;
+
+	// Check the corpse for anything blocking the resurrection
+	if (p_percent_trigger( NULL, obj, NULL, NULL, ch, victim, NULL, obj, NULL, TRIG_PRERESURRECT, NULL) )
+		return;
+
+	// Check the ROOM the corpse is in for anything blocking resurrection
+	if (p_percent_trigger( NULL, NULL, ch->in_room, NULL, ch, victim, NULL, obj, NULL, TRIG_PRERESURRECT, NULL) )
+		return;
 
 	/*
 	if (victim->church != ch->church || ch->church == NULL)
@@ -6460,113 +6513,110 @@ void resurrect_end(CHAR_DATA *ch)
 	OBJ_DATA *obj;
 	OBJ_DATA *in;
 	OBJ_DATA *in_next;
+	bool success = TRUE;
 
 	obj = ch->resurrect_target;
 
 	if (obj == NULL)
 	{
-	sprintf(buf, "resurrect_end: ch->resurrect_target was null!"
-		" ch %s", ch->name);
-	bug(buf, 0);
-	return;
+		sprintf(buf, "resurrect_end: ch->resurrect_target was null! ch %s", ch->name);
+		bug(buf, 0);
+		return;
 	}
 
 	for (obj = ch->in_room->contents; obj != NULL; obj = obj->next_content)
 	{
-	if (can_see_obj(ch, obj))
-	{
-		if (ch->resurrect_target == obj)
-			break;
-	}
+		if (can_see_obj(ch, obj))
+		{
+			if (ch->resurrect_target == obj)
+				break;
+		}
 	}
 
 	ch->resurrect_target = NULL;
 
 	if (obj == NULL)
 	{
- 	send_to_char("That doesn't appear to be in the room.\n\r", ch);
-	return;
+	 	send_to_char("That doesn't appear to be in the room.\n\r", ch);
+		return;
 	}
 
-	if (obj->item_type != ITEM_CORPSE_NPC
-	&& obj->item_type != ITEM_CORPSE_PC)
+	if (obj->item_type != ITEM_CORPSE_NPC && obj->item_type != ITEM_CORPSE_PC)
 	{
-	send_to_char("This must be done on a fresh corpse.\n\r", ch);
-	return;
+		send_to_char("This must be done on a fresh corpse.\n\r", ch);
+		return;
 	}
 
-	if (IS_OBJ_STAT(obj, ITEM_NOSKULL))
+	if (!IS_SET(CORPSE_PARTS(obj), PART_HEAD))
 	{
-	act("$p is missing its head.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
-	return;
+		act("$p is missing its head.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+		return;
 	}
-
-	victim = NULL;
 
 	victim = get_char_world(ch, obj->owner);
 
 	if (victim == NULL)
 	{
-	act("The soul of $t is no longer within this world.", ch, NULL, NULL, NULL, NULL, obj->owner, NULL, TO_CHAR);
-	return;
+		act("The soul of $t is no longer within this world.", ch, NULL, NULL, NULL, NULL, obj->owner, NULL, TO_CHAR);
+		return;
 	}
 
 	if (!IS_DEAD(victim))
 	{
-	act("The soul of $t has already been resurrected.", ch, NULL, NULL, NULL, NULL, obj->owner, NULL, TO_CHAR);
-	return;
+		act("The soul of $t has already been resurrected.", ch, NULL, NULL, NULL, NULL, obj->owner, NULL, TO_CHAR);
+		return;
 	}
 
 	resurrect_pc(victim);
 	char_from_room(victim);
 	char_to_room(victim, obj->in_room);
 
-	act("{DThe light within the surrounding area dims and an intense chill sets in.{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+	act("{WThe area around you brightens as a faint warmth flows in.{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
-	act("A dark haze forms around $p.", victim, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
-	act("You feel mortal once more as your soul is raised from the dead!", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
-	act("You cough and splutter.", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+	act("{+$p shimmers with iridescence.", victim, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
+	act("You feel mortal once more as you have been resurrected!", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+	act("You breathe quickly to full your lungs again as you open your eyes.", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
 	act("The eyes of $n flick open.", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
-	act("$n begins to cough and splutter.", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+	act("{+$n sharply inhales a full breath.", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
-	act("$n has been raised from the dead!", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+	act("{+$n has been resurrected!", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
 	for (in = obj->contains; in != NULL; in = in_next)
 	{
-	in_next = in->next_content;
+		in_next = in->next_content;
 
-	obj_from_obj(in);
+		obj_from_obj(in);
 
-	if (in->pIndexData->vnum == OBJ_VNUM_SILVER_ONE)
-	{
-		victim->silver++;
-		extract_obj(in);
-		continue;
-	}
+		if (in->pIndexData->vnum == OBJ_VNUM_SILVER_ONE)
+		{
+			victim->silver++;
+			extract_obj(in);
+			continue;
+		}
 
-	if (in->pIndexData->vnum == OBJ_VNUM_SILVER_SOME)
-	{
-		victim->silver += in->value[1];
-		extract_obj(in);
-		continue;
-	}
+		if (in->pIndexData->vnum == OBJ_VNUM_SILVER_SOME)
+		{
+			victim->silver += in->value[1];
+			extract_obj(in);
+			continue;
+		}
 
-	if (in->pIndexData->vnum == OBJ_VNUM_GOLD_ONE)
-	{
-		victim->gold++;
-		extract_obj(in);
-		continue;
-	}
+		if (in->pIndexData->vnum == OBJ_VNUM_GOLD_ONE)
+		{
+			victim->gold++;
+			extract_obj(in);
+			continue;
+		}
 
-	if (in->pIndexData->vnum == OBJ_VNUM_GOLD_SOME)
-	{
-		victim->gold += in->value[1];
-		extract_obj(in);
-		continue;
-	}
+		if (in->pIndexData->vnum == OBJ_VNUM_GOLD_SOME)
+		{
+			victim->gold += in->value[1];
+			extract_obj(in);
+			continue;
+		}
 
-	obj_to_char(in, victim);
+		obj_to_char(in, victim);
 	}
 
 	obj_from_room(obj);
@@ -6576,13 +6626,47 @@ void resurrect_end(CHAR_DATA *ch)
 	victim->mana = victim->max_mana/2;
 	victim->move = victim->max_move/2;
 
-	if (ch->church != victim->church)
+	if (ch->church != victim->church || !ch->church)
 	{
-	send_to_char("The spell drains your life energies.\n\r", ch);
-	ch->hit = 1;
-	ch->mana = 1;
-	ch->move = 1;
+		int skill = get_skill(ch, gsn_resurrect);
+
+		if( skill < 100 )
+		{
+			int h, m, v;
+			bool deplete = FALSE;
+			h = skill * ch->max_hit / 100;	if( h < 1 ) h = 1;
+			m = skill * ch->max_mana / 100;	if( m < 0 ) m = 0;
+			v = skill * ch->max_move / 100; if( v < 0 ) v = 0;
+
+			if( h < ch->hit )
+			{
+				ch->hit = h;
+				deplete = TRUE;
+			}
+
+			if( m < ch->mana )
+			{
+				ch->mana = m;
+				deplete = TRUE;
+			}
+
+			if( v < ch->move)
+			{
+				ch->move = v;
+				deplete = TRUE;
+			}
+
+			if( deplete )
+				send_to_char("The rite depletes your life energies.\n\r", ch);
+		}
+
+		success = FALSE;
 	}
+
+	// Only get improvement when doing so on players
+	// -- To prevent finding a weak ass mob and spamming this
+	if( !IS_NPC(victim) )
+		check_improve( ch, gsn_resurrect, success, 10 );
 }
 
 

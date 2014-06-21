@@ -1882,6 +1882,12 @@ DECL_IFC_FUN(ifc_thirst)
 	return TRUE;
 }
 
+DECL_IFC_FUN(ifc_stoned)
+{
+	*ret = VALID_PLAYER(0) ? ARG_MOB(0)->pcdata->condition[COND_STONED] : 0;
+	return TRUE;
+}
+
 DECL_IFC_FUN(ifc_tokencount)
 {
 	TOKEN_INDEX_DATA *ti = NULL;

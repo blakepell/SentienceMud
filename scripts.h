@@ -205,7 +205,8 @@ enum ifcheck_enum {
 	CHK_SAMEGROUP,
 	CHK_SCRIPTSECURITY,
 	CHK_SECTOR,CHK_SEX,CHK_SIGN,CHK_SILVER,CHK_SIN,CHK_SKEYWORD,CHK_SKILL,
-	CHK_STATCON,CHK_STATDEX,CHK_STATINT,CHK_STATSTR,CHK_STATWIS,CHK_STRLEN,
+	CHK_STATCON,CHK_STATDEX,CHK_STATINT,CHK_STATSTR,CHK_STATWIS,
+	CHK_STONED,CHK_STRLEN,
 	CHK_SUBLEVEL,CHK_SUNLIGHT,CHK_SYSTEMTIME,
 
 
@@ -1547,6 +1548,10 @@ DECL_IFC_FUN(ifc_ispk);			// if ispk $<player>
 DECL_IFC_FUN(ifc_register);		// if register <number> <op> <value>
 DECL_IFC_FUN(ifc_comm);			// if comm $<player> <flags>
 DECL_IFC_FUN(ifc_flag_comm);		// if flagcomm <flags> == <value>
+DECL_IFC_FUN(ifc_stoned);		// if stoned $<player> == <value>
+
+
+
 
 /* Opcode functions */
 DECL_OPC_FUN(opc_end);
@@ -2071,6 +2076,10 @@ SCRIPT_CMD(do_mpskillgroup);
 SCRIPT_CMD(do_opskillgroup);
 SCRIPT_CMD(do_rpskillgroup);
 SCRIPT_CMD(do_tpskillgroup);
+SCRIPT_CMD(do_mpcondition);
+SCRIPT_CMD(do_opcondition);
+SCRIPT_CMD(do_rpcondition);
+SCRIPT_CMD(do_tpcondition);
 
 
 #include "tables.h"
