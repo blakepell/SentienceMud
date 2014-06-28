@@ -6138,6 +6138,7 @@ void token_from_char(TOKEN_DATA *token)
 
 	if(token->type == TOKEN_SKILL) skill_entry_removeskill(token->player, 0, token);
 	else if(token->type == TOKEN_SPELL) skill_entry_removespell(token->player, 0, token);
+	else if(token->type == TOKEN_SONG) skill_entry_removesong(token->player, -1, token);
 
 	sprintf(buf, "token_from_char: removed token %s(%ld) from char %s(%ld)",
 		token->name, token->pIndexData->vnum,

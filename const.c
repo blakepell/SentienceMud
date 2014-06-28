@@ -74,6 +74,7 @@ const struct item_type token_table [] =
     {	TOKEN_AFFECT,		"affect"		},
     {	TOKEN_SKILL,		"skill"			},
     {	TOKEN_SPELL,		"spell"			},
+    {	TOKEN_SONG,			"song"			},
     {	0,			NULL			}
 };
 
@@ -2483,26 +2484,39 @@ const  struct  newbie_eq_type  newbie_eq_table[] =
 };
 
 
-const   struct  music_type 	music_table 	[] 	=
+const   struct  music_type 	music_table 	[MAX_SONGS] 	=
 {
 /*  name,	level gained, spell1,spell2,spell3, play length, mana cost, target*/
-    { "Purple Mist", 		1, "armor", "shield", NULL, 12, 75, TAR_CHAR_DEFENSIVE },
-    { "Fireworks", 		2, "magic missile", "lightning bolt", NULL, 9, 50, TAR_CHAR_OFFENSIVE },
-    { "A Dwarven Tale", 	3, "stone skin", "infravision", NULL, 12, 75, TAR_CHAR_DEFENSIVE },
-    { "Fade to Black", 		5, "improved invisibility", NULL, NULL, 8, 75, TAR_CHAR_DEFENSIVE },
-    { "Pretty in Pink", 	7, "faerie fire", NULL, NULL, 4, 75, TAR_CHAR_OFFENSIVE },
-    { "Aquatic Polka", 		8, "underwater breathing", NULL, NULL, 12, 75, TAR_CHAR_DEFENSIVE},
-    { "Another Gate", 		9, "dispel magic", NULL, NULL, 8, 50, TAR_CHAR_OFFENSIVE },
-    { "Awareness Jig", 		11, "detect invis", "detect magic", "detect hidden", 10, 100, TAR_CHAR_DEFENSIVE},
-    { "Swamp Song", 		13, "poison", "acid blast", NULL, 9, 65, TAR_CHAR_OFFENSIVE },
-    { "Fat Owl Hopping", 	14, "giant strength", "fly", NULL, 12, 70, TAR_CHAR_DEFENSIVE },
-    { "Stormy Weather", 	15, "call lightning", "call lightning", "call lightning", 9, 50, TAR_IGNORE },
-    { "Rigor", 			18, "death grip", "frenzy", NULL, 18, 125, TAR_CHAR_DEFENSIVE },
-    { "Firefly Tune", 		20, "heal", "refresh", NULL, 8, 50, TAR_CHAR_FORMATION },
-    { "Blessed Be", 		22, "cure poison", "cure disease", "cure blindness", 24, 75, TAR_CHAR_DEFENSIVE },
-    { "Dark Cloud", 		25, "blindness", NULL, NULL, 14, 75, TAR_CHAR_OFFENSIVE },
+    { "Purple Mist", 			1, "armor", "shield", NULL, 12, 75, TAR_CHAR_DEFENSIVE },
+    { "Fireworks", 				2, "magic missile", "lightning bolt", NULL, 9, 50, TAR_CHAR_OFFENSIVE },
+    { "A Dwarven Tale", 		3, "stone skin", "infravision", NULL, 12, 75, TAR_CHAR_DEFENSIVE },
+    { "Fade to Black", 			5, "improved invisibility", NULL, NULL, 8, 75, TAR_CHAR_DEFENSIVE },
+    { "Pretty in Pink", 		7, "faerie fire", NULL, NULL, 4, 75, TAR_CHAR_OFFENSIVE },
+    { "Aquatic Polka", 			8, "underwater breathing", NULL, NULL, 12, 75, TAR_CHAR_DEFENSIVE},
+    { "Another Gate", 			9, "dispel magic", NULL, NULL, 8, 50, TAR_CHAR_OFFENSIVE },
+    { "Awareness Jig", 			11, "detect invis", "detect magic", "detect hidden", 10, 100, TAR_CHAR_DEFENSIVE},
+    { "Swamp Song", 			13, "poison", "acid blast", NULL, 9, 65, TAR_CHAR_OFFENSIVE },
+    { "Fat Owl Hopping",	 	14, "giant strength", "fly", NULL, 12, 70, TAR_CHAR_DEFENSIVE },
+    { "Stormy Weather", 		15, "call lightning", "call lightning", "call lightning", 9, 50, TAR_IGNORE },
+    { "Rigor", 					18, "death grip", "frenzy", NULL, 18, 125, TAR_CHAR_DEFENSIVE },
+    { "Firefly Tune", 			20, "heal", "refresh", NULL, 8, 50, TAR_CHAR_FORMATION },
+    { "Blessed Be", 			22, "cure poison", "cure disease", "cure blindness", 24, 75, TAR_CHAR_DEFENSIVE },
+    { "Dark Cloud", 			25, "blindness", NULL, NULL, 14, 75, TAR_CHAR_OFFENSIVE },
     { "Curse of the Abyss", 	28, "fireball", "energy drain", "demonfire", 13, 100, TAR_CHAR_OFFENSIVE },
-    { NULL, 			0, NULL, NULL, 0, 0, TAR_IGNORE }
+    { NULL, 					0, NULL, NULL, NULL, 0, 0, TAR_IGNORE },
+    { NULL, 					0, NULL, NULL, NULL, 0, 0, TAR_IGNORE },
+    { NULL, 					0, NULL, NULL, NULL, 0, 0, TAR_IGNORE },
+    { NULL, 					0, NULL, NULL, NULL, 0, 0, TAR_IGNORE },
+    { NULL, 					0, NULL, NULL, NULL, 0, 0, TAR_IGNORE },
+    { NULL, 					0, NULL, NULL, NULL, 0, 0, TAR_IGNORE },
+    { NULL, 					0, NULL, NULL, NULL, 0, 0, TAR_IGNORE },
+    { NULL, 					0, NULL, NULL, NULL, 0, 0, TAR_IGNORE },
+    { NULL, 					0, NULL, NULL, NULL, 0, 0, TAR_IGNORE },
+    { NULL, 					0, NULL, NULL, NULL, 0, 0, TAR_IGNORE },
+    { NULL, 					0, NULL, NULL, NULL, 0, 0, TAR_IGNORE },
+    { NULL, 					0, NULL, NULL, NULL, 0, 0, TAR_IGNORE },
+    { NULL, 					0, NULL, NULL, NULL, 0, 0, TAR_IGNORE },
+    { NULL, 					0, NULL, NULL, NULL, 0, 0, TAR_IGNORE }
 };
 
 

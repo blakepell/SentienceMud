@@ -2494,6 +2494,17 @@ const struct flag_type spell_target_types[] = {
 	{ NULL,			0,			FALSE	}
 };
 
+const struct flag_type song_target_types[] = {
+	{ "defensive",		TAR_CHAR_DEFENSIVE,	TRUE	},
+	{ "formation",		TAR_CHAR_FORMATION,	TRUE	},
+	{ "ignore",			TAR_IGNORE,		TRUE	},
+	{ "obj_char_off",	TAR_OBJ_CHAR_OFF,	TRUE	},
+	{ "obj_defensive",	TAR_OBJ_CHAR_DEF,	TRUE	},
+	{ "offensive",		TAR_CHAR_OFFENSIVE,	TRUE	},
+	{ "self",		TAR_CHAR_SELF,		TRUE	},
+	{ NULL,			0,			FALSE	}
+};
+
 const struct flag_type moon_phases[] = {
 	{ "new",		MOON_NEW,		TRUE	},
 	{ "waxing_crescent",	MOON_WAXING_CRESCENT,	TRUE	},
@@ -2515,3 +2526,21 @@ const struct flag_type player_conditions[] = {
 	{ NULL,		-1,				FALSE }
 };
 
+const struct flag_type instrument_types[] = {
+	{ "vocal",		INSTRUMENT_VOCAL,		FALSE },
+	{ "any",		INSTRUMENT_ANY,			TRUE },
+	{ "none",		INSTRUMENT_NONE,		FALSE },
+	{ "reed",		INSTRUMENT_WIND_REED,	TRUE },
+	{ "flute",		INSTRUMENT_WIND_FLUTE,	TRUE },
+	{ "brass",		INSTRUMENT_WIND_BRASS,	TRUE },
+	{ "drum",		INSTRUMENT_DRUM,		TRUE },
+	{ "percussion",	INSTRUMENT_PERCUSSION,	TRUE },
+	{ "chorded",	INSTRUMENT_CHORDED,		TRUE },
+	{ "string",		INSTRUMENT_STRING,		TRUE },
+	{ NULL,			0,						FALSE }
+};
+
+const struct flag_type instrument_types[] = {
+	{ "onehand",	INSTRUMENT_ONEHANDED,	TRUE	},
+	{ NULL,			0,						FALSE }
+};

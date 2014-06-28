@@ -892,7 +892,7 @@ void cast_end(CHAR_DATA *ch)
 		id[0] = token->id[0];
 		id[1] = token->id[1];
 		if (target == TARGET_CHAR && victim && IS_AFFECTED2(victim, AFF2_SPELL_DEFLECTION)) {
-			if (check_spell_deflection_token(ch, victim, token, script)) {
+			if (check_spell_deflection_token(ch, victim, token, script,ch->cast_target_name)) {
 				execute_script(script->vnum, script, NULL, NULL, NULL, token, ch, NULL, NULL, victim, NULL, NULL,ch->cast_target_name,NULL,0,0,0,0,0);
 			}
 		} else {

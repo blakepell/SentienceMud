@@ -538,6 +538,11 @@ void fwrite_char(CHAR_DATA *ch, FILE *fp)
 		    ch->pcdata->alias_sub[pos]);
 	}
 
+	// Save song list
+	for (sn = 0; sn < MAX_SONG && music_table[sn].name; sn++)
+		if( ch->pcdata->song_learned[sn] )
+			fprintf(fp, "Song '%s'\n", music_table[sn].name);
+
 	for (sn = 0; sn < MAX_SKILL && skill_table[sn].name; sn++)
 	{
 	    if (skill_table[sn].name != NULL && ch->pcdata->learned[sn] != 0)
@@ -1749,38 +1754,38 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
 
 	    if (!str_cmp(word, "Skill") || !str_cmp(word,"Sk"))
 	    {
-		int sn;
-		int value;
-		char *temp;
+			int sn;
+			int value;
+			char *temp;
 	        int prac;
 
-		value = fread_number(fp);
-		temp = fread_word(fp);
-		if (ch->version < VERSION_PLAYER_002 && !str_cmp(temp,"wither"))
-			sn = gsn_withering_cloud;
-		else
-			sn = skill_lookup(temp);
-		if (sn <= 0)
-		{
-		    sprintf(buf, "fread_char: unknown skill %s", temp);
-		    log_string(buf);
-		    if (value > 0)
-		    {
-			prac = value / 4;
-			ch->practice += prac;
-		    }
-		}
-		else
-		{
-		    ch->pcdata->learned[sn] = value;
-			if( skill_table[sn].spell_fun == spell_null)
-		    	skill_entry_addskill(ch, sn, NULL);
+			value = fread_number(fp);
+			temp = fread_word(fp);
+			if (ch->version < VERSION_PLAYER_002 && !str_cmp(temp,"wither"))
+				sn = gsn_withering_cloud;
 			else
-				skill_entry_addspell(ch, sn, NULL);
-		}
+				sn = skill_lookup(temp);
+			if (sn <= 0)
+			{
+				sprintf(buf, "fread_char: unknown skill %s", temp);
+				log_string(buf);
+				if (value > 0)
+				{
+				prac = value / 4;
+				ch->practice += prac;
+				}
+			}
+			else
+			{
+				ch->pcdata->learned[sn] = value;
+				if( skill_table[sn].spell_fun == spell_null)
+					skill_entry_addskill(ch, sn, NULL);
+				else
+					skill_entry_addspell(ch, sn, NULL);
+			}
 
-		fMatch = TRUE;
-		break;
+			fMatch = TRUE;
+			break;
 	    }
 
 	    if (!str_cmp(word, "SkillMod") || !str_cmp(word, "SkMod"))
@@ -1800,6 +1805,31 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
 		fMatch = TRUE;
 		break;
 	    }
+
+
+	    if (!str_cmp(word, "Song"))
+	    {
+			int song;
+			char *temp;
+	        int prac;
+
+			temp = fread_word(fp);
+			song = music_lookup(temp);
+			if (song 0)
+			{
+				sprintf(buf, "fread_char: unknown song %s", temp);
+				log_string(buf);
+			}
+			else
+			{
+				ch->pcdata->song_learned[song] = TRUE;
+				skill_entry_addsong(ch, song, NULL);
+			}
+
+			fMatch = TRUE;
+			break;
+	    }
+
 /*
 	    fMatchFound = FALSE;
 	    for (i = 0; i < 3; i++)
@@ -3895,7 +3925,7 @@ void fwrite_token(CHAR_DATA *ch, TOKEN_DATA *token, FILE *fp)
 
     if(token->progs && token->progs->vars) {
 		pVARIABLE var;
-	
+
 		for(var = token->progs->vars; var; var = var->next) {
 			if(var->save) {
 				variable_fwrite(var, fp);

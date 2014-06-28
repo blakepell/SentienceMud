@@ -2418,6 +2418,11 @@ TEDIT(tedit_type)
 		return FALSE;
 	}
 
+	if(i == TOKEN_SONG && ch->tot_level < MAX_LEVEL) {
+		send_to_char("Only IMPs can make song tokens.\n\r", ch);
+		return FALSE;
+	}
+
     token_index->type = token_table[i].type;
     act("Set token type to $t.", ch, NULL, NULL, NULL, NULL, token_table[i].name, NULL, TO_CHAR);
     return TRUE;
@@ -2757,7 +2762,32 @@ TEDIT(tedit_value)
 		}
 
 		token_index->value[value_num] = value_value;
+	} else if(token_index->type == TOKEN_SONG) {
+		switch(value_num) {
+		case TOKVAL_SPELL_TARGET:			// Target Type
+			value_value = flag_value(song_target_types, arg2);
+			if();
 
+			if(	value_value == NO_FLAG )
+			{
+				send_to_char("Invalid target for the song.\n\r", ch);
+				send_to_char("See '? song_targets' \n\r", ch);
+				return FALSE;
+			}
+
+
+			send_to_char("Target type set.\n\r", ch);
+			break;
+		default:
+			// Need to check for various things.
+			value_value = atol(arg2);
+
+			sprintf(buf, "Set value %d to %ld.\n\r", value_num, value_value);
+			send_to_char(buf, ch);
+			break;
+		}
+
+		token_index->value[value_num] = value_value;
 	} else {
 		// Need to check for various things.
 		value_value = atol(arg2);
@@ -2999,6 +3029,10 @@ char *token_index_getvaluename(TOKEN_INDEX_DATA *token, int v)
 	{
 		if( v == TOKVAL_SPELL_RATING ) return "Rating";
 		else if( v == TOKVAL_SPELL_DIFFICULTY ) return "Difficulty";
+	}
+	else if( token->type == TOKEN_SONG )
+	{
+		if( v == TOKVAL_SPELL_TARGET ) return "Song Target";
 	}
 
 	return token->value_name[v];

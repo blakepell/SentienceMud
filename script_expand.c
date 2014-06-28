@@ -1534,6 +1534,10 @@ char *expand_entity_mobile(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		str = expand_entity_variable((arg->d.mob && IS_NPC(arg->d.mob))?arg->d.mob->progs->vars:NULL,str+1,arg);
 		if(!str) return NULL;
 		break;
+	case ENTITY_MOB_CASTSPELL:
+		arg->type = ENT_SKILL;
+		arg->d.sn = arg->d.mob ? arg->d.mob->cast_sn: -1;
+		break;
 	case ENTITY_MOB_CASTTOKEN:
 		arg->type = ENT_TOKEN;
 		arg->d.token = arg->d.mob ? arg->d.mob->cast_token: NULL;
@@ -1541,6 +1545,22 @@ char *expand_entity_mobile(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 	case ENTITY_MOB_CASTTARGET:
 		arg->type = ENT_STRING;
 		arg->d.str = arg->d.mob ? (char*)arg->d.mob->cast_target_name : (char*)&str_empty[0];
+		break;
+	case ENTITY_MOB_SONG:
+		arg->type = ENT_SONG;
+		arg->d.song = arg->d.mob ? arg->d.mob->song_num : -1;
+		break;
+	case ENTITY_MOB_SONGTOKEN:
+		arg->type = ENT_TOKEN;
+		arg->d.token = arg->d.mob ? arg->d.mob->song_token: NULL;
+		break;
+	case ENTITY_MOB_SONGTARGET:
+		arg->type = ENT_STRING;
+		arg->d.str = arg->d.mob ? (char*)arg->d.mob->song_target_name : (char*)&str_empty[0];
+		break;
+	case ENTITY_MOB_INSTRUMENT:
+		arg->type = ENT_OBJECT;
+		arg->d.obj = arg->d.mob ? arg->d.mob->song_instrument : NULL;
 		break;
 	case ENTITY_MOB_RECALL:
 		arg->type = ENT_ROOM;
@@ -1722,6 +1742,11 @@ char *expand_entity_mobile_id(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		str = expand_entity_variable(NULL,str+1,arg);
 		if(!str) return NULL;
 		break;
+
+	case ENTITY_MOB_CASTSPELL:
+		arg->type = ENT_SKILL;
+		arg->d.sn = -1;
+		break;
 	case ENTITY_MOB_CASTTOKEN:
 		arg->type = ENT_TOKEN;
 		arg->d.token = NULL;
@@ -1730,6 +1755,23 @@ char *expand_entity_mobile_id(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->type = ENT_STRING;
 		arg->d.str = (char*)&str_empty[0];
 		break;
+	case ENTITY_MOB_SONG:
+		arg->type = ENT_SONG;
+		arg->d.song = -1;
+		break;
+	case ENTITY_MOB_SONGTOKEN:
+		arg->type = ENT_TOKEN;
+		arg->d.token = NULL;
+		break;
+	case ENTITY_MOB_SONGTARGET:
+		arg->type = ENT_STRING;
+		arg->d.str = (char*)&str_empty[0];
+		break;
+	case ENTITY_MOB_INSTRUMENT:
+		arg->type = ENT_OBJECT;
+		arg->d.obj = NULL;
+		break;
+
 	case ENTITY_MOB_RECALL:
 		arg->type = ENT_ROOM;
 		arg->d.room = NULL;
@@ -3681,6 +3723,59 @@ char *expand_entity_plist_token(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg
 	return str+1;
 }
 
+char *expand_entity_song(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
+{
+	struct music_type* pSong = NULL;
+
+	if( arg->d.song >= 0 && arg->d.song < MAX_SONGS && music_table[arg->d.song].name != NULL )
+		pSong = &music_table[arg->d.song];
+
+	switch(*str) {
+	case ENTITY_SONG_NUMBER:
+		arg->type = ENT_NUMBER;
+		arg->d.num = arg->d.song;	// Redundant!
+		break;
+	case ENTITY_SONG_NAME:
+		arg->type = ENT_STRING;
+		strcpy(arg->buf,(pSong ? pSong->name : ""));
+		arg->d.str = arg->buf;
+		break;
+	case ENTITY_SONG_SPELL1:
+		arg->type = ENT_SKILL;
+		arg->d.sn = (pSong && pSong->spell1) ? skill_lookup(pSong->spell1) : -1;
+		break;
+	case ENTITY_SONG_SPELL2:
+		arg->type = ENT_SKILL;
+		arg->d.sn = (pSong && pSong->spell2) ? skill_lookup(pSong->spell2) : -1;
+		break;
+	case ENTITY_SONG_SPELL3:
+		arg->type = ENT_SKILL;
+		arg->d.sn = (pSong && pSong->spell3) ? skill_lookup(pSong->spell3) : -1;
+		break;
+	case ENTITY_SONG_TARGET:
+		arg->type = ENT_NUMBER;
+		arg->d.num = pSong ? pSong->target : -1;
+		break;
+	case ENTITY_SONG_BEATS:
+		arg->type = ENT_NUMBER;
+		arg->d.num = pSong ? pSong->beats : -1;
+		break;
+	case ENTITY_SONG_MANA:
+		arg->type = ENT_NUMBER;
+		arg->d.num = pSong ? pSong->mana : -1;
+		break;
+	case ENTITY_SONG_LEVEL:
+		arg->type = ENT_NUMBER;
+		arg->d.num = pSong ? pSong->level : -1;
+		break;
+
+	default: return NULL;
+	}
+
+	return str+1;
+}
+
+
 char *expand_entity_prior(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 {
 	info = arg->d.info;
@@ -3841,6 +3936,7 @@ char *expand_argument_entity(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		case ENT_CHURCH:	next = expand_entity_wilds(info,str,arg); break;
 		case ENT_EXTRADESC:	next = expand_entity_extradesc(info,str,arg); break;
 		case ENT_AFFECT:	next = expand_entity_affect(info,str,arg); break;
+		case ENT_SONG:		next = expand_entity_song(info,str,arg); break;
 		case ENT_CLONE_ROOM:	next = expand_entity_clone_room(info,str,arg); break;
 		case ENT_WILDS_ROOM:	next = expand_entity_wilds_room(info,str,arg); break;
 		case ENT_CLONE_DOOR:	next = expand_entity_clone_door(info,str,arg); break;

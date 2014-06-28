@@ -233,9 +233,14 @@ ENT_FIELD entity_mobile[] = {
 	{"eq_lodged_leg2",	ENTITY_MOB_EQ_LODGED_LEG2,	ENT_OBJECT	},
 	{"eq_entangled",	ENTITY_MOB_EQ_ENTANGLED,	ENT_OBJECT	},
 	{"eq_concealed",	ENTITY_MOB_EQ_CONCEALED,	ENT_OBJECT	},
+	{"castspell",		ENTITY_MOB_CASTSPELL,	ENT_SKILL	},
 	{"casttoken",		ENTITY_MOB_CASTTOKEN,	ENT_TOKEN	},
 	{"casttarget",		ENTITY_MOB_CASTTARGET,	ENT_STRING	},
-	{"recall",			ENTITY_MOB_RECALL,	ENT_ROOM	},
+	{"song",			ENTITY_MOB_SONG,		ENT_SONG	},
+	{"songtarget",		ENTITY_MOB_SONGTARGET,	ENT_STRING	},
+	{"songtoken",		ENTITY_MOB_SONGTOKEN,	ENT_TOKEN	},
+	{"instrument",		ENTITY_MOB_INSTRUMENT,	ENT_OBJECT	},
+	{"recall",			ENTITY_MOB_RECALL,		ENT_ROOM	},
 	{"connection",		ENTITY_MOB_CONNECTION,	ENT_CONN	},
 	{"church",			ENTITY_MOB_CHURCH,		ENT_CHURCH	},
 	{"clonerooms",		ENTITY_MOB_CLONEROOMS,	ENT_BLIST_ROOM	},
@@ -449,6 +454,18 @@ ENT_FIELD entity_affect[] = {
 	{NULL,		0,			ENT_UNKNOWN	}
 };
 
+ENT_FIELD entity_song[] = {
+	{"number",	ENTITY_SONG_NUMBER,	ENT_NUMBER	},
+	{"name",	ENTITY_SONG_NAME,	ENT_STRING	},
+	{"spell1",	ENTITY_SONG_SPELL1,	ENT_SKILL	},
+	{"spell2",	ENTITY_SONG_SPELL2,	ENT_SKILL	},
+	{"spell3",	ENTITY_SONG_SPELL3,	ENT_SKILL	},
+	{"target",	ENTITY_SONG_TARGET,	ENT_NUMBER	},
+	{"beats",	ENTITY_SONG_BEATS,	ENT_NUMBER	},
+	{"mana",	ENTITY_SONG_MANA,	ENT_NUMBER	},
+	{"level",	ENTITY_SONG_LEVEL,	ENT_NUMBER	},
+	{NULL,		0,			ENT_UNKNOWN	}
+}
 
 struct _entity_type_info entity_type_info[] = {
 	{ ENT_PRIMARY,		ENT_PRIMARY,		entity_primary,		TRUE	},
@@ -589,6 +606,7 @@ struct trigger_type trigger_table	[] = {
 {	"prepracticethat",		NULL,		TRIGSLOT_GENERAL,	TRUE,	FALSE,	FALSE,	TRUE	},
 {	"prerecall",			NULL,		TRIGSLOT_GENERAL,	FALSE,	FALSE,	TRUE,	TRUE	},
 {	"prereckoning",			NULL,		TRIGSLOT_RANDOM,	TRUE,	TRUE,	TRUE,	TRUE	},
+{	"prerehearse",			NULL,		TRIGSLOT_GENERAL,	TRUE,	FALSE,	FALSE,	TRUE	},
 {	"preremove",			NULL,		TRIGSLOT_GENERAL,	FALSE,	TRUE,	FALSE,	TRUE	},
 {	"prerest",				NULL,		TRIGSLOT_GENERAL,	TRUE,	TRUE,	TRUE,	TRUE	},
 {	"preresurrect",			NULL,		TRIGSLOT_REPOP,		TRUE,	TRUE,	TRUE,	TRUE	},
@@ -630,8 +648,10 @@ struct trigger_type trigger_table	[] = {
 {	"spell",				NULL,		TRIGSLOT_SPELL,		FALSE,	FALSE,	FALSE,	TRUE	},
 {	"spellcast",			NULL,		TRIGSLOT_SPELL,		TRUE,	TRUE,	TRUE,	TRUE	},
 {	"spellinter",			NULL,		TRIGSLOT_SPELL,		FALSE,	FALSE,	FALSE,	TRUE	},
+{	"spellpenetrate",		NULL,		TRIGSLOT_SPELL,		FALSE,	FALSE,	FALSE,	TRUE	},
+{	"spellreflect",			NULL,		TRIGSLOT_SPELL,		TRUE,	FALSE,	FALSE,	TRUE	},
 {	"spell_cure",			NULL,		TRIGSLOT_SPELL,		TRUE,	FALSE,	FALSE,	TRUE	},
-{	"spell_dispel",			NULL,		TRIGSLOT_SPELL,		TRUE,	FALSE,	FALSE,	TRUE	},
+{	"spell_dispel",			NULL,		TRIGSLOT_SPELL,		TRUE,	TRUE,	FALSE,	TRUE	},
 {	"stand",				NULL,		TRIGSLOT_GENERAL,	TRUE,	TRUE,	TRUE,	TRUE	},
 {	"startcombat",			NULL,		TRIGSLOT_FIGHT,		TRUE,	TRUE,	TRUE,	TRUE	},
 {	"stripaffect",			NULL,		TRIGSLOT_REPOP,		FALSE,	FALSE,	FALSE,	TRUE	},
@@ -758,6 +778,7 @@ int trigger_slots[] = {
 	TRIGSLOT_GENERAL,		// TRIG_PREPUT
 	TRIGSLOT_GENERAL,		// TRIG_PRERECALL
 	TRIGSLOT_RANDOM,		// TRIG_PRERECKONING
+	TRIGSLOT_GENERAL,		// TRIG_PREREHEARSE
 	TRIGSLOT_GENERAL,		// TRIG_PREREMOVE
 	TRIGSLOT_GENERAL,		// TRIG_PREREST
 	TRIGSLOT_REPOP,			// TRIG_PRERESURRECT
@@ -799,6 +820,8 @@ int trigger_slots[] = {
 	TRIGSLOT_SPELL,			// TRIG_SPELL
 	TRIGSLOT_SPELL,			// TRIG_SPELLCAST
 	TRIGSLOT_SPELL,			// TRIG_SPELLINTER
+	TRIGSLOT_SPELL,			// TRIG_SPELLPENETRATE
+	TRIGSLOT_SPELL,			// TRIG_SPELLREFLECT
 	TRIGSLOT_SPELL,			// TRIG_SPELL_CURE
 	TRIGSLOT_SPELL,			// TRIG_SPELL_DISPEL
 	TRIGSLOT_GENERAL,		// TRIG_STAND

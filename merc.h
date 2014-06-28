@@ -330,6 +330,7 @@ typedef struct location_type {
 typedef struct skill_entry_type {
 	struct skill_entry_type *next;
 	sh_int sn;			// Skill Number
+	sh_int song;		// Song Number
 	TOKEN_DATA *token;	// Skill/Spell Token, NULL if this is a built-in skill
 } SKILL_ENTRY;
 
@@ -556,6 +557,7 @@ struct list_link_skill_data {
 #define MAX_SHIP_ROOMS		10
 #define MAX_SKILL		300
 #define MAX_SOCIALS		256
+#define MAX_SONGS		30
 #define MAX_STOCKS		10
 #define MAX_SUB_CLASS		24
 #define MAX_TOXIN		4
@@ -2161,30 +2163,30 @@ struct affliction_type {
 
 /* weapon class */
 #define WEAPON_UNKNOWN         -1
-#define WEAPON_EXOTIC		0
-#define WEAPON_SWORD		1
-#define WEAPON_DAGGER		2
-#define WEAPON_SPEAR		3
-#define WEAPON_MACE		4
-#define WEAPON_AXE		5
-#define WEAPON_FLAIL		6
-#define WEAPON_WHIP		7
-#define WEAPON_POLEARM		8
-#define WEAPON_STAKE		9
-#define WEAPON_QUARTERSTAFF    10
-#define WEAPON_ARROW           11
-#define WEAPON_BOLT            12
-#define WEAPON_DART            13	/* @@@NIB : 20070126 */
-#define WEAPON_HARPOON         14	/* @@@NIB : 20070126 */
-#define WEAPON_TYPE_MAX		15
+#define WEAPON_EXOTIC			0
+#define WEAPON_SWORD			1
+#define WEAPON_DAGGER			2
+#define WEAPON_SPEAR			3
+#define WEAPON_MACE				4
+#define WEAPON_AXE				5
+#define WEAPON_FLAIL			6
+#define WEAPON_WHIP				7
+#define WEAPON_POLEARM			8
+#define WEAPON_STAKE			9
+#define WEAPON_QUARTERSTAFF		10
+#define WEAPON_ARROW			11
+#define WEAPON_BOLT				12
+#define WEAPON_DART				13	/* @@@NIB : 20070126 */
+#define WEAPON_HARPOON			14	/* @@@NIB : 20070126 */
+#define WEAPON_TYPE_MAX			15
 
 /* ranged weapon class */
-#define RANGED_WEAPON_EXOTIC         0
-#define RANGED_WEAPON_CROSSBOW       1
-#define RANGED_WEAPON_BOW            2
-#define RANGED_WEAPON_BLOWGUN        3	/* @@@NIB : 20070126 */
-#define RANGED_WEAPON_HARPOON        4	/* @@@NIB : 20070126 */
-#define RANGED_WEAPON_SPEAR		5
+#define RANGED_WEAPON_EXOTIC		0
+#define RANGED_WEAPON_CROSSBOW		1
+#define RANGED_WEAPON_BOW			2
+#define RANGED_WEAPON_BLOWGUN		3	/* @@@NIB : 20070126 */
+#define RANGED_WEAPON_HARPOON		4	/* @@@NIB : 20070126 */
+#define RANGED_WEAPON_SPEAR			5
 
 /* weapon types */
 #define WEAPON_FLAMING		(A)
@@ -2206,6 +2208,25 @@ struct affliction_type {
 #define WEAPON_RESONATE		(Q)	/* @@@NIB : 20070209 */
 #define WEAPON_BLAZE		(R)	/* @@@NIB : 20070209 */
 #define WEAPON_SUCKLE		(S)	/* @@@NIB : 20070209 */
+
+
+// Instrument class
+#define INSTRUMENT_VOCAL			-2
+#define INSTRUMENT_ANY				-1
+#define INSTRUMENT_NONE				0
+#define INSTRUMENT_WIND_REED		1	// Clarinet, Saxophone, bagpipes
+#define INSTRUMENT_WIND_FLUTE		2	// Flute, Piccolo
+#define INSTRUMENT_WIND_BRASS		3	// Trumpet
+#define INSTRUMENT_DRUM				4	// Drums
+#define INSTRUMENT_PERCUSSION		5	// Symbols, triangles, etc
+#define INSTRUMENT_CHORDED			6	// Pianos, harpsicords
+#define INSTRUMENT_STRING			7	// Violins, harps
+#define INSTRUMENT_MAX				8	// Anything beyond this is considered "custom"
+
+// Instrument flags
+#define INSTRUMENT_ONEHANDED		(A)
+
+
 
 /* gate flags */
 #define GATE_NORMAL_EXIT	(A)
@@ -3032,6 +3053,7 @@ struct token_index_data
 #define TOKEN_AFFECT		2
 #define TOKEN_SKILL		3
 #define TOKEN_SPELL		4
+#define TOKEN_SONG		5
 
 /* Token flags */
 #define TOKEN_PURGE_DEATH	(A)
@@ -3288,8 +3310,12 @@ struct	char_data
 
     OBJ_DATA		*recite_scroll;
     OBJ_DATA 		*resurrect_target;
-    char		*music_target;
-    int			song_num;
+    char			*music_target;
+    int				song_num;
+    SCRIPT_DATA		*song_script;		/* The scripted spell to be done */
+    TOKEN_DATA		*sont_token;		/* The token from which the script call is made */
+    int				song_mana;
+    OBJ_DATA		*song_instrument;
 
     int			fade;
     int			fade_dir;
@@ -3522,6 +3548,7 @@ struct	char_data
 	// Sorted skills and spells (merging skills and tokens)
 	SKILL_ENTRY *sorted_skills;
 	SKILL_ENTRY *sorted_spells;
+	SKILL_ENTRY *sorted_songs;
 
 	LOCATION		recall;
 
@@ -3633,7 +3660,8 @@ struct	pc_data
     long		perm_move;
     int			true_sex;
     int			last_level;
-    int			condition	[4];
+    int			condition	[5];
+    bool		songs_learned[MAX_SONGS];
     int			learned		[MAX_SKILL];
     int			mod_learned	[MAX_SKILL];
     bool		group_known	[MAX_GROUP];
@@ -4738,6 +4766,7 @@ enum trigger_index_enum {
 	TRIG_PREPUT,
 	TRIG_PRERECALL,
 	TRIG_PRERECKONING,
+	TRIG_PREREHEARSE,
 	TRIG_PREREMOVE,
 	TRIG_PREREST,
 	TRIG_PRERESURRECT,
@@ -4779,6 +4808,8 @@ enum trigger_index_enum {
 	TRIG_SPELL,
 	TRIG_SPELLCAST,
 	TRIG_SPELLINTER,
+	TRIG_SPELLPENETRATE,
+	TRIG_SPELLREFLECT,
 	TRIG_SPELL_CURE,
 	TRIG_SPELL_DISPEL,
 	TRIG_STAND,
@@ -6100,7 +6131,7 @@ bool check_rocks( CHAR_DATA *ch );
 void check_room_shield_source( CHAR_DATA *ch );
 
 /* music.c */
-void    music_end       args( ( CHAR_DATA *ch, sh_int num ) );
+void    music_end       args( ( CHAR_DATA *ch ) );
 bool was_bard( CHAR_DATA *ch );
 
 /* shoot.c */
@@ -6734,6 +6765,7 @@ char *	one_argument	args( ( char *argument, char *arg_first ) );
 char *  one_caseful_argument   args( ( char *argument, char *arg_first ) );
 void do_function (CHAR_DATA *ch, DO_FUN *do_fun, char *argument);
 void stop_casting( CHAR_DATA *ch, bool messages );
+void stop_music( CHAR_DATA *ch, bool messages );
 void stop_ranged( CHAR_DATA *ch, bool messages );
 bool is_allowed( char *command );
 bool is_granted_command(CHAR_DATA *ch, char *name);
@@ -7269,12 +7301,15 @@ float diminishing_returns(float val, float scale);
 float diminishing_inverse(float val, float scale);
 
 SKILL_ENTRY *skill_entry_findname( SKILL_ENTRY *list, char *str );
+SKILL_ENTRY *skill_entry_findsong( SKILL_ENTRY *list, int song );
 SKILL_ENTRY *skill_entry_findsn( SKILL_ENTRY *list, int sn );
 SKILL_ENTRY *skill_entry_findtoken( SKILL_ENTRY *list, TOKEN_DATA *token );
 void skill_entry_addskill (CHAR_DATA *ch, int sn, TOKEN_DATA *token);
 void skill_entry_addspell (CHAR_DATA *ch, int sn, TOKEN_DATA *token);
+void skill_entry_addsong (CHAR_DATA *ch, int song, TOKEN_DATA *token);
 void skill_entry_removeskill (CHAR_DATA *ch, int sn, TOKEN_DATA *token);
 void skill_entry_removespell (CHAR_DATA *ch, int sn, TOKEN_DATA *token);
+void skill_entry_removesong (CHAR_DATA *ch, int song, TOKEN_DATA *token);
 int token_skill_rating( CHAR_DATA *ch, TOKEN_DATA *token);
 int skill_entry_rating (CHAR_DATA *ch, SKILL_ENTRY *entry);
 int skill_entry_mod(CHAR_DATA *ch, SKILL_ENTRY *entry);
@@ -7319,8 +7354,8 @@ AREA_DATA *get_area_from_uid args ((long uid));
 
 char *skill_entry_name (SKILL_ENTRY *entry);
 int skill_entry_compare (SKILL_ENTRY *a, SKILL_ENTRY *b);
-void skill_entry_insert (SKILL_ENTRY **list, int sn, TOKEN_DATA *token);
-void skill_entry_remove (SKILL_ENTRY **list, int sn, TOKEN_DATA *token);
+void skill_entry_insert (SKILL_ENTRY **list, int sn, int song, TOKEN_DATA *token);
+void skill_entry_remove (SKILL_ENTRY **list, int sn, int song, TOKEN_DATA *token);
 SKILL_ENTRY *skill_entry_findname( SKILL_ENTRY *list, char *str );
 SKILL_ENTRY *skill_entry_findsn( SKILL_ENTRY *list, int sn );
 SKILL_ENTRY *skill_entry_findtoken( SKILL_ENTRY *list, TOKEN_DATA *token );
@@ -7335,5 +7370,7 @@ void give_money(CHAR_DATA *ch, OBJ_DATA *container, int gold, int silver, bool i
 void get_money_from_obj(CHAR_DATA *ch, OBJ_DATA *container);
 bool obj_has_money(CHAR_DATA *ch, OBJ_DATA *container);
 void loot_corpse(CHAR_DATA *ch, OBJ_DATA *corpse);
+
+int music_lookup( char *name);
 
 #endif /* !def __MERC_H__ */

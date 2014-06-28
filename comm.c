@@ -4291,9 +4291,9 @@ void update_pc_timers(CHAR_DATA *ch)
 
     if (ch != NULL && ch->music > 0)
     {
-	--ch->music;
-	if (ch->music <= 0)
-	    music_end(ch, ch->song_num);
+		--ch->music;
+		if (ch->music <= 0)
+		    music_end(ch);
     }
 
     if (ch != NULL && ch->ranged > 0)

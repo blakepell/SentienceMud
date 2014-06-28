@@ -94,6 +94,9 @@ const struct olc_help_type help_table[] =
     {   "scriptflags",  script_flags,	 "Script Flags {D({Wrestricted{D){x."    },
     {	"corpsetypes",	corpse_types,	 "Corpse types."		},
     {	"catalyst",	catalyst_types,	 "Catalyst types."		},
+    {	"spell_targets",	spell_target_types,	"Spell Target Types."	},
+    {	"song_targets",	song_target_types,	"Song Target Types."	},
+    {	"instruments",	instrument_types,	"Instrument Types"	},
     {	NULL,		NULL,		 NULL				 }
 };
 
@@ -3219,7 +3222,7 @@ void print_obj_values(OBJ_INDEX_DATA *obj, BUFFER *buffer)
 	    add_buf(buffer, buf);
 	    break;
 
-        case ITEM_CORPSE_NPC:
+	case ITEM_CORPSE_NPC:
 	    sprintf(buf,
 	        "{B[  {Wv0{B]{G Type:{x           %s\n\r"
 	        "{B[  {Wv1{B]{G Resurrection:{x   %d%%\n\r"
@@ -3230,6 +3233,18 @@ void print_obj_values(OBJ_INDEX_DATA *obj, BUFFER *buffer)
 	        (int)obj->value[1],(int)obj->value[2],
 	        flag_string(part_flags, obj->value[3]),
 	        (int)obj->value[5]);
+	    add_buf(buffer, buf);
+	    break;
+
+	case ITEM_INSTRUMENT:
+	    sprintf(buf,
+	        "{B[  {Wv0{B]{G Type:{x            %s\n\r"
+	        "{B[  {Wv1{B]{G Flags:{x           %s\n\r"
+	        "{B[  {Wv2{B]{G Min Time Factor:{x %ld%%\n\r"
+	        "{B[  {Wv3{B]{G Max Time Factor:{x %ld%%\n\r",
+	        flag_string(instrument_types, obj->value[0]),
+	        flag_string(instrument_flags, obj->value[1]),
+	        obj->value[2],obj->value[3]);
 	    add_buf(buffer, buf);
 	    break;
 
@@ -4053,7 +4068,7 @@ bool set_obj_values(CHAR_DATA *ch, OBJ_INDEX_DATA *pObj, int value_num, char *ar
 
 	    break;
 
-        case ITEM_CORPSE_NPC:
+	case ITEM_CORPSE_NPC:
 	    switch (value_num)
 	    {
 		int value;
@@ -4070,7 +4085,7 @@ bool set_obj_values(CHAR_DATA *ch, OBJ_INDEX_DATA *pObj, int value_num, char *ar
 		    break;
 		case 2:
 		    send_to_char("ANIMATION CHANCE SET.\n\r", ch);
-		    pObj->value[1] = atoi(argument);
+		    pObj->value[2] = atoi(argument);
 		    break;
 		case 3:
 	            if ((value = flag_value(part_flags, argument)) == NO_FLAG)
@@ -4081,6 +4096,45 @@ bool set_obj_values(CHAR_DATA *ch, OBJ_INDEX_DATA *pObj, int value_num, char *ar
 		case 5:
 		    send_to_char("MOBILE INDEX VNUM SET.\n\r", ch);
 		    pObj->value[5] = atoi(argument);
+		    break;
+	    }
+	    break;
+	case ITEM_INSTRUMENT:
+	    switch (value_num)
+	    {
+		int value;
+		default: return FALSE;
+		case 0:
+			if ((value = flag_value(instrument_types, argument)) == NO_FLAG)
+				return FALSE;
+			send_to_char("INSTRUMENT TYPE SET.\n\r", ch);
+			pObj->value[0] = value;
+			break;
+		case 1:
+			if ((value = flag_value(instrument_flags, argument)) == NO_FLAG)
+				return FALSE;
+		    send_to_char("INSTRUMENT FLAGS TOGGLED.\n\r", ch);
+		    pObj->value[1] ^= value;
+		    break;
+		case 2:
+			value = atoi(argument);
+			if( value < 1 || value > 5000)
+			{
+			    send_to_char("Minimum scale factor for playtime can only be between 1% and 5000%.\n\r", ch);
+				return FALSE;
+			}
+		    send_to_char("MINIMUM PLAYTIME SCALE FACTOR SET.\n\r", ch);
+		    pObj->value[2] = value;
+		    break;
+		case 3:
+			value = atoi(argument);
+			if( value < 1 || value > 5000)
+			{
+			    send_to_char("Maximum scale factor for playtime can only be between 1% and 5000%.\n\r", ch);
+				return FALSE;
+			}
+		    send_to_char("MAXIMUM PLAYTIME SCALE FACTOR SET.\n\r", ch);
+		    pObj->value[3] = value;
 		    break;
 	    }
 	    break;

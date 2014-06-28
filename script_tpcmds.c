@@ -1626,7 +1626,7 @@ SCRIPT_CMD(do_tpinterrupt)
 	}
 
 	if (IS_SET(stop,INTERRUPT_MUSIC) && victim->music > 0) {
-		victim->music = 0;
+		stop_music(victim, !silent);
 		SET_BIT(ret,INTERRUPT_MUSIC);
 	}
 

@@ -99,6 +99,7 @@ const	struct	cmd_type	cmd_table	[] =
     { "pull",           do_pull,	POS_SLEEPING,    0,  LOG_NORMAL, 1 },
     { "push",           do_push,	POS_SLEEPING,    0,  LOG_NORMAL, 1 },
     { "quest",          do_quest,       POS_SLEEPING,    0,  LOG_NORMAL, 1 },
+    { "rehearse",       do_rehearse,	POS_FIGHTING,    0,  LOG_NORMAL, 1 },
     { "reply",		do_reply,	POS_SLEEPING,	 0,  LOG_NEVER,  1 },
     { "rest",		do_rest,	POS_SLEEPING,	 0,  LOG_NORMAL, 1 },
     { "resurrect",	do_resurrect,	POS_SLEEPING,	 0,  LOG_ALWAYS, 1 },
@@ -1213,10 +1214,7 @@ void interpret( CHAR_DATA *ch, char *argument )
 	if(!allowed) interrupt_script(ch,FALSE);
 
     if (ch->music > 0 && !allowed)
-    {
-       	ch->music = 0;
-	send_to_char("{YYou stop playing your song.{x\n\r", ch );
-    }
+		stop_music(ch, TRUE);
 
     if (ch->brew > 0 && !allowed)
         return;
@@ -1747,6 +1745,29 @@ bool is_allowed( char *command )
     return FALSE;
 }
 
+// interrupt a chars spell. safe version (no memory leaks)
+void stop_music( CHAR_DATA *ch, bool messages )
+{
+
+	// Allow for custom messages as well as handling interrupted songs
+	if(ch->song_token) {
+		ch->tempstore[0] = messages?1:0;	// Tell the script whether to show messages or not
+		if( p_percent_trigger(NULL,NULL,NULL,ch->song_token,ch, NULL, NULL,NULL,NULL,TRIG_SPELLINTER, NULL) )
+			messages = FALSE;
+	}
+    free_string( ch->music_target_name );
+    ch->music_target_name = NULL;
+    ch->music = 0;
+    ch->song_num = -1;
+    ch->song_token = NULL;
+    ch->song_script = NULL;
+    ch->song_instrument = NULL;
+
+
+    if ( messages )
+		send_to_char("{YYou stop playing your song.{x\n\r", ch );
+}
+
 
 // interrupt a chars spell. safe version (no memory leaks)
 void stop_casting( CHAR_DATA *ch, bool messages )
@@ -1755,8 +1776,8 @@ void stop_casting( CHAR_DATA *ch, bool messages )
 	// Allow for custom messages as well as handling interrupted spells
 	if(ch->cast_token) {
 		ch->tempstore[0] = messages?1:0;	// Tell the script whether to show messages or not
-		p_percent_trigger(NULL,NULL,NULL,ch->cast_token,ch, NULL, NULL,NULL,NULL,TRIG_SPELLINTER, NULL);
-		messages = ch->tempstore[0]?TRUE:FALSE;
+		if( p_percent_trigger(NULL,NULL,NULL,ch->cast_token,ch, NULL, NULL,NULL,NULL,TRIG_SPELLINTER, NULL) )
+			messages = FALSE;
 	}
     free_string( ch->cast_target_name );
     ch->cast_target_name = NULL;

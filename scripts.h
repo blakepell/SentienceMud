@@ -388,6 +388,7 @@ enum entity_type_enum {
 	ENT_EXTRADESC,
 	ENT_AFFECT,
 	ENT_CHURCH,
+	ENT_SONG,
 
 	//////////////////////////////
 	// ALL lists here are designed to be saved
@@ -605,12 +606,17 @@ enum entity_mobile_enum {
 	ENTITY_MOB_EQ_LODGED_LEG2,
 	ENTITY_MOB_EQ_ENTANGLED,
 	ENTITY_MOB_EQ_CONCEALED,
+	ENTITY_MOB_CASTSPELL,
 	ENTITY_MOB_CASTTOKEN,
 	ENTITY_MOB_CASTTARGET,
 	ENTITY_MOB_RECALL,		/* Targets their current recall location */
 	ENTITY_MOB_CONNECTION,
 	ENTITY_MOB_CHURCH,
 	ENTITY_MOB_CLONEROOMS,
+	ENTITY_MOB_SONG,
+	ENTITY_MOB_SONGTARGET,
+	ENTITY_MOB_SONGTOKEN,
+	ENTITY_MOB_INSTRUMENT,
 	ENTITY_MOB_NEXT,
 };
 
@@ -814,6 +820,17 @@ enum entity_affect_enum {
 	ENTITY_AFFECT_LEVEL
 };
 
+enum entity_song_enum {
+	ENTITY_SONG_NUMBER = ESCAPE_EXTRA,
+	ENTITY_SONG_NAME,
+	ENTITY_SONG_SPELL1,
+	ENTITY_SONG_SPELL2,
+	ENTITY_SONG_SPELL3,
+	ENTITY_SONG_TARGET,
+	ENTITY_SONG_BEATS,
+	ENTITY_SONG_MANA,
+	ENTITY_SONG_LEVEL,
+};
 
 
 /* Single letter $* codes ($i, $n) */
@@ -931,6 +948,7 @@ struct script_var_type {
 		CHURCH_DATA *church;
 		WILDS_DATA *wilds;
 		int sn;
+		int song;
 		struct {
 			CHAR_DATA *owner;
 			TOKEN_DATA *token;

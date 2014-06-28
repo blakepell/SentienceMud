@@ -80,6 +80,7 @@ const struct flag_stat_type flag_stat_table[] =
     {   spell_target_types,	TRUE	},
     {   area_who_titles,	TRUE	},
     {   area_who_display,	TRUE	},
+    {	instrument_types,	TRUE	},
     {   0,			0	}
 };
 

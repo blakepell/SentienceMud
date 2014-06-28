@@ -128,7 +128,9 @@ bool check_spell_deflection(CHAR_DATA *ch, CHAR_DATA *victim, int sn)
 	lev = (af->level * 3)/4;
 	lev = URANGE(15, lev, 90);
 
-	if (number_percent() > lev) {
+	if (number_percent() > lev ||
+		!p_percent_trigger(victim,NULL,NULL,NULL,ch, NULL, NULL,NULL,NULL,TRIG_SPELLREFLECT, NULL) )
+	{
 		if (ch != NULL)	{
 			if (ch == victim)
 				send_to_char("Your spell gets through your protective crimson aura!\n\r", ch);
@@ -185,7 +187,7 @@ bool check_spell_deflection(CHAR_DATA *ch, CHAR_DATA *victim, int sn)
 
 
 // Returns TRUE if the spell got through.
-bool check_spell_deflection_token(CHAR_DATA *ch, CHAR_DATA *victim, TOKEN_DATA *token, SCRIPT_DATA *script)
+bool check_spell_deflection_token(CHAR_DATA *ch, CHAR_DATA *victim, TOKEN_DATA *token, SCRIPT_DATA *script, char *target_name)
 {
 	CHAR_DATA *rch = NULL;
 	AFFECT_DATA *af;
@@ -211,7 +213,10 @@ bool check_spell_deflection_token(CHAR_DATA *ch, CHAR_DATA *victim, TOKEN_DATA *
 	lev = (af->level * 3)/4;
 	lev = URANGE(15, lev, 90);
 
-	if (number_percent() > lev) {
+	if (number_percent() > lev ||
+		!p_percent_trigger(victim,NULL,NULL,NULL,ch, NULL, NULL,NULL,NULL,TRIG_SPELLREFLECT, NULL) ||
+		p_percent_trigger(NULL,NULL,NULL,token,ch, victim, NULL,NULL,NULL,TRIG_SPELLPENETRATE, NULL) )
+	{
 		if (ch != NULL)	{
 			if (ch == victim)
 				send_to_char("Your spell gets through your protective crimson aura!\n\r", ch);
@@ -256,8 +261,7 @@ bool check_spell_deflection_token(CHAR_DATA *ch, CHAR_DATA *victim, TOKEN_DATA *
 			act("{Y$n's spell bounces off onto $N!{x", ch,  rch, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
 		}
 
-		token->value[3] = ch->tot_level;
-		execute_script(script->vnum, script, NULL, NULL, NULL, token, ch, NULL, NULL, rch, NULL,NULL,ch->cast_target_name,NULL,0,0,0,0,0);
+		execute_script(script->vnum, script, NULL, NULL, NULL, token, ch, NULL, NULL, rch, NULL,NULL,target_name,NULL,0,0,0,0,0);
 	} else {
 		if (ch != NULL) {
 			act("{YYour spell bounces around for a while, then dies out.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
