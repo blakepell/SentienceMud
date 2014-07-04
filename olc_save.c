@@ -448,9 +448,9 @@ void save_area_new(AREA_DATA *area)
     save_scripts_new(fp, area);
     save_tokens(fp, area);
 
-    if (str_prefix("Maze-Level", area->name) && str_cmp("Geldoff's Maze", area->name)
+/*    if (str_prefix("Maze-Level", area->name) && str_cmp("Geldoff's Maze", area->name)
     && str_cmp("Netherworld", area->name)
-    &&  str_cmp("Eden", area->name))
+    &&  str_cmp("Eden", area->name))*/
 	fprintf(fp, "#-AREA\n\n");
 
     fclose(fp);
