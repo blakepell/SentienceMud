@@ -255,7 +255,7 @@ SPELL_FUNC(spell_dispel_room)
 			sprintf(buf, "{gThe poisonous haze disappears.{x\n\r");
 			exists = TRUE;
 		}
-		else if(IS_SET(obj->extra3_flag, ITEM_CAN_DISPEL)) {
+		else if(IS_SET(obj->extra3_flags, ITEM_CAN_DISPEL)) {
 			if(!saves_dispel(ch, NULL, obj->level))
 			{
 				if(p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_SPELL_DISPEL, NULL))
@@ -298,7 +298,7 @@ SPELL_FUNC(spell_dispel_room)
 					sprintf(buf2, "{YThe noxious fumes wafting in from the %s dissipate.{x\n\r",	dir_name[ index ]);
 					exists = TRUE;
 				}
-				else if(IS_SET(obj->extra3_flag, ITEM_CAN_DISPEL)) {
+				else if(IS_SET(obj->extra3_flags, ITEM_CAN_DISPEL)) {
 					if(!saves_dispel(ch, NULL, obj->level))
 					{
 						if(p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_SPELL_DISPEL, dir_name[ index ]))

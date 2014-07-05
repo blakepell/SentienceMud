@@ -1090,6 +1090,7 @@ struct script_parameter {
 		WILDS_DATA *wilds;
 		CHURCH_DATA *church;
 		int sn;
+		int song;
 		struct {
 			union {
 				CHAR_DATA **mob;

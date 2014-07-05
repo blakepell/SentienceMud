@@ -1556,7 +1556,7 @@ char *expand_entity_mobile(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		break;
 	case ENTITY_MOB_SONGTARGET:
 		arg->type = ENT_STRING;
-		arg->d.str = arg->d.mob ? (char*)arg->d.mob->song_target_name : (char*)&str_empty[0];
+		arg->d.str = arg->d.mob ? (char*)arg->d.mob->music_target_name : (char*)&str_empty[0];
 		break;
 	case ENTITY_MOB_INSTRUMENT:
 		arg->type = ENT_OBJECT;

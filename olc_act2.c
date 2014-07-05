@@ -2766,7 +2766,8 @@ TEDIT(tedit_value)
 		switch(value_num) {
 		case TOKVAL_SPELL_TARGET:			// Target Type
 			value_value = flag_value(song_target_types, arg2);
-			if();
+			//Not sure what this one is for?
+//			if();
 
 			if(	value_value == NO_FLAG )
 			{

@@ -1431,7 +1431,7 @@ void do_rehearse( CHAR_DATA *ch, char *argument )
 	{
 		if( !ch->pcdata->songs_learned[sn] &&
 			(music_table[sn].level <= ch->level || wasbard) &&
-			str_prefix(arg, music_table[sn].name))
+			!str_prefix(arg, music_table[sn].name))
 		{
 			found = TRUE;
 			break;
@@ -1452,7 +1452,7 @@ void do_rehearse( CHAR_DATA *ch, char *argument )
 		return;
 	}
 
-	ch->songs_learned[sn] = TRUE;
+	ch->pcdata->songs_learned[sn] = TRUE;
 	skill_entry_addsong(ch, sn, NULL);
 	ch->practice -= 3;
 
@@ -1829,7 +1829,7 @@ int skill_entry_compare (SKILL_ENTRY *a, SKILL_ENTRY *b)
 	return cmp;
 }
 
-void skill_entry_insert (SKILL_ENTRY **list, int sn, TOKEN_DATA *token)
+void skill_entry_insert (SKILL_ENTRY **list, int sn, int song, TOKEN_DATA *token)
 {
 	SKILL_ENTRY *cur, *prev, *entry;
 
@@ -1838,6 +1838,7 @@ void skill_entry_insert (SKILL_ENTRY **list, int sn, TOKEN_DATA *token)
 
 	entry->sn = sn;
 	entry->token = token;
+	entry->song = song;
 
 	cur = *list;
 	prev = NULL;
@@ -1866,7 +1867,7 @@ void skill_entry_remove (SKILL_ENTRY **list, int sn, int song, TOKEN_DATA *token
 	while(cur) {
 		if ( (IS_VALID(token) && (cur->token == token)) ||
 			(sn > 0 && (cur->sn == sn)) ||
-			(song >= 0) && (cur->song == song))) {
+			((song >= 0) && (cur->song == song))) {
 
 			if(prev)
 				prev->next = cur->next;
@@ -1913,7 +1914,7 @@ SKILL_ENTRY *skill_entry_findsn( SKILL_ENTRY *list, int sn )
 
 SKILL_ENTRY *skill_entry_findsong( SKILL_ENTRY *list, int song )
 {
-	if( sn < 0 ) return NULL;
+	if( song < 0 ) return NULL;
 
 	while (list && list->song != song)
 		list = list->next;

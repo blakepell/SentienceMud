@@ -6,12 +6,14 @@
 #include <time.h>
 #include "merc.h"
 #include "recycle.h"
+#include "scripts.h"
 
 void deduct_mana(CHAR_DATA *ch,int cost);
 
 void do_play(CHAR_DATA *ch, char *argument)
 {
 	SKILL_ENTRY *entry;
+	SKILL_ENTRY *song;
     OBJ_DATA *instrument;
     CHAR_DATA *mob;
     OBJ_DATA *obj;
@@ -132,7 +134,7 @@ void do_play(CHAR_DATA *ch, char *argument)
 		ch->tempstore[0] = 0;
 
 		// Precheck for the song token - set the music beats in here!
-		if(p_percent_trigger(NULL,NULL,NULL,spell->token,ch,NULL,NULL, obj, NULL, TRIG_PRESPELL, NULL))
+		if(p_percent_trigger(NULL,NULL,NULL,song->token,ch,NULL,NULL, obj, NULL, TRIG_PRESPELL, NULL))
 			return;
 
 		beats = ch->tempstore[0];
@@ -399,6 +401,7 @@ void music_end( CHAR_DATA *ch )
 				if (check_spell_deflection_token(ch, mob, token, script, music_target_name)) {
 					if( execute_script(script->vnum, script, NULL, NULL, NULL, token, ch, NULL, NULL, mob, NULL, NULL,music_target_name,NULL,0,0,0,0,0) > 0)
 						offensive = TRUE;
+				}
 			}
 
 			free_string(music_target_name);
@@ -498,7 +501,7 @@ void music_end( CHAR_DATA *ch )
 							offensive = TRUE;
 				}
 
-				if (mob != ch && (IS_VALID(mob) && (mob->id[0] == id[0] && mob->id[1] == id[1]) && (mob->dead == wasdead) && !is_safe(ch, mob, FALSE) && offensive)
+				if (mob != ch && (IS_VALID(mob) && (mob->id[0] == id[0] && mob->id[1] == id[1])) && (mob->dead == wasdead) && !is_safe(ch, mob, FALSE) && offensive)
 					set_fighting(mob, ch);
 			}
 			break;
@@ -579,13 +582,11 @@ void music_end( CHAR_DATA *ch )
 				else
 				{
 					if (check_spell_deflection_token(ch, mob, token, script, NULL))
-					{
 						if(execute_script(script->vnum, script, NULL, NULL, NULL, token, ch, NULL, NULL, mob, NULL,NULL, NULL,NULL,0,0,0,0,0) > 0)
 							offensive = TRUE;
-					}
 				}
 
-				if (mob != ch && (IS_VALID(mob) && (mob->id[0] == id[0] && mob->id[1] == id[1]) && (mob->dead == wasdead) && !is_safe(ch, mob, FALSE) && offensive)
+				if (mob != ch && (IS_VALID(mob) && (mob->id[0] == id[0] && mob->id[1] == id[1])) && (mob->dead == wasdead) && !is_safe(ch, mob, FALSE) && offensive)
 					set_fighting(mob, ch);
 			}
 			break;

@@ -465,7 +465,7 @@ ENT_FIELD entity_song[] = {
 	{"mana",	ENTITY_SONG_MANA,	ENT_NUMBER	},
 	{"level",	ENTITY_SONG_LEVEL,	ENT_NUMBER	},
 	{NULL,		0,			ENT_UNKNOWN	}
-}
+};
 
 struct _entity_type_info entity_type_info[] = {
 	{ ENT_PRIMARY,		ENT_PRIMARY,		entity_primary,		TRUE	},
@@ -657,6 +657,7 @@ struct trigger_type trigger_table	[] = {
 {	"stripaffect",			NULL,		TRIGSLOT_REPOP,		FALSE,	FALSE,	FALSE,	TRUE	},
 {	"takeoff",				NULL,		TRIGSLOT_MOVE,		TRUE,	FALSE,	FALSE,	TRUE	},
 {	"throw",				NULL,		TRIGSLOT_GENERAL,	TRUE,	TRUE,	TRUE,	TRUE	},
+{	"tokenpractice",		NULL,		TRIGSLOT_GENERAL,	TRUE,	FALSE,	FALSE,	TRUE	},
 {	"touch",				NULL,		TRIGSLOT_GENERAL,	FALSE,	TRUE,	FALSE,	TRUE	},
 {	"turn",					NULL,		TRIGSLOT_GENERAL,	FALSE,	TRUE,	FALSE,	TRUE	},
 {	"turnon",				NULL,		TRIGSLOT_GENERAL,	FALSE,	TRUE,	FALSE,	TRUE	},

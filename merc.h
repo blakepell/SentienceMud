@@ -3359,6 +3359,8 @@ struct	char_data
     char		*cast_target_name;
     SCRIPT_DATA		*cast_script;		/* The scripted spell to be done */
     TOKEN_DATA		*cast_token;		/* The token from which the script call is made */
+    TOKEN_DATA		*song_token;
+    char		*music_target_name;
     int			cast_mana;
     float		cast_mana_value;
     float		cast_mana_scale;
@@ -4851,7 +4853,8 @@ enum trigger_index_enum {
 #define TRIGSLOT_SPELL			11	/* for the TRIG_SPELL* - ONLY */
 #define TRIGSLOT_INTERRUPT		12
 #define TRIGSLOT_COMBATSTYLE	13	// for TRIG_COMBAT_STYLE only
-#define TRIGSLOT_MAX			14
+#define TRIGSLOT_ANIMATE	14
+#define TRIGSLOT_MAX			15
 
 /* program types */
 #define PRG_MPROG	0
@@ -6793,7 +6796,7 @@ bool check_dispel(CHAR_DATA *ch, CHAR_DATA *victim, int sn);
 void reverie_end args( ( CHAR_DATA *ch, int amount ) );
 void trance_end(CHAR_DATA *ch);
 bool check_spell_deflection( CHAR_DATA *ch, CHAR_DATA *victim, int sn);
-bool check_spell_deflection_token( CHAR_DATA *ch, CHAR_DATA *victim, TOKEN_DATA *tok, SCRIPT_DATA *script);
+bool check_spell_deflection_token( CHAR_DATA *ch, CHAR_DATA *victim, TOKEN_DATA *tok, SCRIPT_DATA *script,char *target_name);
 
 /* mail.c */
 bool has_mail( CHAR_DATA *ch );

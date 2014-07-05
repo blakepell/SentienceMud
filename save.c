@@ -539,8 +539,8 @@ void fwrite_char(CHAR_DATA *ch, FILE *fp)
 	}
 
 	// Save song list
-	for (sn = 0; sn < MAX_SONG && music_table[sn].name; sn++)
-		if( ch->pcdata->song_learned[sn] )
+	for (sn = 0; sn < MAX_SONGS && music_table[sn].name; sn++)
+		if( ch->pcdata->songs_learned[sn] )
 			fprintf(fp, "Song '%s'\n", music_table[sn].name);
 
 	for (sn = 0; sn < MAX_SKILL && skill_table[sn].name; sn++)
@@ -1815,14 +1815,14 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
 
 			temp = fread_word(fp);
 			song = music_lookup(temp);
-			if (song 0)
+			if (song < 0)
 			{
 				sprintf(buf, "fread_char: unknown song %s", temp);
 				log_string(buf);
 			}
 			else
 			{
-				ch->pcdata->song_learned[song] = TRUE;
+				ch->pcdata->songs_learned[song] = TRUE;
 				skill_entry_addsong(ch, song, NULL);
 			}
 

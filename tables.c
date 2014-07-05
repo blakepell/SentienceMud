@@ -2540,7 +2540,7 @@ const struct flag_type instrument_types[] = {
 	{ NULL,			0,						FALSE }
 };
 
-const struct flag_type instrument_types[] = {
+const struct flag_type instrument_flags[] = {
 	{ "onehand",	INSTRUMENT_ONEHANDED,	TRUE	},
 	{ NULL,			0,						FALSE }
 };
