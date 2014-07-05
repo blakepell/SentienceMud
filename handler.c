@@ -6177,6 +6177,7 @@ void token_to_char(TOKEN_DATA *token, CHAR_DATA *ch)
 	// Do sorted lists
 	if(token->type == TOKEN_SKILL) skill_entry_addskill(token->player, 0, token);
 	else if(token->type == TOKEN_SPELL) skill_entry_addspell(token->player, 0, token);
+	else if(token->type == TOKEN_SONG) skill_entry_addsong(token->player,-1,token);
 
 	sprintf(buf, "token_to_char: gave token %s(%ld) to char %s(%ld)",
 		token->name, token->pIndexData->vnum,
