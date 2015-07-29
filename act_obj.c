@@ -214,7 +214,7 @@ void loot_corpse(CHAR_DATA *ch, OBJ_DATA *corpse)
 	//OBJ_DATA *match_obj;
 	OBJ_DATA **objects = NULL;
 	int *counts = NULL;
-	LIST **lists = NULL;
+	LIST_DEFAULT **lists = NULL;
 	ITERATOR it;
 	int i, n_matches, num_objs;
 	char buf[MSL];
@@ -232,7 +232,7 @@ void loot_corpse(CHAR_DATA *ch, OBJ_DATA *corpse)
 	{
 		objects = (OBJ_DATA**)alloc_mem(num_objs * sizeof(OBJ_DATA *));
 		counts = (int *)alloc_mem(num_objs * sizeof(int));
-		lists = (LIST **)alloc_mem(num_objs * sizeof(LIST *));
+		lists = (LIST_DEFAULT **)alloc_mem(num_objs * sizeof(LIST_DEFAULT *));
 
 		for( i = 0; i < num_objs; i++ )
 		{
@@ -322,7 +322,7 @@ void loot_corpse(CHAR_DATA *ch, OBJ_DATA *corpse)
 				list_destroy(lists[i]);
 		}
 
-		if( lists != NULL ) free_mem(lists, num_objs * sizeof(LIST *));
+		if( lists != NULL ) free_mem(lists, num_objs * sizeof(LIST_DEFAULT *));
 		if( objects != NULL ) free_mem(objects, num_objs * sizeof(OBJ_DATA *));
 		if( counts != NULL ) free_mem(counts, num_objs * sizeof(int));
 	}

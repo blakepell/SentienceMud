@@ -6185,7 +6185,7 @@ void token_to_char(TOKEN_DATA *token, CHAR_DATA *ch)
 	log_string(buf);
 }
 
-TOKEN_DATA *get_token_list(LIST *tokens, long vnum, int count)
+TOKEN_DATA *get_token_list(LIST_DEFAULT *tokens, long vnum, int count)
 {
 	TOKEN_DATA *token;
 	ITERATOR it;
@@ -6920,7 +6920,7 @@ void move_cart(CHAR_DATA *ch, ROOM_INDEX_DATA *room, bool delay)
 
 unsigned long last_visited_room = 0;
 
-void visit_room_recurse(LIST *visited, ROOM_INDEX_DATA *room, VISIT_FUNC *func, int depth, void *argv[], int argc, bool closed, int door)
+void visit_room_recurse(LIST_DEFAULT *visited, ROOM_INDEX_DATA *room, VISIT_FUNC *func, int depth, void *argv[], int argc, bool closed, int door)
 {
 	EXIT_DATA *ex;
 	int i;
@@ -6938,7 +6938,7 @@ void visit_room_recurse(LIST *visited, ROOM_INDEX_DATA *room, VISIT_FUNC *func, 
 
 void visit_rooms(ROOM_INDEX_DATA *room, VISIT_FUNC *func, int depth, void *argv[], int argc, bool closed)
 {
-	LIST *visited = list_create(TRUE);
+	LIST_DEFAULT *visited = list_create(TRUE);
 
 	visit_room_recurse(visited, room,func,depth,argv,argc,closed,MAX_DIR);
 
@@ -7264,7 +7264,7 @@ bool check_vision(CHAR_DATA *ch, ROOM_INDEX_DATA *room, bool blind, bool dark)
 void room_from_environment(ROOM_INDEX_DATA *room)
 {
 	ROOM_INDEX_DATA **prev = NULL;
-	LIST *lclones = NULL;
+	LIST_DEFAULT *lclones = NULL;
 
 	if(!room || !room_is_clone(room)) return;
 
@@ -7380,9 +7380,9 @@ void obj_update_nest_clones(OBJ_DATA *obj)
 }
 
 
-LIST *list_create(bool purge)
+LIST_DEFAULT *list_create(bool purge)
 {
-	LIST *lp = alloc_mem(sizeof(LIST));
+	LIST_DEFAULT *lp = alloc_mem(sizeof(LIST_DEFAULT));
 
 	if(lp) {
 		lp->next = NULL;
@@ -7397,9 +7397,9 @@ LIST *list_create(bool purge)
 	return lp;
 }
 
-LIST *list_createx(bool purge, LISTCOPY_FUNC copier, LISTDESTROY_FUNC deleter)
+LIST_DEFAULT *list_createx(bool purge, LISTCOPY_FUNC copier, LISTDESTROY_FUNC deleter)
 {
-	LIST *lp = list_create(purge);
+	LIST_DEFAULT *lp = list_create(purge);
 
 	if( lp ) {
 		lp->copier = copier;
@@ -7410,11 +7410,11 @@ LIST *list_createx(bool purge, LISTCOPY_FUNC copier, LISTDESTROY_FUNC deleter)
 }
 
 
-LIST *list_copy(LIST *src)
+LIST_DEFAULT *list_copy(LIST_DEFAULT *src)
 {
 	if( src == NULL || !src->valid || src->purge ) return NULL;
 
-	LIST *cpy = list_create(src->purge);
+	LIST_DEFAULT *cpy = list_create(src->purge);
 
 	if( cpy ) {
 		register LIST_LINK *cur, *next;
@@ -7450,7 +7450,7 @@ LIST *list_copy(LIST *src)
 	return cpy;
 }
 
-void list_purge(LIST *lp)
+void list_purge(LIST_DEFAULT *lp)
 {
 	register LIST_LINK *cur, *next;
 	if( lp && !lp->valid && lp->ref < 1) {
@@ -7467,7 +7467,7 @@ void list_purge(LIST *lp)
 	}
 }
 
-void list_destroy(LIST *lp)
+void list_destroy(LIST_DEFAULT *lp)
 {
 	if(lp && lp->valid ) {
 		if( lp->ref > 0 )
@@ -7481,7 +7481,7 @@ void list_destroy(LIST *lp)
 	}
 }
 
-void list_cull(LIST *lp)
+void list_cull(LIST_DEFAULT *lp)
 {
 	register LIST_LINK **prev, *cur;
 
@@ -7512,12 +7512,12 @@ void list_cull(LIST *lp)
 	}
 }
 
-void list_addref(LIST *lp)
+void list_addref(LIST_DEFAULT *lp)
 {
 	if(lp) lp->ref++;
 }
 
-void list_remref(LIST *lp)
+void list_remref(LIST_DEFAULT *lp)
 {
 	if(lp) {
 		--lp->ref;
@@ -7531,7 +7531,7 @@ void list_remref(LIST *lp)
 	}
 }
 
-bool list_addlink(LIST *lp, void *data)
+bool list_addlink(LIST_DEFAULT *lp, void *data)
 {
 	LIST_LINK *link;
 
@@ -7548,7 +7548,7 @@ bool list_addlink(LIST *lp, void *data)
 	return false;
 }
 
-bool list_appendlink(LIST *lp, void *data)
+bool list_appendlink(LIST_DEFAULT *lp, void *data)
 {
 	LIST_LINK *link;
 
@@ -7570,7 +7570,7 @@ bool list_appendlink(LIST *lp, void *data)
 
 // Nulls out any data pointer that matches the supplied pointer
 // It will NOT cull the list
-void list_remlink(LIST *lp, void *data)
+void list_remlink(LIST_DEFAULT *lp, void *data)
 {
 	LIST_LINK *link;
 
@@ -7586,7 +7586,7 @@ void list_remlink(LIST *lp, void *data)
 	}
 }
 
-void *list_nthdata(LIST *lp, register int nth)
+void *list_nthdata(LIST_DEFAULT *lp, register int nth)
 {
 	register LIST_LINK *link = NULL;
 
@@ -7600,7 +7600,7 @@ void *list_nthdata(LIST *lp, register int nth)
 	return (link && !nth) ? link->data : NULL;
 }
 
-bool list_hasdata(LIST *lp, register void *ptr)
+bool list_hasdata(LIST_DEFAULT *lp, register void *ptr)
 {
 	ITERATOR it;
 	void *data;
@@ -7615,7 +7615,7 @@ bool list_hasdata(LIST *lp, register void *ptr)
 	return data && TRUE;
 }
 
-int list_size(LIST *lp)
+int list_size(LIST_DEFAULT *lp)
 {
 	ITERATOR it;
 	int size;
@@ -7631,13 +7631,13 @@ int list_size(LIST *lp)
 	return size;
 }
 
-bool list_isvalid(LIST *lp)
+bool list_isvalid(LIST_DEFAULT *lp)
 {
 	return lp && lp->valid;
 }
 
 // ITERATORs can just be straight variables.  No allocation is needed.
-void iterator_start(ITERATOR *it, LIST *lp)
+void iterator_start(ITERATOR *it, LIST_DEFAULT *lp)
 {
 	if(it) {
 		if(lp && lp->valid) {
@@ -7653,7 +7653,7 @@ void iterator_start(ITERATOR *it, LIST *lp)
 	}
 }
 
-void iterator_start_nth(ITERATOR *it, LIST *lp, int nth)
+void iterator_start_nth(ITERATOR *it, LIST_DEFAULT *lp, int nth)
 {
 	register LIST_LINK *link;
 

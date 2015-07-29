@@ -2,9 +2,9 @@ CC      = gcc
 PROF    = -Wall -O -g -pg -ggdb -g 
 OBJDIR	= obj
 VPATH   = .:obj
-LIBS    = -lm -lz
+LIBS    = -L/usr/lib/x86_64-linux-gnu -lmysqlclient -lpthread -lz -lm -ldl
 NOCRYPT = -Dlinux
-C_FLAGS =  $(PROF) $(NOCRYPT) -DOLD_RAND -DMALLOC_STDLIB
+C_FLAGS =  $(PROF) $(NOCRYPT) -DOLD_RAND -DMALLOC_STDLIB -I/usr/include/mysql -DBIG_JOINS=1  -fno-strict-aliasing   -g -fabi-version=2 -fno-omit-frame-pointer -fno-strict-aliasing
 L_FLAGS =  $(PROF) $(LIBS)
 EXE	= sent
 BUILD_NUMBER_FILE = build.txt
@@ -245,7 +245,7 @@ objdir:
 
 $(EXE): $(O_FILES) $(BUILD_NUMBER_FILE)
 	rm -f $(EXE)
-	$(CC) $(L_FLAGS) $(BUILD_NUMBER_LFLAGS) -o $(EXE) $(O_FILES)
+	$(CC) $(BUILD_NUMBER_LFLAGS) -o $(EXE) $(O_FILES) $(L_FLAGS)
 	-chmod 775 $(EXE)
 
 $(OBJDIR)/%.o:	%.c

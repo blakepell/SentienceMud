@@ -5,12 +5,14 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <time.h>
+#include <mysql.h>
 #include "merc.h"
 #include "interp.h"
 #include "magic.h"
 #include "recycle.h"
 #include "tables.h"
 #include "db.h"
+
 extern long int   __BUILD_DATE;
 extern long int   __BUILD_NUMBER;
 
@@ -61,6 +63,11 @@ void do_showversion(CHAR_DATA *ch, char *argument)
 //	sprintf(buf,"Build Date: %u\n\r",&build_date);
 	sprintf(buf,"Build Number: %ld, built on %s",(long int)(size_t)&__BUILD_NUMBER,ctime(&build_date));
 	send_to_char(buf,ch);
+	if (IS_IMMORTAL(ch)){
+	sprintf(buf,"MySQL Client Version: %s", mysql_get_client_info());
+	send_to_char(buf,ch);
+	}
+
 }
 
 

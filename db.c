@@ -121,7 +121,7 @@ CHAR_DATA *		char_list;
 CHAT_ROOM_DATA *	chat_room_list;
 CHURCH_DATA *		church_first;
 CHURCH_DATA * 		church_list;
-LIST *list_churches;
+LIST_DEFAULT *list_churches;
 GQ_DATA			global_quest;
 HELP_CATEGORY *		topHelpCat;
 HELP_DATA *		help_first;
@@ -589,9 +589,9 @@ long top_ship_crew;
 long top_vroom;
 long top_waypoint;
 
-LIST *persist_mobs;
-LIST *persist_objs;
-LIST *persist_rooms;
+LIST_DEFAULT *persist_mobs;
+LIST_DEFAULT *persist_objs;
+LIST_DEFAULT *persist_rooms;
 
 TOKEN_DATA *global_tokens = NULL;
 

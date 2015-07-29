@@ -419,7 +419,7 @@ bool check_range(long lower, long upper)
     return TRUE;
 }
 
-bool edit_deltrigger(LIST **list, int index)
+bool edit_deltrigger(LIST_DEFAULT **list, int index)
 {
 	PROG_LIST *trigger;
 	int slot;

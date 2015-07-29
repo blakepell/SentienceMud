@@ -271,7 +271,7 @@ typedef struct	log_entry_data		LOG_ENTRY_DATA;
 typedef struct  string_vector_data	STRING_VECTOR;
 typedef struct mob_index_skill_data MOB_INDEX_SKILL_DATA;
 typedef struct mob_skill_data MOB_SKILL_DATA;
-typedef struct list_type LIST;
+typedef struct list_type LIST_DEFAULT;
 typedef struct list_link_type LIST_LINK;
 typedef struct list_link_area_data LIST_AREA_DATA;
 typedef struct list_link_wilds_data LIST_WILDS_DATA;
@@ -465,7 +465,7 @@ struct list_link_type {
 };
 
 struct list_type {
-	LIST *next;
+	LIST_DEFAULT *next;
 	LIST_LINK *head;
 	LIST_LINK *tail;
 	unsigned long ref;
@@ -477,7 +477,7 @@ struct list_type {
 };
 
 struct iterator_type {
-	LIST *list;
+	LIST_DEFAULT *list;
 	LIST_LINK *current;
 };
 
@@ -834,7 +834,7 @@ struct church_data
     int 		alignment;
 
     LOCATION 		recall_point;
-    LIST *treasure_rooms;
+    LIST_DEFAULT *treasure_rooms;
     long 		key;
 
     long 		pk_wins;
@@ -853,8 +853,8 @@ struct church_data
     char 		color1;
     char 		color2;
 
-    LIST *online_players;
-    LIST *roster;
+    LIST_DEFAULT *online_players;
+    LIST_DEFAULT *roster;
 };
 
 
@@ -2858,7 +2858,7 @@ struct	mob_index_data
     MOB_INDEX_DATA *	next;
     SPEC_FUN *		spec_fun;
     SHOP_DATA *		pShop;
-    LIST **        progs;
+    LIST_DEFAULT **        progs;
     QUEST_LIST *	quests;
     bool	persist;
 
@@ -3031,7 +3031,7 @@ struct token_index_data
 {
     TOKEN_INDEX_DATA	*next;
     AREA_DATA		*area;
-    LIST		**progs;
+    LIST_DEFAULT		**progs;
     long 		vnum;
 
     char 		*name;
@@ -3554,13 +3554,13 @@ struct	char_data
 
 	LOCATION		recall;
 
-    LIST *		llocker;
-    LIST *		lcarrying;
-    LIST *		ltokens;
-    LIST *		levents;
-    LIST *		lquests;	// Eventually, we will have a quest log of sorts
-    LIST *		lclonerooms;
-    LIST *		laffected;
+    LIST_DEFAULT *		llocker;
+    LIST_DEFAULT *		lcarrying;
+    LIST_DEFAULT *		ltokens;
+    LIST_DEFAULT *		levents;
+    LIST_DEFAULT *		lquests;	// Eventually, we will have a quest log of sorts
+    LIST_DEFAULT *		lclonerooms;
+    LIST_DEFAULT *		laffected;
 
     int			deathsight_vision;
 
@@ -3768,7 +3768,7 @@ struct	obj_index_data
     AREA_DATA *		area;
     bool	persist;
 
-    LIST **	progs;
+    LIST_DEFAULT **	progs;
     char *		name;
     char *		short_descr;
     char *		description;
@@ -3897,9 +3897,9 @@ struct	obj_data
 	int heat;		/* How much heat is in it [0,100000] */
 	int moisture;		/* How much moisture is in it [0,1000] */
 
-	LIST *lcontains;
-	LIST *ltokens;
-	LIST *lclonerooms;
+	LIST_DEFAULT *lcontains;
+	LIST_DEFAULT *ltokens;
+	LIST_DEFAULT *lclonerooms;
 
 	/* 20140508 NIB - Used by corpses (at first) */
     char *owner_name;	/* Used to indicate the original mob's name for use decaying the corpse. */
@@ -4098,7 +4098,7 @@ struct	area_data {
 	long top_vroom;
 #endif
 
-	LIST *room_list;
+	LIST_DEFAULT *room_list;
 };
 
 struct storm_data
@@ -4462,12 +4462,12 @@ struct	room_index_data
     long		locale;	/* Used to group adjacent rooms to the same locale */
     unsigned long	id[2];	/* Used for cloned rooms only.  If the room is not virtual, aka static, this will be { 0,0 } */
 
-	LIST *		lentity;
-	LIST *		lpeople;
-	LIST *		lcontents;
-	LIST *		levents;
-	LIST *		ltokens;
-	LIST *		lclonerooms;
+	LIST_DEFAULT *		lentity;
+	LIST_DEFAULT *		lpeople;
+	LIST_DEFAULT *		lcontents;
+	LIST_DEFAULT *		levents;
+	LIST_DEFAULT *		ltokens;
+	LIST_DEFAULT *		lclonerooms;
 
 	int environ_type;
 	union {
@@ -4487,8 +4487,8 @@ struct blueprint_data {
 	char *name;
 	char *description;	/* A description of what the blueprint is for */
 
-	LIST *rooms;		/* List of rooms */
-	LIST *exits;		/* List of strings */
+	LIST_DEFAULT *rooms;		/* List of rooms */
+	LIST_DEFAULT *exits;		/* List of strings */
 };
 
 /* conditions for conditional descs */
@@ -4882,7 +4882,7 @@ struct trigger_type {
 struct prog_data
 {
     PROG_DATA 		*next;
-    LIST 		**progs;	/* This will be allocated into a BANK of LISTs */
+    LIST_DEFAULT 		**progs;	/* This will be allocated into a BANK of LISTs */
 
     CHAR_DATA *		target;
     int			delay;
@@ -6435,7 +6435,7 @@ MOB_INDEX_DATA *new_mob_index( void );
 NPC_SHIP_INDEX_DATA *new_npc_ship_index args ( ( void ) );
 OBJ_INDEX_DATA *new_obj_index( void );
 PROG_DATA *new_prog_data(void);
-LIST **new_prog_bank(void);
+LIST_DEFAULT **new_prog_bank(void);
 PROG_LIST *new_trigger(void);
 QUEST_INDEX_DATA *new_quest_index( void );
 QUEST_DATA *new_quest( void );
@@ -6475,7 +6475,7 @@ void free_obj_index( OBJ_INDEX_DATA *pObj );
 void free_obj(OBJ_DATA *obj );
 void free_prog_data(PROG_DATA *pr_dat);
 void free_trigger(PROG_LIST *trigger);
-void free_prog_list(LIST **pr_list);
+void free_prog_list(LIST_DEFAULT **pr_list);
 void free_quest_index( QUEST_INDEX_DATA *quest_index );
 void free_quest( QUEST_DATA *pQuest );
 void free_quest_list( QUEST_LIST *quest_list );
@@ -6713,7 +6713,7 @@ bool can_clear_exit(ROOM_INDEX_DATA *room);
 TOKEN_DATA *give_token(TOKEN_INDEX_DATA *token_index, CHAR_DATA *ch, OBJ_DATA *obj, ROOM_INDEX_DATA *room);
 void token_from_char(TOKEN_DATA *token);
 void token_to_char(TOKEN_DATA *token, CHAR_DATA *ch);
-TOKEN_DATA *get_token_list(LIST *tokens, long vnum, int count);
+TOKEN_DATA *get_token_list(LIST_DEFAULT *tokens, long vnum, int count);
 TOKEN_DATA *get_token_char(CHAR_DATA *ch, long vnum, int count);
 void token_from_obj(TOKEN_DATA *token);
 void token_to_obj(TOKEN_DATA *token, OBJ_DATA *obj);
@@ -6836,7 +6836,7 @@ int	script_login(CHAR_DATA *ch);
 CHAR_DATA *get_random_char( CHAR_DATA *mob, OBJ_DATA *obj, ROOM_INDEX_DATA *room, TOKEN_DATA *token);
 
 /* mob_cmds.c */
-bool 	has_trigger(LIST **, int);
+bool 	has_trigger(LIST_DEFAULT **, int);
 /*int 	trigger_value(char *name, int type);
 void	mob_interpret	args( ( CHAR_DATA *ch, char *argument ) );
 void	obj_interpret	args( ( OBJ_DATA *obj, char *argument ) );
@@ -7165,7 +7165,7 @@ extern	long top_quest_part;
 /* church */
 extern  long top_church;
 extern	long top_church_player;
-extern	LIST *list_churches;
+extern	LIST_DEFAULT *list_churches;
 
 /* links */
 extern 	long top_descriptor;
@@ -7222,16 +7222,16 @@ extern int script_security;
 extern int script_call_depth;
 extern int script_lastreturn;
 
-extern LIST *persist_mobs;
-extern LIST *persist_objs;
-extern LIST *persist_rooms;
+extern LIST_DEFAULT *persist_mobs;
+extern LIST_DEFAULT *persist_objs;
+extern LIST_DEFAULT *persist_rooms;
 extern TOKEN_DATA *global_tokens;
 
-extern LIST *conn_players;
-extern LIST *conn_immortals;
-extern LIST *conn_online;
-extern LIST *loaded_areas;		// LIST_AREA_DATA format
-extern LIST *loaded_wilds;
+extern LIST_DEFAULT *conn_players;
+extern LIST_DEFAULT *conn_immortals;
+extern LIST_DEFAULT *conn_online;
+extern LIST_DEFAULT *loaded_areas;		// LIST_AREA_DATA format
+extern LIST_DEFAULT *loaded_wilds;
 
 void connection_add(DESCRIPTOR_DATA *d);
 void connection_remove(DESCRIPTOR_DATA *d);
@@ -7328,29 +7328,29 @@ void persist_removeroom(ROOM_INDEX_DATA *room);
 void persist_save(void);
 bool persist_load(void);
 
-LIST *list_create(bool purge);
-LIST *list_createx(bool purge, LISTCOPY_FUNC copier, LISTDESTROY_FUNC deleter);
-LIST *list_copy(LIST *src);
-void list_purge(LIST *lp);
-void list_destroy(LIST *lp);
-void list_cull(LIST *lp);
-void list_addref(LIST *lp);
-void list_remref(LIST *lp);
-bool list_addlink(LIST *lp, void *data);
-bool list_appendlink(LIST *lp, void *data);
-void list_remlink(LIST *lp, void *data);
-void *list_nthdata(LIST *lp, int nth);
-bool list_hasdata(LIST *lp, register void *ptr);
-int list_size(LIST *lp);
-void iterator_start(ITERATOR *it, LIST *lp);
-void iterator_start_nth(ITERATOR *it, LIST *lp, int nth);
+LIST_DEFAULT *list_create(bool purge);
+LIST_DEFAULT *list_createx(bool purge, LISTCOPY_FUNC copier, LISTDESTROY_FUNC deleter);
+LIST_DEFAULT *list_copy(LIST_DEFAULT *src);
+void list_purge(LIST_DEFAULT *lp);
+void list_destroy(LIST_DEFAULT *lp);
+void list_cull(LIST_DEFAULT *lp);
+void list_addref(LIST_DEFAULT *lp);
+void list_remref(LIST_DEFAULT *lp);
+bool list_addlink(LIST_DEFAULT *lp, void *data);
+bool list_appendlink(LIST_DEFAULT *lp, void *data);
+void list_remlink(LIST_DEFAULT *lp, void *data);
+void *list_nthdata(LIST_DEFAULT *lp, int nth);
+bool list_hasdata(LIST_DEFAULT *lp, register void *ptr);
+int list_size(LIST_DEFAULT *lp);
+void iterator_start(ITERATOR *it, LIST_DEFAULT *lp);
+void iterator_start_nth(ITERATOR *it, LIST_DEFAULT *lp, int nth);
 LIST_LINK *iterator_next(ITERATOR *it);
 void *iterator_nextdata(ITERATOR *it);
 void iterator_remcurrent(ITERATOR *it);
 void iterator_reset(ITERATOR *it);
 void iterator_stop(ITERATOR *it);
 
-bool list_isvalid(LIST *lp);
+bool list_isvalid(LIST_DEFAULT *lp);
 
 AREA_DATA *get_area_data args ((long anum));
 AREA_DATA *get_area_from_uid args ((long uid));

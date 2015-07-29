@@ -285,9 +285,9 @@ extern void boat_attack(CHAR_DATA *ch);
 bool			is_test_port;
 int 		    port;
 GLOBAL_DATA         gconfig;		/* Vizz - UID Tracking, and any other persistent global config info */
-LIST *conn_players;
-LIST *conn_immortals;
-LIST *conn_online;
+LIST_DEFAULT *conn_players;
+LIST_DEFAULT *conn_immortals;
+LIST_DEFAULT *conn_online;
 DESCRIPTOR_DATA *   descriptor_list;	/* All open descriptors		*/
 DESCRIPTOR_DATA *   d_next;		/* Next descriptor in loop	*/
 FILE *		    fpReserve;		/* Reserved file handle		*/
@@ -298,7 +298,7 @@ bool		    newlock;		/* Game is newlocked		*/
 char		    str_boot_time[MAX_INPUT_LENGTH];
 time_t		    current_time;	/* time of this pulse */
 bool		    MOBtrigger = TRUE;  /* act() switch                 */
-LIST *loaded_areas;
+LIST_DEFAULT *loaded_areas;
 
 /*
  * OS-dependent local functions.

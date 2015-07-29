@@ -21,7 +21,7 @@ extern bool fBootDb;
 extern GLOBAL_DATA gconfig;
 
 /* internal global variables */
-LIST *loaded_wilds = NULL;
+LIST_DEFAULT *loaded_wilds = NULL;
 long top_wilds;
 long top_wilds_terrain;
 long top_wilds_vlink;

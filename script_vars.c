@@ -2031,7 +2031,7 @@ void variable_dynamic_fix_church (CHURCH_DATA *church)
 }
 
 
-void variable_fwrite_uid_list( char *field, char *name, LIST *list, FILE *fp)
+void variable_fwrite_uid_list( char *field, char *name, LIST_DEFAULT *list, FILE *fp)
 {
 	if(list && list->valid) {
 		LIST_UID_DATA *data;

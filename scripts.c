@@ -2731,7 +2731,7 @@ void do_mob_transfer(CHAR_DATA *ch,ROOM_INDEX_DATA *room,bool quiet)
 }
 
 
-bool has_trigger(LIST **bank, int trigger)
+bool has_trigger(LIST_DEFAULT **bank, int trigger)
 {
 	int slot;
 	PROG_LIST *trig;
@@ -4429,7 +4429,7 @@ void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument)
 	TOKEN_DATA *token = NULL, *tokens = NULL;
 	ROOM_INDEX_DATA *here = NULL;
 	EXIT_DATA *ex = NULL;
-	LIST *blist;
+	LIST_DEFAULT *blist;
 	ITERATOR it;
 	int vnum = 0, i, idx;
 	unsigned long id1/*, id2*/;

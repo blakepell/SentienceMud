@@ -1002,7 +1002,7 @@ struct script_var_type {
 			int y;
 			int door;
 		} wdoor;
-		LIST *list;	// Used for HOMOGENOUS lists only
+		LIST_DEFAULT *list;	// Used for HOMOGENOUS lists only
 	} _;
 };
 
@@ -1046,7 +1046,7 @@ struct loop_data {
 				char *str;
 			} cur, next;
 			struct {
-				LIST *lp;
+				LIST_DEFAULT *lp;
 				ITERATOR it;
 			} list;
 			void *owner;
@@ -1134,7 +1134,7 @@ struct script_parameter {
 			int door;
 		} wdoor;
 
-		LIST *blist;
+		LIST_DEFAULT *blist;
 		long aid;
 		long chid;
 		long wid;
@@ -1621,7 +1621,7 @@ CHAR_DATA *script_get_char_list(CHAR_DATA *mobs, CHAR_DATA *viewer, bool player,
 OBJ_DATA *script_get_obj_list(OBJ_DATA *objs, CHAR_DATA *viewer, int worn, int vnum, char *name);
 void script_interpret(SCRIPT_VARINFO *info, char *command);
 int trigger_index(char *name, int type);
-bool has_trigger(LIST **bank, int trigger);
+bool has_trigger(LIST_DEFAULT **bank, int trigger);
 bool mp_same_group(CHAR_DATA *ch,CHAR_DATA *vch,CHAR_DATA *to);
 bool rop_same_group(CHAR_DATA *ch,CHAR_DATA *vch,CHAR_DATA *to);
 bool script_expression_push_operator(STACK *stk,int op);
@@ -1750,7 +1750,7 @@ void variable_free (pVARIABLE v);
 void variable_freedata (pVARIABLE v);
 void variable_freelist(ppVARIABLE list);
 void variable_fwrite(pVARIABLE var, FILE *fp);
-void variable_fwrite_uid_list( char *field, char *name, LIST *list, FILE *fp);
+void variable_fwrite_uid_list( char *field, char *name, LIST_DEFAULT *list, FILE *fp);
 void variable_index_fix(void);
 
 
