@@ -2155,6 +2155,8 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 
 	if (strcmp(crypt(argument, ch->pcdata->pwd), ch->pcdata->pwd))
 	{
+		if (strcmp(argument, ch->pcdata->pwd))
+		{
 	/* Log bad password attempts*/
 	sprintf(log_buf, "Denying access to %s@%s (bad password).",
 	ch->name, d->host);
@@ -2164,6 +2166,7 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 	close_socket(d);
 	return;
 	}
+}
 
 	write_to_buffer(d, echo_on_str, 0);
 

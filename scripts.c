@@ -3575,9 +3575,19 @@ int test_number_sight_trigger(int number, MATCH_NUMBER match, int type, int type
 							(mob->position == mob->pIndexData->default_pos && can_see(mob, enactor))) &&
 						(*match)(prg->trig_number, number)) {
 						ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, enactor, obj1, obj2, victim, victim2,NULL, phrase, prg->trig_phrase,0,0,0,0,0);
+							if( ret != PRET_NOSCRIPT ) {
+        	                                                ret_val = ret;
+                	                                        break; // Exit: Level 2
+                        	                        }
+
 					} else if (is_trigger_type(prg->trig_type,typeall) &&
 						(*match)(prg->trig_number, number)) {
 						ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, enactor, obj1, obj2, victim, victim2,NULL, phrase, prg->trig_phrase,0,0,0,0,0);
+							if( ret != PRET_NOSCRIPT ) {
+        	                                                ret_val = ret;
+                	                                        break; // Exit: Level 2
+                        	                        }
+
 					}
 					BREAKPRET;
 				}
@@ -3597,9 +3607,17 @@ int test_number_sight_trigger(int number, MATCH_NUMBER match, int type, int type
 					can_see(mob, enactor) &&
 					(*match)(prg->trig_number, number)) {
 					ret = execute_script(prg->vnum, prg->script, mob, NULL, NULL, NULL, enactor, obj1, obj2, victim, victim2,NULL, phrase, prg->trig_phrase,0,0,0,0,0);
+                                                        if( ret != PRET_NOSCRIPT ) {
+                                                                ret_val = ret;
+                                                                break; // Exit: Level 2
+                                                        }
 				} else if (is_trigger_type(prg->trig_type,typeall) &&
 					(*match)(prg->trig_number, number)) {
 					ret = execute_script(prg->vnum, prg->script, mob, NULL, NULL, NULL, enactor, obj1, obj2, victim, victim2,NULL, phrase, prg->trig_phrase,0,0,0,0,0);
+                                                        if( ret != PRET_NOSCRIPT ) {
+                                                                ret_val = ret;
+                                                                break; // Exit: Level 2
+                                                        }
 				}
 				BREAKPRET;
 			}
@@ -3646,6 +3664,10 @@ int test_number_sight_trigger(int number, MATCH_NUMBER match, int type, int type
 				if (is_trigger_type(prg->trig_type,typeall)) {
 					if ((*match)(prg->trig_number, number)) {
 						ret = execute_script(prg->vnum, prg->script, NULL, obj, NULL, NULL, enactor, obj1, obj2, victim, victim2,NULL,phrase,prg->trig_phrase,0,0,0,0,0);
+                                                        if( ret != PRET_NOSCRIPT ) {
+                                                                ret_val = ret;
+                                                                break; // Exit: Level 2
+                                                        }
 					}
 				}
 				BREAKPRET;
@@ -3682,6 +3704,10 @@ int test_number_sight_trigger(int number, MATCH_NUMBER match, int type, int type
 					if (is_trigger_type(prg->trig_type,typeall)) {
 						if ((*match)(prg->trig_number, number)) {
 							ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, enactor, obj1, obj2, victim, victim2,NULL,phrase,prg->trig_phrase,0,0,0,0,0);
+                                                        if( ret != PRET_NOSCRIPT ) {
+                                                                ret_val = ret;
+                                                                break; // Exit: Level 2
+                                                        }
 						}
 					}
 					BREAKPRET;

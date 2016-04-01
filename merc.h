@@ -5894,7 +5894,6 @@ extern		IMMORTAL_DATA		*unassigned_immortal_list;
  *  but some systems have incomplete or non-ansi header files.
  */
 #if	defined(linux)
-#define NOCRYPT
 char *	crypt		args( ( const char *key, const char *salt ) );
 #endif
 

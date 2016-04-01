@@ -4402,9 +4402,11 @@ void do_password(CHAR_DATA *ch, char *argument)
     }
 
     if (strcmp(crypt(arg1, ch->pcdata->pwd), ch->pcdata->pwd)) {
+	if (strcmp(arg1, ch->pcdata->pwd)){
 	WAIT_STATE(ch, 40);
 	send_to_char("Wrong password.  Wait 10 seconds.\n\r", ch);
 	return;
+	}
     }
 
     if (strlen(arg2) < 5) {

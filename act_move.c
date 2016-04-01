@@ -226,7 +226,7 @@ void move_char(CHAR_DATA *ch, int door, bool follow)
 	if (!IS_NPC(ch) && (p_exit_trigger(ch, door, PRG_MPROG) ||
 			p_exit_trigger(ch, door, PRG_OPROG) || p_exit_trigger(ch, door, PRG_RPROG)))
 		return;
-
+	
 	/* Check if char is "on" something. preventing movement */
 	if (ch->on) {
 		act("You must get off $p first.", ch, NULL, NULL, ch->on, NULL, NULL, NULL, TO_CHAR);
@@ -3238,7 +3238,6 @@ bool move_success(CHAR_DATA *ch)
 
 	if (!IS_NPC(ch) && (p_exit_trigger(ch, door, PRG_MPROG) || p_exit_trigger(ch, door, PRG_OPROG) || p_exit_trigger(ch, door, PRG_RPROG)))
 		return FALSE;
-
 
 	if (!(pexit = in_room->exit[door])) {
 		//Updated show_room_to_char to show_room -- Tieryo 08/18/2010
