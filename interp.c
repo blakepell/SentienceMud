@@ -1340,8 +1340,8 @@ void interpret( CHAR_DATA *ch, char *argument )
     	if (check_verbs(ch,command,argument))
 		return;
 
-//	if (imc_command_hook(ch, command, argument))
-//		return;
+	if (imc_command_hook(ch, command, argument))
+		return;
 
 	if (check_social(ch, command, argument))
 		return;
