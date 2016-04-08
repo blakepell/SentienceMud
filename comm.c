@@ -2189,7 +2189,11 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 	d->connected = CON_GET_EMAIL;
 	return;
 	}
-
+        if (ch->pcdata->need_change_pw == TRUE) {
+        send_to_char("\n\rYou are required to set a new password. Please do so now.\n\rPassword: ",ch);
+        d->connected = CON_CHANGE_PASSWORD;
+        return;
+        }
 	if (IS_IMMORTAL(ch))
 	{
 	send_to_char("{BWelcome, Immortal.{x\n\r\n\r", ch);
@@ -2212,14 +2216,14 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 	break;
 
 	case CON_CHANGE_PASSWORD:
-	send_to_char("\n\rPassword: ", ch);
+//	send_to_char("\n\rPassword: ", ch);
 
 	if (argument[0] == '\0')
 	return;
 
-	if (!strcmp(argument, ch->pcdata->old_pwd))
+	if (!strcmp(crypt(argument, ch->pcdata->old_pwd), ch->pcdata->old_pwd))
 	{
-	send_to_char("Password must be DIFFERENT from your current password!\n\r", ch);
+	send_to_char("Password must be DIFFERENT from your current password!\n\rPassword: ", ch);
 	return;
 	}
 
@@ -2245,7 +2249,7 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 	}
 
 	send_to_char("\n\r\n\r{Y***{x {RThank you. Please remember to never give your password to anybody.{Y *** {x\n\r\n\r", ch);
-
+	save_char_obj(d->character);
 	write_to_buffer(d, echo_on_str, 0);
 
 	if (IS_IMMORTAL(ch))
