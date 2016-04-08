@@ -4041,7 +4041,7 @@ int p_give_trigger(CHAR_DATA *mob, OBJ_DATA *obj, ROOM_INDEX_DATA *room,
 			CHAR_DATA *ch, OBJ_DATA *dropped, int type)
 {
 	return test_vnumname_trigger(dropped->name, dropped->pIndexData->vnum, type,
-					mob, obj, room, ch, NULL, NULL, NULL, NULL, NULL);
+					mob, obj, room, ch, NULL, NULL, dropped, NULL, NULL);
 }
 
 
