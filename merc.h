@@ -5687,12 +5687,12 @@ extern sh_int grn_unique;
 #define IS_INVASION_LEADER(ch)   ( IS_SET(ch->act2, ACT2_INVASION_LEADER ))
 #define IS_PIRATE(ch)   (!IS_NPC(ch) ? (ch->pcdata->rank[CONT_SERALIA] == NPC_SHIP_RANK_PIRATE || \
     ch->pcdata->rank[CONT_ATHEMIA] == NPC_SHIP_RANK_PIRATE) : ( IS_SET(ch->act2, ACT2_PIRATE )))
-#define IN_SERALIA(area) ( IS_SET(area->place_flags, PLACE_FIRST_CONTINENT) )
-#define IN_ATHEMIA(area) ( IS_SET(area->place_flags, PLACE_SECOND_CONTINENT) )
+#define IN_SERALIA(area) ( (area->place_flags == PLACE_FIRST_CONTINENT) )
+#define IN_ATHEMIA(area) ( (area->place_flags == PLACE_SECOND_CONTINENT) )
 
-#define IS_PIRATE_IN_AREA(ch)		( !IS_NPC(ch) && ((IS_SET(ch->in_room->area->place_flags, PLACE_FIRST_CONTINENT) && \
+#define IS_PIRATE_IN_AREA(ch)		( !IS_NPC(ch) && (((ch->in_room->area->place_flags == PLACE_FIRST_CONTINENT) && \
 			ch->pcdata->rank[CONT_SERALIA] == NPC_SHIP_RANK_PIRATE) || \
-					(IS_SET(ch->in_room->area->place_flags, PLACE_SECOND_CONTINENT) && \
+					((ch->in_room->area->place_flags == PLACE_SECOND_CONTINENT) && \
 			ch->pcdata->rank[CONT_ATHEMIA] == NPC_SHIP_RANK_PIRATE)))
 #define ON_SHIP(ch)             ((ch)->in_room->area == get_sailing_boat_area() \
           			&& (ch)->in_room->ship != NULL)

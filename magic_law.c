@@ -201,9 +201,9 @@ SPELL_FUNC(spell_identify)
 		AREA_DATA *pArea;
 
 		pArea = obj->pIndexData->area;
-		if (IS_SET(pArea->place_flags, PLACE_FIRST_CONTINENT) ||
-			IS_SET(pArea->place_flags, PLACE_SECOND_CONTINENT) ||
-			IS_SET(pArea->place_flags, PLACE_ISLAND) ||
+		if ((pArea->place_flags == PLACE_FIRST_CONTINENT) ||
+			(pArea->place_flags == PLACE_SECOND_CONTINENT) ||
+			(pArea->place_flags == PLACE_ISLAND) ||
 			!str_cmp(pArea->name, "Undersea")) {
 			sprintf(buf, "{MThis item comes from {x%s{M.\n\r", pArea->name);
 			add_buf(buffer, buf);

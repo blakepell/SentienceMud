@@ -2353,7 +2353,7 @@ void do_alist(CHAR_DATA *ch, char *argument)
 
     for (pArea = area_first; pArea; pArea = pArea->next)
     {
-	if (place_type == 0 || IS_SET(pArea->place_flags, place_type))
+	if (place_type == 0 || (pArea->place_flags == place_type))
 	{
 	sprintf(buf, "{D[{x%7ld{D]{x {D[{x%7ld{D]{x %s%-26.26s%s {D({x%-7ld{D-{x%7ld{D){x %-12.12s {D[{x{B%d{x{D]{x {D[{x%-10.10s{D]{x \n\r",
 	     pArea->anum,

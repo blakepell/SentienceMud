@@ -920,9 +920,9 @@ void do_chgohall(CHAR_DATA *ch, char *argument)
 
     if (!str_cmp(ch->in_room->area->name, "Wilderness"))
     {
-	if ((IS_SET(location->area->place_flags, PLACE_FIRST_CONTINENT)
+	if (((location->area->place_flags == PLACE_FIRST_CONTINENT)
 	&& get_region(ch) != REGION_FIRST_CONTINENT)
-	|| (IS_SET(location->area->place_flags, PLACE_SECOND_CONTINENT)
+	|| ((location->area->place_flags == PLACE_SECOND_CONTINENT)
 	&& get_region(ch) != REGION_SECOND_CONTINENT))
 	{
 	    if (!IS_SET(ch->church->settings, CHURCH_ALLOW_CROSSZONES)

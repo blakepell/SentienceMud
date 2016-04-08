@@ -3735,8 +3735,8 @@ void update_invasion_quest()
 	    }
 
 	    // only seralia or athemia continents should be invaded
-	    if ( IS_SET(pArea->place_flags, PLACE_FIRST_CONTINENT) ||
-		    IS_SET(pArea->place_flags, PLACE_SECOND_CONTINENT)) {
+	    if ( (pArea->place_flags == PLACE_FIRST_CONTINENT) ||
+		    (pArea->place_flags == PLACE_SECOND_CONTINENT)) {
 
 		if (number_percent() < 10) {
 		    int level = number_range(0, 3);

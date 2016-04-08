@@ -3124,7 +3124,7 @@ void do_pardon( CHAR_DATA *ch, char *argument )
 		return;
 	}
 
-	if ( IS_SET(ch->in_room->area->place_flags, PLACE_FIRST_CONTINENT))
+	if ( ch->in_room->area->place_flags == PLACE_FIRST_CONTINENT )
 	{
 		region_type = CONT_SERALIA;
 	}

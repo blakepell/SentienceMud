@@ -5847,9 +5847,9 @@ void do_scry(CHAR_DATA *ch, char *argument)
 		if (victim->in_room && victim->in_room->area->open && is_name(arg, victim->name) && can_see(ch, victim) &&
 			IS_NPC(victim) && number_percent() < get_skill(ch, gsn_scry) &&
 			(!local || ch->in_room->area == victim->in_room->area) &&
-			(	IS_SET(victim->in_room->area->place_flags, PLACE_FIRST_CONTINENT) ||
-				IS_SET(victim->in_room->area->place_flags, PLACE_SECOND_CONTINENT) ||
-				IS_SET(victim->in_room->area->place_flags, PLACE_ISLAND) ||
+			(	(victim->in_room->area->place_flags == PLACE_FIRST_CONTINENT) ||
+				(victim->in_room->area->place_flags == PLACE_SECOND_CONTINENT) ||
+				(victim->in_room->area->place_flags == PLACE_ISLAND) ||
 				!str_cmp(victim->in_room->area->name, "Wilderness"))) {
 			found = TRUE;
 			count++;

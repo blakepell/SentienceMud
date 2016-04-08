@@ -1014,15 +1014,19 @@ AEDIT(aedit_placetype)
 
     if (argument[0] != '\0')
     {
-	EDIT_AREA(ch, pArea);
+		EDIT_AREA(ch, pArea);
 
-	if ((value = flag_value(place_flags, argument)) != NO_FLAG)
-	{
-	    TOGGLE_BIT(pArea->place_flags, value);
+		if(!str_cmp(argument, "none")) {
+			pArea->place_flags = PLACE_NOWHERE;
 
-	    send_to_char("Area place type set.\n\r", ch);
-	    return TRUE;
-	}
+			send_to_char("Area place type cleared.\n\r", ch);
+			return TRUE;
+		} else if ((value = flag_value(place_flags, argument)) != NO_FLAG) {
+			pArea->place_flags = value;
+
+			send_to_char("Area place type set.\n\r", ch);
+			return TRUE;
+		}
     }
 
     send_to_char("Syntax:  placetype [flag]\n\r"

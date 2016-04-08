@@ -232,7 +232,7 @@ AREA_DATA *get_random_area( int continent )
 		area = get_area_data(number_range(1, i));
 	    } while (area == NULL
 	    || !area->open
-	    || !IS_SET( area->place_flags, PLACE_FIRST_CONTINENT )
+	    || (area->place_flags != PLACE_FIRST_CONTINENT)
 	    || !str_infix( "Housing", area->name )
 	    || !str_infix( "Arena", area->name)
 	    || !str_infix( "Temples", area->name)
@@ -246,7 +246,7 @@ AREA_DATA *get_random_area( int continent )
 		area = get_area_data( number_range( 1, i));
 	    } while (area == NULL
 	    || !area->open
-	    || !IS_SET( area->place_flags, PLACE_SECOND_CONTINENT )
+	    || ( area->place_flags != PLACE_SECOND_CONTINENT )
 	    || !str_infix("Temples", area->name)
 	    || !str_infix("Maze", area->name ));
 
@@ -260,7 +260,7 @@ AREA_DATA *get_random_area( int continent )
 	    || !area->open
 	    || !str_infix("Temples", area->name)
 	    || !str_infix("Housing", area->name )
-	    || (!IS_SET(area->place_flags, PLACE_FIRST_CONTINENT ) && !IS_SET(area->place_flags, PLACE_SECOND_CONTINENT))
+	    || ((area->place_flags != PLACE_FIRST_CONTINENT ) && (area->place_flags != PLACE_SECOND_CONTINENT))
 	    || !str_infix("Arena", area->name)
 	    || !str_infix("Maze", area->name));
 	    break;
