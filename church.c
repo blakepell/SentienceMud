@@ -56,7 +56,7 @@ const struct church_command_type church_command_table[] =
 
     { "deposit", 	0,	do_chdeposit		},
     { "donate",		0, 	do_chdonate		},
-//    { "gohall", 	0,	do_chgohall		},
+    { "gohall", 	0,	do_chgohall		},
     { "motd", 		0,	do_chmotd	 	},
     { "quit", 		0,	do_chrem		},
     { "rules", 		0,	do_chrules 		},

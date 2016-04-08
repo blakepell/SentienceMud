@@ -567,7 +567,7 @@ struct list_link_skill_data {
 #define SILVER_PER_KG		500
 #define MINS_PER_DEATH		8
 #define PORT_NORMAL	        9000
-#define PORT_TEST		9009
+#define PORT_TEST		9999
 #define PORT_SYN		3666
 #define PORT_ALPHA		7680
 #define PULSE_AREA		(60 * PULSE_PER_SECOND)
