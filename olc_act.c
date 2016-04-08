@@ -7162,15 +7162,19 @@ MEDIT(medit_corpsetype)
 
     if (argument[0] != '\0')
     {
-	EDIT_MOB(ch, pMob);
+		EDIT_MOB(ch, pMob);
 
-	if ((value = flag_value(corpse_types, argument)) != NO_FLAG)
-	{
-	    pMob->corpse_type = value;
+		if (!str_cmp(argument, "normal") || !str_cmp(argument, "none")) {
+			pMob->corpse_type = RAWKILL_NORMAL;
 
-	     send_to_char("Corpse type set.\n\r", ch);
-	    return TRUE;
-	}
+			 send_to_char("Corpse type set.\n\r", ch);
+			return TRUE;
+		} else if ((value = flag_value(corpse_types, argument)) != NO_FLAG) {
+			pMob->corpse_type = value;
+
+			 send_to_char("Corpse type set.\n\r", ch);
+			return TRUE;
+		}
     }
 
     send_to_char("Syntax: corpsetype [type]\n\r"
