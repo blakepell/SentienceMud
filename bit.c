@@ -82,6 +82,7 @@ const struct flag_stat_type flag_stat_table[] =
     {   area_who_display,	TRUE	},
     {	instrument_types,	TRUE	},
     {	place_flags,	TRUE	},
+    {	corpse_types,	TRUE	},
     {   0,			0	}
 };
 
