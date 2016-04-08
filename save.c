@@ -46,7 +46,6 @@
 
 // External functions
 
-
 // Globals.
 OBJ_DATA *	pneuma_relic;
 OBJ_DATA *	damage_relic;
@@ -2236,6 +2235,7 @@ void fwrite_obj_new(CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest)
 
     if( !IS_NULLSTR(obj->owner_short) )
     	fprintf(fp, "OwnerShort %s~\n", obj->owner_short);
+
 
     fprintf(fp, "End\n\n");
 

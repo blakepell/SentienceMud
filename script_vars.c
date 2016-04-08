@@ -51,11 +51,11 @@ static void deleter_string(void *str) { free_string((char *)str); }
 
 static void *deepcopy_room(void *src)
 {
-	LIST_ROOM_DATA *room = (LIST_ROOM_DATA *)src;
+	LLIST_ROOM_DATA *room = (LLIST_ROOM_DATA *)src;
 
-	LIST_ROOM_DATA *data;
+	LLIST_ROOM_DATA *data;
 
-	if( (data = alloc_mem(sizeof(LIST_ROOM_DATA))) )
+	if( (data = alloc_mem(sizeof(LLIST_ROOM_DATA))) )
 	{
 		data->room = room->room;
 		data->id[0] = room->id[0];
@@ -69,11 +69,11 @@ static void *deepcopy_room(void *src)
 
 static void *deepcopy_uid(void *src)
 {
-	LIST_UID_DATA *uid = (LIST_UID_DATA *)src;
+	LLIST_UID_DATA *uid = (LLIST_UID_DATA *)src;
 
-	LIST_UID_DATA *data;
+	LLIST_UID_DATA *data;
 
-	if( (data = alloc_mem(sizeof(LIST_UID_DATA))) )
+	if( (data = alloc_mem(sizeof(LLIST_UID_DATA))) )
 	{
 		data->ptr = uid->ptr;
 		data->id[0] = uid->id[0];
@@ -85,11 +85,11 @@ static void *deepcopy_uid(void *src)
 
 static void *deepcopy_exit(void *src)
 {
-	LIST_EXIT_DATA *ex = (LIST_EXIT_DATA *)src;
+	LLIST_EXIT_DATA *ex = (LLIST_EXIT_DATA *)src;
 
-	LIST_EXIT_DATA *data;
+	LLIST_EXIT_DATA *data;
 
-	if( (data = alloc_mem(sizeof(LIST_EXIT_DATA))) )
+	if( (data = alloc_mem(sizeof(LLIST_EXIT_DATA))) )
 	{
 		data->room = ex->room;
 		data->id[0] = ex->id[0];
@@ -104,11 +104,11 @@ static void *deepcopy_exit(void *src)
 
 static void *deepcopy_skill(void *src)
 {
-	LIST_SKILL_DATA *skill = (LIST_SKILL_DATA *)src;
+	LLIST_SKILL_DATA *skill = (LLIST_SKILL_DATA *)src;
 
-	LIST_SKILL_DATA *data;
+	LLIST_SKILL_DATA *data;
 
-	if( (data = alloc_mem(sizeof(LIST_SKILL_DATA))) )
+	if( (data = alloc_mem(sizeof(LLIST_SKILL_DATA))) )
 	{
 		data->mob = skill->mob;
 		data->sn = skill->sn;
@@ -124,11 +124,11 @@ static void *deepcopy_skill(void *src)
 
 static void *deepcopy_area(void *src)
 {
-	LIST_AREA_DATA *area = (LIST_AREA_DATA *)src;
+	LLIST_AREA_DATA *area = (LLIST_AREA_DATA *)src;
 
-	LIST_AREA_DATA *data;
+	LLIST_AREA_DATA *data;
 
-	if( (data = alloc_mem(sizeof(LIST_AREA_DATA))) )
+	if( (data = alloc_mem(sizeof(LLIST_AREA_DATA))) )
 	{
 		data->area = area->area;
 		data->uid = area->uid;
@@ -140,11 +140,11 @@ static void *deepcopy_area(void *src)
 
 static void *deepcopy_wilds(void *src)
 {
-	LIST_WILDS_DATA *wilds = (LIST_WILDS_DATA *)src;
+	LLIST_WILDS_DATA *wilds = (LLIST_WILDS_DATA *)src;
 
-	LIST_WILDS_DATA *data;
+	LLIST_WILDS_DATA *data;
 
-	if( (data = alloc_mem(sizeof(LIST_WILDS_DATA))) )
+	if( (data = alloc_mem(sizeof(LLIST_WILDS_DATA))) )
 	{
 		data->wilds = wilds->wilds;
 		data->uid = wilds->uid;
@@ -167,12 +167,12 @@ static LISTCOPY_FUNC *__var_blist_copier[] = {
 	NULL
 };
 
-static void deleter_room(void *data) { free_mem(data, sizeof(LIST_ROOM_DATA)); }
-static void deleter_uid(void *data) { free_mem(data, sizeof(LIST_UID_DATA)); }
-static void deleter_exit(void *data) { free_mem(data, sizeof(LIST_EXIT_DATA)); }
-static void deleter_skill(void *data) { free_mem(data, sizeof(LIST_SKILL_DATA)); }
-static void deleter_area(void *data) { free_mem(data, sizeof(LIST_AREA_DATA)); }
-static void deleter_wilds(void *data) { free_mem(data, sizeof(LIST_WILDS_DATA)); }
+static void deleter_room(void *data) { free_mem(data, sizeof(LLIST_ROOM_DATA)); }
+static void deleter_uid(void *data) { free_mem(data, sizeof(LLIST_UID_DATA)); }
+static void deleter_exit(void *data) { free_mem(data, sizeof(LLIST_EXIT_DATA)); }
+static void deleter_skill(void *data) { free_mem(data, sizeof(LLIST_SKILL_DATA)); }
+static void deleter_area(void *data) { free_mem(data, sizeof(LLIST_AREA_DATA)); }
+static void deleter_wilds(void *data) { free_mem(data, sizeof(LLIST_WILDS_DATA)); }
 
 static LISTDESTROY_FUNC *__var_blist_deleter[] = {
 	NULL,
@@ -190,14 +190,14 @@ static LISTDESTROY_FUNC *__var_blist_deleter[] = {
 /*
 static int __var_blist_size[] = {
 	0,
-	sizeof(LIST_ROOM_DATA),
-	sizeof(LIST_UID_DATA),
-	sizeof(LIST_UID_DATA),
-	sizeof(LIST_UID_DATA),
-	sizeof(LIST_EXIT_DATA),
-	sizeof(LIST_SKILL_DATA),
-	sizeof(LIST_AREA_DATA),
-	sizeof(LIST_WILDS_DATA),
+	sizeof(LLIST_ROOM_DATA),
+	sizeof(LLIST_UID_DATA),
+	sizeof(LLIST_UID_DATA),
+	sizeof(LLIST_UID_DATA),
+	sizeof(LLIST_EXIT_DATA),
+	sizeof(LLIST_SKILL_DATA),
+	sizeof(LLIST_AREA_DATA),
+	sizeof(LLIST_WILDS_DATA),
 	0
 };
 */
@@ -213,7 +213,7 @@ void variable_freedata (pVARIABLE v)
 
 	/*
 	// This should be handled by the list_destroy itself
-	case VAR_PLIST_STR:
+	case VAR_PLLIST_STR:
 		// Strings needs to be freed, if they are not shared strings
 		if( v->_.list ) {
 			char *str;
@@ -227,20 +227,20 @@ void variable_freedata (pVARIABLE v)
 		break;
 
 	// These have special structures for referencing them
-	case VAR_BLIST_ROOM:
-	case VAR_BLIST_MOB:
-	case VAR_BLIST_OBJ:
-	case VAR_BLIST_TOK:
-	case VAR_BLIST_EXIT:
-	case VAR_BLIST_SKILL:
-	case VAR_BLIST_AREA:
-	case VAR_BLIST_WILDS:
+	case VAR_BLLIST_ROOM:
+	case VAR_BLLIST_MOB:
+	case VAR_BLLIST_OBJ:
+	case VAR_BLLIST_TOK:
+	case VAR_BLLIST_EXIT:
+	case VAR_BLLIST_SKILL:
+	case VAR_BLLIST_AREA:
+	case VAR_BLLIST_WILDS:
 		if( v->_.list ) {
 			void *ptr;
 			iterator_start(&it, v->_.list);
 
 			while((ptr = iterator_nextdata(&it)))
-				free_mem(ptr, __var_blist_size[v->type - VAR_BLIST_FIRST]);
+				free_mem(ptr, __var_blist_size[v->type - VAR_BLLIST_FIRST]);
 
 			iterator_stop(&it);
 		}
@@ -251,13 +251,13 @@ void variable_freedata (pVARIABLE v)
 
 	// For all list variables, just remove the reference added when created, this will autopurge the list
 	// 20140511 NIB - nope, the use of the purge would not allow for list culling
-	if (v->type >= VAR_BLIST_FIRST && v->type <= VAR_BLIST_LAST && v->_.list ) {
+	if (v->type >= VAR_BLLIST_FIRST && v->type <= VAR_BLLIST_LAST && v->_.list ) {
 //		list_remref(v->_.list);
 		list_destroy(v->_.list);
 		v->_.list = NULL;
 	}
 
-	if (v->type >= VAR_PLIST_FIRST && v->type <= VAR_PLIST_LAST && v->_.list ) {
+	if (v->type >= VAR_PLLIST_FIRST && v->type <= VAR_PLLIST_LAST && v->_.list ) {
 //		list_remref(v->_.list);
 		list_destroy(v->_.list);
 		v->_.list = NULL;
@@ -641,10 +641,10 @@ bool variables_set_list (ppVARIABLE list, char *name, int type, bool save)
 	var->type = type;
 	var->save = save;
 
-	if( type > VAR_BLIST_FIRST && type < VAR_BLIST_LAST )
-		var->_.list = list_createx(FALSE, __var_blist_copier[type - VAR_BLIST_FIRST], __var_blist_deleter[type - VAR_BLIST_FIRST]);
+	if( type > VAR_BLLIST_FIRST && type < VAR_BLLIST_LAST )
+		var->_.list = list_createx(FALSE, __var_blist_copier[type - VAR_BLLIST_FIRST], __var_blist_deleter[type - VAR_BLLIST_FIRST]);
 
-	else if( type == VAR_PLIST_STR )
+	else if( type == VAR_PLLIST_STR )
 		var->_.list = list_createx(FALSE, deepcopy_string, deleter_string);
 
 	else
@@ -677,7 +677,7 @@ bool variables_append_list_str (ppVARIABLE list, char *name, char *str)
 	char *cpy;
 	pVARIABLE var = variable_get(*list, name);
 
-	if( !str || !var || var->type != VAR_PLIST_STR) return FALSE;
+	if( !str || !var || var->type != VAR_PLLIST_STR) return FALSE;
 
 	cpy = str_dup(str);
 	if( !list_appendlink(var->_.list, cpy) )
@@ -689,124 +689,124 @@ bool variables_append_list_str (ppVARIABLE list, char *name, char *str)
 // Used for loading purposes
 static bool variables_append_list_uid (ppVARIABLE list, char *name, int type, unsigned long a, unsigned long b)
 {
-	LIST_UID_DATA *data;
+	LLIST_UID_DATA *data;
 	pVARIABLE var = variable_get(*list, name);
 
 	if( (!a && !b)  || !var || var->type != type) return FALSE;
 
-	if( !(data = alloc_mem(sizeof(LIST_UID_DATA))) ) return FALSE;
+	if( !(data = alloc_mem(sizeof(LLIST_UID_DATA))) ) return FALSE;
 
 	data->ptr = NULL;
 	data->id[0] = a;
 	data->id[1] = b;
 
 	if( !list_appendlink(var->_.list, data) )
-		free_mem(data,sizeof(LIST_UID_DATA));
+		free_mem(data,sizeof(LLIST_UID_DATA));
 
 	return TRUE;
 }
 
 bool variables_append_list_mob (ppVARIABLE list, char *name, CHAR_DATA *mob)
 {
-	LIST_UID_DATA *data;
+	LLIST_UID_DATA *data;
 	pVARIABLE var = variable_get(*list, name);
 
-	if( !mob || !var || var->type != VAR_BLIST_MOB) return FALSE;
+	if( !mob || !var || var->type != VAR_BLLIST_MOB) return FALSE;
 
-	if( !(data = alloc_mem(sizeof(LIST_UID_DATA))) ) return FALSE;
+	if( !(data = alloc_mem(sizeof(LLIST_UID_DATA))) ) return FALSE;
 
 	data->ptr = mob;
 	data->id[0] = mob->id[0];
 	data->id[1] = mob->id[1];
 
 	if( !list_appendlink(var->_.list, data) )
-		free_mem(data,sizeof(LIST_UID_DATA));
+		free_mem(data,sizeof(LLIST_UID_DATA));
 
 	return TRUE;
 }
 
 bool variables_append_list_obj (ppVARIABLE list, char *name, OBJ_DATA *obj)
 {
-	LIST_UID_DATA *data;
+	LLIST_UID_DATA *data;
 	pVARIABLE var = variable_get(*list, name);
 
-	if( !obj || !var || var->type != VAR_BLIST_OBJ) return FALSE;
+	if( !obj || !var || var->type != VAR_BLLIST_OBJ) return FALSE;
 
-	if( !(data = alloc_mem(sizeof(LIST_UID_DATA))) ) return FALSE;
+	if( !(data = alloc_mem(sizeof(LLIST_UID_DATA))) ) return FALSE;
 
 	data->ptr = obj;
 	data->id[0] = obj->id[0];
 	data->id[1] = obj->id[1];
 
 	if( !list_appendlink(var->_.list, data) )
-		free_mem(data,sizeof(LIST_UID_DATA));
+		free_mem(data,sizeof(LLIST_UID_DATA));
 
 	return TRUE;
 }
 
 bool variables_append_list_token (ppVARIABLE list, char *name, TOKEN_DATA *token)
 {
-	LIST_UID_DATA *data;
+	LLIST_UID_DATA *data;
 	pVARIABLE var = variable_get(*list, name);
 
-	if( !token || !var || var->type != VAR_BLIST_TOK) return FALSE;
+	if( !token || !var || var->type != VAR_BLLIST_TOK) return FALSE;
 
-	if( !(data = alloc_mem(sizeof(LIST_UID_DATA))) ) return FALSE;
+	if( !(data = alloc_mem(sizeof(LLIST_UID_DATA))) ) return FALSE;
 
 	data->ptr = token;
 	data->id[0] = token->id[0];
 	data->id[1] = token->id[1];
 
 	if( !list_appendlink(var->_.list, data) )
-		free_mem(data,sizeof(LIST_UID_DATA));
+		free_mem(data,sizeof(LLIST_UID_DATA));
 
 	return TRUE;
 }
 
 bool variables_append_list_area (ppVARIABLE list, char *name, AREA_DATA *area)
 {
-	LIST_AREA_DATA *data;
+	LLIST_AREA_DATA *data;
 	pVARIABLE var = variable_get(*list, name);
 
-	if( !area || !var || var->type != VAR_BLIST_AREA) return FALSE;
+	if( !area || !var || var->type != VAR_BLLIST_AREA) return FALSE;
 
-	if( !(data = alloc_mem(sizeof(LIST_AREA_DATA))) ) return FALSE;
+	if( !(data = alloc_mem(sizeof(LLIST_AREA_DATA))) ) return FALSE;
 
 	data->area = area;
 	data->uid = area->uid;
 
 	if( !list_appendlink(var->_.list, data) )
-		free_mem(data,sizeof(LIST_AREA_DATA));
+		free_mem(data,sizeof(LLIST_AREA_DATA));
 
 	return TRUE;
 }
 
 bool variables_append_list_wilds (ppVARIABLE list, char *name, WILDS_DATA *wilds)
 {
-	LIST_WILDS_DATA *data;
+	LLIST_WILDS_DATA *data;
 	pVARIABLE var = variable_get(*list, name);
 
-	if( !wilds || !var || var->type != VAR_BLIST_WILDS) return FALSE;
+	if( !wilds || !var || var->type != VAR_BLLIST_WILDS) return FALSE;
 
-	if( !(data = alloc_mem(sizeof(LIST_WILDS_DATA))) ) return FALSE;
+	if( !(data = alloc_mem(sizeof(LLIST_WILDS_DATA))) ) return FALSE;
 
 	data->wilds = wilds;
 	data->uid = wilds->uid;
 
 	if( !list_appendlink(var->_.list, data) )
-		free_mem(data,sizeof(LIST_WILDS_DATA));
+		free_mem(data,sizeof(LLIST_WILDS_DATA));
 
 	return TRUE;
 }
 
 bool variables_append_list_room (ppVARIABLE list, char *name, ROOM_INDEX_DATA *room)
 {
-	LIST_ROOM_DATA *data;
+	LLIST_ROOM_DATA *data;
 	pVARIABLE var = variable_get(*list, name);
 
-	if( !room || !var || var->type != VAR_BLIST_ROOM) return FALSE;
+	if( !room || !var || var->type != VAR_BLLIST_ROOM) return FALSE;
 
-	if( !(data = alloc_mem(sizeof(LIST_ROOM_DATA))) ) return FALSE;
+	if( !(data = alloc_mem(sizeof(LLIST_ROOM_DATA))) ) return FALSE;
 
 	data->room = room;
 	if( room->source ) {
@@ -827,7 +827,7 @@ bool variables_append_list_room (ppVARIABLE list, char *name, ROOM_INDEX_DATA *r
 	}
 
 	if( !list_appendlink(var->_.list, data) )
-		free_mem(data,sizeof(LIST_ROOM_DATA));
+		free_mem(data,sizeof(LLIST_ROOM_DATA));
 
 	return TRUE;
 }
@@ -836,43 +836,43 @@ bool variables_append_list_connection (ppVARIABLE list, char *name, DESCRIPTOR_D
 {
 	pVARIABLE var = variable_get(*list, name);
 
-	if( !var || var->type != VAR_PLIST_CONN) return FALSE;
+	if( !var || var->type != VAR_PLLIST_CONN) return FALSE;
 
 	return list_appendlink(var->_.list, conn);
 }
 
 static bool variables_append_list_area_id(ppVARIABLE list, char *name, long aid)
 {
-	LIST_AREA_DATA *data;
+	LLIST_AREA_DATA *data;
 	pVARIABLE var = variable_get(*list, name);
 
-	if( !var || var->type != VAR_BLIST_AREA) return FALSE;
+	if( !var || var->type != VAR_BLLIST_AREA) return FALSE;
 
-	if( !(data = alloc_mem(sizeof(LIST_AREA_DATA))) ) return FALSE;
+	if( !(data = alloc_mem(sizeof(LLIST_AREA_DATA))) ) return FALSE;
 
 	data->area = NULL;
 	data->uid = aid;
 
 	if( !list_appendlink(var->_.list, data) )
-		free_mem(data,sizeof(LIST_AREA_DATA));
+		free_mem(data,sizeof(LLIST_AREA_DATA));
 
 	return TRUE;
 }
 
 static bool variables_append_list_wilds_id(ppVARIABLE list, char *name, long wid)
 {
-	LIST_WILDS_DATA *data;
+	LLIST_WILDS_DATA *data;
 	pVARIABLE var = variable_get(*list, name);
 
-	if( !var || var->type != VAR_BLIST_WILDS) return FALSE;
+	if( !var || var->type != VAR_BLLIST_WILDS) return FALSE;
 
-	if( !(data = alloc_mem(sizeof(LIST_WILDS_DATA))) ) return FALSE;
+	if( !(data = alloc_mem(sizeof(LLIST_WILDS_DATA))) ) return FALSE;
 
 	data->wilds = NULL;
 	data->uid = wid;
 
 	if( !list_appendlink(var->_.list, data) )
-		free_mem(data,sizeof(LIST_WILDS_DATA));
+		free_mem(data,sizeof(LLIST_WILDS_DATA));
 
 	return TRUE;
 }
@@ -880,12 +880,12 @@ static bool variables_append_list_wilds_id(ppVARIABLE list, char *name, long wid
 
 static bool variables_append_list_room_id (ppVARIABLE list, char *name, unsigned long a, unsigned long b, unsigned long c, unsigned long d)
 {
-	LIST_ROOM_DATA *data;
+	LLIST_ROOM_DATA *data;
 	pVARIABLE var = variable_get(*list, name);
 
-	if( !var || var->type != VAR_BLIST_ROOM) return FALSE;
+	if( !var || var->type != VAR_BLLIST_ROOM) return FALSE;
 
-	if( !(data = alloc_mem(sizeof(LIST_ROOM_DATA))) ) return FALSE;
+	if( !(data = alloc_mem(sizeof(LLIST_ROOM_DATA))) ) return FALSE;
 
 	data->room = NULL;
 	data->id[0] = a;
@@ -894,19 +894,19 @@ static bool variables_append_list_room_id (ppVARIABLE list, char *name, unsigned
 	data->id[3] = d;
 
 	if( !list_appendlink(var->_.list, data) )
-		free_mem(data,sizeof(LIST_ROOM_DATA));
+		free_mem(data,sizeof(LLIST_ROOM_DATA));
 
 	return TRUE;
 }
 
 bool variables_append_list_door (ppVARIABLE list, char *name, ROOM_INDEX_DATA *room, int door)
 {
-	LIST_EXIT_DATA *data;
+	LLIST_EXIT_DATA *data;
 	pVARIABLE var = variable_get(*list, name);
 
-	if( !room || door < 0 || door >= MAX_DIR || !var || var->type != VAR_BLIST_EXIT) return FALSE;
+	if( !room || door < 0 || door >= MAX_DIR || !var || var->type != VAR_BLLIST_EXIT) return FALSE;
 
-	if( !(data = alloc_mem(sizeof(LIST_EXIT_DATA))) ) return FALSE;
+	if( !(data = alloc_mem(sizeof(LLIST_EXIT_DATA))) ) return FALSE;
 
 	data->room = room;
 	if( room->source ) {
@@ -928,19 +928,19 @@ bool variables_append_list_door (ppVARIABLE list, char *name, ROOM_INDEX_DATA *r
 	data->door = door;
 
 	if( !list_appendlink(var->_.list, data) )
-		free_mem(data,sizeof(LIST_EXIT_DATA));
+		free_mem(data,sizeof(LLIST_EXIT_DATA));
 
 	return TRUE;
 }
 
 static bool variables_append_list_door_id (ppVARIABLE list, char *name, unsigned long a, unsigned long b, unsigned long c, unsigned long d, int door)
 {
-	LIST_EXIT_DATA *data;
+	LLIST_EXIT_DATA *data;
 	pVARIABLE var = variable_get(*list, name);
 
-	if( door < 0 || door >= MAX_DIR || !var || var->type != VAR_BLIST_EXIT) return FALSE;
+	if( door < 0 || door >= MAX_DIR || !var || var->type != VAR_BLLIST_EXIT) return FALSE;
 
-	if( !(data = alloc_mem(sizeof(LIST_EXIT_DATA))) ) return FALSE;
+	if( !(data = alloc_mem(sizeof(LLIST_EXIT_DATA))) ) return FALSE;
 
 	data->room = NULL;
 	data->id[0] = a;
@@ -950,7 +950,7 @@ static bool variables_append_list_door_id (ppVARIABLE list, char *name, unsigned
 	data->door = door;
 
 	if( !list_appendlink(var->_.list, data) )
-		free_mem(data,sizeof(LIST_EXIT_DATA));
+		free_mem(data,sizeof(LLIST_EXIT_DATA));
 
 	return TRUE;
 }
@@ -964,12 +964,12 @@ bool variables_append_list_exit (ppVARIABLE list, char *name, EXIT_DATA *ex)
 
 bool variables_append_list_skill_sn (ppVARIABLE list, char *name, CHAR_DATA *ch, int sn)
 {
-	LIST_SKILL_DATA *data;
+	LLIST_SKILL_DATA *data;
 	pVARIABLE var = variable_get(*list, name);
 
-	if( !ch || sn < 1 || sn >= MAX_SKILL || !var || var->type != VAR_BLIST_SKILL) return FALSE;
+	if( !ch || sn < 1 || sn >= MAX_SKILL || !var || var->type != VAR_BLLIST_SKILL) return FALSE;
 
-	if( !(data = alloc_mem(sizeof(LIST_SKILL_DATA))) ) return FALSE;
+	if( !(data = alloc_mem(sizeof(LLIST_SKILL_DATA))) ) return FALSE;
 
 	data->mob = ch;
 	data->sn = sn;
@@ -980,19 +980,19 @@ bool variables_append_list_skill_sn (ppVARIABLE list, char *name, CHAR_DATA *ch,
 	data->tid[1] = 0;
 
 	if( !list_appendlink(var->_.list, data) )
-		free_mem(data,sizeof(LIST_SKILL_DATA));
+		free_mem(data,sizeof(LLIST_SKILL_DATA));
 
 	return TRUE;
 }
 
 bool variables_append_list_skill_token (ppVARIABLE list, char *name, TOKEN_DATA *tok)
 {
-	LIST_SKILL_DATA *data;
+	LLIST_SKILL_DATA *data;
 	pVARIABLE var = variable_get(*list, name);
 
-	if( !tok || !tok->player || (tok->type != TOKEN_SKILL && tok->type != TOKEN_SPELL) || !var || var->type != VAR_BLIST_SKILL) return FALSE;
+	if( !tok || !tok->player || (tok->type != TOKEN_SKILL && tok->type != TOKEN_SPELL) || !var || var->type != VAR_BLLIST_SKILL) return FALSE;
 
-	if( !(data = alloc_mem(sizeof(LIST_SKILL_DATA))) ) return FALSE;
+	if( !(data = alloc_mem(sizeof(LLIST_SKILL_DATA))) ) return FALSE;
 
 	data->mob = tok->player;
 	data->sn = 0;
@@ -1003,19 +1003,19 @@ bool variables_append_list_skill_token (ppVARIABLE list, char *name, TOKEN_DATA 
 	data->tid[1] = tok->id[1];
 
 	if( !list_appendlink(var->_.list, data) )
-		free_mem(data,sizeof(LIST_SKILL_DATA));
+		free_mem(data,sizeof(LLIST_SKILL_DATA));
 
 	return TRUE;
 }
 
 static bool variables_append_list_skill_id (ppVARIABLE list, char *name, unsigned long ma, unsigned long mb, unsigned long ta, unsigned long tb, int sn)
 {
-	LIST_SKILL_DATA *data;
+	LLIST_SKILL_DATA *data;
 	pVARIABLE var = variable_get(*list, name);
 
-	if( !var || var->type != VAR_BLIST_SKILL) return FALSE;
+	if( !var || var->type != VAR_BLLIST_SKILL) return FALSE;
 
-	if( !(data = alloc_mem(sizeof(LIST_SKILL_DATA))) ) return FALSE;
+	if( !(data = alloc_mem(sizeof(LLIST_SKILL_DATA))) ) return FALSE;
 
 	data->mob = NULL;
 	data->sn = (sn > 0 && sn < MAX_SKILL) ? sn : 0;;
@@ -1026,7 +1026,7 @@ static bool variables_append_list_skill_id (ppVARIABLE list, char *name, unsigne
 	data->tid[1] = tb;
 
 	if( !list_appendlink(var->_.list, data) )
-		free_mem(data,sizeof(LIST_SKILL_DATA));
+		free_mem(data,sizeof(LLIST_SKILL_DATA));
 
 	return TRUE;
 }
@@ -1212,21 +1212,21 @@ bool variable_copy(ppVARIABLE list,char *oldname,char *newname)
 	case VAR_WILDS:			newv->_.wilds = oldv->_.wilds; break;
 	case VAR_CHURCH:		newv->_.church = oldv->_.church; break;
 
-	case VAR_PLIST_STR:
-	case VAR_PLIST_CONN:
-	case VAR_PLIST_ROOM:
-	case VAR_PLIST_MOB:
-	case VAR_PLIST_OBJ:
-	case VAR_PLIST_TOK:
-	case VAR_PLIST_CHURCH:
-	case VAR_BLIST_ROOM:
-	case VAR_BLIST_MOB:
-	case VAR_BLIST_OBJ:
-	case VAR_BLIST_TOK:
-	case VAR_BLIST_EXIT:
-	case VAR_BLIST_SKILL:
-	case VAR_BLIST_AREA:
-	case VAR_BLIST_WILDS:
+	case VAR_PLLIST_STR:
+	case VAR_PLLIST_CONN:
+	case VAR_PLLIST_ROOM:
+	case VAR_PLLIST_MOB:
+	case VAR_PLLIST_OBJ:
+	case VAR_PLLIST_TOK:
+	case VAR_PLLIST_CHURCH:
+	case VAR_BLLIST_ROOM:
+	case VAR_BLLIST_MOB:
+	case VAR_BLLIST_OBJ:
+	case VAR_BLLIST_TOK:
+	case VAR_BLLIST_EXIT:
+	case VAR_BLLIST_SKILL:
+	case VAR_BLLIST_AREA:
+	case VAR_BLLIST_WILDS:
 		// All of the lists that require special allocation will be handled auto-magically by list_copy
 		newv->_.list = list_copy(oldv->_.list);
 		break;
@@ -1268,21 +1268,21 @@ bool variable_copyto(ppVARIABLE from,ppVARIABLE to,char *oldname,char *newname, 
 	case VAR_WILDS:			newv->_.wilds = oldv->_.wilds; break;
 	case VAR_CHURCH:		newv->_.church = oldv->_.church; break;
 
-	case VAR_PLIST_STR:
-	case VAR_PLIST_CONN:
-	case VAR_PLIST_ROOM:
-	case VAR_PLIST_MOB:
-	case VAR_PLIST_OBJ:
-	case VAR_PLIST_TOK:
-	case VAR_PLIST_CHURCH:
-	case VAR_BLIST_ROOM:
-	case VAR_BLIST_MOB:
-	case VAR_BLIST_OBJ:
-	case VAR_BLIST_TOK:
-	case VAR_BLIST_EXIT:
-	case VAR_BLIST_SKILL:
-	case VAR_BLIST_AREA:
-	case VAR_BLIST_WILDS:
+	case VAR_PLLIST_STR:
+	case VAR_PLLIST_CONN:
+	case VAR_PLLIST_ROOM:
+	case VAR_PLLIST_MOB:
+	case VAR_PLLIST_OBJ:
+	case VAR_PLLIST_TOK:
+	case VAR_PLLIST_CHURCH:
+	case VAR_BLLIST_ROOM:
+	case VAR_BLLIST_MOB:
+	case VAR_BLLIST_OBJ:
+	case VAR_BLLIST_TOK:
+	case VAR_BLLIST_EXIT:
+	case VAR_BLLIST_SKILL:
+	case VAR_BLLIST_AREA:
+	case VAR_BLLIST_WILDS:
 		// All of the lists that require special allocation will be handled auto-magically by list_copy
 		newv->_.list = list_copy(oldv->_.list);
 		break;
@@ -1322,21 +1322,21 @@ bool variable_copylist(ppVARIABLE from,ppVARIABLE to,bool index)
 		case VAR_WILDS:			newv->_.wilds = oldv->_.wilds; break;
 		case VAR_CHURCH:		newv->_.church = oldv->_.church; break;
 
-		case VAR_PLIST_STR:
-		case VAR_PLIST_CONN:
-		case VAR_PLIST_ROOM:
-		case VAR_PLIST_MOB:
-		case VAR_PLIST_OBJ:
-		case VAR_PLIST_TOK:
-		case VAR_PLIST_CHURCH:
-		case VAR_BLIST_ROOM:
-		case VAR_BLIST_MOB:
-		case VAR_BLIST_OBJ:
-		case VAR_BLIST_TOK:
-		case VAR_BLIST_EXIT:
-		case VAR_BLIST_SKILL:
-		case VAR_BLIST_AREA:
-		case VAR_BLIST_WILDS:
+		case VAR_PLLIST_STR:
+		case VAR_PLLIST_CONN:
+		case VAR_PLLIST_ROOM:
+		case VAR_PLLIST_MOB:
+		case VAR_PLLIST_OBJ:
+		case VAR_PLLIST_TOK:
+		case VAR_PLLIST_CHURCH:
+		case VAR_BLLIST_ROOM:
+		case VAR_BLLIST_MOB:
+		case VAR_BLLIST_OBJ:
+		case VAR_BLLIST_TOK:
+		case VAR_BLLIST_EXIT:
+		case VAR_BLLIST_SKILL:
+		case VAR_BLLIST_AREA:
+		case VAR_BLLIST_WILDS:
 			// All of the lists that require special allocation will be handled auto-magically by list_copy
 			newv->_.list = list_copy(oldv->_.list);
 			break;
@@ -1468,13 +1468,13 @@ void variable_clearfield(int type, void *ptr)
 			cur->_.tid.b = token->id[1];
 			cur->type = VAR_TOKEN_ID;
 
-		} else if(cur->type == VAR_BLIST_ROOM && type == VAR_ROOM && list_isvalid(cur->_.list)) {
+		} else if(cur->type == VAR_BLLIST_ROOM && type == VAR_ROOM && list_isvalid(cur->_.list)) {
 			ITERATOR it;
-			LIST_ROOM_DATA *lroom;
+			LLIST_ROOM_DATA *lroom;
 
 			iterator_start(&it, cur->_.list);
 
-			while( (lroom = (LIST_ROOM_DATA *)iterator_nextdata(&it)) ) {
+			while( (lroom = (LLIST_ROOM_DATA *)iterator_nextdata(&it)) ) {
 				if( lroom->room && lroom->room == ptr ) {
 					iterator_remcurrent(&it);
 					break;
@@ -1483,13 +1483,13 @@ void variable_clearfield(int type, void *ptr)
 
 			iterator_stop(&it);
 
-		} else if(((cur->type == VAR_BLIST_MOB && type == VAR_MOBILE) || (cur->type == VAR_BLIST_OBJ && type == VAR_OBJECT) || (cur->type == VAR_BLIST_TOK && type == VAR_TOKEN)) && list_isvalid(cur->_.list)) {
+		} else if(((cur->type == VAR_BLLIST_MOB && type == VAR_MOBILE) || (cur->type == VAR_BLLIST_OBJ && type == VAR_OBJECT) || (cur->type == VAR_BLLIST_TOK && type == VAR_TOKEN)) && list_isvalid(cur->_.list)) {
 			ITERATOR it;
-			LIST_UID_DATA *luid;
+			LLIST_UID_DATA *luid;
 
 			iterator_start(&it, cur->_.list);
 
-			while( (luid = (LIST_UID_DATA *)iterator_nextdata(&it)) ) {
+			while( (luid = (LLIST_UID_DATA *)iterator_nextdata(&it)) ) {
 				if( luid->ptr && luid->ptr == ptr ) {
 					iterator_remcurrent(&it);
 					break;
@@ -1497,25 +1497,25 @@ void variable_clearfield(int type, void *ptr)
 			}
 			iterator_stop(&it);
 
-		} else if(cur->type == VAR_PLIST_STR && type == VAR_STRING && ptr && list_isvalid(cur->_.list)) {
+		} else if(cur->type == VAR_PLLIST_STR && type == VAR_STRING && ptr && list_isvalid(cur->_.list)) {
 			list_remlink(cur->_.list, ptr);
 
-		} else if(cur->type == VAR_PLIST_CONN && type == VAR_CONNECTION && ptr && list_isvalid(cur->_.list)) {
+		} else if(cur->type == VAR_PLLIST_CONN && type == VAR_CONNECTION && ptr && list_isvalid(cur->_.list)) {
 			list_remlink(cur->_.list, ptr);
 
-		} else if(cur->type == VAR_PLIST_ROOM && type == VAR_ROOM && ptr && list_isvalid(cur->_.list)) {
+		} else if(cur->type == VAR_PLLIST_ROOM && type == VAR_ROOM && ptr && list_isvalid(cur->_.list)) {
 			list_remlink(cur->_.list, ptr);
 
-		} else if(cur->type == VAR_PLIST_MOB && type == VAR_MOBILE && ptr && list_isvalid(cur->_.list)) {
+		} else if(cur->type == VAR_PLLIST_MOB && type == VAR_MOBILE && ptr && list_isvalid(cur->_.list)) {
 			list_remlink(cur->_.list, ptr);
 
-		} else if(cur->type == VAR_PLIST_OBJ && type == VAR_OBJECT && ptr && list_isvalid(cur->_.list)) {
+		} else if(cur->type == VAR_PLLIST_OBJ && type == VAR_OBJECT && ptr && list_isvalid(cur->_.list)) {
 			list_remlink(cur->_.list, ptr);
 
-		} else if(cur->type == VAR_PLIST_TOK && type == VAR_TOKEN && ptr && list_isvalid(cur->_.list)) {
+		} else if(cur->type == VAR_PLLIST_TOK && type == VAR_TOKEN && ptr && list_isvalid(cur->_.list)) {
 			list_remlink(cur->_.list, ptr);
 
-		} else if(cur->type == VAR_PLIST_CHURCH && type == VAR_CHURCH && ptr && list_isvalid(cur->_.list)) {
+		} else if(cur->type == VAR_PLLIST_CHURCH && type == VAR_CHURCH && ptr && list_isvalid(cur->_.list)) {
 			list_remlink(cur->_.list, ptr);
 
 		} else if(cur->type == type && cur->_.raw == ptr)
@@ -1542,12 +1542,12 @@ void variable_fix(pVARIABLE var)
 {
 	register ROOM_INDEX_DATA *room;
 	ITERATOR it;
-	LIST_UID_DATA *luid;
-	LIST_ROOM_DATA *lroom;
-	LIST_EXIT_DATA *lexit;
-	LIST_SKILL_DATA *lskill;
-	LIST_AREA_DATA *larea;
-	LIST_WILDS_DATA *lwilds;
+	LLIST_UID_DATA *luid;
+	LLIST_ROOM_DATA *lroom;
+	LLIST_EXIT_DATA *lexit;
+	LLIST_SKILL_DATA *lskill;
+	LLIST_AREA_DATA *larea;
+	LLIST_WILDS_DATA *lwilds;
 
 	if(var->type == VAR_CLONE_ROOM) {	// Dynamic
 		if(var->_.cr.r && (room = get_clone_room(var->_.cr.r, var->_.cr.a, var->_.cr.b)) ) {
@@ -1637,51 +1637,51 @@ void variable_fix(pVARIABLE var)
 				var->type = VAR_SKILLINFO;
 			}
 		}
-	} else if(var->type == VAR_BLIST_MOB && var->_.list) {
+	} else if(var->type == VAR_BLLIST_MOB && var->_.list) {
 		iterator_start(&it, var->_.list);
 
-		while( (luid = (LIST_UID_DATA *)iterator_nextdata(&it)) )
+		while( (luid = (LLIST_UID_DATA *)iterator_nextdata(&it)) )
 			if( !luid->ptr )
 				luid->ptr = idfind_mobile(luid->id[0], luid->id[1]);
 
 		iterator_stop(&it);
 
-	} else if(var->type == VAR_BLIST_OBJ && var->_.list) {
+	} else if(var->type == VAR_BLLIST_OBJ && var->_.list) {
 		iterator_start(&it, var->_.list);
 
-		while( (luid = (LIST_UID_DATA *)iterator_nextdata(&it)) )
+		while( (luid = (LLIST_UID_DATA *)iterator_nextdata(&it)) )
 			if( !luid->ptr )
 				luid->ptr = idfind_object(luid->id[0], luid->id[1]);
 
 		iterator_stop(&it);
-	} else if(var->type == VAR_BLIST_TOK && var->_.list) {
+	} else if(var->type == VAR_BLLIST_TOK && var->_.list) {
 		iterator_start(&it, var->_.list);
 
-		while( (luid = (LIST_UID_DATA *)iterator_nextdata(&it)) )
+		while( (luid = (LLIST_UID_DATA *)iterator_nextdata(&it)) )
 			if( !luid->ptr )
 				luid->ptr = idfind_token(luid->id[0], luid->id[1]);
 
 		iterator_stop(&it);
-	} else if(var->type == VAR_BLIST_AREA && var->_.list) {
+	} else if(var->type == VAR_BLLIST_AREA && var->_.list) {
 		iterator_start(&it, var->_.list);
 
-		while( (larea = (LIST_AREA_DATA *)iterator_nextdata(&it)) )
+		while( (larea = (LLIST_AREA_DATA *)iterator_nextdata(&it)) )
 			if( !larea->area )
 				larea->area = get_area_from_uid(larea->uid);
 
 		iterator_stop(&it);
-	} else if(var->type == VAR_BLIST_WILDS && var->_.list) {
+	} else if(var->type == VAR_BLLIST_WILDS && var->_.list) {
 		iterator_start(&it, var->_.list);
 
-		while( (lwilds = (LIST_WILDS_DATA *)iterator_nextdata(&it)) )
+		while( (lwilds = (LLIST_WILDS_DATA *)iterator_nextdata(&it)) )
 			if( !lwilds->wilds )
 				lwilds->wilds = get_wilds_from_uid(NULL, lwilds->uid);
 
 		iterator_stop(&it);
-	} else if(var->type == VAR_BLIST_ROOM && var->_.list ) {
+	} else if(var->type == VAR_BLLIST_ROOM && var->_.list ) {
 		iterator_start(&it, var->_.list);
 
-		while( (lroom = (LIST_ROOM_DATA *)iterator_nextdata(&it)) )
+		while( (lroom = (LLIST_ROOM_DATA *)iterator_nextdata(&it)) )
 			if( !lroom->room ) {
 				if( lroom->id[0] > 0 ) {	// WILDS room
 					WILDS_DATA *wilds = get_wilds_from_uid(NULL, lroom->id[0]);
@@ -1704,10 +1704,10 @@ void variable_fix(pVARIABLE var)
 			}
 
 		iterator_stop(&it);
-	} else if(var->type == VAR_BLIST_EXIT && var->_.list ) {
+	} else if(var->type == VAR_BLLIST_EXIT && var->_.list ) {
 		iterator_start(&it, var->_.list);
 
-		while( (lexit = (LIST_EXIT_DATA *)iterator_nextdata(&it)) )
+		while( (lexit = (LLIST_EXIT_DATA *)iterator_nextdata(&it)) )
 			if( !lexit->room ) {
 				if( lexit->id[0] > 0 ) {	// WILDS room
 					WILDS_DATA *wilds = get_wilds_from_uid(NULL, lexit->id[0]);
@@ -1731,10 +1731,10 @@ void variable_fix(pVARIABLE var)
 			}
 		iterator_stop(&it);
 
-	} else if(var->type == VAR_BLIST_SKILL && var->_.list ) {
+	} else if(var->type == VAR_BLLIST_SKILL && var->_.list ) {
 		iterator_start(&it, var->_.list);
 
-		while( (lskill = (LIST_SKILL_DATA *)iterator_nextdata(&it)) )
+		while( (lskill = (LLIST_SKILL_DATA *)iterator_nextdata(&it)) )
 			if( !lskill->mob && ((lskill->sn > 0 && lskill->sn < MAX_SKILL) || lskill->tid[0] > 0 || lskill->tid[1] > 0) ) {
 				lskill->mob = idfind_mobile(lskill->mid[0],lskill->mid[1]);
 
@@ -1803,13 +1803,13 @@ void variable_dynamic_fix_clone_room (ROOM_INDEX_DATA *clone)
 				cur->type = VAR_EXIT;
 			}
 			break;
-		case VAR_BLIST_ROOM:
+		case VAR_BLLIST_ROOM:
 			if( cur->_.list ) {
-				LIST_ROOM_DATA *lroom;
+				LLIST_ROOM_DATA *lroom;
 
 				iterator_start(&it, cur->_.list);
 
-				while( (lroom = (LIST_ROOM_DATA *)iterator_nextdata(&it)) ) {
+				while( (lroom = (LLIST_ROOM_DATA *)iterator_nextdata(&it)) ) {
 					if( !lroom->room ) {
 						if( !lroom->id[0] > 0 &&
 							lroom->id[1] == clone->source->vnum &&
@@ -1823,13 +1823,13 @@ void variable_dynamic_fix_clone_room (ROOM_INDEX_DATA *clone)
 			}
 			break;
 
-		case VAR_BLIST_EXIT:
+		case VAR_BLLIST_EXIT:
 			if( cur->_.list ) {
-				LIST_EXIT_DATA *lexit;
+				LLIST_EXIT_DATA *lexit;
 
 				iterator_start(&it, cur->_.list);
 
-				while( (lexit = (LIST_EXIT_DATA *)iterator_nextdata(&it)) ) {
+				while( (lexit = (LLIST_EXIT_DATA *)iterator_nextdata(&it)) ) {
 					if( !lexit->room ) {
 						if( !lexit->id[0] > 0 &&
 							lexit->id[1] == clone->source->vnum &&
@@ -1863,7 +1863,7 @@ void variable_dynamic_fix_object(OBJ_DATA *obj)
 	register OBJ_DATA *o;
 	register ROOM_INDEX_DATA *clone;
 	register TOKEN_DATA *token;
-	register LIST_UID_DATA *luid;
+	register LLIST_UID_DATA *luid;
 
 	while(cur) {
 		switch(cur->type) {
@@ -1874,14 +1874,14 @@ void variable_dynamic_fix_object(OBJ_DATA *obj)
 			}
 			break;
 
-		case VAR_BLIST_OBJ:
+		case VAR_BLLIST_OBJ:
 			if( cur->_.list && cur->_.list->valid ) {
 
 				ITERATOR it;
 
 				iterator_start(&it, cur->_.list);
 
-				while( (luid = (LIST_UID_DATA *)iterator_nextdata(&it)) )
+				while( (luid = (LLIST_UID_DATA *)iterator_nextdata(&it)) )
 					if( !luid->ptr && obj->id[0] == luid->id[0] && obj->id[1] == luid->id[1])
 						luid->ptr = obj;
 
@@ -1906,7 +1906,7 @@ void variable_dynamic_fix_token (TOKEN_DATA *token)
 {
 	register pVARIABLE cur = variable_head;
 
-	register LIST_UID_DATA *luid;
+	register LLIST_UID_DATA *luid;
 
 	while(cur) {
 		switch(cur->type) {
@@ -1917,14 +1917,14 @@ void variable_dynamic_fix_token (TOKEN_DATA *token)
 			}
 			break;
 
-		case VAR_BLIST_TOK:
+		case VAR_BLLIST_TOK:
 			if( cur->_.list && cur->_.list->valid ) {
 
 				ITERATOR it;
 
 				iterator_start(&it, cur->_.list);
 
-				while( (luid = (LIST_UID_DATA *)iterator_nextdata(&it)) )
+				while( (luid = (LLIST_UID_DATA *)iterator_nextdata(&it)) )
 					if( !luid->ptr && token->id[0] == luid->id[0] && token->id[1] == luid->id[1])
 						luid->ptr = token;
 
@@ -1945,7 +1945,7 @@ void variable_dynamic_fix_mobile (CHAR_DATA *ch)
 	register OBJ_DATA *o;
 	register TOKEN_DATA *token;
 	register ROOM_INDEX_DATA *clone;
-	register LIST_UID_DATA *luid;
+	register LLIST_UID_DATA *luid;
 
 	while(cur) {
 		log_stringf("variable_dynamic_fix_mobile: %s, %s, %d", ch->name, cur->name, cur->type);
@@ -1981,14 +1981,14 @@ void variable_dynamic_fix_mobile (CHAR_DATA *ch)
 			}
 			break;
 
-		case VAR_BLIST_MOB:
+		case VAR_BLLIST_MOB:
 			if( cur->_.list && cur->_.list->valid ) {
 
 				ITERATOR it;
 
 				iterator_start(&it, cur->_.list);
 
-				while( (luid = (LIST_UID_DATA *)iterator_nextdata(&it)) )
+				while( (luid = (LLIST_UID_DATA *)iterator_nextdata(&it)) )
 					if( !luid->ptr && ch->id[0] == luid->id[0] && ch->id[1] == luid->id[1])
 						luid->ptr = ch;
 
@@ -2031,16 +2031,16 @@ void variable_dynamic_fix_church (CHURCH_DATA *church)
 }
 
 
-void variable_fwrite_uid_list( char *field, char *name, LIST_DEFAULT *list, FILE *fp)
+void variable_fwrite_uid_list( char *field, char *name, LLIST *list, FILE *fp)
 {
 	if(list && list->valid) {
-		LIST_UID_DATA *data;
+		LLIST_UID_DATA *data;
 		ITERATOR it;
 
 		fprintf(fp,"%s %s~\n", field, name);
 		iterator_start(&it,list);
 
-		while((data = (LIST_UID_DATA*)iterator_nextdata(&it)))
+		while((data = (LLIST_UID_DATA*)iterator_nextdata(&it)))
 			fprintf(fp, "UID %ld %ld\n", data->id[0], data->id[1]);
 
 		iterator_stop(&it);
@@ -2171,7 +2171,7 @@ void variable_fwrite(pVARIABLE var, FILE *fp)
 		fprintf(fp,"VarSkInfo %s~ %d %d %d %d '%s'\n", var->name, (int)var->_.skid.mid[0], (int)var->_.skid.mid[1], (int)var->_.skid.tid[0], (int)var->_.skid.tid[1], SKILL_NAME(var->_.skid.sn));
 		break;
 
-	case VAR_PLIST_STR:
+	case VAR_PLLIST_STR:
 		if(var->_.list && var->_.list->valid) {
 			char *str;
 
@@ -2186,26 +2186,26 @@ void variable_fwrite(pVARIABLE var, FILE *fp)
 		}
 		break;
 
-	case VAR_BLIST_MOB:
+	case VAR_BLLIST_MOB:
 		variable_fwrite_uid_list( "VarListMob", var->name, var->_.list, fp);
 		break;
 
-	case VAR_BLIST_OBJ:
+	case VAR_BLLIST_OBJ:
 		variable_fwrite_uid_list( "VarListObj", var->name, var->_.list, fp);
 		break;
 
-	case VAR_BLIST_TOK:
+	case VAR_BLLIST_TOK:
 		variable_fwrite_uid_list( "VarListTok", var->name, var->_.list, fp);
 		break;
 
-	case VAR_BLIST_AREA:
+	case VAR_BLLIST_AREA:
 		if(var->_.list && var->_.list->valid) {
-			LIST_AREA_DATA *area;
+			LLIST_AREA_DATA *area;
 
 			fprintf(fp,"VarListArea %s~\n", var->name);
 			iterator_start(&it,var->_.list);
 
-			while((area = (LIST_AREA_DATA*)iterator_nextdata(&it))) if( area->area ) {
+			while((area = (LLIST_AREA_DATA*)iterator_nextdata(&it))) if( area->area ) {
 				fprintf(fp, "Area %ld\n", area->uid);
 			}
 
@@ -2213,14 +2213,14 @@ void variable_fwrite(pVARIABLE var, FILE *fp)
 			fprintf(fp,"End\n");
 		}
 		break;
-	case VAR_BLIST_WILDS:
+	case VAR_BLLIST_WILDS:
 		if(var->_.list && var->_.list->valid) {
-			LIST_WILDS_DATA *wilds;
+			LLIST_WILDS_DATA *wilds;
 
 			fprintf(fp,"VarListWilds %s~\n", var->name);
 			iterator_start(&it,var->_.list);
 
-			while((wilds = (LIST_WILDS_DATA*)iterator_nextdata(&it))) if( wilds->wilds ) {
+			while((wilds = (LLIST_WILDS_DATA*)iterator_nextdata(&it))) if( wilds->wilds ) {
 				fprintf(fp, "Wilds %ld\n", wilds->uid);
 			}
 
@@ -2228,14 +2228,14 @@ void variable_fwrite(pVARIABLE var, FILE *fp)
 			fprintf(fp,"End\n");
 		}
 		break;
-	case VAR_BLIST_ROOM:
+	case VAR_BLLIST_ROOM:
 		if(var->_.list && var->_.list->valid) {
-			LIST_ROOM_DATA *room;
+			LLIST_ROOM_DATA *room;
 
 			fprintf(fp,"VarListRoom %s~\n", var->name);
 			iterator_start(&it,var->_.list);
 
-			while((room = (LIST_ROOM_DATA*)iterator_nextdata(&it))) if( room->room ) {
+			while((room = (LLIST_ROOM_DATA*)iterator_nextdata(&it))) if( room->room ) {
 				if(room->room->wilds)
 					fprintf(fp, "VRoom %ld %ld %ld %ld\n", room->room->wilds->uid, room->room->x, room->room->y, room->room->z);
 				else if(room->room->source)
@@ -2248,14 +2248,14 @@ void variable_fwrite(pVARIABLE var, FILE *fp)
 			fprintf(fp,"End\n");
 		}
 		break;
-	case VAR_BLIST_EXIT:
+	case VAR_BLLIST_EXIT:
 		if(var->_.list && var->_.list->valid) {
-			LIST_EXIT_DATA *room;
+			LLIST_EXIT_DATA *room;
 
 			fprintf(fp,"VarListExit %s~\n", var->name);
 			iterator_start(&it,var->_.list);
 
-			while((room = (LIST_EXIT_DATA*)iterator_nextdata(&it))) if( room->room ) {
+			while((room = (LLIST_EXIT_DATA*)iterator_nextdata(&it))) if( room->room ) {
 				if(room->room->wilds)
 					fprintf(fp, "VRoom %ld %ld %ld %ld %d\n", room->room->wilds->uid, room->room->x, room->room->y, room->room->z, room->door);
 				else if(room->room->source)
@@ -2269,14 +2269,14 @@ void variable_fwrite(pVARIABLE var, FILE *fp)
 		}
 		break;
 
-	case VAR_BLIST_SKILL:
+	case VAR_BLLIST_SKILL:
 		if(var->_.list && var->_.list->valid) {
-			LIST_SKILL_DATA *skill;
+			LLIST_SKILL_DATA *skill;
 
 			fprintf(fp,"VarListSkill %s~\n", var->name);
 			iterator_start(&it,var->_.list);
 
-			while((skill = (LIST_SKILL_DATA*)iterator_nextdata(&it))) if( IS_VALID(skill->mob) ) {
+			while((skill = (LLIST_SKILL_DATA*)iterator_nextdata(&it))) if( IS_VALID(skill->mob) ) {
 				if( IS_VALID(skill->tok) )
 					fprintf(fp, "Token %ld %ld %ld %ld\n", skill->mob->id[0], skill->mob->id[1], skill->tok->id[0], skill->tok->id[1]);
 				else
@@ -2501,15 +2501,15 @@ int variable_fread_type(char *str)
 	if( !str_cmp( str, "VarChurch" ) ) return VAR_CHURCH_ID;
 	if( !str_cmp( str, "VarSkill" ) ) return VAR_SKILL;
 	if( !str_cmp( str, "VarSkInfo" ) ) return VAR_SKILLINFO_ID;
-	if( !str_cmp( str, "VarListMob" ) ) return VAR_BLIST_MOB;
-	if( !str_cmp( str, "VarListObj" ) ) return VAR_BLIST_OBJ;
-	if( !str_cmp( str, "VarListTok" ) ) return VAR_BLIST_TOK;
-	if( !str_cmp( str, "VarListRoom" ) ) return VAR_BLIST_ROOM;
-	if( !str_cmp( str, "VarListExit" ) ) return VAR_BLIST_EXIT;
-	if( !str_cmp( str, "VarListSkill" ) ) return VAR_BLIST_SKILL;
-	if( !str_cmp( str, "VarListStr" ) ) return VAR_PLIST_STR;
-	if( !str_cmp( str, "VarListArea" ) ) return VAR_BLIST_AREA;
-	if( !str_cmp( str, "VarListWilds" ) ) return VAR_BLIST_WILDS;
+	if( !str_cmp( str, "VarListMob" ) ) return VAR_BLLIST_MOB;
+	if( !str_cmp( str, "VarListObj" ) ) return VAR_BLLIST_OBJ;
+	if( !str_cmp( str, "VarListTok" ) ) return VAR_BLLIST_TOK;
+	if( !str_cmp( str, "VarListRoom" ) ) return VAR_BLLIST_ROOM;
+	if( !str_cmp( str, "VarListExit" ) ) return VAR_BLLIST_EXIT;
+	if( !str_cmp( str, "VarListSkill" ) ) return VAR_BLLIST_SKILL;
+	if( !str_cmp( str, "VarListStr" ) ) return VAR_PLLIST_STR;
+	if( !str_cmp( str, "VarListArea" ) ) return VAR_BLLIST_AREA;
+	if( !str_cmp( str, "VarListWilds" ) ) return VAR_BLLIST_WILDS;
 
 	return VAR_UNKNOWN;
 }
@@ -2638,44 +2638,44 @@ bool variable_fread(ppVARIABLE vars, int type, FILE *fp)
 
 		return variables_set_skillinfo_id (vars, name, a, b, c, d, skill_lookup(fread_word(fp)) , TRUE);
 
-	case VAR_PLIST_STR:
-		if( variables_set_list(vars, name, VAR_PLIST_STR, TRUE) )
+	case VAR_PLLIST_STR:
+		if( variables_set_list(vars, name, VAR_PLLIST_STR, TRUE) )
 			return variable_fread_str_list(vars, name, fp);
 
-	case VAR_BLIST_MOB:
-	case VAR_BLIST_OBJ:
-	case VAR_BLIST_TOK:
+	case VAR_BLLIST_MOB:
+	case VAR_BLLIST_OBJ:
+	case VAR_BLLIST_TOK:
 		if( variables_set_list(vars, name, type, TRUE) )
 			return variable_fread_uid_list(vars, name, type, fp);
 		else
 			return FALSE;
 
-	case VAR_BLIST_AREA:
-		if( variables_set_list(vars, name, VAR_BLIST_AREA, TRUE) )
+	case VAR_BLLIST_AREA:
+		if( variables_set_list(vars, name, VAR_BLLIST_AREA, TRUE) )
 			return variable_fread_area_list(vars, name, fp);
 		else
 			return FALSE;
 
-	case VAR_BLIST_WILDS:
-		if( variables_set_list(vars, name, VAR_BLIST_WILDS, TRUE) )
+	case VAR_BLLIST_WILDS:
+		if( variables_set_list(vars, name, VAR_BLLIST_WILDS, TRUE) )
 			return variable_fread_wilds_list(vars, name, fp);
 		else
 			return FALSE;
 
-	case VAR_BLIST_ROOM:
-		if( variables_set_list(vars, name, VAR_BLIST_ROOM, TRUE) )
+	case VAR_BLLIST_ROOM:
+		if( variables_set_list(vars, name, VAR_BLLIST_ROOM, TRUE) )
 			return variable_fread_room_list(vars, name, fp);
 		else
 			return FALSE;
 
-	case VAR_BLIST_EXIT:
-		if( variables_set_list(vars, name, VAR_BLIST_EXIT, TRUE) )
+	case VAR_BLLIST_EXIT:
+		if( variables_set_list(vars, name, VAR_BLLIST_EXIT, TRUE) )
 			return variable_fread_exit_list(vars, name, fp);
 		else
 			return FALSE;
 
-	case VAR_BLIST_SKILL:
-		if( variables_set_list(vars, name, VAR_BLIST_SKILL, TRUE) )
+	case VAR_BLLIST_SKILL:
+		if( variables_set_list(vars, name, VAR_BLLIST_SKILL, TRUE) )
 			return variable_fread_skill_list(vars, name, fp);
 		else
 			return FALSE;

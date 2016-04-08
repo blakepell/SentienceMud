@@ -1529,6 +1529,7 @@ void do_rstat(CHAR_DATA *ch, char *argument)
 		    case ENVIRON_ROOM: sprintf(buf,"{W%lu:%lu{x at Room [%ld:%lu:%lu]", clone->id[0], clone->id[1], clone->environ.room->vnum, clone->environ.room->id[0], clone->environ.room->id[1]); break;
 		    case ENVIRON_MOBILE: sprintf(buf,"{W%lu:%lu{x in Mobile '%s' %ld [%lu:%lu]", clone->id[0], clone->id[1], clone->environ.mob->short_descr, VNUM(clone->environ.mob), clone->environ.mob->id[0], clone->environ.mob->id[1]); break;
 		    case ENVIRON_OBJECT: sprintf(buf,"{W%lu:%lu{x in Object '%s' %ld [%lu:%lu]", clone->id[0], clone->id[1], clone->environ.obj->short_descr, VNUM(clone->environ.obj), clone->environ.obj->id[0], clone->environ.obj->id[1]); break;
+		    case ENVIRON_TOKEN: sprintf(buf,"{W%lu:%lu{x in Token '%s' %ld [%lu:%lu]", clone->id[0], clone->id[1], clone->environ.token->name, VNUM(clone->environ.token), clone->environ.token->id[0], clone->environ.token->id[1]); break;
 		    default: sprintf(buf,"{W%lu:%lu{x in ???", clone->id[0], clone->id[1]);
 		    }
 
@@ -7444,7 +7445,7 @@ void do_aload(CHAR_DATA *ch, char *argument)
     char arg[MSL];
     FILE *fp;
     AREA_DATA *area;
-    LIST_AREA_DATA *link;
+    LLIST_AREA_DATA *link;
 
     argument = one_argument(argument, arg);
 
@@ -7463,7 +7464,7 @@ void do_aload(CHAR_DATA *ch, char *argument)
 	    return;
 	}
 
-	link = (LIST_AREA_DATA *)alloc_mem(sizeof(LIST_AREA_DATA));
+	link = (LLIST_AREA_DATA *)alloc_mem(sizeof(LLIST_AREA_DATA));
 	if( list_appendlink(loaded_areas, link) && (area = read_area_new(fp))) {
 		area->next = NULL;
 
@@ -7476,7 +7477,7 @@ void do_aload(CHAR_DATA *ch, char *argument)
 
 		act("Loaded area $T.", ch, NULL, NULL, NULL, NULL, NULL, area->name, TO_CHAR);
 	} else
-		free_mem( link, sizeof(LIST_AREA_DATA));
+		free_mem( link, sizeof(LLIST_AREA_DATA));
 	fclose(fp);
     } else {
 	/* Syn - will add in replacement of current area when I have time. */

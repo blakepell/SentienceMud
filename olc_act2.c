@@ -10,7 +10,7 @@
 #include "recycle.h"
 #include "scripts.h"
 
-//bool edit_deltrigger(LIST_DEFAULT **list, int index);
+//bool edit_deltrigger(LLIST **list, int index);
 
 
 REDIT(redit_addcdesc)

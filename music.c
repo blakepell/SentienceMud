@@ -13,7 +13,6 @@ void deduct_mana(CHAR_DATA *ch,int cost);
 void do_play(CHAR_DATA *ch, char *argument)
 {
 	SKILL_ENTRY *entry;
-	SKILL_ENTRY *song;
     OBJ_DATA *instrument;
     CHAR_DATA *mob;
     OBJ_DATA *obj;
@@ -134,7 +133,7 @@ void do_play(CHAR_DATA *ch, char *argument)
 		ch->tempstore[0] = 0;
 
 		// Precheck for the song token - set the music beats in here!
-		if(p_percent_trigger(NULL,NULL,NULL,song->token,ch,NULL,NULL, obj, NULL, TRIG_PRESPELL, NULL))
+		if(p_percent_trigger(NULL,NULL,NULL,entry->token,ch,NULL,NULL, obj, NULL, TRIG_PRESPELL, NULL))
 			return;
 
 		beats = ch->tempstore[0];

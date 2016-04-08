@@ -285,9 +285,9 @@ extern void boat_attack(CHAR_DATA *ch);
 bool			is_test_port;
 int 		    port;
 GLOBAL_DATA         gconfig;		/* Vizz - UID Tracking, and any other persistent global config info */
-LIST_DEFAULT *conn_players;
-LIST_DEFAULT *conn_immortals;
-LIST_DEFAULT *conn_online;
+LLIST *conn_players;
+LLIST *conn_immortals;
+LLIST *conn_online;
 DESCRIPTOR_DATA *   descriptor_list;	/* All open descriptors		*/
 DESCRIPTOR_DATA *   d_next;		/* Next descriptor in loop	*/
 FILE *		    fpReserve;		/* Reserved file handle		*/
@@ -298,7 +298,7 @@ bool		    newlock;		/* Game is newlocked		*/
 char		    str_boot_time[MAX_INPUT_LENGTH];
 time_t		    current_time;	/* time of this pulse */
 bool		    MOBtrigger = TRUE;  /* act() switch                 */
-LIST_DEFAULT *loaded_areas;
+LLIST *loaded_areas;
 
 /*
  * OS-dependent local functions.
@@ -635,12 +635,12 @@ int main(int argc, char **argv)
 	list_destroy(persist_rooms);
 	iterator_start(&iter, loaded_areas);
 	while((data = iterator_nextdata(&iter)))
-		free_mem(data, sizeof(LIST_AREA_DATA));
+		free_mem(data, sizeof(LLIST_AREA_DATA));
 	iterator_stop(&iter);
 	list_destroy(loaded_areas);
 	iterator_start(&iter, loaded_wilds);
 	while((data = iterator_nextdata(&iter)))
-		free_mem(data, sizeof(LIST_WILDS_DATA));
+		free_mem(data, sizeof(LLIST_WILDS_DATA));
 	iterator_stop(&iter);
 	list_destroy(loaded_wilds);
 	list_destroy(list_churches);

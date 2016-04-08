@@ -226,7 +226,7 @@ void move_char(CHAR_DATA *ch, int door, bool follow)
 	if (!IS_NPC(ch) && (p_exit_trigger(ch, door, PRG_MPROG) ||
 			p_exit_trigger(ch, door, PRG_OPROG) || p_exit_trigger(ch, door, PRG_RPROG)))
 		return;
-	
+
 	/* Check if char is "on" something. preventing movement */
 	if (ch->on) {
 		act("You must get off $p first.", ch, NULL, NULL, ch->on, NULL, NULL, NULL, TO_CHAR);
@@ -246,12 +246,6 @@ void move_char(CHAR_DATA *ch, int door, bool follow)
 	if(!(to_room = exit_destination(pexit))) {
 		send_to_char ("Alas, you cannot go that way.\n\r", ch);
 /*		wiznet("move_char()-> NULL to_room",NULL,NULL,WIZ_TESTING,0,0); */
-		return;
-	}
-
-	if(recursive_environment(to_room,ch,NULL,NULL)) {
-		send_to_char ("Alas, you cannot go that way.\n\r", ch);
-/*		wiznet("move_char()-> recursive environment",NULL,NULL,WIZ_TESTING,0,0); */
 		return;
 	}
 
@@ -3255,11 +3249,6 @@ bool move_success(CHAR_DATA *ch)
 	}
 
 	if(!(to_room = exit_destination(pexit))) {
-		send_to_char ("Alas, you cannot go that way.\n\r", ch);
-		return FALSE;
-	}
-
-	if(recursive_environment(to_room,ch,NULL,NULL)) {
 		send_to_char ("Alas, you cannot go that way.\n\r", ch);
 		return FALSE;
 	}

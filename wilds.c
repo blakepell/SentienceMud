@@ -21,7 +21,7 @@ extern bool fBootDb;
 extern GLOBAL_DATA gconfig;
 
 /* internal global variables */
-LIST_DEFAULT *loaded_wilds = NULL;
+LLIST *loaded_wilds = NULL;
 long top_wilds;
 long top_wilds_terrain;
 long top_wilds_vlink;
@@ -297,6 +297,7 @@ ROOM_INDEX_DATA *create_vroom(WILDS_DATA *pWilds,
 void destroy_wilds_vroom(ROOM_INDEX_DATA *pRoomIndex)
 {
     WILDS_DATA *pWilds;
+    ROOM_INDEX_DATA *clone, *next_clone;
 
 // Check pointer parameter is valid
     if (!pRoomIndex)
@@ -315,6 +316,12 @@ void destroy_wilds_vroom(ROOM_INDEX_DATA *pRoomIndex)
 			return;
 		}
 	}
+
+    for(clone = pRoomIndex->clone_rooms; clone; clone = next_clone) {
+	    next_clone = clone->next_clone;
+	    p_percent_trigger(NULL, NULL, clone, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_CLONE_EXTRACT, NULL);
+	    room_from_environment(clone);
+    }
 
     pWilds = pRoomIndex->wilds;
 
@@ -358,7 +365,7 @@ OBJ_DATA *allocate_obj_matrix(int map_size_x, int map_size_y)
 
 void load_wilds( FILE *fp, AREA_DATA *pArea )
 {
-	LIST_WILDS_DATA *data;
+	LLIST_WILDS_DATA *data;
     WILDS_DATA *pWilds, *pLastWilds;
     WILDS_VLINK *temp_pVLink;
     WILDS_TERRAIN *pTerrain;
@@ -443,7 +450,7 @@ void load_wilds( FILE *fp, AREA_DATA *pArea )
 			gconfig_write();
                     }
 
-					if( (data = alloc_mem(sizeof(LIST_WILDS_DATA))) ) {
+					if( (data = alloc_mem(sizeof(LLIST_WILDS_DATA))) ) {
 						data->wilds = pWilds;
 						data->uid = pWilds->uid;
 
@@ -2472,7 +2479,7 @@ void do_wlist(CHAR_DATA *ch, char *argument)
 {
     char buf[MAX_STRING_LENGTH];
     ITERATOR iter;
-	LIST_WILDS_DATA *data;
+	LLIST_WILDS_DATA *data;
     WILDS_DATA *pWilds;
     BUFFER *buffer;
     //int place_type = 0;
@@ -2484,7 +2491,7 @@ void do_wlist(CHAR_DATA *ch, char *argument)
 
 
 	iterator_start(&iter, loaded_wilds);
-	while((data = (LIST_WILDS_DATA *)iterator_nextdata(&iter)))
+	while((data = (LLIST_WILDS_DATA *)iterator_nextdata(&iter)))
 	{
 		pWilds = data->wilds;
 		sprintf(buf,"[%7ld] [%-26.26s] [ %5d x %-5d ] %s\n\r", pWilds->uid,

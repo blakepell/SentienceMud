@@ -110,7 +110,7 @@ bool show_help( CHAR_DATA *ch, char *argument );
 bool show_version( CHAR_DATA *ch, char *argument );
 int cd_phrase_lookup( int condition, char *phrase );
 void add_reset( ROOM_INDEX_DATA *room, RESET_DATA *pReset, int index );
-bool edit_deltrigger(LIST_DEFAULT **list, int index);
+bool edit_deltrigger(LLIST **list, int index);
 
 
 /*

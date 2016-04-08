@@ -419,7 +419,7 @@ bool check_range(long lower, long upper)
     return TRUE;
 }
 
-bool edit_deltrigger(LIST_DEFAULT **list, int index)
+bool edit_deltrigger(LLIST **list, int index)
 {
 	PROG_LIST *trigger;
 	int slot;
@@ -8689,7 +8689,7 @@ REDIT (redit_delrprog)
 
 WEDIT ( wedit_create )
 {
-	LIST_WILDS_DATA *data;
+	LLIST_WILDS_DATA *data;
     WILDS_DATA *pWilds, *pLastWilds;
     WILDS_TERRAIN *pTerrain;
     AREA_DATA *pArea;
@@ -8738,7 +8738,7 @@ WEDIT ( wedit_create )
     pMap = pWilds->map;
     pStaticMap = pWilds->staticmap;
 
-    if((data = alloc_mem(sizeof(LIST_WILDS_DATA)))) {
+    if((data = alloc_mem(sizeof(LLIST_WILDS_DATA)))) {
 		data->wilds = pWilds;
 		data->uid = pWilds->uid;
 

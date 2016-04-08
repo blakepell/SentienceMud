@@ -551,12 +551,6 @@ SCRIPT_CMD(do_opat)
 		return;
 	}
 
-	// Prevent a recursive loop with cloned rooms
-	if (recursive_environment(location, NULL, info->obj, NULL)) {
-		bug("Opat - Selected location would cause an infinite environment loop for vnum %d.", VNUM(info->obj));
-		return;
-	}
-
 	sec = script_security;
 	script_security = NO_SCRIPT_SECURITY;
 
@@ -1622,12 +1616,6 @@ SCRIPT_CMD(do_opgoto)
 		return;
 	}
 
-	// Prevent a recursive loop with cloned rooms
-	if (recursive_environment(dest, NULL, info->obj, NULL)) {
-		bug("OpGoto - Selected location would cause an infinite environment loop for vnum %d.", VNUM(info->obj));
-		return;
-	}
-
 	if (info->obj->in_obj) obj_from_obj(info->obj);
 	else if (info->obj->carried_by) obj_from_char(info->obj);
 	else if (info->obj->in_room) obj_from_room(info->obj);
@@ -1721,7 +1709,7 @@ SCRIPT_CMD(do_opjunk)
 		case ENT_OBJECT:
 			obj = (arg.d.obj && arg.d.obj->in_obj == info->obj) ? arg.d.obj : NULL;
 			break;
-		case ENT_OLIST_OBJ:
+		case ENT_OLLIST_OBJ:
 			if(arg.d.list.ptr.obj && *(arg.d.list.ptr.obj) && (*arg.d.list.ptr.obj)->in_obj == info->obj) {
 				for (obj = *(arg.d.list.ptr.obj); obj; obj = obj_next) {
 					obj_next = obj->next_content;
@@ -1988,12 +1976,6 @@ SCRIPT_CMD(do_opotransfer)
 		return;
 	}
 
-	// Prevent a recursive loop with cloned rooms
-	if (recursive_environment(dest, NULL, obj, NULL)) {
-		bug("OpOtransfer - Selected location would cause an infinite environment loop for vnum %d.", VNUM(info->obj));
-		return;
-	}
-
 	if (obj->carried_by) {
 		if (obj->wear_loc != WEAR_NONE)
 			unequip_char(obj->carried_by, obj, TRUE);
@@ -2055,8 +2037,8 @@ SCRIPT_CMD(do_oppurge)
 	case ENT_OBJECT: obj = arg.d.obj; break;
 	case ENT_ROOM: here = arg.d.room; break;
 	case ENT_EXIT: here = (arg.d.door.r && arg.d.door.r->exit[arg.d.door.door]) ? exit_destination(arg.d.door.r->exit[arg.d.door.door]) : NULL; break;
-	case ENT_OLIST_MOB: mobs = arg.d.list.ptr.mob; break;
-	case ENT_OLIST_OBJ: objs = arg.d.list.ptr.obj; break;
+	case ENT_OLLIST_MOB: mobs = arg.d.list.ptr.mob; break;
+	case ENT_OLLIST_OBJ: objs = arg.d.list.ptr.obj; break;
 	default: break;
 	}
 
@@ -2323,11 +2305,6 @@ SCRIPT_CMD(do_optransfer)
 			vnext = victim->next_in_room;
 			if (!IS_NPC(victim)) {
 				if (!force && room_is_private(dest, NULL)) break;
-				// Prevent a recursive loop with cloned rooms
-				if (victim == obj_carrier(info->obj) && recursive_environment(dest, NULL, info->obj, NULL)) {
-					bug("OpGtransfer - Selected location would cause an infinite environment loop for vnum %d.", VNUM(info->obj));
-					continue;
-				}
 				do_mob_transfer(victim,dest,quiet);
 			}
 		}
@@ -2338,12 +2315,6 @@ SCRIPT_CMD(do_optransfer)
 		return;
 
 	if (PROG_FLAG(victim,PROG_AT)) return;
-
-	// Prevent a recursive loop with cloned rooms
-	if (victim == obj_carrier(info->obj) && recursive_environment(dest, NULL, info->obj, NULL)) {
-		bug("OpGtransfer - Selected location would cause an infinite environment loop for vnum %d.", VNUM(info->obj));
-		return;
-	}
 
 	do_mob_transfer(victim,dest,quiet);
 }
@@ -4540,7 +4511,9 @@ SCRIPT_CMD(do_opcloneroom)
 	long vnum;
 	CHAR_DATA *mob;
 	OBJ_DATA *obj;
+	TOKEN_DATA *tok;
 	ROOM_INDEX_DATA *source, *room, *clone;
+	bool no_env = FALSE;
 	SCRIPT_PARAM arg;
 
 	if(!info || !info->obj) return;
@@ -4558,13 +4531,22 @@ SCRIPT_CMD(do_opcloneroom)
 		return;
 
 	switch(arg.type) {
-	case ENT_MOBILE:	mob = arg.d.mob; obj = NULL; room = NULL; break;
-	case ENT_OBJECT:	mob = NULL; obj = arg.d.obj; room = NULL; break;
-	case ENT_ROOM:		mob = NULL; obj = NULL; room = arg.d.room; break;
+	case ENT_MOBILE:	mob = arg.d.mob; obj = NULL; room = NULL; tok = NULL; break;
+	case ENT_OBJECT:	mob = NULL; obj = arg.d.obj; room = NULL; tok = NULL; break;
+	case ENT_ROOM:		mob = NULL; obj = NULL; room = arg.d.room; tok = NULL; break;
+	case ENT_TOKEN:		mob = NULL; obj = NULL; room = NULL; tok = arg.d.token; break;
+	case ENT_STRING:
+		mob = NULL;
+		obj = NULL;
+		room = NULL;
+		tok = NULL;
+		if(!str_cmp(arg.d.str, "none"))
+			no_env = TRUE;
+		break;
 	default: return;
 	}
 
-	if(!mob && !obj && !room) return;
+	if(!mob && !obj && !room && !tok && !no_env) return;
 
 	if(!(argument = expand_argument(info,argument,&arg)) || arg.type != ENT_STRING || !arg.d.str || !arg.d.str[0])
 		return;
@@ -4578,7 +4560,8 @@ SCRIPT_CMD(do_opcloneroom)
 
 	log_stringf("do_opcloneroom: cloned room %ld:%ld\n", clone->vnum, clone->id[1]);
 
-	room_to_environment(clone,mob,obj,room);
+	if(!no_env)
+		room_to_environment(clone,mob,obj,room,tok);
 
 	variables_set_room(info->var,name,clone);
 }
@@ -4645,16 +4628,23 @@ SCRIPT_CMD(do_opalterroom)
 		switch(arg.type) {
 		case ENT_ROOM:
 			room_from_environment(room);
-			room_to_environment(room,NULL,NULL,arg.d.room);
+			room_to_environment(room,NULL,NULL,arg.d.room, NULL);
 			break;
 		case ENT_MOBILE:
 			room_from_environment(room);
-			room_to_environment(room,arg.d.mob,NULL,NULL);
+			room_to_environment(room,arg.d.mob,NULL,NULL, NULL);
 			break;
 		case ENT_OBJECT:
 			room_from_environment(room);
-			room_to_environment(room,NULL,arg.d.obj,NULL);
+			room_to_environment(room,NULL,arg.d.obj,NULL, NULL);
 			break;
+		case ENT_TOKEN:
+			room_from_environment(room);
+			room_to_environment(room,NULL,NULL,NULL,arg.d.token);
+			break;
+		case ENT_STRING:
+			if(!str_cmp(arg.d.str, "none"))
+				room_from_environment(room);
 		default: return;
 		}
 	}
@@ -4792,7 +4782,7 @@ SCRIPT_CMD(do_opdestroyroom)
 	// It's a room, extract it directly
 	if(arg.type == ENT_ROOM) {
 		// Need to block this when done by room to itself
-		if(extract_clone_room(arg.d.room->source,arg.d.room->id[0],arg.d.room->id[1]))
+		if(extract_clone_room(arg.d.room->source,arg.d.room->id[0],arg.d.room->id[1],false))
 			info->obj->progs->lastreturn = 1;
 		return;
 	}
@@ -4815,7 +4805,7 @@ SCRIPT_CMD(do_opdestroyroom)
 
 	id2 = arg.d.num;
 
-	if(extract_clone_room(room, id1, id2))
+	if(extract_clone_room(room, id1, id2,false))
 		info->obj->progs->lastreturn = 1;
 }
 
@@ -5278,12 +5268,6 @@ SCRIPT_CMD(do_opsetrecall)
 
 	if(!location) {
 		bug("OpSetRecall - Bad location from vnum %d.", VNUM(info->obj));
-		return;
-	}
-
-	// Prevent a recursive loop with cloned rooms
-	if (recursive_environment(location, victim, NULL, NULL)) {
-		bug("OpSetRecall - Selected location would cause an infinite environment loop for vnum %d.", VNUM(victim));
 		return;
 	}
 

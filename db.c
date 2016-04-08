@@ -121,7 +121,7 @@ CHAR_DATA *		char_list;
 CHAT_ROOM_DATA *	chat_room_list;
 CHURCH_DATA *		church_first;
 CHURCH_DATA * 		church_list;
-LIST_DEFAULT *list_churches;
+LLIST *list_churches;
 GQ_DATA			global_quest;
 HELP_CATEGORY *		topHelpCat;
 HELP_DATA *		help_first;
@@ -589,9 +589,9 @@ long top_ship_crew;
 long top_vroom;
 long top_waypoint;
 
-LIST_DEFAULT *persist_mobs;
-LIST_DEFAULT *persist_objs;
-LIST_DEFAULT *persist_rooms;
+LLIST *persist_mobs;
+LLIST *persist_objs;
+LLIST *persist_rooms;
 
 TOKEN_DATA *global_tokens = NULL;
 
@@ -779,7 +779,7 @@ void boot_db(void)
 		for (; ;)
 		{
 			AREA_DATA *area;
-			LIST_AREA_DATA *link;
+			LLIST_AREA_DATA *link;
 
 			strcpy(strArea, fread_word(fpList));
 			if (strArea[0] == '$')
@@ -807,7 +807,7 @@ void boot_db(void)
 			area_last = area;
 
 			// Add to script usable list
-			link = alloc_mem(sizeof(LIST_AREA_DATA));
+			link = alloc_mem(sizeof(LLIST_AREA_DATA));
 			link->area = area;
 			link->uid = area->uid;
 			if( !list_appendlink(loaded_areas, link) ) {
@@ -4631,7 +4631,7 @@ bool room_is_clone(ROOM_INDEX_DATA *room)
 	return (room && room->source);
 }
 
-bool extract_clone_room(ROOM_INDEX_DATA *room, unsigned long id1, unsigned long id2)
+bool extract_clone_room(ROOM_INDEX_DATA *room, unsigned long id1, unsigned long id2, bool destruct)
 {
 	ROOM_INDEX_DATA **rlink, *clone;
 	ROOM_INDEX_DATA *dest, *environ;
@@ -4706,255 +4706,255 @@ bool extract_clone_room(ROOM_INDEX_DATA *room, unsigned long id1, unsigned long 
 		clone->exit[door] = NULL;
 	}
 
-
-	environ = get_environment_deep(clone);
-	if(!environ) environ = get_room_index(8);
-
-	if(environ)
-		sprintf(buf,"extract_clone_room(%lu, %lu, %lu) environ (%lu,%lu,%lu)", room->vnum, id1, id2, environ->vnum, environ->id[0], environ->id[1]);
-	else
-		sprintf(buf,"extract_clone_room(%lu, %lu, %lu) environ == NULL!", room->vnum, id1, id2);
-	wiznet(buf, NULL, NULL, WIZ_TESTING, 0, 0);
-
 	/* Dump objects into the environment*/
-	pass = 0;
-	while(clone->contents) {
+	if(destruct || clone->force_destruct) {
 		for(obj = clone->contents; obj; obj = obj_next) {
 			obj_next = obj->next_content;
+			extract_obj(obj_next);
+		}
 
-			sprintf(buf,"extract_clone_room(%lu, %lu, %lu) removing object (%lu,%lu,%lu)", room->vnum, id1, id2, VNUM(obj), obj->id[0], obj->id[1]);
-			wiznet(buf, NULL, NULL, WIZ_TESTING, 0, 0);
+		/* Transfer all players in the clone to its environment or the Beginning*/
+		environ = get_environment(clone);
+		if(!environ || environ == clone) environ = get_room_index(11001);
 
-			if(obj->item_type == ITEM_CORPSE_NPC || obj->item_type == ITEM_CORPSE_PC || CAN_WEAR(obj, ITEM_TAKE)) {
-				obj_from_room(obj);
-				obj_to_room(obj,environ);
-			} else {
-				extract_obj(obj);
+		/* Emptying the room of players will not set off the wilderness check in char_from_room*/
+		/*	since no wilderness room will EVER use this.*/
+		for(ch = clone->people; ch; ch = ch_next) {
+			ch_next = ch->next_in_room;
+
+			char_from_room(ch);
+			if(IS_NPC(ch))
+
+
+			char_to_room(ch,environ);
+		}
+
+	} else {
+		// Dump all corpses or takable items to a special place
+		environ = get_room_index(8);		// FIXME: change this to a define
+
+		pass = 0;
+		while(clone->contents) {
+			for(obj = clone->contents; obj; obj = obj_next) {
+				obj_next = obj->next_content;
+
+				if(obj->item_type == ITEM_CORPSE_NPC || obj->item_type == ITEM_CORPSE_PC || CAN_WEAR(obj, ITEM_TAKE)) {
+					obj_from_room(obj);
+					obj_to_room(obj,environ);
+				} else {
+					extract_obj(obj);
+				}
 			}
 		}
+
+		/* Transfer all players in the clone to its environment or the Beginning*/
+		environ = get_environment(clone);
+		if(!environ || environ == clone) environ = get_room_index(11001);
+
+		/* Emptying the room of players will not set off the wilderness check in char_from_room*/
+		/*	since no wilderness room will EVER use this.*/
+		for(ch = clone->people; ch; ch = ch_next) {
+			ch_next = ch->next_in_room;
+
+			char_from_room(ch);
+			char_to_room(ch,environ);
+		}
+
 	}
 
 	clone->contents = NULL;
-
-
-
-	/* Transfer all players in the clone to its environment or the Beginning*/
-	environ = get_environment_deep(clone);
-	if(!environ) environ = get_room_index(11001);
-
-	if(environ)
-		sprintf(buf,"extract_clone_room(%lu, %lu, %lu) environ (%lu,%lu,%lu)", room->vnum, id1, id2, environ->vnum, environ->id[0], environ->id[1]);
-	else
-		sprintf(buf,"extract_clone_room(%lu, %lu, %lu) environ == NULL!", room->vnum, id1, id2);
-	wiznet(buf, NULL, NULL, WIZ_TESTING, 0, 0);
-
-	/* Emptying the room of players will not set off the wilderness check in char_from_room*/
-	/*	since no wilderness room will EVER use this.*/
-	for(ch = clone->people; ch; ch = ch_next) {
-		ch_next = ch->next_in_room;
-
-		sprintf(buf,"extract_clone_room(%lu, %lu, %lu) removing mob %s (%lu,%lu,%lu)", room->vnum, id1, id2, ch->short_descr, VNUM(ch), ch->id[0], ch->id[1]);
-		wiznet(buf, NULL, NULL, WIZ_TESTING, 0, 0);
-
-		char_from_room(ch);
-		char_to_room(ch,environ);
-	}
-
 	clone->people = NULL;
-
-	sprintf(buf,"extract_clone_room(%lu, %lu, %lu) removing from environment", room->vnum, id1, id2);
-	wiznet(buf, NULL, NULL, WIZ_TESTING, 0, 0);
 
 	/* Remove from its environment*/
 	room_from_environment(clone);
 	free_room_index(clone);
 
-	sprintf(buf,"extract_clone_room(%lu, %lu, %lu) complete", room->vnum, id1, id2);
-	wiznet(buf, NULL, NULL, WIZ_TESTING, 0, 0);
+
+
 
 	return true;
 }
 
 
-#if 0
-void fwrite_persist_obj_new(OBJ_DATA *obj, FILE *fp, int iNest)
-{
-	EXTRA_DESCR_DATA *ed;
-	AFFECT_DATA *paf;
-	char buf[MSL];
+//#if 0
+//void fwrite_persist_obj_new(OBJ_DATA *obj, FILE *fp, int iNest)
+//{
+//	EXTRA_DESCR_DATA *ed;
+//	AFFECT_DATA *paf;
+//	char buf[MSL];
 
-	/*
-	* Slick recursion to write lists backwards,
-	* so loading them will load in forwards order.
-	*/
-	if (obj->next_content)
-		fwrite_persist_obj_new(obj->next_content, fp, iNest);
+//	/*
+//	* Slick recursion to write lists backwards,
+//	* so loading them will load in forwards order.
+//	*/
+//	if (obj->next_content)
+//		fwrite_persist_obj_new(obj->next_content, fp, iNest);
 
-	fprintf(fp, "#OBJECT\n");
+//	fprintf(fp, "#OBJECT\n");
 
-	fprintf(fp, "Vnum %ld\n", obj->pIndexData->vnum);
-	fprintf(fp, "UId %ld\n", obj->id[0]);
-	fprintf(fp, "UId2 %ld\n", obj->id[1]);
-	fprintf(fp, "Version %d\n", VERSION_OBJECT);
+//	fprintf(fp, "Vnum %ld\n", obj->pIndexData->vnum);
+//	fprintf(fp, "UId %ld\n", obj->id[0]);
+//	fprintf(fp, "UId2 %ld\n", obj->id[1]);
+//	fprintf(fp, "Version %d\n", VERSION_OBJECT);
 
-	fprintf(fp, "Nest %d\n", iNest);
+//	fprintf(fp, "Nest %d\n", iNest);
 
-	/* these data are only used if they do not match the defaults */
-	fprintf(fp, "Name %s~\n",		obj->name);
-	fprintf(fp, "ShD  %s~\n",		obj->short_descr);
-	fprintf(fp, "Desc %s~\n",		obj->description);
-	fprintf(fp, "FullD %s~\n",		fix_string(obj->full_description));
-	fprintf(fp, "ExtF %ld\n",		obj->extra_flags);
-	fprintf(fp, "Ext2F %ld\n",		obj->extra2_flags);
-	fprintf(fp, "Ext3F %ld\n",		obj->extra3_flags);
-	fprintf(fp, "Ext4F %ld\n",		obj->extra4_flags);
-	fprintf(fp, "WeaF %d\n",		obj->wear_flags);
-	fprintf(fp, "Ityp %d\n",		obj->item_type);
-	fprintf(fp, "Room %ld\n",		obj->in_room->vnum);
-	fprintf(fp,"Enchanted_times %d\n",	obj->num_enchanted);
-	fprintf(fp, "Cond %d\n",		obj->condition);
-	fprintf(fp, "Fixed %d\n",		obj->times_fixed);
-	if (obj->owner)				fprintf(fp, "Owner %s~\n", obj->owner);
-	if (obj->old_short_descr)		fprintf(fp, "OldShort %s~\n", obj->old_short_descr);
-	if (obj->old_description)		fprintf(fp, "OldDescr %s~\n", obj->old_description);
-	if (obj->old_full_description)		fprintf(fp, "OldFullDescr %s~\n", obj->old_full_description);
-	if (obj->loaded_by)			fprintf(fp, "LoadedBy %s~\n", obj->loaded_by);
-	fprintf(fp, "Fragility %d\n",		obj->fragility);
-	fprintf(fp, "TimesAllowedFixed %d\n",	obj->times_allowed_fixed);
-	if (obj->locker)			fprintf(fp, "Locker %d\n", obj->locker);
+//	/* these data are only used if they do not match the defaults */
+//	fprintf(fp, "Name %s~\n",		obj->name);
+//	fprintf(fp, "ShD  %s~\n",		obj->short_descr);
+//	fprintf(fp, "Desc %s~\n",		obj->description);
+//	fprintf(fp, "FullD %s~\n",		fix_string(obj->full_description));
+//	fprintf(fp, "ExtF %ld\n",		obj->extra_flags);
+//	fprintf(fp, "Ext2F %ld\n",		obj->extra2_flags);
+//	fprintf(fp, "Ext3F %ld\n",		obj->extra3_flags);
+//	fprintf(fp, "Ext4F %ld\n",		obj->extra4_flags);
+//	fprintf(fp, "WeaF %d\n",		obj->wear_flags);
+//	fprintf(fp, "Ityp %d\n",		obj->item_type);
+//	fprintf(fp, "Room %ld\n",		obj->in_room->vnum);
+//	fprintf(fp,"Enchanted_times %d\n",	obj->num_enchanted);
+//	fprintf(fp, "Cond %d\n",		obj->condition);
+//	fprintf(fp, "Fixed %d\n",		obj->times_fixed);
+//	if (obj->owner)				fprintf(fp, "Owner %s~\n", obj->owner);
+//	if (obj->old_short_descr)		fprintf(fp, "OldShort %s~\n", obj->old_short_descr);
+//	if (obj->old_description)		fprintf(fp, "OldDescr %s~\n", obj->old_description);
+//	if (obj->old_full_description)		fprintf(fp, "OldFullDescr %s~\n", obj->old_full_description);
+//	if (obj->loaded_by)			fprintf(fp, "LoadedBy %s~\n", obj->loaded_by);
+//	fprintf(fp, "Fragility %d\n",		obj->fragility);
+//	fprintf(fp, "TimesAllowedFixed %d\n",	obj->times_allowed_fixed);
+//	if (obj->locker)			fprintf(fp, "Locker %d\n", obj->locker);
 
-	/* variable data */
-	fprintf(fp, "Wear %d\n",		obj->wear_loc);
-	fprintf(fp, "LastWear %d\n",		obj->last_wear_loc);
-	fprintf(fp, "Lev  %d\n",		obj->level);
-	fprintf(fp, "Time %d\n",		obj->timer);
-	fprintf(fp, "Cost %ld\n",		obj->cost);
+//	/* variable data */
+//	fprintf(fp, "Wear %d\n",		obj->wear_loc);
+//	fprintf(fp, "LastWear %d\n",		obj->last_wear_loc);
+//	fprintf(fp, "Lev  %d\n",		obj->level);
+//	fprintf(fp, "Time %d\n",		obj->timer);
+//	fprintf(fp, "Cost %ld\n",		obj->cost);
 
-	fprintf(fp, "Val  %d %d %d %d %d %d %d %d\n",
-		obj->value[0], obj->value[1], obj->value[2], obj->value[3],
-		obj->value[4], obj->value[5], obj->value[6], obj->value[7]);
+//	fprintf(fp, "Val  %d %d %d %d %d %d %d %d\n",
+//		obj->value[0], obj->value[1], obj->value[2], obj->value[3],
+//		obj->value[4], obj->value[5], obj->value[6], obj->value[7]);
 
-	if (obj->spells)
-		save_spell(fp, obj->spells);
+//	if (obj->spells)
+//		save_spell(fp, obj->spells);
 
-	/* This is for spells on the objects.*/
-	for (paf = obj->affected; paf; paf = paf->next) {
-		if (paf->type < 0 || paf->type >= MAX_SKILL || paf->custom_name)
-			continue;
+//	/* This is for spells on the objects.*/
+//	for (paf = obj->affected; paf; paf = paf->next) {
+//		if (paf->type < 0 || paf->type >= MAX_SKILL || paf->custom_name)
+//			continue;
 
-		if(paf->location >= APPLY_SKILL && paf->location < APPLY_SKILL_MAX) {
-			if(!skill_table[paf->location - APPLY_SKILL].name) continue;
-			fprintf(fp, "Affcg '%s' %3d %3d %3d %3d %3d %3d '%s' %10ld\n",
-				skill_table[paf->type].name,
-				paf->where,
-				paf->group,
-				paf->level,
-				paf->duration,
-				paf->modifier,
-				APPLY_SKILL,
-				skill_table[paf->location - APPLY_SKILL].name,
-				paf->bitvector);
-		} else {
-			fprintf(fp, "Affcg '%s' %3d %3d %3d %3d %3d %3d %10ld\n",
-				skill_table[paf->type].name,
-				paf->where,
-				paf->group,
-				paf->level,
-				paf->duration,
-				paf->modifier,
-				paf->location,
-				paf->bitvector);
-		}
-	}
+//		if(paf->location >= APPLY_SKILL && paf->location < APPLY_SKILL_MAX) {
+//			if(!skill_table[paf->location - APPLY_SKILL].name) continue;
+//			fprintf(fp, "Affcg '%s' %3d %3d %3d %3d %3d %3d '%s' %10ld\n",
+//				skill_table[paf->type].name,
+//				paf->where,
+//				paf->group,
+//				paf->level,
+//				paf->duration,
+//				paf->modifier,
+//				APPLY_SKILL,
+//				skill_table[paf->location - APPLY_SKILL].name,
+//				paf->bitvector);
+//		} else {
+//			fprintf(fp, "Affcg '%s' %3d %3d %3d %3d %3d %3d %10ld\n",
+//				skill_table[paf->type].name,
+//				paf->where,
+//				paf->group,
+//				paf->level,
+//				paf->duration,
+//				paf->modifier,
+//				paf->location,
+//				paf->bitvector);
+//		}
+//	}
 
-	/* Custom named affects*/
-	for (paf = obj->affected; paf; paf = paf->next) {
-		if (!paf->custom_name) continue;
+//	/* Custom named affects*/
+//	for (paf = obj->affected; paf; paf = paf->next) {
+//		if (!paf->custom_name) continue;
 
-		if(paf->location >= APPLY_SKILL && paf->location < APPLY_SKILL_MAX) {
-			if(!skill_table[paf->location - APPLY_SKILL].name) continue;
-			fprintf(fp, "Affcgn '%s' %3d %3d %3d %3d %3d %3d '%s' %10ld\n",
-				paf->custom_name,
-				paf->where,
-				paf->group,
-				paf->level,
-				paf->duration,
-				paf->modifier,
-				APPLY_SKILL,
-				skill_table[paf->location - APPLY_SKILL].name,
-				paf->bitvector);
-		} else {
-			fprintf(fp, "Affcgn '%s' %3d %3d %3d %3d %3d %3d %10ld\n",
-				paf->custom_name,
-				paf->where,
-				paf->group,
-				paf->level,
-				paf->duration,
-				paf->modifier,
-				paf->location,
-				paf->bitvector);
-		}
-	}
+//		if(paf->location >= APPLY_SKILL && paf->location < APPLY_SKILL_MAX) {
+//			if(!skill_table[paf->location - APPLY_SKILL].name) continue;
+//			fprintf(fp, "Affcgn '%s' %3d %3d %3d %3d %3d %3d '%s' %10ld\n",
+//				paf->custom_name,
+//				paf->where,
+//				paf->group,
+//				paf->level,
+//				paf->duration,
+//				paf->modifier,
+//				APPLY_SKILL,
+//				skill_table[paf->location - APPLY_SKILL].name,
+//				paf->bitvector);
+//		} else {
+//			fprintf(fp, "Affcgn '%s' %3d %3d %3d %3d %3d %3d %10ld\n",
+//				paf->custom_name,
+//				paf->where,
+//				paf->group,
+//				paf->level,
+//				paf->duration,
+//				paf->modifier,
+//				paf->location,
+//				paf->bitvector);
+//		}
+//	}
 
-	/* for random affect eq*/
-	for (paf = obj->affected; paf; paf = paf->next) {
-		/* filter out "none" and "unknown" affects, as well as custom named affects */
-		if (paf->type != -1 || paf->custom_name != NULL ||
-			((paf->location < APPLY_SKILL || paf->location >= APPLY_SKILL_MAX) && !str_cmp(flag_string(apply_flags, paf->location), "none")))
-			continue;
+//	/* for random affect eq*/
+//	for (paf = obj->affected; paf; paf = paf->next) {
+//		/* filter out "none" and "unknown" affects, as well as custom named affects */
+//		if (paf->type != -1 || paf->custom_name != NULL ||
+//			((paf->location < APPLY_SKILL || paf->location >= APPLY_SKILL_MAX) && !str_cmp(flag_string(apply_flags, paf->location), "none")))
+//			continue;
 
-		if(paf->location >= APPLY_SKILL && paf->location < APPLY_SKILL_MAX) {
-			if(!skill_table[paf->location - APPLY_SKILL].name) continue;
-			fprintf(fp, "Affrg %3d %3d %3d %3d %3d %3d '%s' %10ld\n",
-				paf->where,
-				paf->group,
-				paf->level,
-				paf->duration,
-				paf->modifier,
-				APPLY_SKILL,
-				skill_table[paf->location - APPLY_SKILL].name,
-				paf->bitvector);
-		} else {
-			fprintf(fp, "Affrg %3d %3d %3d %3d %3d %3d %10ld\n",
-				paf->where,
-				paf->group,
-				paf->level,
-				paf->duration,
-				paf->modifier,
-				paf->location,
-				paf->bitvector);
-		}
-	}
+//		if(paf->location >= APPLY_SKILL && paf->location < APPLY_SKILL_MAX) {
+//			if(!skill_table[paf->location - APPLY_SKILL].name) continue;
+//			fprintf(fp, "Affrg %3d %3d %3d %3d %3d %3d '%s' %10ld\n",
+//				paf->where,
+//				paf->group,
+//				paf->level,
+//				paf->duration,
+//				paf->modifier,
+//				APPLY_SKILL,
+//				skill_table[paf->location - APPLY_SKILL].name,
+//				paf->bitvector);
+//		} else {
+//			fprintf(fp, "Affrg %3d %3d %3d %3d %3d %3d %10ld\n",
+//				paf->where,
+//				paf->group,
+//				paf->level,
+//				paf->duration,
+//				paf->modifier,
+//				paf->location,
+//				paf->bitvector);
+//		}
+//	}
 
-	/* for catalysts*/
-	for (paf = obj->catalyst; paf; paf = paf->next) {
-		fprintf(fp, "Cata '%s' %3d %3d %3d\n",
-			flag_string( catalyst_types, paf->type ),
-			paf->level,
-			paf->modifier,
-			paf->duration);
-	}
+//	/* for catalysts*/
+//	for (paf = obj->catalyst; paf; paf = paf->next) {
+//		fprintf(fp, "Cata '%s' %3d %3d %3d\n",
+//			flag_string( catalyst_types, paf->type ),
+//			paf->level,
+//			paf->modifier,
+//			paf->duration);
+//	}
 
-	for (ed = obj->extra_descr; ed != NULL; ed = ed->next) {
-		fprintf(fp, "ExDe %s~ %s~\n",
-		ed->keyword, ed->description);
-	}
+//	for (ed = obj->extra_descr; ed != NULL; ed = ed->next) {
+//		fprintf(fp, "ExDe %s~ %s~\n",
+//		ed->keyword, ed->description);
+//	}
 
-	if(obj->progs && obj->progs->vars) {
-		pVARIABLE var;
+//	if(obj->progs && obj->progs->vars) {
+//		pVARIABLE var;
 
-		for(var = obj->progs->vars; var; var = var->next)
-			variable_fwrite(var,fp);
-	}
+//		for(var = obj->progs->vars; var; var = var->next)
+//			variable_fwrite(var,fp);
+//	}
 
-	fprintf(fp, "#-OBJECT\n\n");
+//	fprintf(fp, "#-OBJECT\n\n");
 
-	if (obj->contains)
-		fwrite_persist_obj_new(ch, obj->contains, fp, iNest + 1);
+//	if (obj->contains)
+//		fwrite_persist_obj_new(ch, obj->contains, fp, iNest + 1);
 
 
-}
-#endif
+//}
+//#endif
 
 void persist_addmobile(register CHAR_DATA *mob)
 {
@@ -4996,8 +4996,7 @@ void persist_addroom(register ROOM_INDEX_DATA *room)
 	if( room->chat_room || (room->area && room->area->area_who == AREA_CHAT) )
 		return;
 
-	// Clone rooms themselves cannot be made persistant, make the environment persistant
-	// However, wilderness rooms CAN (>.>)
+	// Clone rooms require the source to be flagged as clone persist
 	if( room->source && !IS_SET(room->source->room2_flags, ROOM_CLONE_PERSIST))
 		return;
 
@@ -5110,18 +5109,9 @@ void persist_save_object(FILE *fp, OBJ_DATA *obj, bool multiple)
 
 	// Save location
 	if (obj->in_room) {	// **
-		ROOM_INDEX_DATA *deep = get_environment_deep(obj->in_room);	// Get the DEEPEST environment
-
 		if(obj->in_room->wilds)		fprintf(fp, "Vroom %ld %ld %ld\n", obj->in_room->wilds->uid, obj->in_room->x, obj->in_room->y);
 		else if(obj->in_room->source)	fprintf(fp, "CloneRoom %ld %ld %ld\n", obj->in_room->source->vnum, obj->in_room->id[0], obj->in_room->id[1]);
 		else				fprintf(fp, "Room %ld\n", obj->in_room->vnum);
-
-		// This is in case the prior room does NOT exist due to the chain of environments failing to exist upon next boot.
-		if( deep && deep != obj->in_room ) {
-			if(deep->wilds)		fprintf(fp, "DeepVroom %ld %ld %ld\n", deep->wilds->uid, deep->x, deep->y);
-			else if(deep->source)	fprintf(fp, "DeepCloneRoom %ld %ld %ld\n", deep->source->vnum, deep->id[0], deep->id[1]);
-			else			fprintf(fp, "DeepRoom %ld\n", deep->vnum);
-		}
 	}
 
 	fprintf(fp, "Enchanted %d\n", obj->num_enchanted);	// **
@@ -5284,10 +5274,6 @@ void persist_save_object(FILE *fp, OBJ_DATA *obj, bool multiple)
 	if( obj->tokens )
 		persist_save_token(fp, obj->tokens);
 
-	// Save Clone Rooms
-	if( obj->clone_rooms )
-		persist_save_room(fp, obj->clone_rooms );
-
 	if( obj->contains )
 		persist_save_object(fp, obj->contains, true);
 
@@ -5334,18 +5320,9 @@ void persist_save_mobile(FILE *fp, CHAR_DATA *ch)
 
 	// Save location
 	if (ch->in_room) {	// **
-		ROOM_INDEX_DATA *deep = get_environment_deep(ch->in_room);	// Get the DEEPEST environment
-
 		if(ch->in_room->wilds)		fprintf(fp, "Vroom %ld %ld %ld\n", ch->in_room->wilds->uid, ch->in_room->x, ch->in_room->y);
 		else if(ch->in_room->source)	fprintf(fp, "CloneRoom %ld %ld %ld\n", ch->in_room->source->vnum, ch->in_room->id[0], ch->in_room->id[1]);
 		else				fprintf(fp, "Room %ld\n", ch->in_room->vnum);
-
-		// This is in case the prior room does NOT exist due to the chain of environments failing to exist upon next boot.
-		if( deep && deep != ch->in_room ) {
-			if(deep->wilds)		fprintf(fp, "DeepVroom %ld %ld %ld\n", deep->wilds->uid, deep->x, deep->y);
-			else if(deep->source)	fprintf(fp, "DeepCloneRoom %ld %ld %ld\n", deep->source->vnum, deep->id[0], deep->id[1]);
-			else			fprintf(fp, "DeepRoom %ld\n", deep->vnum);
-		}
 	} else
 		fprintf(fp, "Room %d\n", ROOM_VNUM_DEFAULT);
 
@@ -5442,10 +5419,6 @@ void persist_save_mobile(FILE *fp, CHAR_DATA *ch)
 	if( ch->tokens )
 		persist_save_token(fp, ch->tokens);
 
-	// Save Clone Rooms
-	if( ch->clone_rooms )
-		persist_save_room(fp, ch->clone_rooms );
-
 	// Contents
 	if (ch->carrying)
 		persist_save_object(fp, ch->carrying, true);
@@ -5485,17 +5458,86 @@ void persist_save_exit(FILE *fp, EXIT_DATA *ex)
 	fprintf(fp, "#-EXIT\n\n");
 }
 
+void persist_save_room_environment(FILE *fp, ROOM_INDEX_DATA *clone)
+{
+	ROOM_INDEX_DATA *room;
+
+	if(!clone || !room_is_clone(clone)) return;
+
+	if(clone->environ_type == ENVIRON_ROOM) {
+		if(clone->environ.room) {
+			// The room must be persistent, wilds or static
+			room = clone->environ.room;
+
+			// Wilderness room
+			if(room->wilds)
+				fprintf(fp, "EnvironVROOM %ld %ld %ld %ld\n", room->wilds->uid, room->x, room->y, room->z);
+
+			// Normal room
+			else if(!room->source)
+				fprintf(fp, "EnvironROOM %ld\n", room->vnum);
+
+			// Persistent room (by here it *should* be a clone room, but be safe)
+			else if(room->persist) {
+				if(room->wilds)
+					fprintf(fp, "EnvironVROOM %ld %ld %ld %ld\n", room->wilds->uid, room->x, room->y, room->z);
+				else if(room->source)
+					fprintf(fp, "EnvironCROOM %ld %ld %ld\n", room->source->vnum, room->id[0], room->id[1]);
+				else
+					fprintf(fp, "EnvironROOM %ld\n", room->vnum);
+			}
+		}
+	}
+
+	else if(clone->environ_type == ENVIRON_MOBILE) {
+		if(clone->environ.mob) {
+			CHAR_DATA *mob = clone->environ.mob;
+			fprintf(fp, "EnvironMOB %ld %ld\n", mob->id[0], mob->id[1]);
+		}
+	}
+
+	else if(clone->environ_type == ENVIRON_OBJECT) {
+		if(clone->environ.obj) {
+			OBJ_DATA *obj = clone->environ.obj;
+			fprintf(fp, "EnvironOBJ %ld %ld\n", obj->id[0], obj->id[1]);
+		}
+	}
+
+	else if(clone->environ_type == ENVIRON_TOKEN) {
+		if(clone->environ.token) {
+			TOKEN_DATA *token = clone->environ.token;
+			fprintf(fp, "EnvironTOK %ld %ld\n", token->id[0], token->id[1]);
+		}
+	}
+
+	else if(clone->environ_type == -ENVIRON_ROOM && clone->environ.clone.source) {
+		fprintf(fp, "EnvironCROOM %ld %ld %ld\n", clone->environ.clone.source->vnum, clone->environ.clone.id[0], clone->environ.clone.id[1]);
+	}
+
+	else if(clone->environ_type == -ENVIRON_MOBILE) {
+		fprintf(fp, "EnvironMOB %ld %ld\n", clone->environ.clone.id[0], clone->environ.clone.id[1]);
+	}
+
+	else if(clone->environ_type == -ENVIRON_OBJECT) {
+		fprintf(fp, "EnvironOBJ %ld %ld\n", clone->environ.clone.id[0], clone->environ.clone.id[1]);
+	}
+
+	else if(clone->environ_type == -ENVIRON_TOKEN) {
+		fprintf(fp, "EnvironTOK %ld %ld\n", clone->environ.clone.id[0], clone->environ.clone.id[1]);
+	}
+}
+
+
 void persist_save_room(FILE *fp, ROOM_INDEX_DATA *room)
 {
 	CHAR_DATA *ch;
 	int i;
 
 	if( room->source ) {
-		if( room->next_clone )
-			persist_save_room(fp, room->next_clone);
-
 		fprintf(fp, "#CROOM %ld %ld %ld\n", room->source->vnum, room->id[0], room->id[1]);		// **
 		fprintf(fp, "XYZ %ld %ld %ld\n", room->x, room->y, room->z);					// **
+
+		persist_save_room_environment(fp, room);
 	} else if( room->wilds )
 		fprintf(fp, "#VROOM %ld %ld %ld %ld\n", room->wilds->uid, room->x, room->y, room->z);		// **
 	else {
@@ -5511,6 +5553,7 @@ void persist_save_room(FILE *fp, ROOM_INDEX_DATA *room)
 	if( !IS_NULLSTR(room->owner) )
 		fprintf(fp, "Owner %s~\n", room->owner);					// **
 
+	if(room->persist) fprintf(fp, "Persist\n");
 	fprintf(fp, "Locale %ld\n", room->locale);
 	fprintf(fp, "RoomFlags %s~\n", flag_string(room_flags, room->room_flags));
 	fprintf(fp, "RoomFlags2 %s~\n", flag_string(room2_flags, room->room2_flags));
@@ -5541,10 +5584,6 @@ void persist_save_room(FILE *fp, ROOM_INDEX_DATA *room)
 	// Save Tokens
 	if( room->tokens )
 		persist_save_token(fp, room->tokens);
-
-	// Save Clone Rooms
-	if( room->clone_rooms )
-		persist_save_room(fp, room->clone_rooms );
 
 	// Save Objects
 	if( room->contents )
@@ -5584,21 +5623,6 @@ bool check_persist_environment( CHAR_DATA *ch, OBJ_DATA *obj, ROOM_INDEX_DATA *r
 
 			return check_persist_environment( NULL, obj->in_obj, NULL );
 		}
-	} else if (room) {
-		if(room->environ_type == ENVIRON_ROOM) {
-			if( room->environ.room && room->environ.room->persist ) return TRUE;
-
-			return check_persist_environment( NULL, NULL, room->environ.room );
-		} else if(room->environ_type == ENVIRON_MOBILE) {
-			if( room->environ.mob && (!IS_NPC(room->environ.mob) || room->environ.mob->persist) ) return TRUE;
-
-			return check_persist_environment( room->environ.mob, NULL, NULL );
-		} else if(room->environ_type == ENVIRON_OBJECT) {
-			if( room->environ.obj && room->environ.obj->persist ) return TRUE;
-
-			return check_persist_environment( NULL, room->environ.obj, NULL );
-		}
-
 	}
 
 	return FALSE;
@@ -5656,6 +5680,75 @@ void persist_save(void)
 	log_stringf("persist_save: done.");
 }
 
+void persist_fix_environment_room(ROOM_INDEX_DATA *clone)
+{
+	ROOM_INDEX_DATA *room;
+	ITERATOR it;
+	iterator_start(&it, persist_rooms);
+	while(( room = (ROOM_INDEX_DATA *)iterator_nextdata(&it) )) {
+		if(room->environ_type == -ENVIRON_ROOM) {
+			if(room->environ.clone.source == clone->source &&
+				room->environ.clone.id[0] == clone->id[0] &&
+				room->environ.clone.id[1] == clone->id[1]) {
+				room->environ_type = ENVIRON_NONE;
+				room_to_environment(room, NULL, NULL, clone, NULL);
+			}
+		}
+	}
+	iterator_stop(&it);
+}
+
+void persist_fix_environment_object(OBJ_DATA *obj)
+{
+	ROOM_INDEX_DATA *room;
+	ITERATOR it;
+	iterator_start(&it, persist_rooms);
+	while(( room = (ROOM_INDEX_DATA *)iterator_nextdata(&it) )) {
+		if(room->environ_type == -ENVIRON_OBJECT) {
+			if(	room->environ.clone.id[0] == obj->id[0] &&
+				room->environ.clone.id[1] == obj->id[1]) {
+				room->environ_type = ENVIRON_NONE;
+				room_to_environment(room, NULL, obj, NULL, NULL);
+			}
+		}
+	}
+	iterator_stop(&it);
+}
+
+void persist_fix_environment_mobile(CHAR_DATA *mob)
+{
+	ROOM_INDEX_DATA *room;
+	ITERATOR it;
+	iterator_start(&it, persist_rooms);
+	while(( room = (ROOM_INDEX_DATA *)iterator_nextdata(&it) )) {
+		if(room->environ_type == -ENVIRON_MOBILE) {
+			if(	room->environ.clone.id[0] == mob->id[0] &&
+				room->environ.clone.id[1] == mob->id[1]) {
+				room->environ_type = ENVIRON_NONE;
+				room_to_environment(room, mob, NULL, NULL, NULL);
+			}
+		}
+	}
+	iterator_stop(&it);
+}
+
+
+void persist_fix_environment_token(TOKEN_DATA *token)
+{
+	ROOM_INDEX_DATA *room;
+	ITERATOR it;
+	iterator_start(&it, persist_rooms);
+	while(( room = (ROOM_INDEX_DATA *)iterator_nextdata(&it) )) {
+		if(room->environ_type == -ENVIRON_TOKEN) {
+			if(	room->environ.clone.id[0] == token->id[0] &&
+				room->environ.clone.id[1] == token->id[1]) {
+				room->environ_type = ENVIRON_NONE;
+				room_to_environment(room, NULL, NULL, NULL, token);
+			}
+		}
+	}
+	iterator_stop(&it);
+}
 
 TOKEN_DATA *persist_load_token(FILE *fp)
 {
@@ -5736,10 +5829,14 @@ TOKEN_DATA *persist_load_token(FILE *fp)
 
 	get_token_id(token);
 
+	variable_dynamic_fix_token(token);
+	persist_fix_environment_token(token);
+
 	log_string("persist_load: #-TOKEN");
 
 	return token;
 }
+
 
 OBJ_DATA *persist_load_object(FILE *fp)
 {
@@ -5782,24 +5879,13 @@ OBJ_DATA *persist_load_object(FILE *fp)
 
 			// Load up subentities
 			case '#':
-				if (!str_cmp(word,"#CROOM")) {
-					ROOM_INDEX_DATA *croom = persist_load_room(fp, 'C');
-
-					fMatch = TRUE;
-					if( croom )
-						room_to_environment( croom, NULL, obj, NULL );
-					else
-						good = FALSE;
-
-					break;
-				}
 				if (!str_cmp(word,"#OBJECT")) {
 					OBJ_DATA *item = persist_load_object(fp);
 
 					fMatch = TRUE;
-					if( item )
+					if( item ) {
 						obj_to_obj(item, obj);
-					else
+					} else
 						good = FALSE;
 
 					break;
@@ -6215,6 +6301,9 @@ OBJ_DATA *persist_load_object(FILE *fp)
 
 	if(obj->persist) persist_addobject(obj);
 
+	variable_dynamic_fix_object(obj);
+	persist_fix_environment_object(obj);
+
 	log_string("persist_load: #-OBJECT");
 
 	return obj;
@@ -6262,17 +6351,6 @@ CHAR_DATA *persist_load_mobile(FILE *fp)
 
 			// Load up subentities
 			case '#':
-				if (!str_cmp(word,"#CROOM")) {
-					ROOM_INDEX_DATA *croom = persist_load_room(fp, 'C');
-
-					fMatch = TRUE;
-					if( croom )
-						room_to_environment( croom, ch, NULL, NULL );
-					else
-						good = FALSE;
-
-					break;
-				}
 				if (!str_cmp(word,"#OBJECT")) {
 					OBJ_DATA *item = persist_load_object(fp);
 
@@ -6637,6 +6715,9 @@ CHAR_DATA *persist_load_mobile(FILE *fp)
 
 	if(ch->persist) persist_addmobile(ch);
 
+	variable_dynamic_fix_mobile(ch);
+	persist_fix_environment_mobile(ch);
+
 	log_string("persist_load: #-MOBILE");
 
 	return ch;
@@ -6891,17 +6972,6 @@ ROOM_INDEX_DATA *persist_load_room(FILE *fp, char rtype)
 
 			// Load up subentities
 			case '#':
-				if (!str_cmp(word,"#CROOM")) {
-					ROOM_INDEX_DATA *croom = persist_load_room(fp, 'C');
-
-					fMatch = TRUE;
-					if( croom )
-						room_to_environment( croom, NULL, NULL, room );
-					else
-						good = FALSE;
-
-					break;
-				}
 				if (!str_cmp(word,"#EXIT")) {
 					EXIT_DATA *ex = persist_load_exit(fp);
 
@@ -6920,9 +6990,9 @@ ROOM_INDEX_DATA *persist_load_room(FILE *fp, char rtype)
 					CHAR_DATA *mob = persist_load_mobile(fp);
 
 					fMatch = TRUE;
-					if( mob )
+					if( mob ) {
 						char_to_room(mob, room);
-					else
+					} else
 						good = FALSE;
 
 					break;
@@ -6931,9 +7001,11 @@ ROOM_INDEX_DATA *persist_load_room(FILE *fp, char rtype)
 					OBJ_DATA *item = persist_load_object(fp);
 
 					fMatch = TRUE;
-					if( item )
+					if( item ) {
 						obj_to_room(item, room);
-					else
+						variable_dynamic_fix_object(item);
+						persist_fix_environment_object(item);
+					} else
 						good = FALSE;
 
 					break;
@@ -6960,6 +7032,117 @@ ROOM_INDEX_DATA *persist_load_room(FILE *fp, char rtype)
 				SKEY("Desc",	room->description);
 				break;
 			case 'E':
+				if (!str_cmp(word,"EnvironMOB")) {
+					CHAR_DATA *mob;
+
+					x = fread_number(fp);
+					y = fread_number(fp);
+
+					mob = idfind_mobile(x,y);
+					if(mob) {
+						room_to_environment(room, mob, NULL, NULL, NULL);
+					} else {
+						room->environ_type = -ENVIRON_MOBILE;
+						room->environ.clone.source = NULL;
+						room->environ.clone.id[0] = x;
+						room->environ.clone.id[1] = y;
+					}
+					fMatch = TRUE;
+					break;
+				}
+				if (!str_cmp(word,"EnvironOBJ")) {
+					OBJ_DATA *obj;
+
+					x = fread_number(fp);
+					y = fread_number(fp);
+
+					obj = idfind_object(x,y);
+					if(obj) {
+						room_to_environment(room, NULL, obj, NULL, NULL);
+					} else {
+						room->environ_type = -ENVIRON_OBJECT;
+						room->environ.clone.source = NULL;
+						room->environ.clone.id[0] = x;
+						room->environ.clone.id[1] = y;
+					}
+					fMatch = TRUE;
+					break;
+				}
+				if (!str_cmp(word,"EnvironTOK")) {
+					TOKEN_DATA *token;
+
+					x = fread_number(fp);
+					y = fread_number(fp);
+
+					token = idfind_token(x,y);
+					if(token) {
+						room_to_environment(room, NULL, NULL, NULL, token);
+					} else {
+						room->environ_type = -ENVIRON_OBJECT;
+						room->environ.clone.source = NULL;
+						room->environ.clone.id[0] = x;
+						room->environ.clone.id[1] = y;
+					}
+					fMatch = TRUE;
+					break;
+				}
+				if (!str_cmp(word,"EnvironCROOM")) {
+					ROOM_INDEX_DATA *source_room, *environ_room;
+
+					vnum = fread_number(fp);
+					x = fread_number(fp);
+					y = fread_number(fp);
+
+					source_room = get_room_index(vnum);
+					if(source_room) {
+						environ_room = get_clone_room(source_room,x,y);
+
+						if(environ_room) {
+							room_to_environment(room, NULL, NULL, environ_room, NULL);
+						} else {
+							// This might not have been loaded yet!
+							room->environ_type = -ENVIRON_ROOM;
+							room->environ.clone.source = source_room;
+							room->environ.clone.id[0] = x;
+							room->environ.clone.id[1] = y;
+						}
+					}
+
+					fMatch = TRUE;
+					break;
+				}
+				if (!str_cmp(word,"EnvironVROOM")) {
+					ROOM_INDEX_DATA *environ_room;
+
+					w = fread_number(fp);
+					x = fread_number(fp);
+					y = fread_number(fp);
+					z = fread_number(fp);
+
+					wilds = get_wilds_from_uid(NULL, w);
+
+					if( wilds ) {
+						environ_room = get_wilds_vroom(wilds, x, y);
+						if( !environ_room )
+							environ_room = create_wilds_vroom(wilds, x, y);
+
+						if( environ_room ) {
+							environ_room->z = z;
+							room_to_environment(room, NULL, NULL, environ_room, NULL);
+						}
+					}
+
+					fMatch = TRUE;
+					break;
+				}
+				if (!str_cmp(word,"EnvironROOM")) {
+					ROOM_INDEX_DATA *environ_room = get_room_index(fread_number(fp));
+					if(environ_room)
+						room_to_environment(room, NULL, NULL, environ_room, NULL);
+
+					fMatch = TRUE;
+					break;
+				}
 				break;
 			case 'F':
 				break;
@@ -7096,9 +7279,10 @@ bool persist_load(void)
 
 			} else if(!str_cmp(word,"#CROOM")) {
 				room = persist_load_room(fp, 'C');
-				if(room)
+				if(room) {
 					variable_dynamic_fix_clone_room(room);
-				else
+					persist_fix_environment_room(room);
+				} else
 					good = FALSE;
 
 			} else if(!str_cmp(word,"#MOBILE")) {
@@ -7108,6 +7292,7 @@ bool persist_load(void)
 					if( ch->in_room ) {
 						char_to_room(ch, ch->in_room);
 						variable_dynamic_fix_mobile(ch);
+						persist_fix_environment_mobile(ch);
 					} else {
 						extract_char(ch,TRUE);
 						good = FALSE;
@@ -7122,6 +7307,7 @@ bool persist_load(void)
 					if( obj->in_room ) {
 						obj_to_room(obj, obj->in_room);
 						variable_dynamic_fix_object(obj);
+						persist_fix_environment_object(obj);
 					} else {
 						extract_obj(obj);
 						good = FALSE;

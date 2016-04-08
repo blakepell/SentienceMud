@@ -89,9 +89,6 @@ void do_scan(CHAR_DATA *ch, char *argument)
 					if(!(dest = exit_destination(pExit)))
 						continue;
 
-					if(recursive_environment(dest,ch,NULL,NULL))
-						continue;
-
 					if(!can_see_room (ch, dest))
 						continue;
 
@@ -125,9 +122,6 @@ void do_scan(CHAR_DATA *ch, char *argument)
 				continue;
 
 			if(!(dest = exit_destination(pExit)))
-				continue;
-
-			if(recursive_environment(dest,ch,NULL,NULL))
 				continue;
 
 			if(!can_see_room (ch, dest))

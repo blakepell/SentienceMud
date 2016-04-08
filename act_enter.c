@@ -233,9 +233,6 @@ if (PULLING_CART(ch) && portal->item_type != ITEM_SHIP)
 			location = get_clone_room(location, (unsigned long)portal->value[6], (unsigned long)portal->value[7]);
 	}
 
-	if(recursive_environment(location,ch,NULL,NULL))
-		location = NULL;
-
   	if (!location || location == old_room || !can_see_room(ch,location) ||
   		(!IS_SET(portal->value[2],GATE_NOPRIVACY) && room_is_private(location, ch))) {
 	    act("$p doesn't seem to go anywhere.",ch, NULL, NULL,portal,NULL, NULL, NULL,TO_CHAR);

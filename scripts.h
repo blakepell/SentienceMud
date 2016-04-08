@@ -280,33 +280,33 @@ enum variable_enum {
 	VAR_AREA_ID,
 	VAR_WILDS_ID,
 	VAR_CHURCH_ID,
-	VAR_BLIST_FIRST,
+	VAR_BLLIST_FIRST,
 	////////////////////////
 
-	VAR_BLIST_ROOM,
-	VAR_BLIST_MOB,
-	VAR_BLIST_OBJ,
-	VAR_BLIST_TOK,
-	VAR_BLIST_EXIT,
-	VAR_BLIST_SKILL,
-	VAR_BLIST_AREA,
-	VAR_BLIST_WILDS,
+	VAR_BLLIST_ROOM,
+	VAR_BLLIST_MOB,
+	VAR_BLLIST_OBJ,
+	VAR_BLLIST_TOK,
+	VAR_BLLIST_EXIT,
+	VAR_BLLIST_SKILL,
+	VAR_BLLIST_AREA,
+	VAR_BLLIST_WILDS,
 
 	////////////////////////
-	VAR_BLIST_LAST,
-	VAR_PLIST_FIRST,
+	VAR_BLLIST_LAST,
+	VAR_PLLIST_FIRST,
 	////////////////////////
 
-	VAR_PLIST_STR,
-	VAR_PLIST_CONN,
-	VAR_PLIST_ROOM,
-	VAR_PLIST_MOB,
-	VAR_PLIST_OBJ,
-	VAR_PLIST_TOK,
-	VAR_PLIST_CHURCH,
+	VAR_PLLIST_STR,
+	VAR_PLLIST_CONN,
+	VAR_PLLIST_ROOM,
+	VAR_PLLIST_MOB,
+	VAR_PLLIST_OBJ,
+	VAR_PLLIST_TOK,
+	VAR_PLLIST_CHURCH,
 
 	////////////////////////
-	VAR_PLIST_LAST,
+	VAR_PLLIST_LAST,
 	VAR_MAX
 };
 
@@ -392,39 +392,39 @@ enum entity_type_enum {
 
 	//////////////////////////////
 	// ALL lists here are designed to be saved
-	ENT_BLIST_MIN,
-	ENT_BLIST_ROOM,
-	ENT_BLIST_MOB,
-	ENT_BLIST_OBJ,
-	ENT_BLIST_TOK,
-	ENT_BLIST_EXIT,
-	ENT_BLIST_SKILL,
-	ENT_BLIST_AREA,
-	ENT_BLIST_WILDS,
-	ENT_BLIST_MAX,
+	ENT_BLLIST_MIN,
+	ENT_BLLIST_ROOM,
+	ENT_BLLIST_MOB,
+	ENT_BLLIST_OBJ,
+	ENT_BLLIST_TOK,
+	ENT_BLLIST_EXIT,
+	ENT_BLLIST_SKILL,
+	ENT_BLLIST_AREA,
+	ENT_BLLIST_WILDS,
+	ENT_BLLIST_MAX,
 	//////////////////////////////
 
 	//////////////////////////////
 	// Only the STRING list is savable due to it being strings
-	ENT_PLIST_MIN,
-	ENT_PLIST_STR,
-	ENT_PLIST_CONN,
-	ENT_PLIST_ROOM,
-	ENT_PLIST_MOB,
-	ENT_PLIST_OBJ,
-	ENT_PLIST_TOK,
-	ENT_PLIST_CHURCH,
-	ENT_PLIST_MAX,
+	ENT_PLLIST_MIN,
+	ENT_PLLIST_STR,
+	ENT_PLLIST_CONN,
+	ENT_PLLIST_ROOM,
+	ENT_PLLIST_MOB,
+	ENT_PLLIST_OBJ,
+	ENT_PLLIST_TOK,
+	ENT_PLLIST_CHURCH,
+	ENT_PLLIST_MAX,
 	//////////////////////////////
 
 	//////////////////////////////
 	// Owned list - referenced directly off entities
-	ENT_OLIST_MIN,
-	ENT_OLIST_MOB,
-	ENT_OLIST_OBJ,
-	ENT_OLIST_TOK,
-	ENT_OLIST_AFF,
-	ENT_OLIST_MAX,
+	ENT_OLLIST_MIN,
+	ENT_OLLIST_MOB,
+	ENT_OLLIST_OBJ,
+	ENT_OLLIST_TOK,
+	ENT_OLLIST_AFF,
+	ENT_OLLIST_MAX,
 	//////////////////////////////
 
 	ENT_MOBILE_ID,		// Will act as ENT_MOBILE that does not exist, but will allow access to the UID
@@ -487,22 +487,22 @@ enum entity_variable_types_enum {
 	ENTITY_VAR_AFFECT,
 	ENTITY_VAR_CHURCH,
 
-	ENTITY_VAR_BLIST_ROOM,
-	ENTITY_VAR_BLIST_MOB,
-	ENTITY_VAR_BLIST_OBJ,
-	ENTITY_VAR_BLIST_TOK,
-	ENTITY_VAR_BLIST_EXIT,
-	ENTITY_VAR_BLIST_SKILL,
-	ENTITY_VAR_BLIST_AREA,
-	ENTITY_VAR_BLIST_WILDS,
+	ENTITY_VAR_BLLIST_ROOM,
+	ENTITY_VAR_BLLIST_MOB,
+	ENTITY_VAR_BLLIST_OBJ,
+	ENTITY_VAR_BLLIST_TOK,
+	ENTITY_VAR_BLLIST_EXIT,
+	ENTITY_VAR_BLLIST_SKILL,
+	ENTITY_VAR_BLLIST_AREA,
+	ENTITY_VAR_BLLIST_WILDS,
 
-	ENTITY_VAR_PLIST_STR,
-	ENTITY_VAR_PLIST_CONN,
-	ENTITY_VAR_PLIST_ROOM,
-	ENTITY_VAR_PLIST_MOB,
-	ENTITY_VAR_PLIST_OBJ,
-	ENTITY_VAR_PLIST_TOK,
-	ENTITY_VAR_PLIST_CHURCH,
+	ENTITY_VAR_PLLIST_STR,
+	ENTITY_VAR_PLLIST_CONN,
+	ENTITY_VAR_PLLIST_ROOM,
+	ENTITY_VAR_PLLIST_MOB,
+	ENTITY_VAR_PLLIST_OBJ,
+	ENTITY_VAR_PLLIST_TOK,
+	ENTITY_VAR_PLLIST_CHURCH,
 
 };
 
@@ -659,6 +659,7 @@ enum entity_room_enum {
 	ENTITY_ROOM_ENVIRON_MOB,
 	ENTITY_ROOM_ENVIRON_OBJ,
 	ENTITY_ROOM_ENVIRON_ROOM,
+	ENTITY_ROOM_ENVIRON_TOKEN,
 	ENTITY_ROOM_EXTRADESC,
 	ENTITY_ROOM_DESC,
 	ENTITY_ROOM_WILDS,
@@ -770,10 +771,10 @@ enum entity_list_enum {
 };
 
 enum entity_blist_enum {
-	ENTITY_BLIST_SIZE = ESCAPE_EXTRA,
-	ENTITY_BLIST_RANDOM,
-	ENTITY_BLIST_FIRST,
-	ENTITY_BLIST_LAST
+	ENTITY_BLLIST_SIZE = ESCAPE_EXTRA,
+	ENTITY_BLLIST_RANDOM,
+	ENTITY_BLLIST_FIRST,
+	ENTITY_BLLIST_LAST
 };
 
 enum entity_skill_enum {
@@ -1002,7 +1003,7 @@ struct script_var_type {
 			int y;
 			int door;
 		} wdoor;
-		LIST_DEFAULT *list;	// Used for HOMOGENOUS lists only
+		LLIST *list;	// Used for HOMOGENOUS lists only
 	} _;
 };
 
@@ -1046,7 +1047,7 @@ struct loop_data {
 				char *str;
 			} cur, next;
 			struct {
-				LIST_DEFAULT *lp;
+				LLIST *lp;
 				ITERATOR it;
 			} list;
 			void *owner;
@@ -1134,7 +1135,7 @@ struct script_parameter {
 			int door;
 		} wdoor;
 
-		LIST_DEFAULT *blist;
+		LLIST *blist;
 		long aid;
 		long chid;
 		long wid;
@@ -1621,7 +1622,7 @@ CHAR_DATA *script_get_char_list(CHAR_DATA *mobs, CHAR_DATA *viewer, bool player,
 OBJ_DATA *script_get_obj_list(OBJ_DATA *objs, CHAR_DATA *viewer, int worn, int vnum, char *name);
 void script_interpret(SCRIPT_VARINFO *info, char *command);
 int trigger_index(char *name, int type);
-bool has_trigger(LIST_DEFAULT **bank, int trigger);
+bool has_trigger(LLIST **bank, int trigger);
 bool mp_same_group(CHAR_DATA *ch,CHAR_DATA *vch,CHAR_DATA *to);
 bool rop_same_group(CHAR_DATA *ch,CHAR_DATA *vch,CHAR_DATA *to);
 bool script_expression_push_operator(STACK *stk,int op);
@@ -1750,7 +1751,7 @@ void variable_free (pVARIABLE v);
 void variable_freedata (pVARIABLE v);
 void variable_freelist(ppVARIABLE list);
 void variable_fwrite(pVARIABLE var, FILE *fp);
-void variable_fwrite_uid_list( char *field, char *name, LIST_DEFAULT *list, FILE *fp);
+void variable_fwrite_uid_list( char *field, char *name, LLIST *list, FILE *fp);
 void variable_index_fix(void);
 
 

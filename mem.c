@@ -1040,10 +1040,10 @@ PROG_DATA *new_prog_data(void)
     return pr_dat;
 }
 
-LIST_DEFAULT **new_prog_bank(void)
+LLIST **new_prog_bank(void)
 {
 	int i;
-	LIST_DEFAULT **data = alloc_mem(TRIGSLOT_MAX *sizeof(LIST_DEFAULT *));
+	LLIST **data = alloc_mem(TRIGSLOT_MAX *sizeof(LLIST *));
 	for(i = 0; i < TRIGSLOT_MAX; i++)
 		data[i] = list_create(FALSE);
 
@@ -1071,7 +1071,7 @@ void free_trigger(PROG_LIST *trigger)
 	trigger_free = trigger;
 }
 
-void free_prog_list(LIST_DEFAULT **pr_list)
+void free_prog_list(LLIST **pr_list)
 {
 	PROG_LIST *trigger;
 	ITERATOR it;
@@ -1085,7 +1085,7 @@ void free_prog_list(LIST_DEFAULT **pr_list)
 			iterator_stop(&it);
 			list_destroy(pr_list[i]);
 		}
-		free_mem(pr_list,TRIGSLOT_MAX *sizeof(LIST_DEFAULT *));
+		free_mem(pr_list,TRIGSLOT_MAX *sizeof(LLIST *));
 	}
 }
 

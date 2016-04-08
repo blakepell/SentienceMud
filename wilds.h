@@ -123,7 +123,7 @@ struct wilds_data
     WILDS_TERRAIN   *pTerrain;
     WILDS_VLINK     *pVLink;
     int             loaded_rooms;    /* Dynamically loaded vroom count for wilds v2 */
-    LIST_DEFAULT *loaded_vrooms;
+    LLIST *loaded_vrooms;
     int             loaded_mobs;
     CHAR_DATA       *char_list;        /* Statically allocated list of pointers to lists of characters */
     int             loaded_objs;

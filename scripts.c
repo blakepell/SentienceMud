@@ -207,7 +207,7 @@ bool script_room_remref(ROOM_INDEX_DATA *room)
 				// Remove!
 				room->progs->extract_when_done = FALSE;
 				if(room->source)
-					extract_clone_room(room, room->id[0], room->id[1]);
+					extract_clone_room(room, room->id[0], room->id[1],false);
 				else	// Is a WILDS room
 					destroy_wilds_vroom(room);
 				return TRUE;
@@ -320,6 +320,7 @@ int ifcheck_lookup(char *name, int type)
 
 char *ifcheck_get_value(SCRIPT_VARINFO *info,IFCHECK_DATA *ifc,char *text,int *ret,bool *valid)
 {
+	char buf[MIL];
 	int i;
 	SCRIPT_PARAM argv[IFC_MAXPARAMS];
 
@@ -354,7 +355,7 @@ char *ifcheck_get_value(SCRIPT_VARINFO *info,IFCHECK_DATA *ifc,char *text,int *r
 //		sprintf(buf,"args = %d", i);
 //		wiznet(buf,NULL,NULL,WIZ_SCRIPTS,0,0);
 //	}
-	(ifc->func)(info,info->mob,info->obj,info->room,info->token,ret,i,argv);
+	if((ifc->func)(info,info->mob,info->obj,info->room,info->token,ret,i,argv))
 		*valid = TRUE;
 
 //	if(wiznet_script) {
@@ -879,12 +880,12 @@ DECL_OPC_FUN(opc_list)
 	int lp, i;
 	char *str1,*str2, *str;
 	char buf[MSL];
-	LIST_UID_DATA *uid;
-	LIST_ROOM_DATA *lrd;
-	LIST_EXIT_DATA *led;
-	LIST_SKILL_DATA *lsk;
-	LIST_AREA_DATA *lar;
-	LIST_WILDS_DATA *lwd;
+	LLIST_UID_DATA *uid;
+	LLIST_ROOM_DATA *lrd;
+	LLIST_EXIT_DATA *led;
+	LLIST_SKILL_DATA *lsk;
+	LLIST_AREA_DATA *lar;
+	LLIST_WILDS_DATA *lwd;
 	DESCRIPTOR_DATA *conn;
 	CHAR_DATA *ch;
 	OBJ_DATA *obj;
@@ -973,7 +974,7 @@ DECL_OPC_FUN(opc_list)
 			variables_set_exit(block->info.var,block->loops[lp].var_name,ex);
 			break;
 
-		case ENT_OLIST_MOB:
+		case ENT_OLLIST_MOB:
 			log_stringf("opc_list: list type ENT_MOBILE");
 			if(!arg.d.list.ptr.mob || !*arg.d.list.ptr.mob)
 				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
@@ -996,7 +997,7 @@ DECL_OPC_FUN(opc_list)
 			variables_set_mobile(block->info.var,block->loops[lp].var_name,*arg.d.list.ptr.mob);
 			break;
 
-		case ENT_OLIST_OBJ:
+		case ENT_OLLIST_OBJ:
 			log_stringf("opc_list: list type ENT_OBJECT");
 			if(!arg.d.list.ptr.obj || !*arg.d.list.ptr.obj)
 				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
@@ -1015,7 +1016,7 @@ DECL_OPC_FUN(opc_list)
 			variables_set_object(block->info.var,block->loops[lp].var_name,*arg.d.list.ptr.obj);
 			break;
 
-		case ENT_OLIST_TOK:
+		case ENT_OLLIST_TOK:
 			log_stringf("opc_list: list type ENT_TOKEN");
 			if(!arg.d.list.ptr.tok || !*arg.d.list.ptr.tok)
 				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
@@ -1034,7 +1035,7 @@ DECL_OPC_FUN(opc_list)
 			variables_set_token(block->info.var,block->loops[lp].var_name,*arg.d.list.ptr.tok);
 			break;
 
-		case ENT_OLIST_AFF:
+		case ENT_OLLIST_AFF:
 			log_stringf("opc_list: list type ENT_AFFECT");
 			if(!arg.d.list.ptr.aff || !*arg.d.list.ptr.aff)
 				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
@@ -1056,12 +1057,12 @@ DECL_OPC_FUN(opc_list)
 			variables_set_affect(block->info.var,block->loops[lp].var_name,*arg.d.list.ptr.aff);
 			break;
 
-		case ENT_PLIST_STR:
-			log_stringf("opc_list: list type ENT_PLIST_STR");
+		case ENT_PLLIST_STR:
+			log_stringf("opc_list: list type ENT_PLLIST_STR");
 			if(!arg.d.blist || !arg.d.blist->valid)
 				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
 
-			block->loops[lp].d.l.type = ENT_PLIST_STR;
+			block->loops[lp].d.l.type = ENT_PLLIST_STR;
 			block->loops[lp].d.l.list.lp = arg.d.blist;
 			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
 			block->loops[lp].d.l.owner = NULL;
@@ -1082,18 +1083,18 @@ DECL_OPC_FUN(opc_list)
 			variables_set_string(block->info.var,block->loops[lp].var_name,str,FALSE);
 			break;
 
-		case ENT_BLIST_MOB:
-			log_stringf("opc_list: list type ENT_BLIST_MOB");
+		case ENT_BLLIST_MOB:
+			log_stringf("opc_list: list type ENT_BLLIST_MOB");
 			if(!arg.d.blist || !arg.d.blist->valid)
 				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
 
-			block->loops[lp].d.l.type = ENT_BLIST_MOB;
+			block->loops[lp].d.l.type = ENT_BLLIST_MOB;
 			block->loops[lp].d.l.list.lp = arg.d.blist;
 			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
 			block->loops[lp].d.l.owner = NULL;
 
 			do {
-				uid = (LIST_UID_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+				uid = (LLIST_UID_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
 				if( !uid ) {
 					log_stringf("opc_list: mobile(<END>)");
 					iterator_stop(&block->loops[lp].d.l.list.it);
@@ -1113,18 +1114,18 @@ DECL_OPC_FUN(opc_list)
 				log_stringf("opc_list: mobile(%ld,%ld,%ld)", ch->pIndexData->vnum, ch->id[0], ch->id[1]);
 			break;
 
-		case ENT_BLIST_OBJ:
-			log_stringf("opc_list: list type ENT_BLIST_OBJ");
+		case ENT_BLLIST_OBJ:
+			log_stringf("opc_list: list type ENT_BLLIST_OBJ");
 			if(!arg.d.blist || !arg.d.blist->valid)
 				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
 
-			block->loops[lp].d.l.type = ENT_BLIST_OBJ;
+			block->loops[lp].d.l.type = ENT_BLLIST_OBJ;
 			block->loops[lp].d.l.list.lp = arg.d.blist;
 			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
 			block->loops[lp].d.l.owner = NULL;
 
 			do {
-				uid = (LIST_UID_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+				uid = (LLIST_UID_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
 				if( !uid ) {
 					log_stringf("opc_list: object(<END>)");
 					iterator_stop(&block->loops[lp].d.l.list.it);
@@ -1142,18 +1143,18 @@ DECL_OPC_FUN(opc_list)
 
 			break;
 
-		case ENT_BLIST_TOK:
-			log_stringf("opc_list: list type ENT_BLIST_TOK");
+		case ENT_BLLIST_TOK:
+			log_stringf("opc_list: list type ENT_BLLIST_TOK");
 			if(!arg.d.blist || !arg.d.blist->valid)
 				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
 
-			block->loops[lp].d.l.type = ENT_BLIST_TOK;
+			block->loops[lp].d.l.type = ENT_BLLIST_TOK;
 			block->loops[lp].d.l.list.lp = arg.d.blist;
 			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
 			block->loops[lp].d.l.owner = NULL;
 
 			do {
-				uid = (LIST_UID_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+				uid = (LLIST_UID_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
 				if( !uid ) {
 					log_stringf("opc_list: token(<END>)");
 					iterator_stop(&block->loops[lp].d.l.list.it);
@@ -1168,18 +1169,18 @@ DECL_OPC_FUN(opc_list)
 			log_stringf("opc_list: token(%ld,%ld,%ld)", tok->pIndexData->vnum, tok->id[0], tok->id[1]);
 			break;
 
-		case ENT_BLIST_ROOM:
-			log_stringf("opc_list: list type ENT_BLIST_ROOM");
+		case ENT_BLLIST_ROOM:
+			log_stringf("opc_list: list type ENT_BLLIST_ROOM");
 			if(!arg.d.blist || !arg.d.blist->valid)
 				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
 
-			block->loops[lp].d.l.type = ENT_BLIST_ROOM;
+			block->loops[lp].d.l.type = ENT_BLLIST_ROOM;
 			block->loops[lp].d.l.list.lp = arg.d.blist;
 			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
 			block->loops[lp].d.l.owner = NULL;
 
 			do {
-				lrd = (LIST_ROOM_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+				lrd = (LLIST_ROOM_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
 				log_stringf("opc_list: lrd = %016lX", lrd);
 				if( !lrd ) {
 					log_stringf("opc_list: room(<END>)");
@@ -1203,18 +1204,18 @@ DECL_OPC_FUN(opc_list)
 
 			break;
 
-		case ENT_BLIST_EXIT:
-			log_stringf("opc_list: list type ENT_BLIST_EXIT");
+		case ENT_BLLIST_EXIT:
+			log_stringf("opc_list: list type ENT_BLLIST_EXIT");
 			if(!arg.d.blist || !arg.d.blist->valid)
 				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
 
-			block->loops[lp].d.l.type = ENT_BLIST_EXIT;
+			block->loops[lp].d.l.type = ENT_BLLIST_EXIT;
 			block->loops[lp].d.l.list.lp = arg.d.blist;
 			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
 			block->loops[lp].d.l.owner = NULL;
 
 			do {
-				led = (LIST_EXIT_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+				led = (LLIST_EXIT_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
 				if( !led ) {
 					log_stringf("opc_list: exit(<END>)");
 					iterator_stop(&block->loops[lp].d.l.list.it);
@@ -1236,18 +1237,18 @@ DECL_OPC_FUN(opc_list)
 
 			break;
 
-		case ENT_BLIST_SKILL:
-			log_stringf("opc_list: list type ENT_BLIST_SKILL");
+		case ENT_BLLIST_SKILL:
+			log_stringf("opc_list: list type ENT_BLLIST_SKILL");
 			if(!arg.d.blist || !arg.d.blist->valid)
 				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
 
-			block->loops[lp].d.l.type = ENT_BLIST_SKILL;
+			block->loops[lp].d.l.type = ENT_BLLIST_SKILL;
 			block->loops[lp].d.l.list.lp = arg.d.blist;
 			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
 			block->loops[lp].d.l.owner = NULL;
 
 			do {
-				lsk = (LIST_SKILL_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+				lsk = (LLIST_SKILL_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
 				if( !lsk ) {
 					log_stringf("opc_list: skill(<END>)");
 					iterator_stop(&block->loops[lp].d.l.list.it);
@@ -1267,18 +1268,18 @@ DECL_OPC_FUN(opc_list)
 
 			break;
 
-		case ENT_BLIST_AREA:
-			log_stringf("opc_list: list type ENT_BLIST_AREA");
+		case ENT_BLLIST_AREA:
+			log_stringf("opc_list: list type ENT_BLLIST_AREA");
 			if(!arg.d.blist || !arg.d.blist->valid)
 				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
 
-			block->loops[lp].d.l.type = ENT_BLIST_AREA;
+			block->loops[lp].d.l.type = ENT_BLLIST_AREA;
 			block->loops[lp].d.l.list.lp = arg.d.blist;
 			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
 			block->loops[lp].d.l.owner = NULL;
 
 			do {
-				lar = (LIST_AREA_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+				lar = (LLIST_AREA_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
 				if( !lar ) {
 					log_stringf("opc_list: area(<END>)");
 					iterator_stop(&block->loops[lp].d.l.list.it);
@@ -1295,18 +1296,18 @@ DECL_OPC_FUN(opc_list)
 
 			break;
 
-		case ENT_BLIST_WILDS:
-			log_stringf("opc_list: list type ENT_BLIST_WILDS");
+		case ENT_BLLIST_WILDS:
+			log_stringf("opc_list: list type ENT_BLLIST_WILDS");
 			if(!arg.d.blist || !arg.d.blist->valid)
 				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
 
-			block->loops[lp].d.l.type = ENT_BLIST_WILDS;
+			block->loops[lp].d.l.type = ENT_BLLIST_WILDS;
 			block->loops[lp].d.l.list.lp = arg.d.blist;
 			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
 			block->loops[lp].d.l.owner = NULL;
 
 			do {
-				lwd = (LIST_WILDS_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+				lwd = (LLIST_WILDS_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
 				if( !lwd ) {
 					log_stringf("opc_list: wilds(<END>)");
 					iterator_stop(&block->loops[lp].d.l.list.it);
@@ -1323,12 +1324,12 @@ DECL_OPC_FUN(opc_list)
 
 			break;
 
-		case ENT_PLIST_CONN:
-			log_stringf("opc_list: list type ENT_PLIST_CONN");
+		case ENT_PLLIST_CONN:
+			log_stringf("opc_list: list type ENT_PLLIST_CONN");
 			if(!arg.d.blist || !arg.d.blist->valid)
 				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
 
-			block->loops[lp].d.l.type = ENT_PLIST_CONN;
+			block->loops[lp].d.l.type = ENT_PLLIST_CONN;
 			block->loops[lp].d.l.list.lp = arg.d.blist;
 			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
 			block->loops[lp].d.l.owner = NULL;
@@ -1352,12 +1353,12 @@ DECL_OPC_FUN(opc_list)
 			variables_set_connection(block->info.var,block->loops[lp].var_name,conn);
 			break;
 
-		case ENT_PLIST_MOB:
-			log_stringf("opc_list: list type ENT_PLIST_MOB");
+		case ENT_PLLIST_MOB:
+			log_stringf("opc_list: list type ENT_PLLIST_MOB");
 			if(!arg.d.blist || !arg.d.blist->valid)
 				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
 
-			block->loops[lp].d.l.type = ENT_PLIST_MOB;
+			block->loops[lp].d.l.type = ENT_PLLIST_MOB;
 			block->loops[lp].d.l.list.lp = arg.d.blist;
 			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
 			block->loops[lp].d.l.owner = NULL;
@@ -1381,12 +1382,12 @@ DECL_OPC_FUN(opc_list)
 			variables_set_mobile(block->info.var,block->loops[lp].var_name,ch);
 			break;
 
-		case ENT_PLIST_OBJ:
-			log_stringf("opc_list: list type ENT_PLIST_OBJ");
+		case ENT_PLLIST_OBJ:
+			log_stringf("opc_list: list type ENT_PLLIST_OBJ");
 			if(!arg.d.blist || !arg.d.blist->valid)
 				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
 
-			block->loops[lp].d.l.type = ENT_PLIST_OBJ;
+			block->loops[lp].d.l.type = ENT_PLLIST_OBJ;
 			block->loops[lp].d.l.list.lp = arg.d.blist;
 			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
 			block->loops[lp].d.l.owner = NULL;
@@ -1407,12 +1408,12 @@ DECL_OPC_FUN(opc_list)
 			variables_set_object(block->info.var,block->loops[lp].var_name,obj);
 			break;
 
-		case ENT_PLIST_ROOM:
-			log_stringf("opc_list: list type ENT_PLIST_ROOM");
+		case ENT_PLLIST_ROOM:
+			log_stringf("opc_list: list type ENT_PLLIST_ROOM");
 			if(!arg.d.blist || !arg.d.blist->valid)
 				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
 
-			block->loops[lp].d.l.type = ENT_PLIST_ROOM;
+			block->loops[lp].d.l.type = ENT_PLLIST_ROOM;
 			block->loops[lp].d.l.list.lp = arg.d.blist;
 			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
 			block->loops[lp].d.l.owner = NULL;
@@ -1438,12 +1439,12 @@ DECL_OPC_FUN(opc_list)
 			variables_set_room(block->info.var,block->loops[lp].var_name,here);
 			break;
 
-		case ENT_PLIST_TOK:
-			log_stringf("opc_list: list type ENT_PLIST_TOK");
+		case ENT_PLLIST_TOK:
+			log_stringf("opc_list: list type ENT_PLLIST_TOK");
 			if(!arg.d.blist || !arg.d.blist->valid)
 				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
 
-			block->loops[lp].d.l.type = ENT_PLIST_TOK;
+			block->loops[lp].d.l.type = ENT_PLLIST_TOK;
 			block->loops[lp].d.l.list.lp = arg.d.blist;
 			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
 			block->loops[lp].d.l.owner = NULL;
@@ -1464,12 +1465,12 @@ DECL_OPC_FUN(opc_list)
 			variables_set_token(block->info.var,block->loops[lp].var_name,tok);
 			break;
 
-		case ENT_PLIST_CHURCH:
-			log_stringf("opc_list: list type ENT_PLIST_CHURCH");
+		case ENT_PLLIST_CHURCH:
+			log_stringf("opc_list: list type ENT_PLLIST_CHURCH");
 			if(!arg.d.blist || !arg.d.blist->valid)
 				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
 
-			block->loops[lp].d.l.type = ENT_PLIST_CHURCH;
+			block->loops[lp].d.l.type = ENT_PLLIST_CHURCH;
 			block->loops[lp].d.l.list.lp = arg.d.blist;
 			iterator_start(&block->loops[lp].d.l.list.it,arg.d.blist);
 			block->loops[lp].d.l.owner = NULL;
@@ -1639,8 +1640,8 @@ DECL_OPC_FUN(opc_list)
 			block->loops[lp].d.l.next.aff = block->loops[lp].d.l.cur.aff->next;
 			break;
 
-		case ENT_PLIST_STR:
-			log_stringf("opc_list: list type ENT_PLIST_STR");
+		case ENT_PLLIST_STR:
+			log_stringf("opc_list: list type ENT_PLLIST_STR");
 			str = (char *)iterator_nextdata(&block->loops[lp].d.l.list.it);
 
 			if(str)
@@ -1658,9 +1659,9 @@ DECL_OPC_FUN(opc_list)
 
 			break;
 
-		case ENT_BLIST_MOB:
-			log_stringf("opc_list: list type ENT_BLIST_MOB");
-			while( (uid = (LIST_UID_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it)) && !IS_VALID((CHAR_DATA *)uid->ptr) );
+		case ENT_BLLIST_MOB:
+			log_stringf("opc_list: list type ENT_BLLIST_MOB");
+			while( (uid = (LLIST_UID_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it)) && !IS_VALID((CHAR_DATA *)uid->ptr) );
 			if(uid) {
 				ch = (CHAR_DATA *)(uid->ptr);
 				if(!IS_NPC(ch))
@@ -1680,9 +1681,9 @@ DECL_OPC_FUN(opc_list)
 
 			break;
 
-		case ENT_BLIST_OBJ:
-			log_stringf("opc_list: list type ENT_BLIST_OBJ");
-			while( (uid = (LIST_UID_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it)) && !IS_VALID((OBJ_DATA *)uid->ptr) );
+		case ENT_BLLIST_OBJ:
+			log_stringf("opc_list: list type ENT_BLLIST_OBJ");
+			while( (uid = (LLIST_UID_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it)) && !IS_VALID((OBJ_DATA *)uid->ptr) );
 			if(uid) {
 				obj = (OBJ_DATA *)(uid->ptr);
 				log_stringf("opc_list: object(%ld,%ld,%ld)", obj->pIndexData->vnum, obj->id[0], obj->id[1]);
@@ -1699,9 +1700,9 @@ DECL_OPC_FUN(opc_list)
 
 			break;
 
-		case ENT_BLIST_TOK:
-			log_stringf("opc_list: list type ENT_BLIST_TOK");
-			while( (uid = (LIST_UID_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it)) && !IS_VALID((TOKEN_DATA *)uid->ptr) );
+		case ENT_BLLIST_TOK:
+			log_stringf("opc_list: list type ENT_BLLIST_TOK");
+			while( (uid = (LLIST_UID_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it)) && !IS_VALID((TOKEN_DATA *)uid->ptr) );
 
 			if(uid) {
 				tok = (TOKEN_DATA *)(uid->ptr);
@@ -1719,9 +1720,9 @@ DECL_OPC_FUN(opc_list)
 
 			break;
 
-		case ENT_BLIST_ROOM:
-			log_stringf("opc_list: list type ENT_BLIST_ROOM");
-			while( (lrd = (LIST_ROOM_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it)) && !lrd->room );
+		case ENT_BLLIST_ROOM:
+			log_stringf("opc_list: list type ENT_BLLIST_ROOM");
+			while( (lrd = (LLIST_ROOM_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it)) && !lrd->room );
 			if(lrd) {
 				if(lrd->room->wilds)
 					log_stringf("opc_list: room(%ld,%ld,%ld)", lrd->room->wilds->uid, lrd->room->x, lrd->room->y);
@@ -1741,9 +1742,9 @@ DECL_OPC_FUN(opc_list)
 			}
 			break;
 
-		case ENT_BLIST_EXIT:
-			log_stringf("opc_list: list type ENT_BLIST_EXIT");
-			while( (led = (LIST_EXIT_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it)) &&
+		case ENT_BLLIST_EXIT:
+			log_stringf("opc_list: list type ENT_BLLIST_EXIT");
+			while( (led = (LLIST_EXIT_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it)) &&
 				(!led->room || led->door < 0 || led->door >= MAX_DIR || !led->room->exit[led->door]));
 
 			if(led) {
@@ -1766,9 +1767,9 @@ DECL_OPC_FUN(opc_list)
 			variables_set_door(block->info.var,block->loops[lp].var_name,led->room, led->door, FALSE);
 			break;
 
-		case ENT_BLIST_SKILL:
-			log_stringf("opc_list: list type ENT_BLIST_SKILL");
-			while( (lsk = (LIST_SKILL_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it)) &&
+		case ENT_BLLIST_SKILL:
+			log_stringf("opc_list: list type ENT_BLLIST_SKILL");
+			while( (lsk = (LLIST_SKILL_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it)) &&
 				(!IS_VALID(lsk->mob) || (!IS_VALID(lsk->tok) && ( lsk->sn < 1 || lsk->sn >= MAX_SKILL ))) );
 			if(lsk) {
 				if(lsk->tok)
@@ -1789,9 +1790,9 @@ DECL_OPC_FUN(opc_list)
 			variables_setsave_skillinfo(block->info.var,block->loops[lp].var_name, lsk->mob, lsk->sn, lsk->tok, FALSE);
 			break;
 
-		case ENT_BLIST_AREA:
-			log_stringf("opc_list: list type ENT_BLIST_AREA");
-			while( (lar = (LIST_AREA_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it)) && !lar->area );
+		case ENT_BLLIST_AREA:
+			log_stringf("opc_list: list type ENT_BLLIST_AREA");
+			while( (lar = (LLIST_AREA_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it)) && !lar->area );
 			if(lar) {
 				log_stringf("opc_list: area(%ld,%s)", lar->area->uid, lar->area->name);
 			} else
@@ -1806,9 +1807,9 @@ DECL_OPC_FUN(opc_list)
 			}
 			break;
 
-		case ENT_BLIST_WILDS:
-			log_stringf("opc_list: list type ENT_BLIST_WILDS");
-			while( (lwd = (LIST_WILDS_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it)) && !lwd->wilds );
+		case ENT_BLLIST_WILDS:
+			log_stringf("opc_list: list type ENT_BLLIST_WILDS");
+			while( (lwd = (LLIST_WILDS_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it)) && !lwd->wilds );
 			if(lwd) {
 				log_stringf("opc_list: wilds(%ld,%s)", lwd->wilds->uid, lwd->wilds->name);
 			} else
@@ -1823,8 +1824,8 @@ DECL_OPC_FUN(opc_list)
 			}
 			break;
 
-		case ENT_PLIST_CONN:
-			log_stringf("opc_list: list type ENT_PLIST_CONN");
+		case ENT_PLLIST_CONN:
+			log_stringf("opc_list: list type ENT_PLLIST_CONN");
 			conn = (DESCRIPTOR_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
 			if(conn) {
 				if(conn->original)
@@ -1845,8 +1846,8 @@ DECL_OPC_FUN(opc_list)
 
 			break;
 
-		case ENT_PLIST_MOB:
-			log_stringf("opc_list: list type ENT_PLIST_MOB");
+		case ENT_PLLIST_MOB:
+			log_stringf("opc_list: list type ENT_PLLIST_MOB");
 			ch = (CHAR_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
 			if(ch) {
 				if(!IS_NPC(ch))
@@ -1867,8 +1868,8 @@ DECL_OPC_FUN(opc_list)
 
 			break;
 
-		case ENT_PLIST_OBJ:
-			log_stringf("opc_list: list type ENT_PLIST_OBJ");
+		case ENT_PLLIST_OBJ:
+			log_stringf("opc_list: list type ENT_PLLIST_OBJ");
 			obj = (OBJ_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
 			if(obj)
 				log_stringf("opc_list: object(%ld,%ld,%ld)", obj->pIndexData->vnum, obj->id[0], obj->id[1]);
@@ -1886,8 +1887,8 @@ DECL_OPC_FUN(opc_list)
 
 			break;
 
-		case ENT_PLIST_ROOM:
-			log_stringf("opc_list: list type ENT_PLIST_ROOM");
+		case ENT_PLLIST_ROOM:
+			log_stringf("opc_list: list type ENT_PLLIST_ROOM");
 			here = (ROOM_INDEX_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
 			if(here) {
 				if(here->wilds)
@@ -1910,8 +1911,8 @@ DECL_OPC_FUN(opc_list)
 
 			break;
 
-		case ENT_PLIST_TOK:
-			log_stringf("opc_list: list type ENT_PLIST_TOK");
+		case ENT_PLLIST_TOK:
+			log_stringf("opc_list: list type ENT_PLLIST_TOK");
 			tok = (TOKEN_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
 			if(tok)
 				log_stringf("opc_list: token(%ld,%ld,%ld)", tok->pIndexData->vnum, tok->id[0], tok->id[1]);
@@ -1928,8 +1929,8 @@ DECL_OPC_FUN(opc_list)
 			}
 			break;
 
-		case ENT_PLIST_CHURCH:
-			log_stringf("opc_list: list type ENT_PLIST_CHURCH");
+		case ENT_PLLIST_CHURCH:
+			log_stringf("opc_list: list type ENT_PLLIST_CHURCH");
 			church = (CHURCH_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
 			log_stringf("opc_list: church(%s)", church ? church->name : "<END>");
 
@@ -2710,12 +2711,6 @@ void get_level_damage(int level, int *num, int *type, bool fRemort, bool fTwo)
 
 void do_mob_transfer(CHAR_DATA *ch,ROOM_INDEX_DATA *room,bool quiet)
 {
-	// Prevent a recursive loop with cloned rooms
-	if (recursive_environment(room, ch, NULL, NULL)) {
-		bug("do_mob_transfer - Selected location would cause an infinite environment loop.", 0);
-		return;
-	}
-
 	if (ch->fighting)
 		stop_fighting(ch, TRUE);
 
@@ -2731,7 +2726,7 @@ void do_mob_transfer(CHAR_DATA *ch,ROOM_INDEX_DATA *room,bool quiet)
 }
 
 
-bool has_trigger(LIST_DEFAULT **bank, int trigger)
+bool has_trigger(LLIST **bank, int trigger)
 {
 	int slot;
 	PROG_LIST *trig;
@@ -4455,7 +4450,7 @@ void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument)
 	TOKEN_DATA *token = NULL, *tokens = NULL;
 	ROOM_INDEX_DATA *here = NULL;
 	EXIT_DATA *ex = NULL;
-	LIST_DEFAULT *blist;
+	LLIST *blist;
 	ITERATOR it;
 	int vnum = 0, i, idx;
 	unsigned long id1/*, id2*/;
@@ -4592,7 +4587,7 @@ void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument)
 			here = arg.d.door.r ? exit_destination(arg.d.door.r->exit[arg.d.door.door]) : NULL;
 			variables_set_room(vars,name,here);
 			break;
-		case ENT_BLIST_ROOM:
+		case ENT_BLLIST_ROOM:
 			blist = arg.d.blist;
 			if(!(rest = expand_argument(info,rest,&arg)))
 				return;
@@ -4615,16 +4610,16 @@ void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument)
 			}
 
 			{
-				LIST_ROOM_DATA *lroom;
+				LLIST_ROOM_DATA *lroom;
 				iterator_start_nth(&it, blist, idx);
-				while((lroom = (LIST_ROOM_DATA *)iterator_nextdata(&it)) && !lroom->room);
+				while((lroom = (LLIST_ROOM_DATA *)iterator_nextdata(&it)) && !lroom->room);
 				iterator_stop(&it);
 
 				if(lroom && lroom->room)
 					variables_set_room(vars,name,lroom->room);
 			}
 			break;
-		case ENT_PLIST_ROOM:
+		case ENT_PLLIST_ROOM:
 			blist = arg.d.blist;
 			if(!(rest = expand_argument(info,rest,&arg)))
 				return;
@@ -4735,7 +4730,7 @@ void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument)
 		case ENT_MOBILE:
 			vch = arg.d.mob;
 			break;
-		case ENT_OLIST_MOB:
+		case ENT_OLLIST_MOB:
 			mobs = arg.d.list.ptr.mob ? *arg.d.list.ptr.mob : NULL;
 			break;
 		case ENT_ROOM:
@@ -4772,7 +4767,7 @@ void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument)
 		case ENT_MOBILE:
 			vch = arg.d.mob && !IS_NPC(arg.d.mob) ? arg.d.mob : NULL;
 			break;
-		case ENT_OLIST_MOB:
+		case ENT_OLLIST_MOB:
 			mobs = arg.d.list.ptr.mob ? *arg.d.list.ptr.mob : NULL;
 			if(mobs) {
 				if(!expand_argument(info,rest,&arg))
@@ -4811,7 +4806,7 @@ void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument)
 		case ENT_MOBILE:
 			objs = arg.d.mob ? arg.d.mob->carrying : NULL;
 			break;
-		case ENT_OLIST_OBJ:
+		case ENT_OLLIST_OBJ:
 			objs = arg.d.list.ptr.obj ? *arg.d.list.ptr.obj : NULL;
 			break;
 		case ENT_ROOM:
@@ -4855,7 +4850,7 @@ void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument)
 		case ENT_MOBILE:
 			objs = arg.d.mob ? arg.d.mob->carrying : NULL;
 			break;
-		case ENT_OLIST_OBJ:
+		case ENT_OLLIST_OBJ:
 			objs = arg.d.list.ptr.obj ? *arg.d.list.ptr.obj : NULL;
 			break;
 		default: return;
@@ -4895,7 +4890,7 @@ void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument)
 		case ENT_MOBILE:
 			objs = arg.d.mob ? arg.d.mob->carrying : NULL;
 			break;
-		case ENT_OLIST_OBJ:
+		case ENT_OLLIST_OBJ:
 			objs = arg.d.list.ptr.obj ? *arg.d.list.ptr.obj : NULL;
 			break;
 		default: return;
@@ -4920,7 +4915,7 @@ void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument)
 	// Format: CONTENT <OBJECT or OBJLIST> <VNUM or NAME>
 	} else if(!str_cmp(buf,"content")) {
 		switch(arg.type) {
-		case ENT_OLIST_OBJ:
+		case ENT_OLLIST_OBJ:
 			objs = arg.d.list.ptr.obj ? *arg.d.list.ptr.obj : NULL;
 			break;
 		case ENT_OBJECT:
@@ -4953,7 +4948,7 @@ void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument)
 		case ENT_OBJECT:   tokens = arg.d.obj ? arg.d.obj->tokens : NULL; break;
 		case ENT_ROOM:     tokens = arg.d.room ? arg.d.room->tokens : NULL; break;
 		case ENT_TOKEN:    token = arg.d.token; break;
-		case ENT_OLIST_TOK: tokens = arg.d.list.ptr.tok ? *arg.d.list.ptr.tok : NULL; break;
+		case ENT_OLLIST_TOK: tokens = arg.d.list.ptr.tok ? *arg.d.list.ptr.tok : NULL; break;
 		default: return;
 		}
 

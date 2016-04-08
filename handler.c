@@ -2799,7 +2799,8 @@ void extract_obj(OBJ_DATA *obj)
     // Deal with all clone rooms here while the object's location still exists
     for(clone = obj->clone_rooms; clone; clone = next_clone) {
 	    next_clone = clone->next_clone;
-	    extract_clone_room(clone,clone->id[0],clone->id[1]);
+	    p_percent_trigger(NULL, NULL, clone, NULL, NULL, NULL, NULL, obj, NULL, TRIG_CLONE_EXTRACT, NULL);
+	    room_from_environment(clone);
     }
 
     /* if its a scroll make sure that they can't finish reciting the scroll
@@ -2912,7 +2913,8 @@ void extract_char(CHAR_DATA *ch, bool fPull)
     // Deal with all clone rooms here while the object's location still exists
     for(clone = ch->clone_rooms; clone; clone = next_clone) {
 	    next_clone = clone->next_clone;
-	    extract_clone_room(clone,clone->id[0],clone->id[1]);
+	    p_percent_trigger(NULL, NULL, clone, NULL, NULL, ch, NULL, NULL, NULL, TRIG_CLONE_EXTRACT, NULL);
+	    room_from_environment(clone);
     }
 
     char_from_room(ch);
@@ -6185,7 +6187,7 @@ void token_to_char(TOKEN_DATA *token, CHAR_DATA *ch)
 	log_string(buf);
 }
 
-TOKEN_DATA *get_token_list(LIST_DEFAULT *tokens, long vnum, int count)
+TOKEN_DATA *get_token_list(LLIST *tokens, long vnum, int count)
 {
 	TOKEN_DATA *token;
 	ITERATOR it;
@@ -6920,7 +6922,7 @@ void move_cart(CHAR_DATA *ch, ROOM_INDEX_DATA *room, bool delay)
 
 unsigned long last_visited_room = 0;
 
-void visit_room_recurse(LIST_DEFAULT *visited, ROOM_INDEX_DATA *room, VISIT_FUNC *func, int depth, void *argv[], int argc, bool closed, int door)
+void visit_room_recurse(LLIST *visited, ROOM_INDEX_DATA *room, VISIT_FUNC *func, int depth, void *argv[], int argc, bool closed, int door)
 {
 	EXIT_DATA *ex;
 	int i;
@@ -6938,7 +6940,7 @@ void visit_room_recurse(LIST_DEFAULT *visited, ROOM_INDEX_DATA *room, VISIT_FUNC
 
 void visit_rooms(ROOM_INDEX_DATA *room, VISIT_FUNC *func, int depth, void *argv[], int argc, bool closed)
 {
-	LIST_DEFAULT *visited = list_create(TRUE);
+	LLIST *visited = list_create(TRUE);
 
 	visit_room_recurse(visited, room,func,depth,argv,argc,closed,MAX_DIR);
 
@@ -7166,69 +7168,18 @@ ROOM_INDEX_DATA *get_environment(ROOM_INDEX_DATA *room)
 	case ENVIRON_ROOM:	return room->environ.room;
 	case ENVIRON_MOBILE:	return room->environ.mob ? room->environ.mob->in_room : NULL;
 	case ENVIRON_OBJECT:	return room->environ.obj ? obj_room(room->environ.obj) : NULL;
+	case ENVIRON_TOKEN:
+		if(room->environ.token) {
+			if( room->environ.token->player ) return room->environ.token->player->in_room;
+			if( room->environ.token->object ) return obj_room(room->environ.token->object);
+			if( room->environ.token->room ) return room->environ.token->room;
+		}
+		break;
 	}
 
 	return NULL;
 }
 
-ROOM_INDEX_DATA *get_environment_deep(ROOM_INDEX_DATA *room)
-{
-	ROOM_INDEX_DATA *environ;
-	if(!room) return NULL;
-
-	if(!room_is_clone(room)) return room;
-
-	if((environ = get_environment(room)) && PROG_FLAG(environ,PROG_NODESTRUCT))
-		return get_environment_deep(environ);
-
-	return NULL;
-}
-
-
-// Check to see if the given location will cause an infinite loop for the entity provided
-bool recursive_environment(ROOM_INDEX_DATA *loc, CHAR_DATA *mob, OBJ_DATA *obj, ROOM_INDEX_DATA *room)
-{
-	if(!loc) return FALSE;
-
-	// static or virtual rooms that are floating [aka wilds vrooms] are NOT recursive
-	if(IS_SET(loc->room2_flags,ROOM_VIRTUAL_ROOM) || loc->environ_type == ENVIRON_NONE) return FALSE;
-
-	if(loc->environ_type == ENVIRON_ROOM && loc->environ.room && room) {
-		if(loc->environ.room == room) return TRUE;
-
-		return recursive_environment(loc->environ.room,mob,obj,room);
-	}
-
-	if(loc->environ_type == ENVIRON_MOBILE && loc->environ.mob && mob) {
-		if(loc->environ.mob == mob) return TRUE;
-
-		return recursive_environment((loc->environ.mob ? loc->environ.mob->in_room : NULL),mob,obj,room);
-	}
-
-	if(loc->environ_type == ENVIRON_OBJECT && loc->environ.obj && obj) {
-		if(loc->environ.obj == obj) return TRUE;
-
-		return recursive_environment((loc->environ.obj ? obj_room(loc->environ.obj) : NULL),mob,obj,room);
-	}
-
-	return FALSE;
-}
-
-bool check_recursive_char(ROOM_INDEX_DATA *room, CHAR_DATA *ch)
-{
-	ROOM_INDEX_DATA *save_room;
-	bool safe;
-
-	if(!room || !ch) return false;
-
-	save_room = ch->in_room;
-	ch->in_room = room;
-
-	safe = !recursive_environment(room,ch,NULL,NULL);
-
-	ch->in_room = save_room;
-	return safe;
-}
 
 
 bool mobile_is_flying(CHAR_DATA *mob)
@@ -7264,7 +7215,7 @@ bool check_vision(CHAR_DATA *ch, ROOM_INDEX_DATA *room, bool blind, bool dark)
 void room_from_environment(ROOM_INDEX_DATA *room)
 {
 	ROOM_INDEX_DATA **prev = NULL;
-	LIST_DEFAULT *lclones = NULL;
+	LLIST *lclones = NULL;
 
 	if(!room || !room_is_clone(room)) return;
 
@@ -7272,6 +7223,7 @@ void room_from_environment(ROOM_INDEX_DATA *room)
 	case ENVIRON_ROOM: prev = &room->environ.room->clone_rooms; lclones = room->environ.room->lclonerooms; break;
 	case ENVIRON_MOBILE: prev = &room->environ.mob->clone_rooms; lclones = room->environ.mob->lclonerooms; break;
 	case ENVIRON_OBJECT: prev = &room->environ.obj->clone_rooms; lclones = room->environ.obj->lclonerooms; break;
+	case ENVIRON_TOKEN: prev = &room->environ.token->clone_rooms; lclones = room->environ.token->lclonerooms; break;
 	default: return;
 	}
 
@@ -7294,7 +7246,7 @@ void room_from_environment(ROOM_INDEX_DATA *room)
 	room->next_clone = NULL;
 }
 
-bool room_to_environment(ROOM_INDEX_DATA *clone,CHAR_DATA *mob, OBJ_DATA *obj, ROOM_INDEX_DATA *room)
+bool room_to_environment(ROOM_INDEX_DATA *clone,CHAR_DATA *mob, OBJ_DATA *obj, ROOM_INDEX_DATA *room, TOKEN_DATA *token)
 {
 	if(!clone || !room_is_clone(clone) || clone->environ_type != ENVIRON_NONE) return false;
 
@@ -7339,6 +7291,21 @@ bool room_to_environment(ROOM_INDEX_DATA *clone,CHAR_DATA *mob, OBJ_DATA *obj, R
 		return true;
 	}
 
+	if(token) {
+		clone->next_clone = token->clone_rooms;
+		token->clone_rooms = clone;
+		if( !list_appendlink(token->lclonerooms, clone) ) {
+			bug("Failed to add clone room to environment due to memory issues with 'list_appendlink',", 0);
+			abort();
+		}
+
+		// This is the only clone.. hence, the object used to have no clones anchored
+		clone->environ.token = token;
+		clone->environ_type = ENVIRON_TOKEN;
+		return true;
+	}
+
+
 	return false;
 }
 
@@ -7380,9 +7347,9 @@ void obj_update_nest_clones(OBJ_DATA *obj)
 }
 
 
-LIST_DEFAULT *list_create(bool purge)
+LLIST *list_create(bool purge)
 {
-	LIST_DEFAULT *lp = alloc_mem(sizeof(LIST_DEFAULT));
+	LLIST *lp = alloc_mem(sizeof(LLIST));
 
 	if(lp) {
 		lp->next = NULL;
@@ -7397,9 +7364,9 @@ LIST_DEFAULT *list_create(bool purge)
 	return lp;
 }
 
-LIST_DEFAULT *list_createx(bool purge, LISTCOPY_FUNC copier, LISTDESTROY_FUNC deleter)
+LLIST *list_createx(bool purge, LISTCOPY_FUNC copier, LISTDESTROY_FUNC deleter)
 {
-	LIST_DEFAULT *lp = list_create(purge);
+	LLIST *lp = list_create(purge);
 
 	if( lp ) {
 		lp->copier = copier;
@@ -7410,14 +7377,14 @@ LIST_DEFAULT *list_createx(bool purge, LISTCOPY_FUNC copier, LISTDESTROY_FUNC de
 }
 
 
-LIST_DEFAULT *list_copy(LIST_DEFAULT *src)
+LLIST *list_copy(LLIST *src)
 {
 	if( src == NULL || !src->valid || src->purge ) return NULL;
 
-	LIST_DEFAULT *cpy = list_create(src->purge);
+	LLIST *cpy = list_create(src->purge);
 
 	if( cpy ) {
-		register LIST_LINK *cur, *next;
+		register LLIST_LINK *cur, *next;
 		bool valid = TRUE;
 
 		cpy->copier = src->copier;
@@ -7450,9 +7417,9 @@ LIST_DEFAULT *list_copy(LIST_DEFAULT *src)
 	return cpy;
 }
 
-void list_purge(LIST_DEFAULT *lp)
+void list_purge(LLIST *lp)
 {
-	register LIST_LINK *cur, *next;
+	register LLIST_LINK *cur, *next;
 	if( lp && !lp->valid && lp->ref < 1) {
 		for( cur = lp->head; cur; cur = next ) {
 			next = cur->next;
@@ -7460,14 +7427,14 @@ void list_purge(LIST_DEFAULT *lp)
 			if( lp->deleter && cur->data )
 				(*lp->deleter)(cur->data);
 
-			free_mem(cur, sizeof(LIST_LINK));
+			free_mem(cur, sizeof(LLIST_LINK));
 		}
 		lp->head = NULL;
 		lp->tail = NULL;
 	}
 }
 
-void list_destroy(LIST_DEFAULT *lp)
+void list_destroy(LLIST *lp)
 {
 	if(lp && lp->valid ) {
 		if( lp->ref > 0 )
@@ -7481,9 +7448,9 @@ void list_destroy(LIST_DEFAULT *lp)
 	}
 }
 
-void list_cull(LIST_DEFAULT *lp)
+void list_cull(LLIST *lp)
 {
-	register LIST_LINK **prev, *cur;
+	register LLIST_LINK **prev, *cur;
 
 	if(lp && lp->ref < 1) {
 		// Cull any null data nodes
@@ -7493,7 +7460,7 @@ void list_cull(LIST_DEFAULT *lp)
 					if( lp->tail == cur )
 						lp->tail = NULL;
 					*prev = cur->next;
-					free_mem(cur,sizeof(LIST_LINK));
+					free_mem(cur,sizeof(LLIST_LINK));
 					cur = *prev;
 				} while(cur && !cur->data);
 			} else {
@@ -7512,12 +7479,12 @@ void list_cull(LIST_DEFAULT *lp)
 	}
 }
 
-void list_addref(LIST_DEFAULT *lp)
+void list_addref(LLIST *lp)
 {
 	if(lp) lp->ref++;
 }
 
-void list_remref(LIST_DEFAULT *lp)
+void list_remref(LLIST *lp)
 {
 	if(lp) {
 		--lp->ref;
@@ -7531,11 +7498,11 @@ void list_remref(LIST_DEFAULT *lp)
 	}
 }
 
-bool list_addlink(LIST_DEFAULT *lp, void *data)
+bool list_addlink(LLIST *lp, void *data)
 {
-	LIST_LINK *link;
+	LLIST_LINK *link;
 
-	if(lp && lp->valid && (link = alloc_mem(sizeof(LIST_LINK)))) {
+	if(lp && lp->valid && (link = alloc_mem(sizeof(LLIST_LINK)))) {
 
 		// No need to worry about the linkage and reference
 		link->next = lp->head;
@@ -7548,11 +7515,11 @@ bool list_addlink(LIST_DEFAULT *lp, void *data)
 	return false;
 }
 
-bool list_appendlink(LIST_DEFAULT *lp, void *data)
+bool list_appendlink(LLIST *lp, void *data)
 {
-	LIST_LINK *link;
+	LLIST_LINK *link;
 
-	if(lp && lp->valid && (link = alloc_mem(sizeof(LIST_LINK)))) {
+	if(lp && lp->valid && (link = alloc_mem(sizeof(LLIST_LINK)))) {
 //		log_stringf("list_appendlink: Adding data %016X to list %016X.", lp, data);
 		// First one?
 		if( !lp->head )
@@ -7570,9 +7537,9 @@ bool list_appendlink(LIST_DEFAULT *lp, void *data)
 
 // Nulls out any data pointer that matches the supplied pointer
 // It will NOT cull the list
-void list_remlink(LIST_DEFAULT *lp, void *data)
+void list_remlink(LLIST *lp, void *data)
 {
-	LIST_LINK *link;
+	LLIST_LINK *link;
 
 	if(lp && data) {
 		for(link = lp->head; link; link = link->next)
@@ -7586,9 +7553,9 @@ void list_remlink(LIST_DEFAULT *lp, void *data)
 	}
 }
 
-void *list_nthdata(LIST_DEFAULT *lp, register int nth)
+void *list_nthdata(LLIST *lp, register int nth)
 {
-	register LIST_LINK *link = NULL;
+	register LLIST_LINK *link = NULL;
 
 	if(lp && lp->valid) {
 		if( nth < 0 ) nth = lp->size + nth;
@@ -7600,7 +7567,7 @@ void *list_nthdata(LIST_DEFAULT *lp, register int nth)
 	return (link && !nth) ? link->data : NULL;
 }
 
-bool list_hasdata(LIST_DEFAULT *lp, register void *ptr)
+bool list_hasdata(LLIST *lp, register void *ptr)
 {
 	ITERATOR it;
 	void *data;
@@ -7615,7 +7582,7 @@ bool list_hasdata(LIST_DEFAULT *lp, register void *ptr)
 	return data && TRUE;
 }
 
-int list_size(LIST_DEFAULT *lp)
+int list_size(LLIST *lp)
 {
 	ITERATOR it;
 	int size;
@@ -7631,42 +7598,46 @@ int list_size(LIST_DEFAULT *lp)
 	return size;
 }
 
-bool list_isvalid(LIST_DEFAULT *lp)
+bool list_isvalid(LLIST *lp)
 {
 	return lp && lp->valid;
 }
 
 // ITERATORs can just be straight variables.  No allocation is needed.
-void iterator_start(ITERATOR *it, LIST_DEFAULT *lp)
+void iterator_start(ITERATOR *it, LLIST *lp)
 {
 	if(it) {
 		if(lp && lp->valid) {
 //			log_stringf("iterator_start: list =  %016lX.", lp);
 			it->list = lp;
 			it->current = lp->head;
+			it->moved = FALSE;
 
 			list_addref(lp);
 		} else {
 			it->list = NULL;
 			it->current = NULL;
+			it->moved = FALSE;
 		}
 	}
 }
 
-void iterator_start_nth(ITERATOR *it, LIST_DEFAULT *lp, int nth)
+void iterator_start_nth(ITERATOR *it, LLIST *lp, int nth)
 {
-	register LIST_LINK *link;
+	register LLIST_LINK *link;
 
 	if(it) {
 		if(lp && lp->valid) {
 			it->list = lp;
 
 			if( nth < 0 ) nth = lp->size + nth;
+
 			for(link = lp->head; link && nth > 0; link = link->next)
 				if(link->data)
 					--nth;
 
 			it->current = link;
+			it->moved = FALSE;
 
 			list_addref(lp);
 		} else {
@@ -7676,14 +7647,19 @@ void iterator_start_nth(ITERATOR *it, LIST_DEFAULT *lp, int nth)
 	}
 }
 
-LIST_LINK *iterator_next(ITERATOR *it)
+LLIST_LINK *iterator_next(ITERATOR *it)
 {
-	register LIST_LINK *link = NULL;
+	register LLIST_LINK *link = NULL;
 	if(it && it->list && it->list->valid && it->current) {
-		for(link = it->current; link && !link->data; link = link->next);
+		if( it->moved ) {
+			for(link = it->current->next; link && !link->data; link = link->next);
+		} else {
+			for(link = it->current; link && !link->data; link = link->next);
 
-//		log_stringf("iterator_next: list =  %016lX, link = %016lX.", it->list, link);
-		it->current = link ? link->next : NULL;
+			it->moved = TRUE;
+		}
+		it->current = link;
+
 	}
 
 	return link;
@@ -7691,13 +7667,17 @@ LIST_LINK *iterator_next(ITERATOR *it)
 
 void *iterator_nextdata(ITERATOR *it)
 {
-	register LIST_LINK *link = NULL;
-	//register LIST_LINK *next = NULL;
+	register LLIST_LINK *link = NULL;
+	//register LLIST_LINK *next = NULL;
 	if(it && it->list && it->list->valid && it->current) {
-		for(link = it->current; link && !link->data; link = link->next);
+		if( it->moved ) {
+			for(link = it->current->next; link && !link->data; link = link->next);
+		} else {
+			for(link = it->current; link && !link->data; link = link->next);
 
-//		log_stringf("iterator_nextdata: list =  %016lX, link = %016lX.", it->list, link);
-		it->current = link ? link->next : NULL;
+			it->moved = TRUE;
+		}
+		it->current = link;
 	}
 
 	return link ? link->data : NULL;

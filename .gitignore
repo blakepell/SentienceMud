@@ -37,3 +37,5 @@ obj/
 sent
 test
 /*.bak
+*.tws
+zzz/

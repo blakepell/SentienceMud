@@ -1497,6 +1497,9 @@ void show_room(CHAR_DATA *ch, ROOM_INDEX_DATA *room, bool remote, bool silent)
 			sprintf(buf, "{G[Room %ld]", room->vnum);
 		}
 
+		if( room->persist )
+			strcat(buf, " {WPERSIST{x");
+
 		send_to_char(buf, ch);
 
 /*

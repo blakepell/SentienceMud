@@ -4,6 +4,7 @@
 #include "wilds.h"
 #include <math.h>
 
+extern bool wiznet_script;
 
 //
 // All strings will be stored in buffers by the calling routine.
@@ -36,22 +37,22 @@
 #define ISARG_WID(x)	(argv[(x)].type == ENT_WILDS_ID)
 #define ISARG_CHID(x)	(argv[(x)].type == ENT_CHURCH_ID)
 #define ISARG_BLIST(x,t)	((argv[(x)].type == (t)) && IS_VALID(argv[(x)].d.blist))
-#define ISARG_BLIST_ROOM(x)	ISARG_BLIST(x,ENT_BLIST_ROOM)
-#define ISARG_BLIST_MOB(x)	ISARG_BLIST(x,ENT_BLIST_MOB)
-#define ISARG_BLIST_OBJ(x)	ISARG_BLIST(x,ENT_BLIST_OBJ)
-#define ISARG_BLIST_TOK(x)	ISARG_BLIST(x,ENT_BLIST_TOK)
-#define ISARG_BLIST_EXIT(x)	ISARG_BLIST(x,ENT_BLIST_EXIT)
-#define ISARG_BLIST_SKILL(x)	ISARG_BLIST(x,ENT_BLIST_SKILL)
-#define ISARG_BLIST_AREA(x)		ISARG_BLIST(x,ENT_BLIST_AREA)
-#define ISARG_BLIST_WILDS(x)	ISARG_BLIST(x,ENT_BLIST_WILDS)
+#define ISARG_BLLIST_ROOM(x)	ISARG_BLIST(x,ENT_BLLIST_ROOM)
+#define ISARG_BLLIST_MOB(x)	ISARG_BLIST(x,ENT_BLLIST_MOB)
+#define ISARG_BLLIST_OBJ(x)	ISARG_BLIST(x,ENT_BLLIST_OBJ)
+#define ISARG_BLLIST_TOK(x)	ISARG_BLIST(x,ENT_BLLIST_TOK)
+#define ISARG_BLLIST_EXIT(x)	ISARG_BLIST(x,ENT_BLLIST_EXIT)
+#define ISARG_BLLIST_SKILL(x)	ISARG_BLIST(x,ENT_BLLIST_SKILL)
+#define ISARG_BLLIST_AREA(x)		ISARG_BLIST(x,ENT_BLLIST_AREA)
+#define ISARG_BLLIST_WILDS(x)	ISARG_BLIST(x,ENT_BLLIST_WILDS)
 
-#define ISARG_PLIST_STR(x)	ISARG_BLIST(x,ENT_PLIST_STR)
-#define ISARG_PLIST_CONN(x)	ISARG_BLIST(x,ENT_PLIST_CONN)
-#define ISARG_PLIST_ROOM(x)	ISARG_BLIST(x,ENT_PLIST_ROOM)
-#define ISARG_PLIST_MOB(x)	ISARG_BLIST(x,ENT_PLIST_MOB)
-#define ISARG_PLIST_OBJ(x)	ISARG_BLIST(x,ENT_PLIST_OBJ)
-#define ISARG_PLIST_TOK(x)	ISARG_BLIST(x,ENT_PLIST_TOK)
-#define ISARG_PLIST_CHURCH(x)	ISARG_BLIST(x,ENT_PLIST_CHURCH)
+#define ISARG_PLLIST_STR(x)	ISARG_BLIST(x,ENT_PLLIST_STR)
+#define ISARG_PLLIST_CONN(x)	ISARG_BLIST(x,ENT_PLLIST_CONN)
+#define ISARG_PLLIST_ROOM(x)	ISARG_BLIST(x,ENT_PLLIST_ROOM)
+#define ISARG_PLLIST_MOB(x)	ISARG_BLIST(x,ENT_PLLIST_MOB)
+#define ISARG_PLLIST_OBJ(x)	ISARG_BLIST(x,ENT_PLLIST_OBJ)
+#define ISARG_PLLIST_TOK(x)	ISARG_BLIST(x,ENT_PLLIST_TOK)
+#define ISARG_PLLIST_CHURCH(x)	ISARG_BLIST(x,ENT_PLLIST_CHURCH)
 
 
 #define ARG_NUM(x)	ARG_TYPE(x,num)
@@ -2111,6 +2112,7 @@ DECL_IFC_FUN(ifc_varnumber)
 
 DECL_IFC_FUN(ifc_vardefined)
 {
+	char buf[MIL];
 	PROG_DATA * progs = NULL;
 	pVARIABLE var;
 	if(ISARG_MOB(0)) { progs = ARG_MOB(0)->progs; ++argv; }
@@ -2122,8 +2124,18 @@ DECL_IFC_FUN(ifc_vardefined)
 	else if(room) progs = room->progs;
 	else if(token) progs = token->progs;
 
+//	if(wiznet_script) {
+//		sprintf(buf, "vardefined searching for '%s'", ARG_STR(0));
+//		wiznet(buf,NULL,NULL,WIZ_SCRIPTS,0,0);
+//	}
+
 	if(progs && progs->vars && ISARG_STR(0)) {
 		var = variable_get(progs->vars,ARG_STR(0));
+
+//		if( var && wiznet_script ) {
+//			sprintf(buf, "vardefined found variable: '%s'", var->name);
+//			wiznet(buf,NULL,NULL,WIZ_SCRIPTS,0,0);
+//		}
 
 		*ret = var ? TRUE : FALSE;
 		return TRUE;
@@ -3794,24 +3806,24 @@ DECL_IFC_FUN(ifc_ispersist)
 DECL_IFC_FUN(ifc_listcontains)
 {
 	ITERATOR it;
-	LIST_UID_DATA *luid;
-	LIST_ROOM_DATA *lroom;
+	LLIST_UID_DATA *luid;
+	LLIST_ROOM_DATA *lroom;
 	ROOM_INDEX_DATA *proom;
 	CHAR_DATA *pmob;
 	OBJ_DATA *pobj;
 	TOKEN_DATA *ptoken;
 
 	*ret = FALSE;
-	if(ISARG_BLIST_ROOM(0) && ISARG_ROOM(1)) {
+	if(ISARG_BLLIST_ROOM(0) && ISARG_ROOM(1)) {
 		iterator_start(&it,ARG_BLIST(0));
-		while( (lroom = (LIST_ROOM_DATA *)iterator_nextdata(&it)) ) {
+		while( (lroom = (LLIST_ROOM_DATA *)iterator_nextdata(&it)) ) {
 			if( lroom->room == ARG_ROOM(1) ) {
 				*ret = TRUE;
 				break;
 			}
 		}
 		iterator_stop(&it);
-	} else if(ISARG_PLIST_ROOM(0) && ISARG_ROOM(1)) {
+	} else if(ISARG_PLLIST_ROOM(0) && ISARG_ROOM(1)) {
 		iterator_start(&it,ARG_BLIST(0));
 		while( (proom = (ROOM_INDEX_DATA *)iterator_nextdata(&it)) ) {
 			if( proom == ARG_ROOM(1) ) {
@@ -3820,16 +3832,16 @@ DECL_IFC_FUN(ifc_listcontains)
 			}
 		}
 		iterator_stop(&it);
-	} else if(ISARG_BLIST_MOB(0) && ISARG_MOB(1)) {
+	} else if(ISARG_BLLIST_MOB(0) && ISARG_MOB(1)) {
 		iterator_start(&it,ARG_BLIST(0));
-		while( (luid = (LIST_UID_DATA *)iterator_nextdata(&it)) ) {
+		while( (luid = (LLIST_UID_DATA *)iterator_nextdata(&it)) ) {
 			if( (CHAR_DATA*)(luid->ptr) == ARG_MOB(1) ) {
 				*ret = TRUE;
 				break;
 			}
 		}
 		iterator_stop(&it);
-	} else if(ISARG_PLIST_MOB(0) && ISARG_MOB(1)) {
+	} else if(ISARG_PLLIST_MOB(0) && ISARG_MOB(1)) {
 		iterator_start(&it,ARG_BLIST(0));
 		while( (pmob = (CHAR_DATA *)iterator_nextdata(&it)) ) {
 			if( pmob == ARG_MOB(1) ) {
@@ -3838,16 +3850,16 @@ DECL_IFC_FUN(ifc_listcontains)
 			}
 		}
 		iterator_stop(&it);
-	} else if(ISARG_BLIST_OBJ(0) && ISARG_OBJ(1)) {
+	} else if(ISARG_BLLIST_OBJ(0) && ISARG_OBJ(1)) {
 		iterator_start(&it,ARG_BLIST(0));
-		while( (luid = (LIST_UID_DATA *)iterator_nextdata(&it)) ) {
+		while( (luid = (LLIST_UID_DATA *)iterator_nextdata(&it)) ) {
 			if( (OBJ_DATA*)(luid->ptr) == ARG_OBJ(1) ) {
 				*ret = TRUE;
 				break;
 			}
 		}
 		iterator_stop(&it);
-	} else if(ISARG_PLIST_OBJ(0) && ISARG_OBJ(1)) {
+	} else if(ISARG_PLLIST_OBJ(0) && ISARG_OBJ(1)) {
 		iterator_start(&it,ARG_BLIST(0));
 		while( (pobj = (OBJ_DATA *)iterator_nextdata(&it)) ) {
 			if( pobj == ARG_OBJ(1) ) {
@@ -3856,16 +3868,16 @@ DECL_IFC_FUN(ifc_listcontains)
 			}
 		}
 		iterator_stop(&it);
-	} else if(ISARG_BLIST_TOK(0) && ISARG_TOK(1)) {
+	} else if(ISARG_BLLIST_TOK(0) && ISARG_TOK(1)) {
 		iterator_start(&it,ARG_BLIST(0));
-		while( (luid = (LIST_UID_DATA *)iterator_nextdata(&it)) ) {
+		while( (luid = (LLIST_UID_DATA *)iterator_nextdata(&it)) ) {
 			if( (TOKEN_DATA*)(luid->ptr) == ARG_TOK(1) ) {
 				*ret = TRUE;
 				break;
 			}
 		}
 		iterator_stop(&it);
-	} else if(ISARG_PLIST_TOK(0) && ISARG_TOK(1)) {
+	} else if(ISARG_PLLIST_TOK(0) && ISARG_TOK(1)) {
 		iterator_start(&it,ARG_BLIST(0));
 		while( (ptoken = (TOKEN_DATA *)iterator_nextdata(&it)) ) {
 			if( ptoken == ARG_TOK(1) ) {
