@@ -3,6 +3,10 @@
 #include "scripts.h"
 #include "wilds.h"
 
+
+bool string_argremove_phrase(char *src, char *phrase, char *buf);
+bool string_argremove_index(char *src, int argindex, char *buf);
+
 // Prototypes - obviously
 pVARIABLE variable_new(void);					// Most likely just INTERNAL
 void variable_freedata (pVARIABLE v);
@@ -1142,6 +1146,86 @@ bool variables_append_string(ppVARIABLE list,char *name,char *str)
 		var->_.s = nstr;
 	} else
 		var->_.s = str_dup(str);
+	var->type = VAR_STRING;
+	return TRUE;
+}
+
+bool variables_argremove_string_index(ppVARIABLE list,char *name,int argindex)
+{
+	pVARIABLE var = variable_create(list,name,FALSE,FALSE);
+	char *nstr;
+	int len;
+	char buf[MIL];
+
+	if(!var) return FALSE;
+
+	if(var->type == VAR_STRING_S) {
+		len = strlen(var->_.s);
+
+		nstr = alloc_mem(len);
+		if(!nstr) return FALSE;
+
+		if(!string_argremove_index(var->_.s, argindex, nstr)) {
+			free_mem(nstr, len);
+			return FALSE;
+		}
+
+		var->_.s = nstr;
+	} else if(var->type == VAR_STRING) {
+		len = strlen(var->_.s);
+
+		nstr = alloc_mem(len);
+		if(!nstr) return FALSE;
+
+		if(!string_argremove_index(var->_.s, argindex, nstr)) {
+			free_mem(nstr, len);
+			return FALSE;
+		}
+
+		free_string(var->_.s);
+		var->_.s = nstr;
+	} else
+		var->_.s = str_dup("");
+	var->type = VAR_STRING;
+	return TRUE;
+}
+
+bool variables_argremove_string_phrase(ppVARIABLE list,char *name,char *phrase)
+{
+	pVARIABLE var = variable_create(list,name,FALSE,FALSE);
+	char *nstr;
+	int len;
+	char buf[MIL];
+
+	if(!var) return FALSE;
+
+	if(var->type == VAR_STRING_S) {
+		len = strlen(var->_.s);
+
+		nstr = alloc_mem(len);
+		if(!nstr) return FALSE;
+
+		if(!string_argremove_phrase(var->_.s, phrase, nstr)) {
+			free_mem(nstr, len);
+			return FALSE;
+		}
+
+		var->_.s = nstr;
+	} else if(var->type == VAR_STRING) {
+		len = strlen(var->_.s);
+
+		nstr = alloc_mem(len);
+		if(!nstr) return FALSE;
+
+		if(!string_argremove_phrase(var->_.s, phrase, nstr)) {
+			free_mem(nstr, len);
+			return FALSE;
+		}
+
+		free_string(var->_.s);
+		var->_.s = nstr;
+	} else
+		var->_.s = str_dup("");
 	var->type = VAR_STRING;
 	return TRUE;
 }

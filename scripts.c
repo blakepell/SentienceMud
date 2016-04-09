@@ -4556,7 +4556,7 @@ void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument)
 
 	// Format: APPEND <string>[ <word index>]
 	} else if(!str_cmp(buf,"append")) {
-		char tmp[MIL], *p;
+		char tmp[MSL], *p;
 
 		switch(arg.type) {
 		case ENT_NUMBER:	sprintf(tmp,"%d",arg.d.num); break;
@@ -4573,6 +4573,20 @@ void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument)
 			for(i=0;i<arg.d.num && p && *p;i++) p = one_argument(p,buf);
 
 			if(arg.d.num > 0 && (i == arg.d.num)) variables_append_string(vars,name,buf);
+			break;
+		}
+
+	// Format: ARGREMOVE <word index>
+	// Format: ARGREMOVE <word to remove>
+	} else if(!str_cmp(buf,"ARGREMOVE")) {
+		switch(arg.type) {
+		case ENT_NUMBER:
+
+			variables_argremove_string_index(vars,name,arg.d.num);
+			break;
+		case ENT_STRING:
+
+			variables_argremove_string_phrase(vars,name,arg.d.str);
 			break;
 		}
 

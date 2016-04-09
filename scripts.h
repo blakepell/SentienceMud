@@ -1699,6 +1699,8 @@ bool variables_append_list_str (ppVARIABLE list, char *name, char *str);
 bool variables_append_list_token (ppVARIABLE list, char *name, TOKEN_DATA *token);
 bool variables_append_list_wilds (ppVARIABLE list, char *name, WILDS_DATA *wilds);
 bool variables_append_string(ppVARIABLE list,char *name,char *str);
+bool variables_argremove_string_index(ppVARIABLE list,char *name,int argindex);
+bool variables_argremove_string_phrase(ppVARIABLE list,char *name,char *phrase);
 bool variables_format_string(ppVARIABLE list,char *name);
 bool variables_set_affect (ppVARIABLE list,char *name,AFFECT_DATA* aff);
 bool variables_set_area (ppVARIABLE list,char *name,AREA_DATA* a);

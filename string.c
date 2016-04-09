@@ -682,3 +682,60 @@ char *numlineas(char *string)
 
     return buf;
 }
+
+
+bool string_argremove_index(char *src, int argindex, char *buf)
+{
+	char *left_start = src;
+	char *left_end = src;
+	char *right_start;
+	char arg[MIL];
+	int i;
+
+	if( !src || !buf || argindex < 0 ) return FALSE;
+
+	strcpy(buf, src);
+
+
+	// Find the left part
+	for(i = 0; i < argindex; i++) {
+		left_end = one_argument(left_end, arg);
+	}
+
+	if(IS_NULLSTR(left_end)) {
+		strcpy(buf, src);
+	}
+
+	// Get the right part
+	right_start = one_argument(left_end, arg);
+
+	strcpy(buf + (int)(left_end - left_start), right_start);
+	return TRUE;
+}
+
+bool string_argremove_phrase(char *src, char *phrase, char *buf)
+{
+	char *left_start = src;
+	char *left_end = src;
+	char *right_start;
+	char arg[MIL];
+	int i;
+
+	if( !src || !buf || IS_NULLSTR(phrase) ) return FALSE;
+
+	strcpy(buf, src);
+
+	while(!IS_NULLSTR(left_end)) {
+		char *rest = one_argument(left_end, arg);
+
+		if(!str_cmp(phrase, arg)) {
+			// If the phrase matches, copy the rest to where the left ended.
+			strcpy(buf + (int)(left_end - left_start), rest);
+			break;
+
+		} else
+			left_end = rest;
+	}
+
+	return TRUE;
+}
