@@ -1168,6 +1168,7 @@ IFCHECK_DATA ifcheck_table[] = {
 	{ "timer",				IFC_ANY,	"",		TRUE,	ifc_timer,				"ifcheck timer" },
 	{ "tokencount",			IFC_ANY,	"En",	TRUE,	ifc_tokencount,			"ifcheck tokencount" },
 	{ "tokenexists",		IFC_ANY,	"N",	FALSE,	ifc_tokenexists,		"ifcheck tokenexists" },
+	{ "tokentimer",			IFC_ANY,	"EN",	TRUE,	ifc_tokentimer,			"ifcheck tokentimer" },
 	{ "tokenvalue",			IFC_ANY,	"ENN",	TRUE,	ifc_tokenvalue,			"ifcheck tokenvalue" },
 	{ "totalfights",		IFC_ANY,	"E",	TRUE,	ifc_totalfights,		"ifcheck totalfights" },
 	{ "totalloss",			IFC_ANY,	"E",	TRUE,	ifc_totalloss,			"ifcheck totalloss" },

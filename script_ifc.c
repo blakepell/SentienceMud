@@ -1916,6 +1916,40 @@ DECL_IFC_FUN(ifc_tokenexists)
 	return TRUE;
 }
 
+DECL_IFC_FUN(ifc_tokentimer)
+{
+	TOKEN_DATA *tok;
+
+	if(ISARG_MOB(0) && ISARG_NUM(1) && ISARG_NUM(2)) {
+		tok = get_token_char(ARG_MOB(0), ARG_NUM(1), ARG_NUM(2));
+
+	} else if(ISARG_OBJ(0) && ISARG_NUM(1) && ISARG_NUM(2)) {
+		tok = get_token_obj(ARG_OBJ(0), ARG_NUM(1), ARG_NUM(2));
+
+	} else if(ISARG_ROOM(0) && ISARG_NUM(1) && ISARG_NUM(2)) {
+		tok = get_token_room(ARG_ROOM(0), ARG_NUM(1), ARG_NUM(2));
+
+	} else if(ISARG_MOB(0) && ISARG_NUM(1)) {
+		tok = get_token_char(ARG_MOB(0), ARG_NUM(1), 1);
+
+	} else if(ISARG_OBJ(0) && ISARG_NUM(1)) {
+		tok = get_token_obj(ARG_OBJ(0), ARG_NUM(1), 1);
+
+	} else if(ISARG_ROOM(0) && ISARG_NUM(1)) {
+		tok = get_token_room(ARG_ROOM(0), ARG_NUM(1), 1);
+
+	} else if(ISARG_TOK(0)) {
+		tok = ARG_TOK(0);
+	} else
+		return FALSE;
+
+	// If the token doesn't exist on the entity, any checks on its values are always false.
+	if(!tok) return FALSE;
+
+	*ret = tok->timer;
+	return TRUE;
+}
+
 DECL_IFC_FUN(ifc_tokentype)
 {
 	return FALSE;
@@ -2564,6 +2598,8 @@ DECL_IFC_FUN(ifc_timer)
 			else
 				return FALSE;
 		}
+	} else if(ISARG_TOK(0)) {
+		*ret = ARG_TOK(0)->timer;
 	} else
 		return FALSE;
 
