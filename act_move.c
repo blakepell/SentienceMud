@@ -958,9 +958,9 @@ void do_search(CHAR_DATA *ch, char *argument)
 	} else {
 		OBJ_DATA *container;
 
-		if( (container = get_obj_here(ch, ch->in_room, argument)) == NULL )
+		if( (container = get_obj_here(ch, NULL, argument)) == NULL )
 		{
-			act("You see no $T.", ch, NULL, NULL, NULL, NULL, argument, NULL, TO_CHAR);
+			act("You see no $t.", ch, NULL, NULL, NULL, NULL, argument, NULL, TO_CHAR);
 			return;
 		}
 
