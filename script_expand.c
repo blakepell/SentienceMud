@@ -1824,7 +1824,7 @@ char *expand_entity_object(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		break;
 	case ENTITY_OBJ_OWNER:
 		arg->type = ENT_STRING;
-		arg->d.str = arg->d.mob && arg->d.mob->owner ? arg->d.mob->owner : &str_empty[0];
+		arg->d.str = arg->d.obj && arg->d.obj->owner ? arg->d.obj->owner : &str_empty[0];
 		break;
 	case ENTITY_OBJ_ROOM:
 		arg->type = ENT_ROOM;
