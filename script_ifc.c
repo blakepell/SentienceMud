@@ -1339,25 +1339,25 @@ DECL_IFC_FUN(ifc_objexists)
 
 DECL_IFC_FUN(ifc_objextra)
 {
-	*ret = (ISARG_OBJ(0) && IS_SET(ARG_OBJ(0)->extra_flags, flag_value(extra_flags,ARG_STR(1))));
+	*ret = (ISARG_OBJ(0) && ISARG_STR(1) && IS_SET(ARG_OBJ(0)->extra_flags, flag_value(extra_flags,ARG_STR(1))));
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_objextra2)
 {
-	*ret = (ISARG_OBJ(0) && IS_SET(ARG_OBJ(0)->extra2_flags, flag_value(extra2_flags,ARG_STR(1))));
+	*ret = (ISARG_OBJ(0) && ISARG_STR(1) && IS_SET(ARG_OBJ(0)->extra2_flags, flag_value(extra2_flags,ARG_STR(1))));
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_objextra3)
 {
-	*ret = (ISARG_OBJ(0) && IS_SET(ARG_OBJ(0)->extra3_flags, flag_value(extra3_flags,ARG_STR(1))));
+	*ret = (ISARG_OBJ(0) && ISARG_STR(1) && IS_SET(ARG_OBJ(0)->extra3_flags, flag_value(extra3_flags,ARG_STR(1))));
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_objextra4)
 {
-	*ret = (ISARG_OBJ(0) && IS_SET(ARG_OBJ(0)->extra4_flags, flag_value(extra4_flags,ARG_STR(1))));
+	*ret = (ISARG_OBJ(0) && ISARG_STR(1) && IS_SET(ARG_OBJ(0)->extra4_flags, flag_value(extra4_flags,ARG_STR(1))));
 	return TRUE;
 }
 
@@ -4003,3 +4003,62 @@ DECL_IFC_FUN(ifc_max)
 	return FALSE;
 }
 
+// if candrop $mobile $object[ boolean[ boolean]]
+// boolean 1: check keep
+DECL_IFC_FUN(ifc_candrop)
+{
+	OBJ_DATA *o;
+	bool keep = FALSE;
+	bool silent = FALSE;
+	if(!ISARG_MOB(0)) return FALSE;
+	if(!ISARG_OBJ(1)) return FALSE;
+
+	if(ISARG_NUM(2) || ISARG_STR(2))
+		keep = ARG_BOOL(2);
+
+	if(ISARG_NUM(3) || ISARG_STR(3))
+		silent = ARG_BOOL(3);
+
+	o = ARG_OBJ(1);
+
+	*ret = can_drop_obj(ARG_MOB(0), o, silent) && !(keep && IS_SET(o->extra2_flags, ITEM_KEPT));
+	return TRUE;
+}
+
+// if canget $mobile $object[ $container] [boolean]
+DECL_IFC_FUN(ifc_canget)
+{
+	CHAR_DATA *ch;
+	OBJ_DATA *o, *c = NULL;
+	bool silent;
+
+	if(!ISARG_MOB(0)) return FALSE;
+	if(!ISARG_OBJ(1)) return FALSE;
+
+	ch = ARG_MOB(0);
+	o = ARG_OBJ(1);
+
+	if(ISARG_OBJ(2)) {
+		c = ARG_OBJ(2);
+		++argv;
+		--argc;
+	}
+
+	silent = ARG_BOOL(2);
+
+	*ret = can_get_obj(ch, o, c, NULL, silent);
+	return TRUE;
+}
+
+// if canput $mobile $object $container [boolean]
+DECL_IFC_FUN(ifc_canput)
+{
+	bool silent;
+
+	if(!ISARG_MOB(0)) return FALSE;
+	if(!ISARG_OBJ(1)) return FALSE;
+	if(!ISARG_OBJ(2)) return FALSE;
+
+	*ret = can_put_obj(ARG_MOB(0), ARG_OBJ(1), ARG_OBJ(2), NULL, ARG_BOOL(3));
+	return TRUE;
+}
