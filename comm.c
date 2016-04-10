@@ -3529,7 +3529,6 @@ void page_to_char(const char *txt, CHAR_DATA *ch)
 				}
 				else
 					*point2 = *point;
-				*point2 = *point;
 				*++point2 = '\0';
 			}
 			*point2 = '\0';
@@ -3908,6 +3907,7 @@ void colourconv(char *buffer, const char *txt, CHAR_DATA *ch)
 {
     const char *point;
     int skip = 0;
+    bool capitalize = FALSE;
 
     if(ch->desc && txt)
     {
@@ -3918,12 +3918,20 @@ void colourconv(char *buffer, const char *txt, CHAR_DATA *ch)
 		if(*point == '{')
 		{
 		    point++;
-		    skip = colour(*point, ch, buffer);
-		    while(skip-- > 0)
-			++buffer;
+		    if(*point == '+')
+		    	capitalize = TRUE;
+		    else {
+			    skip = colour(*point, ch, buffer);
+		    	while(skip-- > 0)
+				++buffer;
+			}
 		    continue;
 		}
-		*buffer = *point;
+		if( capitalize && isalpha(*point) ) {
+			*buffer = UPPER(*point);
+			capitalize = FALSE;
+		} else
+			*buffer = *point;
 		*++buffer = '\0';
 	    }
 	    *buffer = '\0';
@@ -3935,9 +3943,16 @@ void colourconv(char *buffer, const char *txt, CHAR_DATA *ch)
 		if(*point == '{')
 		{
 		    point++;
+		    if(*point == '+')
+		    	capitalize = TRUE;
+
 		    continue;
 		}
-		*buffer = *point;
+		if( capitalize && isalpha(*point) ) {
+			*buffer = UPPER(*point);
+			capitalize = FALSE;
+		} else
+			*buffer = *point;
 		*++buffer = '\0';
 	    }
 	    *buffer = '\0';
