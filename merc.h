@@ -212,6 +212,7 @@ typedef struct	invasion_quest		INVASION_QUEST;
 typedef struct	chat_room_data		CHAT_ROOM_DATA;
 typedef struct	descriptor_data		DESCRIPTOR_DATA;
 typedef struct	exit_data		EXIT_DATA;
+typedef struct	destination_data	DESTINATION_DATA;
 typedef struct	extra_descr_data	EXTRA_DESCR_DATA;
 typedef struct	global_data		GLOBAL_DATA;
 typedef struct	help_category		HELP_CATEGORY;
@@ -3928,6 +3929,13 @@ struct	obj_data
 #define OBJ_ARMOR_STRONG 	3
 #define OBJ_ARMOR_HEAVY 	4
 
+struct destination_data {
+	ROOM_INDEX_DATA *room;	// For an existing room
+	int wx;
+	int wy;
+	WILDS_DATA *wilds;
+};
+
 /*
  * Exit data.
  */
@@ -6134,6 +6142,7 @@ void drunk_walk( CHAR_DATA *ch, int door );
 void fade_end       args( ( CHAR_DATA *ch ) );
 void hide_end       args( ( CHAR_DATA *ch ) );
 ROOM_INDEX_DATA *exit_destination(EXIT_DATA *pexit);
+bool exit_destination_data(EXIT_DATA *pexit, DESTINATION_DATA *pdest);
 void move_char	args( ( CHAR_DATA *ch, int door, bool follow ) );
 void move_char_new( CHAR_DATA *ch, int door );
 OBJ_DATA *get_key( CHAR_DATA *ch, int vnum );

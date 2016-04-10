@@ -192,6 +192,105 @@ ROOM_INDEX_DATA *exit_destination(EXIT_DATA *pexit)
 	return to_room;
 }
 
+bool exit_destination_data(EXIT_DATA *pexit, DESTINATION_DATA *pDest)
+{
+	ROOM_INDEX_DATA *in_room = NULL;
+	ROOM_INDEX_DATA *to_room = NULL;
+	WILDS_DATA *in_wilds = NULL;
+	WILDS_DATA *to_wilds = NULL;
+	WILDS_TERRAIN *pTerrain;
+	int to_vroom_x = 0;
+	int to_vroom_y = 0;
+
+	if(!pexit || !pexit->from_room || !pDest) {
+		return FALSE;
+	}
+
+	in_room = pexit->from_room;
+	in_wilds = in_room->wilds;
+
+	if (pexit->from_room->wilds) {
+		/* Char is in a wilds virtual room. */
+		if (IS_SET(pexit->exit_info, EX_VLINK)) {
+			/* This is a vlink to different wilderness location, be it on the same map or not */
+			if (pexit->wilds.wilds_uid > 0) {
+				to_wilds = get_wilds_from_uid(NULL, pexit->wilds.wilds_uid);
+				to_vroom_x = pexit->wilds.x;
+				to_vroom_y = pexit->wilds.y;
+
+				if (!(pTerrain = get_terrain_by_coors(to_wilds, to_vroom_x, to_vroom_y))) {
+/*					wiznet("exit_destination()->NULL A",NULL,NULL,WIZ_TESTING,0,0); */
+					return FALSE;
+				}
+
+				to_room = get_wilds_vroom(to_wilds, to_vroom_x, to_vroom_y);
+				if( !to_room ) {
+					pDest->wilds = to_wilds;
+					pDest->wx = to_vroom_x;
+					pDest->wy = to_vroom_y;
+				}
+
+
+			/* Otherwise, Exit leads to a static room. */
+			} else if (!(to_room = pexit->u1.to_room)) {
+				return FALSE;
+			}
+		} else {
+			/* In wilds and exit leads to another vroom. */
+			to_wilds = in_wilds;
+			to_vroom_x = get_wilds_vroom_x_by_dir(in_wilds, in_room->x, in_room->y, pexit->orig_door);
+			to_vroom_y = get_wilds_vroom_y_by_dir(in_wilds, in_room->x, in_room->y, pexit->orig_door);
+
+			if (!(pTerrain = get_terrain_by_coors(in_wilds, to_vroom_x, to_vroom_y))) {
+				return FALSE;
+			}
+
+			to_room = get_wilds_vroom(to_wilds, to_vroom_x, to_vroom_y);
+			if( !to_room ) {
+				pDest->wilds = to_wilds;
+				pDest->wx = to_vroom_x;
+				pDest->wy = to_vroom_y;
+			}
+		}
+	} else {
+		/* Char is in a static room. */
+		if (IS_SET(pexit->exit_info, EX_VLINK)) {
+			/* Exit is a vlink, leading to a wilds vroom. */
+			to_wilds = get_wilds_from_uid(NULL, pexit->wilds.wilds_uid);
+			to_vroom_x = pexit->wilds.x;
+			to_vroom_y = pexit->wilds.y;
+
+			if (!(pTerrain = get_terrain_by_coors(to_wilds, to_vroom_x, to_vroom_y))) {
+/*				wiznet("exit_destination()->NULL F",NULL,NULL,WIZ_TESTING,0,0); */
+				return FALSE;
+			}
+
+			to_room = get_wilds_vroom(to_wilds, to_vroom_x, to_vroom_y);
+			if(!to_room && !(to_room = create_wilds_vroom(to_wilds, to_vroom_x, to_vroom_y))) {
+/*				wiznet("exit_destination()->NULL G",NULL,NULL,WIZ_TESTING,0,0); */
+				return FALSE;
+			}
+
+		} else if (IS_SET(pexit->exit_info, EX_ENVIRONMENT)) {
+			if(!IS_SET(pexit->from_room->room2_flags,ROOM_VIRTUAL_ROOM)) {
+/*				wiznet("exit_destination()->NULL H",NULL,NULL,WIZ_TESTING,0,0); */
+				return FALSE;
+			}
+
+			if(!(to_room = get_environment(pexit->from_room))) {
+/*				wiznet("exit_destination()->NULL I",NULL,NULL,WIZ_TESTING,0,0); */
+				return FALSE;
+			}
+		} else if (!(to_room = pexit->u1.to_room)) {
+			return FALSE;
+		}
+	}
+
+	pDest->room = to_room;
+
+	return TRUE;
+}
+
 /* MOVED: movement/move.c */
 void move_char(CHAR_DATA *ch, int door, bool follow)
 {
@@ -251,7 +350,6 @@ void move_char(CHAR_DATA *ch, int door, bool follow)
 
 	if(!can_see_room (ch, to_room)) {
 		send_to_char ("Alas, you cannot go that way.\n\r", ch);
-/*		wiznet("move_char()-> !can_see_room",NULL,NULL,WIZ_TESTING,0,0); */
 		return;
 	}
 

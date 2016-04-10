@@ -1808,14 +1808,14 @@ void char_from_room(CHAR_DATA *ch)
 			bug("Char_from_room: ch not found.", 0);
     }
 
+    list_remlink(ch->in_room->lpeople, ch);
+    list_remlink(ch->in_room->lentity, ch);
+
     if (ch->in_wilds)
     {
         if (!ch->in_room->people && !ch->in_room->contents)
             destroy_wilds_vroom(ch->in_room);
     }
-
-    list_remlink(ch->in_room->lpeople, ch);
-    list_remlink(ch->in_room->lentity, ch);
 
     ch->in_room = NULL;
     ch->in_wilds = NULL;        /* Vizz - wilds */
@@ -3819,6 +3819,7 @@ bool can_see_room(CHAR_DATA *ch, ROOM_INDEX_DATA *pRoomIndex)
  */
 bool can_see_obj(CHAR_DATA *ch, OBJ_DATA *obj)
 {
+	char buf[MSL];
     if (obj == NULL)
     {
 	bug("can_see_obj, obj was NULL!!!", 0);
@@ -3826,21 +3827,25 @@ bool can_see_obj(CHAR_DATA *ch, OBJ_DATA *obj)
     }
 
     // Toggled on dead people's possessions.
-    if (IS_SET(obj->extra2_flags, ITEM_UNSEEN))
-	return FALSE;
+    if (IS_SET(obj->extra2_flags, ITEM_UNSEEN)) {
+		return FALSE;
+	}
 
-    if (IS_SET(obj->extra2_flags, ITEM_BURIED))
-	return FALSE;
+    if (IS_SET(obj->extra2_flags, ITEM_BURIED)) {
+		return FALSE;
+	}
 
-    if (obj->item_type == ITEM_SEED && IS_SET(obj->extra_flags, ITEM_PLANTED))
-	return FALSE;
+    if (obj->item_type == ITEM_SEED && IS_SET(obj->extra_flags, ITEM_PLANTED)) {
+		return FALSE;
+	}
 
     // Item hidden on the ground, must be searched for first
-    if (IS_SET(obj->extra_flags, ITEM_HIDDEN) && obj->in_room != NULL)
-	return FALSE;
+    if (IS_SET(obj->extra_flags, ITEM_HIDDEN) && obj->in_room != NULL) {
+		return FALSE;
+	}
 
     if (!IS_NPC(ch) && IS_SET(ch->act, PLR_HOLYLIGHT))
-	return TRUE;
+		return TRUE;
 
     /*
     if (IS_NPC(ch)

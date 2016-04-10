@@ -31,6 +31,7 @@
 #include <string.h>
 #include <time.h>
 #include "merc.h"
+#include "wilds.h"
 
 char *const distance[7] =
 {
@@ -47,6 +48,67 @@ char *const distance[7] =
 /* local functions */
 void scan_list(ROOM_INDEX_DATA *scan_room, CHAR_DATA *ch, int depth, int door);
 void scan_char(CHAR_DATA *victim, CHAR_DATA *ch, int depth, int door );
+
+void scan_direction(CHAR_DATA *ch, ROOM_INDEX_DATA *start_room, int max_depth, int door)
+{
+	int depth;
+	int to_x, to_y;
+	DESTINATION_DATA dest;
+	EXIT_DATA *pExit;
+	WILDS_TERRAIN *pTerrain;
+
+	// Initialize current destination data to the start room
+	dest.room = start_room;
+	dest.wilds = NULL;
+	dest.wx = 0;
+	dest.wy = 0;
+
+	for( depth = 0; depth < max_depth; depth++) {
+
+		if( dest.room ) {
+			// We have an actual room (static, clone or existing wilds)
+			if ((pExit = dest.room->exit[door])) {
+				// Hidden exits that haven't been found
+				if(IS_SET(pExit->exit_info,EX_HIDDEN) && !IS_SET(pExit->exit_info,EX_FOUND))
+					return;
+
+				// Closed exits
+				if(IS_SET(pExit->exit_info, EX_CLOSED))
+					return;
+
+				if(!exit_destination_data(pExit, &dest))
+					return;
+
+				// We have an actual room
+				if(dest.room) {
+
+					if(!can_see_room (ch, dest.room))
+						// FIXME -
+						//	Should this be return, meaning it stops scanning
+						//	Should this be continue, meaning it could see beyond a dark room (for instance)
+						return;
+
+					scan_list(dest.room, ch, depth, door);
+				}
+			}
+		} else if(dest.wilds) {
+			// We have a wilds location, the room has not been loaded
+
+			to_x = get_wilds_vroom_x_by_dir(dest.wilds, dest.wx, dest.wy, door);
+			to_y = get_wilds_vroom_y_by_dir(dest.wilds, dest.wx, dest.wy, door);
+
+			// Nothing here to reach, so stop
+			if (!(pTerrain = get_terrain_by_coors(dest.wilds, to_x, to_y)))
+				return;
+
+			dest.room = get_wilds_vroom(dest.wilds, to_x, to_y);
+			dest.wx = to_x;
+			dest.wy = to_y;
+		} else
+			return;
+
+	}
+}
 
 
 void do_scan(CHAR_DATA *ch, char *argument)
@@ -74,6 +136,8 @@ void do_scan(CHAR_DATA *ch, char *argument)
 		scan_list(ch->in_room, ch, 0, -1);
 
 		for (door = 0; door < MAX_DIR; door++ ) {
+			scan_direction(ch, ch->in_room, max_depth, door);
+			/*
 			scan_room = ch->in_room;
 
 			for (depth = 1; depth < max_depth; depth++) {
@@ -96,6 +160,7 @@ void do_scan(CHAR_DATA *ch, char *argument)
 					scan_list(dest, ch, depth, door);
 				}
 			}
+			*/
 		}
 
 		return;
@@ -110,6 +175,9 @@ void do_scan(CHAR_DATA *ch, char *argument)
 	act("{YLooking $T, you see:{x", ch, NULL, NULL, NULL, NULL, NULL, dir_name[door], TO_CHAR);
 	act("$n peers intently $T.", ch, NULL, NULL, NULL, NULL, NULL, dir_name[door], TO_ROOM);
 
+	scan_direction(ch, ch->in_room, max_depth, door);
+
+	/*
 	scan_room = ch->in_room;
 	for (depth = 1; depth < max_depth; depth++) {
 		if ((pExit = scan_room->exit[door])) {
@@ -130,7 +198,9 @@ void do_scan(CHAR_DATA *ch, char *argument)
 			scan_room = dest;
 			scan_list(dest, ch, depth, door);
 		}
+
 	}
+	*/
 
 	if (skill > 0)
 		check_improve( ch, gsn_scan, TRUE, 1 );

@@ -236,6 +236,7 @@ ROOM_INDEX_DATA *create_vroom(WILDS_DATA *pWilds,
     ROOM_INDEX_DATA *pRoomIndex;
     WILDS_VLINK *pVLink;
     sh_int door;
+    char buf[MIL];
 
 
 // First check pointer parameters are valid
@@ -291,11 +292,42 @@ ROOM_INDEX_DATA *create_vroom(WILDS_DATA *pWilds,
 	// Nib - replaced the ugly repetitive code with this SAL (Simple Ass Loop) (tm)...
 	link_vroom(pRoomIndex);
 
+//	sprintf(buf, "create_vroom: %ld %ld %ld", pWilds->uid, pRoomIndex->x, pRoomIndex->y);
+//	wiznet(buf,NULL,NULL,WIZ_TESTING,0,0);
+
     return (pRoomIndex);
+}
+
+bool vroom_has_from_vlinks(ROOM_INDEX_DATA *pRoomIndex)
+{
+    WILDS_DATA *pWilds;
+	WILDS_VLINK *pVLink;
+
+    pWilds = pRoomIndex->wilds;
+
+    if (!pWilds)
+    {
+        plogf("wilds.c, vroom_has_vlinks(): pRoomIndex->wilds is NULL.");
+        return FALSE;
+    }
+
+    for (pVLink = pWilds->pVLink; pVLink ; pVLink = pVLink->next)
+    {
+        if (pRoomIndex->x == pVLink->wildsorigin_x && pRoomIndex->y == pVLink->wildsorigin_y &&
+        	IS_SET(pVLink->current_linkage, VLINK_FROM_WILDS))
+        {
+            return TRUE;
+        }
+    }
+
+
+
+	return FALSE;
 }
 
 void destroy_wilds_vroom(ROOM_INDEX_DATA *pRoomIndex)
 {
+	char buf[MIL];
     WILDS_DATA *pWilds;
     ROOM_INDEX_DATA *clone, *next_clone;
 
@@ -307,8 +339,28 @@ void destroy_wilds_vroom(ROOM_INDEX_DATA *pRoomIndex)
     }
 
 	// A persistant or non-wilderness room
-	if( pRoomIndex->persist || !IS_SET(pRoomIndex->room2_flags, ROOM_VIRTUAL_ROOM))
+	if( pRoomIndex->persist || !IS_SET(pRoomIndex->room2_flags, ROOM_VIRTUAL_ROOM)) {
+//		sprintf(buf, "destroy_wilds_vroom: %ld %ld - persist %s, virtual room %s", pRoomIndex->x, pRoomIndex->y, (pRoomIndex->persist ? "YES" : "NO"), (IS_SET(pRoomIndex->room2_flags, ROOM_VIRTUAL_ROOM)?"YES":"NO"));
+//		wiznet(buf,NULL,NULL,WIZ_TESTING,0,0);
 		return;
+	}
+
+    pWilds = pRoomIndex->wilds;
+
+    if (!pWilds)
+    {
+//		sprintf(buf, "destroy_wilds_vroom: ??? %ld %ld - no wilds?", pRoomIndex->x, pRoomIndex->y);
+//		wiznet(buf,NULL,NULL,WIZ_TESTING,0,0);
+        plogf("wilds.c, destroy_wilds_vroom(): pRoomIndex->wilds is NULL.");
+        return;
+    }
+
+	// A wilds room that has a vlink from this room will stay
+	if( vroom_has_from_vlinks(pRoomIndex) ) {
+//		sprintf(buf, "destroy_wilds_vroom: %ld %ld %ld - has from vlinks", pWilds->uid, pRoomIndex->x, pRoomIndex->y);
+//		wiznet(buf,NULL,NULL,WIZ_TESTING,0,0);
+		return;
+	}
 
     if( pRoomIndex->progs ) {
 		if( pRoomIndex->progs->script_ref > 0 ) {
@@ -323,16 +375,14 @@ void destroy_wilds_vroom(ROOM_INDEX_DATA *pRoomIndex)
 	    room_from_environment(clone);
     }
 
-    pWilds = pRoomIndex->wilds;
-
-    if (!pWilds)
-    {
-        plogf("wilds.c, destroy_wilds_vroom(): pRoomIndex->wilds is NULL.");
-        return;
-    }
-
 	list_remlink(pWilds->loaded_vrooms,pRoomIndex);
 	pWilds->loaded_rooms--;
+
+//	sprintf(buf, "destroy_wilds_vroom: %ld %ld %ld - destroying room", pWilds->uid, pRoomIndex->x, pRoomIndex->y);
+//	wiznet(buf,NULL,NULL,WIZ_TESTING,0,0);
+
+	free_room_index(pRoomIndex);
+
     return;
 }
 
