@@ -2367,9 +2367,9 @@ OBJ_DATA *create_object_noid(OBJ_INDEX_DATA *pObjIndex, int level, bool affects)
     obj->times_allowed_fixed	= pObjIndex->times_allowed_fixed;
     obj->fragility	= pObjIndex->fragility;
     obj->item_type	= pObjIndex->item_type;
-    obj->extra_flags	= pObjIndex->extra_flags;
-    obj->extra2_flags   = pObjIndex->extra2_flags;
-    obj->extra3_flags   = pObjIndex->extra3_flags;
+    obj->extra_flags	= pObjIndex->extra_flags & ~(ITEM_INVENTORY | ITEM_PERMANENT | ITEM_NOSKULL | ITEM_PLANTED);
+    obj->extra2_flags   = pObjIndex->extra2_flags & ~(ITEM_ENCHANTED | ITEM_NO_RESURRECT | ITEM_THIRD_EYE | ITEM_BURIED | ITEM_UNSEEN );
+    obj->extra3_flags   = pObjIndex->extra3_flags & ~(ITEM_FORCE_LOOT | ITEM_NO_ANIMATE );
     obj->extra4_flags   = pObjIndex->extra4_flags;
     obj->wear_flags	= pObjIndex->wear_flags;
     obj->value[0]	= pObjIndex->value[0];
@@ -2383,6 +2383,7 @@ OBJ_DATA *create_object_noid(OBJ_INDEX_DATA *pObjIndex, int level, bool affects)
     obj->weight		= pObjIndex->weight;
     obj->cost           = pObjIndex->cost;
     obj->timer		= pObjIndex->timer;
+
 
     /*
      * Mess with object properties.
@@ -2458,6 +2459,7 @@ OBJ_DATA *create_object_noid(OBJ_INDEX_DATA *pObjIndex, int level, bool affects)
 
 	default:
 	    bug("create_object: vnum %ld bad type.", pObjIndex->vnum);
+
 	    break;
     }
 
@@ -2499,6 +2501,7 @@ OBJ_DATA *create_object_noid(OBJ_INDEX_DATA *pObjIndex, int level, bool affects)
     obj->next = object_list;
     object_list	= obj;
     pObjIndex->count++;
+
 
     /* If loading a relic for whatever reason, update the pointers here.*/
     if (pObjIndex->vnum == OBJ_VNUM_RELIC_EXTRA_DAMAGE)
