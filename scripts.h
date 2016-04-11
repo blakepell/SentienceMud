@@ -534,7 +534,10 @@ enum entity_number_enum {
 };
 
 enum entity_string_enum {
-	ENTITY_STR_LEN = ESCAPE_EXTRA
+	ENTITY_STR_LEN = ESCAPE_EXTRA,
+	ENTITY_STR_LOWER,
+	ENTITY_STR_UPPER,
+	ENTITY_STR_CAPITAL
 };
 
 enum entity_mobile_enum {

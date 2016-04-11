@@ -1240,10 +1240,31 @@ char *expand_entity_number(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 
 char *expand_entity_string(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 {
+	char *a, *b;
+
 	switch(*str) {
 	case ENTITY_STR_LEN:
 		arg->type = ENT_NUMBER;
 		arg->d.num = arg->d.str ? strlen(arg->d.str) : 0;
+		break;
+	case ENTITY_STR_LOWER:
+		for(a = arg->buf, b = arg->d.str; *b; a++, b++)
+			*a = LOWER(*b);
+		*a = '\0';
+		arg->d.str = &arg->buf[0];
+		break;
+	case ENTITY_STR_UPPER:
+		for(a = arg->buf, b = arg->d.str; *b; a++, b++)
+			*a = UPPER(*b);
+		*a = '\0';
+		arg->d.str = &arg->buf[0];
+		break;
+	case ENTITY_STR_CAPITAL:
+		for(a = arg->buf, b = arg->d.str; *b; a++, b++)
+			*a = LOWER(*b);
+		arg->buf[0] = UPPER(arg->buf[0]);
+		*a = '\0';
+		arg->d.str = &arg->buf[0];
 		break;
 	default: return NULL;
 	}

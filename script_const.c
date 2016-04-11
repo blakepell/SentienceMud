@@ -156,6 +156,9 @@ ENT_FIELD entity_number[] = {
 ENT_FIELD entity_string[] = {
 	{"len",		ENTITY_STR_LEN,		ENT_NUMBER	},
 	{"length",	ENTITY_STR_LEN,		ENT_NUMBER	},
+	{"lower",	ENTITY_STR_LOWER,	ENT_STRING	},
+	{"upper",	ENTITY_STR_UPPER,	ENT_STRING	},
+	{"capital",	ENTITY_STR_CAPITAL,	ENT_STRING	},
 	{NULL,		0,			ENT_UNKNOWN	}
 };
 
