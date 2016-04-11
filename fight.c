@@ -2413,7 +2413,7 @@ bool check_dodge(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *wield)
 		   || is_same_group(gch, victim)
 		   || !IS_SET(gch->comm, COMM_NOBATTLESPAM)))
 	{
-		act("{Y%n dodges %N's attack.{x", victim, ch, gch, NULL, NULL, NULL, NULL, TO_THIRD);
+		act("{Y$n dodges $N's attack.{x", victim, ch, gch, NULL, NULL, NULL, NULL, TO_THIRD);
 	}
 	}
 
