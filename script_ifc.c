@@ -258,9 +258,9 @@ DECL_IFC_FUN(ifc_church)
 {
 	*ret = FALSE;
 	if(VALID_PLAYER(0) && ARG_MOB(0)->church) {
-		if(ISARG_STR(0) && !str_cmp(ARG_STR(1), ARG_MOB(0)->church->name))
+		if(ISARG_STR(1) && !str_cmp(ARG_STR(1), ARG_MOB(0)->church->name))
 			*ret = TRUE;
-		else if(ISARG_CHURCH(0) && ARG_MOB(0)->church == ARG_CHURCH(1))
+		else if(ISARG_CHURCH(1) && ARG_MOB(0)->church == ARG_CHURCH(1))
 			*ret = TRUE;
 	}
 	return TRUE;

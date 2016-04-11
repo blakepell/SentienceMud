@@ -1545,7 +1545,7 @@ void show_room(CHAR_DATA *ch, ROOM_INDEX_DATA *room, bool remote, bool silent)
 	}
 
 	if (IS_SET(room->room2_flags, ROOM_MULTIPLAY)) {
-		sprintf(buf, "  {W[MULTIPLAY]");
+		sprintf(buf, "  {W[FREE FOR ALL]");
 		send_to_char(buf, ch);
 		linelength -= 13;
 	}
