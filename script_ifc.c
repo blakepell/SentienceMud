@@ -2932,8 +2932,9 @@ DECL_IFC_FUN(ifc_mapvalid)
 			*ret = FALSE;
 		else
 			*ret = check_for_bad_room(pWilds, ARG_NUM(1), ARG_NUM(2));
+
 	}
-	return FALSE;
+	return TRUE;
 }
 
 
@@ -2949,7 +2950,7 @@ DECL_IFC_FUN(ifc_mapwidth)
 			*ret = pWilds->map_size_x;
 	} else
 		*ret = 0;
-	return FALSE;
+	return TRUE;
 }
 
 
