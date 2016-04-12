@@ -52,7 +52,7 @@ SPELL_FUNC(spell_soul_essence)
 			i = i * ( 240 + ch->tot_level ) / 240;
 
 		if(i > 0) {
-			sprintf(buf, "{BYou feel {C%d{B soul%s with flowing into you!{x\n\r", i, ((i==1)?"":"s"));
+			sprintf(buf, "{BYou feel {C%d{B soul%s flowing into you!{x\n\r", i, ((i==1)?"":"s"));
 			send_to_char(buf,ch);
 			act("{B$n glows briefly.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
