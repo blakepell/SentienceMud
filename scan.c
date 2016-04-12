@@ -56,6 +56,7 @@ void scan_direction(CHAR_DATA *ch, ROOM_INDEX_DATA *start_room, int max_depth, i
 	DESTINATION_DATA dest;
 	EXIT_DATA *pExit;
 	WILDS_TERRAIN *pTerrain;
+	WILDS_VLINK *pVLink = NULL;
 
 	// Initialize current destination data to the start room
 	dest.room = start_room;
@@ -63,9 +64,30 @@ void scan_direction(CHAR_DATA *ch, ROOM_INDEX_DATA *start_room, int max_depth, i
 	dest.wx = 0;
 	dest.wy = 0;
 
-	for( depth = 0; depth < max_depth; depth++) {
+	for( depth = 1; depth < max_depth; depth++) {
 
-		if( dest.room ) {
+		if( pVLink != NULL ) {
+			// TODO: VLINKS need FROM-WILD side exit flags
+
+			// Hidden exits that haven't been found
+			// Closed exits
+
+			// No room there actually!
+			if( !pVLink->pDestRoom ) {
+				dest.room = get_room_index(pVLink->destvnum);
+
+				if(!dest.room)
+					return;
+
+				if(can_see_room (ch, dest.room))
+					scan_list(dest.room, ch, depth, door);
+
+			} else
+				dest.room = pVLink->pDestRoom;
+
+			pVLink = NULL;
+
+		} else if( dest.room ) {
 			// We have an actual room (static, clone or existing wilds)
 			if ((pExit = dest.room->exit[door])) {
 				// Hidden exits that haven't been found
@@ -82,28 +104,36 @@ void scan_direction(CHAR_DATA *ch, ROOM_INDEX_DATA *start_room, int max_depth, i
 				// We have an actual room
 				if(dest.room) {
 
-					if(!can_see_room (ch, dest.room))
-						// FIXME -
-						//	Should this be return, meaning it stops scanning
-						//	Should this be continue, meaning it could see beyond a dark room (for instance)
-						return;
-
-					scan_list(dest.room, ch, depth, door);
+					if(can_see_room (ch, dest.room))
+						scan_list(dest.room, ch, depth, door);
 				}
 			}
 		} else if(dest.wilds) {
 			// We have a wilds location, the room has not been loaded
 
-			to_x = get_wilds_vroom_x_by_dir(dest.wilds, dest.wx, dest.wy, door);
-			to_y = get_wilds_vroom_y_by_dir(dest.wilds, dest.wx, dest.wy, door);
+			pVLink = vroom_get_to_vlink(dest.wilds, dest.wx, dest.wy, door);
+			if( pVLink != NULL ) {
+				continue;
 
-			// Nothing here to reach, so stop
-			if (!(pTerrain = get_terrain_by_coors(dest.wilds, to_x, to_y)))
-				return;
+			} else {
+				to_x = get_wilds_vroom_x_by_dir(dest.wilds, dest.wx, dest.wy, door);
+				to_y = get_wilds_vroom_y_by_dir(dest.wilds, dest.wx, dest.wy, door);
 
-			dest.room = get_wilds_vroom(dest.wilds, to_x, to_y);
-			dest.wx = to_x;
-			dest.wy = to_y;
+				// Nothing here to reach, so stop
+				if( !check_for_bad_room(dest.wilds, to_x, to_y) )
+					return;
+
+				dest.room = get_wilds_vroom(dest.wilds, to_x, to_y);
+				dest.wx = to_x;
+				dest.wy = to_y;
+
+				if(dest.room) {
+
+					if(can_see_room (ch, dest.room))
+						scan_list(dest.room, ch, depth, door);
+				}
+
+			}
 		} else
 			return;
 

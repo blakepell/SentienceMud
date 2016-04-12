@@ -1748,7 +1748,7 @@ void show_room(CHAR_DATA *ch, ROOM_INDEX_DATA *room, bool remote, bool silent)
 
 		vp_x = get_squares_to_show_x(ch->wildview_bonus_x);
 		vp_y = get_squares_to_show_y(ch->wildview_bonus_y);
-		show_map_to_char_wyx(room->wilds, room->x, room->y, ch, vp_x, vp_y, FALSE);
+		show_map_to_char_wyx(room->wilds, room->x, room->y, ch, room->x, room->y, vp_x, vp_y, FALSE);
 	}
 
 	if(!IS_NPC(ch) && !IS_SET(room->room2_flags, ROOM_VIRTUAL_ROOM) &&
@@ -1759,7 +1759,7 @@ void show_room(CHAR_DATA *ch, ROOM_INDEX_DATA *room, bool remote, bool silent)
 
 		vp_x = get_squares_to_show_x(ch->wildview_bonus_x);
 		vp_y = get_squares_to_show_y(ch->wildview_bonus_y);
-		show_map_to_char_wyx(room->viewwilds, room->x, room->y, ch, vp_x, vp_y, FALSE);
+		show_map_to_char_wyx(room->viewwilds, room->x, room->y, ch, room->x, room->y, vp_x, vp_y, FALSE);
 	}
 
 	/* Check for the reckoning */
@@ -1785,6 +1785,7 @@ void do_look(CHAR_DATA * ch, char *argument)
     char arg3[MAX_INPUT_LENGTH];
     EXIT_DATA *pexit;
     ROOM_INDEX_DATA *char_room;
+    ROOM_INDEX_DATA *look_room = NULL;
     CHAR_DATA *victim;
     OBJ_DATA *obj;
     char *pdesc;
@@ -2234,38 +2235,64 @@ void do_look(CHAR_DATA * ch, char *argument)
     /*
      * 'look direction'
      */
-    if ((pexit = ch->in_room->exit[door]) == NULL
-	|| pexit->u1.to_room == NULL)
+    if ((pexit = ch->in_room->exit[door]) == NULL || pexit->u1.to_room == NULL)
     {
-	send_to_char("Nothing special there.\n\r", ch);
-	return;
-    }
+		// Check if this is a wilds room
+		//  skip up and down directions
+		if(ch->in_room->wilds && door != DIR_UP && door != DIR_DOWN) {
+			WILDS_TERRAIN *pTerrain;
+			int to_x = get_wilds_vroom_x_by_dir(ch->in_room->wilds, ch->in_room->x, ch->in_room->y, door);
+			int to_y = get_wilds_vroom_y_by_dir(ch->in_room->wilds, ch->in_room->x, ch->in_room->y, door);
 
-    if (IS_SET(pexit->exit_info, EX_HIDDEN)
-    && !IS_SET(pexit->exit_info, EX_FOUND))
-    {
-	send_to_char("Nothing special there.\n\r", ch);
-	return;
-    }
+			look_room = get_wilds_vroom(ch->in_room->wilds, to_x, to_y);
+			if( look_room == NULL ) {
 
-    if (IS_SET(pexit->exit_info, EX_CLOSED))
-    {
-	if (pexit->keyword != NULL
-	&& pexit->keyword[0] != '\0'
-	&& pexit->keyword[0] != ' ')
-	{
-	    act("You can't see past the $d.", ch, NULL, NULL, NULL, NULL, NULL, pexit->keyword, TO_CHAR);
-	    return;
+				pTerrain = get_terrain_by_coors(ch->in_room->wilds, to_x, to_y);
+
+				if (pTerrain != NULL && !pTerrain->nonroom) {
+					int vp_x, vp_y;
+
+					vp_x = get_squares_to_show_x(ch->wildview_bonus_x);
+					vp_y = get_squares_to_show_y(ch->wildview_bonus_y);
+
+					show_vroom_header_to_char(pTerrain, ch->in_room->wilds, to_x, to_y, ch);
+					show_map_to_char_wyx(ch->in_room->wilds, to_x, to_y, ch, ch->in_room->x, ch->in_room->y, vp_x, vp_y, FALSE);
+
+					if (reckoning_timer > 0 && pre_reckoning == 0 && !IS_IMMORTAL(ch))
+						send_to_char("     {MA heavy thick purple mist obscures the view.{x\n\r", ch);
+
+
+					return;
+				}
+			}
+		}
+
+		if( look_room == NULL ) {
+			send_to_char("Nothing special there.\n\r", ch);
+			return;
+		}
+    } else {
+
+	    if (IS_SET(pexit->exit_info, EX_HIDDEN) && !IS_SET(pexit->exit_info, EX_FOUND)) {
+			send_to_char("Nothing special there.\n\r", ch);
+			return;
+	    }
+
+	    if (IS_SET(pexit->exit_info, EX_CLOSED)) {
+			if (pexit->keyword != NULL && pexit->keyword[0] != '\0' && pexit->keyword[0] != ' ') {
+			    act("You can't see past the $d.", ch, NULL, NULL, NULL, NULL, NULL, pexit->keyword, TO_CHAR);
+			    return;
+			} else {
+			    send_to_char("You fail to see further in that direction.\n\r", ch);
+			    return;
+			}
+	    }
+
+	    look_room = pexit->u1.to_room;
 	}
-	else
-	{
-	    send_to_char("You fail to see further in that direction.\n\r", ch);
-	    return;
-	}
-    }
 
     char_room = ch->in_room;
-    ch->in_room = pexit->u1.to_room;
+    ch->in_room = look_room;
     do_function(ch, &do_look, "auto");
     ch->in_room = char_room;
 }

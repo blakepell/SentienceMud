@@ -218,7 +218,7 @@ bool exit_destination_data(EXIT_DATA *pexit, DESTINATION_DATA *pDest)
 				to_vroom_x = pexit->wilds.x;
 				to_vroom_y = pexit->wilds.y;
 
-				if (!(pTerrain = get_terrain_by_coors(to_wilds, to_vroom_x, to_vroom_y))) {
+				if (!check_for_bad_room(to_wilds, to_vroom_x, to_vroom_y)) {
 /*					wiznet("exit_destination()->NULL A",NULL,NULL,WIZ_TESTING,0,0); */
 					return FALSE;
 				}
@@ -241,7 +241,7 @@ bool exit_destination_data(EXIT_DATA *pexit, DESTINATION_DATA *pDest)
 			to_vroom_x = get_wilds_vroom_x_by_dir(in_wilds, in_room->x, in_room->y, pexit->orig_door);
 			to_vroom_y = get_wilds_vroom_y_by_dir(in_wilds, in_room->x, in_room->y, pexit->orig_door);
 
-			if (!(pTerrain = get_terrain_by_coors(in_wilds, to_vroom_x, to_vroom_y))) {
+			if (!check_for_bad_room(in_wilds, to_vroom_x, to_vroom_y)) {
 				return FALSE;
 			}
 
@@ -260,7 +260,7 @@ bool exit_destination_data(EXIT_DATA *pexit, DESTINATION_DATA *pDest)
 			to_vroom_x = pexit->wilds.x;
 			to_vroom_y = pexit->wilds.y;
 
-			if (!(pTerrain = get_terrain_by_coors(to_wilds, to_vroom_x, to_vroom_y))) {
+			if (!check_for_bad_room(to_wilds, to_vroom_x, to_vroom_y)) {
 /*				wiznet("exit_destination()->NULL F",NULL,NULL,WIZ_TESTING,0,0); */
 				return FALSE;
 			}

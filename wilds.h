@@ -55,10 +55,12 @@ bool            map_char_cmp args (( WILDS_DATA *pWilds, int x, int y, char *che
 int             get_squares_to_show_x args (( int bonus_view ));
 int             get_squares_to_show_y args (( int bonus_view ));
 void            show_map_to_char_wyx args(( WILDS_DATA *pWilds, int wx, int wy, CHAR_DATA *to,
-                                        int bonus_view_x, int bonus_view_y, bool olc ));
+                                        int vx, int vy, int bonus_view_x, int bonus_view_y, bool olc ));
 void            show_map_to_char args(( CHAR_DATA *ch, CHAR_DATA *to,
                                         int bonus_view_x, int bonus_view_y, bool olc ));
 
+WILDS_VLINK *vroom_get_to_vlink args((WILDS_DATA *pWilds, int x, int y, int door));
+void show_vroom_header_to_char args((WILDS_TERRAIN *pTerrain, WILDS_DATA *pWilds, int wx, int wy, CHAR_DATA *to));
 
 #define WILDS_FORMAT_TERRAINMAP		0
 #define WILDS_FORMAT_ROOMMAZE		1

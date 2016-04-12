@@ -298,6 +298,29 @@ ROOM_INDEX_DATA *create_vroom(WILDS_DATA *pWilds,
     return (pRoomIndex);
 }
 
+WILDS_VLINK *vroom_get_to_vlink(WILDS_DATA *pWilds, int x, int y, int door)
+{
+	WILDS_VLINK *pVLink;
+
+    if (!pWilds)
+    {
+        plogf("wilds.c, vroom_get_to_vlink(): pRoomIndex->wilds is NULL.");
+        return NULL;
+    }
+
+    for (pVLink = pWilds->pVLink; pVLink ; pVLink = pVLink->next)
+    {
+        if (pVLink->wildsorigin_x == x &&
+        	pVLink->wildsorigin_y == y &&
+        	pVLink->door == door &&
+        	IS_SET(pVLink->default_linkage, VLINK_FROM_WILDS))
+        	return pVLink;
+    }
+
+    return NULL;
+
+}
+
 bool vroom_has_from_vlinks(ROOM_INDEX_DATA *pRoomIndex)
 {
     WILDS_DATA *pWilds;
@@ -307,7 +330,7 @@ bool vroom_has_from_vlinks(ROOM_INDEX_DATA *pRoomIndex)
 
     if (!pWilds)
     {
-        plogf("wilds.c, vroom_has_vlinks(): pRoomIndex->wilds is NULL.");
+        plogf("wilds.c, vroom_has_from_vlinks(): pRoomIndex->wilds is NULL.");
         return FALSE;
     }
 
@@ -356,11 +379,11 @@ void destroy_wilds_vroom(ROOM_INDEX_DATA *pRoomIndex)
     }
 
 	// A wilds room that has a vlink from this room will stay
-	if( vroom_has_from_vlinks(pRoomIndex) ) {
+//	if( vroom_has_from_vlinks(pRoomIndex) ) {
 //		sprintf(buf, "destroy_wilds_vroom: %ld %ld %ld - has from vlinks", pWilds->uid, pRoomIndex->x, pRoomIndex->y);
 //		wiznet(buf,NULL,NULL,WIZ_TESTING,0,0);
-		return;
-	}
+//		return;
+//	}
 
     if( pRoomIndex->progs ) {
 		if( pRoomIndex->progs->script_ref > 0 ) {
@@ -1237,9 +1260,133 @@ WILDS_VLINK *find_vlink_to_coord(WILDS_DATA *pWilds, int x, int y)
 	return pVLink;
 }
 
+WILDS_VLINK *find_vlink_from_coord(WILDS_DATA *pWilds, int x, int y, int door)
+{
+	WILDS_VLINK *pVLink;
+
+	for(pVLink=pWilds->pVLink;pVLink;pVLink = pVLink->next) {
+		if(pVLink->wildsorigin_x == x &&
+			pVLink->wildsorigin_y == y &&
+			pVLink->door == door)
+			return pVLink;
+	}
+
+	return NULL;
+}
+
+const char *vroom_dir_opened[] = {"{YN","{YE{b\n\r","{YS{b","{YW{B<{b-","{YU{b-{B({WA{B){b-","{YD{b-{B>{b","    {YNE{x\n\r","{YNW{b    ","    {YSE{x\n\r","{YSW{b    "};
+const char *vroom_dir_closed[] = {"{b-","-\n\r","-{b","-{B<{b-","--{B({WA{B){b-","--{B>{b","     {b-{x\n\r","{b-     ","     -{x\n\r","-     "};
+
+void vroom_show_valid_door(CHAR_DATA *ch, WILDS_DATA *pWilds, int wx, int wy, int door)
+{
+	WILDS_VLINK *vlink = find_vlink_from_coord(pWilds, wx, wy, door);
+
+	if(vlink == NULL) {
+		int to_x;
+		int to_y;
+
+		if( door == DIR_UP || door == DIR_DOWN) {
+			send_to_char(vroom_dir_closed[door], ch);
+			return;
+		}
+
+		to_x = get_wilds_vroom_x_by_dir(pWilds, wx, wy, door);
+		to_y = get_wilds_vroom_y_by_dir(pWilds, wx, wy, door);
+
+		if(!check_for_bad_room(pWilds, to_x, to_y)) {
+			send_to_char(vroom_dir_closed[door], ch);
+			return;
+		}
+	}
+
+	send_to_char(vroom_dir_opened[door], ch);
+}
+
+void show_vroom_header_to_char(WILDS_TERRAIN *pTerrain, WILDS_DATA *pWilds, int wx, int wy, CHAR_DATA *to)
+{
+	char buf[MAX_STRING_LENGTH];
+	int linelength = 0;
+	int count;
+
+	if (IS_IMMORTAL(to) && (IS_NPC(to) || IS_SET(to->act, PLR_HOLYLIGHT))) {
+		sprintf (buf, "\n\r{C [ Area: %ld '%s', Wilds uid: %ld '%s', Vroom (%d, %d) ]{x",
+			pWilds->pArea->anum, pWilds->pArea->name,
+			pWilds->uid, pWilds->name,
+			wx, wy);
+
+		send_to_char(buf, to);
+	}
+
+	linelength = strlen(pTerrain->template->name);
+	linelength = 50 - linelength;
+
+	if (IS_SET(pTerrain->template->room_flags, ROOM_SAFE))
+		sprintf(buf, "\n\r {W%s", pTerrain->template->name);
+	else if (IS_SET(pTerrain->template->room_flags, ROOM_UNDERWATER))
+		sprintf(buf, "\n\r {C%s", pTerrain->template->name);
+	else
+		sprintf(buf, "\n\r {Y%s", pTerrain->template->name);
+
+	send_to_char(buf, to);
+
+	if (IS_SET(pTerrain->template->room_flags, ROOM_PK) && IS_SET(pTerrain->template->room_flags, ROOM_CPK)) {
+		sprintf(buf, "  {M[CNPK ROOM]");
+		send_to_char(buf, to);
+		linelength -= 13;
+	} else if (IS_SET(pTerrain->template->room_flags, ROOM_CPK)) {
+		sprintf(buf, "  {M[CPK ROOM]");
+		send_to_char(buf, to);
+		linelength -= 12;
+	} else if (IS_SET(pTerrain->template->room_flags, ROOM_PK)) {
+		sprintf(buf, "  {R[NPK ROOM]");
+		send_to_char(buf, to);
+		linelength -= 12;
+	}
+
+	if (IS_SET(pTerrain->template->room2_flags, ROOM_MULTIPLAY)) {
+		sprintf(buf, "  {W[FREE FOR ALL]");
+		send_to_char(buf, to);
+		linelength -= 13;
+	}
+
+	if (IS_SET(pTerrain->template->room_flags, ROOM_HOUSE_UNSOLD)) {
+		sprintf(buf, "  {R[PRIME REAL ESTATE]");
+		send_to_char(buf, to);
+		linelength -= 21;
+	}
+
+	for (count = 0; count < linelength; count++)
+		send_to_char(" ", to);
+
+	vroom_show_valid_door(to, pWilds, wx, wy, DIR_NORTHWEST);
+	vroom_show_valid_door(to, pWilds, wx, wy, DIR_NORTH);
+	vroom_show_valid_door(to, pWilds, wx, wy, DIR_NORTHEAST);
+
+	send_to_char ("{B({b-----------------------------------------------{B){b  ", to);
+
+	vroom_show_valid_door(to, pWilds, wx, wy, DIR_WEST);
+	vroom_show_valid_door(to, pWilds, wx, wy, DIR_UP);
+	vroom_show_valid_door(to, pWilds, wx, wy, DIR_DOWN);
+	vroom_show_valid_door(to, pWilds, wx, wy, DIR_EAST);
+
+
+	for (count = 0; count < 51; count++)
+		send_to_char(" ", to);
+
+	vroom_show_valid_door(to, pWilds, wx, wy, DIR_SOUTHWEST);
+	vroom_show_valid_door(to, pWilds, wx, wy, DIR_SOUTH);
+	vroom_show_valid_door(to, pWilds, wx, wy, DIR_SOUTHEAST);
+
+	send_to_char("\n\r", to);
+
+
+}
+
 
 void show_map_to_char_wyx(WILDS_DATA *pWilds, int wx, int wy,
                       CHAR_DATA * to,
+                      int vx,
+                      int vy,
                       int bonus_view_x,
 				      int bonus_view_y,
                       bool olc)
@@ -1355,7 +1502,7 @@ void show_map_to_char_wyx(WILDS_DATA *pWilds, int wx, int wy,
 			found = TRUE;
 		}
 
-                if (wx == x && wy == y)
+                if ((vx == x) && (vy == y))
                 {
                     sprintf(temp, "{M@{x");
                     found = TRUE;
@@ -1378,6 +1525,12 @@ void show_map_to_char_wyx(WILDS_DATA *pWilds, int wx, int wy,
 /* Vizz - if no PC found in the room, display the terrain char */
                 if (!found)
                 {
+//					if( get_wilds_vroom(pWilds, x, y) ) {
+//						sprintf(temp, "{5{WX{x");
+//
+//					} else {
+
+
                     sprintf(j, "%c",pWilds->map[index]);
                     if (!str_cmp(j, last_terrain))
                     {
@@ -1408,6 +1561,7 @@ void show_map_to_char_wyx(WILDS_DATA *pWilds, int wx, int wy,
                                 sprintf(temp, j);
                         }
                     }
+//					}
                 }
 
                 if (last_char_same
@@ -1513,7 +1667,7 @@ void show_map_to_char(CHAR_DATA * ch, CHAR_DATA * to, int bonus_view_x, int bonu
     else
         pWilds = ch->in_wilds;
 
-	show_map_to_char_wyx(pWilds, ch->in_room->x, ch->in_room->y, to, bonus_view_x, bonus_view_y, olc);
+	show_map_to_char_wyx(pWilds, ch->in_room->x, ch->in_room->y, to, ch->in_room->x, ch->in_room->y, bonus_view_x, bonus_view_y, olc);
 }
 
 #if 0

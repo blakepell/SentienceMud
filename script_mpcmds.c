@@ -6117,14 +6117,14 @@ SCRIPT_CMD(do_mpshowroom)
 			for(viewer = room->people; viewer; viewer = next) {
 				next = viewer->next_in_room;
 				if(!IS_NPC(viewer) && (force || (IS_AWAKE(viewer) && check_vision(viewer,dest,false,false)))) {
-					show_map_to_char_wyx(wilds,x,y, viewer, width + viewer->wildview_bonus_x, height + viewer->wildview_bonus_y, FALSE);
+					show_map_to_char_wyx(wilds,x,y, viewer,x,y, width + viewer->wildview_bonus_x, height + viewer->wildview_bonus_y, FALSE);
 				}
 			}
 		} else if(!IS_NPC(viewer)) {
 			// There is no awake check here since it is to one mob.
 			//  This can be used in things like DREAMS, seeing yourself at a certain location!
 
-			show_map_to_char_wyx(wilds,x,y, viewer, width + viewer->wildview_bonus_x, height + viewer->wildview_bonus_y, FALSE);
+			show_map_to_char_wyx(wilds,x,y, viewer,x,y, width + viewer->wildview_bonus_x, height + viewer->wildview_bonus_y, FALSE);
 		}
 		return;
 	}
