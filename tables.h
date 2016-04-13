@@ -252,4 +252,6 @@ extern  const struct flag_type moon_phases[];
 extern	const struct flag_type instrument_types[];
 extern	const struct flag_type instrument_flags[];
 
+extern	const struct flag_type corpse_object_flags[];
+
 #endif

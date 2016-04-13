@@ -2904,8 +2904,10 @@ OBJ_DATA *make_corpse(CHAR_DATA *ch, bool has_head, int corpse_type, bool messag
 	{
  		if(IS_SET(ch->in_room->room_flags,ROOM_CPK))
 			SET_BIT(CORPSE_FLAGS(corpse),CORPSE_CPKDEATH);
-		if(is_room_pk(ch->in_room,TRUE) || is_pk(ch))
+		if(is_room_pk(ch->in_room,FALSE) || is_pk(ch))
 			SET_BIT(CORPSE_FLAGS(corpse),CORPSE_PKDEATH);
+		if(IS_SET(ch->in_room->room_flags, ROOM_ARENA))
+			SET_BIT(CORPSE_FLAGS(corpse),CORPSE_ARENADEATH);
 	}
 
 	// NPC death and CPK death for PCs

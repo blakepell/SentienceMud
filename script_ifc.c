@@ -4063,3 +4063,51 @@ DECL_IFC_FUN(ifc_canput)
 	*ret = can_put_obj(ARG_MOB(0), ARG_OBJ(1), ARG_OBJ(2), NULL, ARG_BOOL(3));
 	return TRUE;
 }
+
+// if objcorpse $OBJECT STRING
+// where OBJECT is a corpse
+DECL_IFC_FUN(ifc_objcorpse)
+{
+	*ret = ISARG_OBJ(0) && ISARG_STR(1) &&
+		(ARG_OBJ(0)->item_type == ITEM_CORPSE_NPC || ARG_OBJ(0)->item_type == ITEM_CORPSE_PC) &&
+		IS_SET(CORPSE_FLAGS(ARG_OBJ(0)), flag_value(corpse_object_flags,ARG_STR(1)));
+	return TRUE;
+}
+
+DECL_IFC_FUN(ifc_flag_corpse)
+{
+	*ret = ISARG_STR(0) ? flag_value(corpse_object_flags,ARG_STR(0)) : 0;
+
+	return TRUE;
+}
+
+// if objweapon $WEAPON TYPE (eg 'sword')
+// if objweapon $WEAPONCONTAINER TYPE (eg 'sword')
+DECL_IFC_FUN(ifc_objweapon)
+{
+	*ret = FALSE;
+	if(ISARG_OBJ(0) && ISARG_STR(1)) {
+		if(ARG_OBJ(0)->item_type == ITEM_WEAPON)
+			*ret = ARG_OBJ(0)->value[0] == flag_value(weapon_class,ARG_STR(1));
+		else if(ARG_OBJ(0)->item_type == ITEM_WEAPON_CONTAINER)
+			*ret = ARG_OBJ(0)->value[1] == flag_value(weapon_class,ARG_STR(1));
+	}
+
+	return TRUE;
+}
+
+DECL_IFC_FUN(ifc_objweaponstat)
+{
+	*ret = ISARG_OBJ(0) && ISARG_STR(1) &&
+		(ARG_OBJ(0)->item_type == ITEM_WEAPON) &&
+		IS_SET(ARG_OBJ(0)->value[4],flag_value(weapon_type2,ARG_STR(1)));
+	return TRUE;
+}
+
+DECL_IFC_FUN(ifc_objranged)
+{
+	*ret = ISARG_OBJ(0) && ISARG_STR(1) &&
+		(ARG_OBJ(0)->item_type == ITEM_RANGED_WEAPON) &&
+		(ARG_OBJ(0)->value[0] == flag_value(ranged_weapon_class,ARG_STR(1)));
+	return TRUE;
+}

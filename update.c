@@ -354,9 +354,9 @@ void gain_exp(CHAR_DATA *ch, int gain)
 			wiznet(buf,ch,NULL,WIZ_LEVELS,0,0);
 			advance_level(ch,FALSE);
 
-			save_char_obj(ch);
-
 			p_percent_trigger(ch, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL,TRIG_LEVEL, NULL);
+
+			save_char_obj(ch);
 		}
 	}
 }

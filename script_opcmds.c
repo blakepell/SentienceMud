@@ -1879,9 +1879,14 @@ SCRIPT_CMD(do_opoload)
 	char buf[MIL], *rest;
 	long vnum, level;
 	bool fInside = FALSE;
+	bool fWear = FALSE;
+
 	OBJ_INDEX_DATA *pObjIndex;
 	OBJ_DATA *obj;
 	SCRIPT_PARAM arg;
+	CHAR_DATA *to_mob = NULL;
+	OBJ_DATA *to_obj = NULL;
+	ROOM_INDEX_DATA *to_room = NULL;
 
 	if(!info || !info->obj || !obj_room(info->obj)) return;
 
@@ -1915,18 +1920,77 @@ SCRIPT_CMD(do_opoload)
 
 		if(level <= 0) level = info->obj->pIndexData->level;
 
-		if((rest = one_argument(rest,buf))) {
-			if (*buf == 'I' || *buf == 'i')
-				fInside = TRUE;
+		if(rest && *rest) {
+			argument = rest;
+			if(!(rest = expand_argument(info,argument,&arg)))
+				return;
+
+			/*
+			 * Added 3rd argument
+			 * omitted - load to current room
+			 * 'I'     - load to object's container
+			 * MOBILE  - load to target mobile
+			 *         - 'W' automatically wear the item if possible
+			 * OBJECT  - load to target object
+			 * ROOM    - load to target room
+			 */
+
+			switch(arg.type) {
+			case ENT_STRING:
+				if (!str_cmp(buf, "inside") &&
+					IS_SET(pObjIndex->wear_flags, ITEM_TAKE)) {
+					if( info->obj->item_type == ITEM_CONTAINER ||
+						info->obj->item_type == ITEM_CART)
+						fInside = TRUE;
+
+					else if( info->obj->item_type == ITEM_WEAPON_CONTAINER &&
+						info->obj->value[1] == pObjIndex->value[0] )
+						fInside = TRUE;
+
+				}
+				break;
+
+			case ENT_MOBILE:
+				to_mob = arg.d.mob;
+				if((rest = one_argument(rest,buf))) {
+					if (!str_cmp(buf, "wear"))
+						fWear = TRUE;
+					// use "none" for neither
+				}
+				break;
+
+			case ENT_OBJECT:
+				if( arg.d.obj && IS_SET(pObjIndex->wear_flags, ITEM_TAKE) ) {
+					if(arg.d.obj->item_type == ITEM_CONTAINER ||
+						arg.d.obj->item_type == ITEM_CART)
+						to_obj = arg.d.obj;
+					else if(arg.d.obj->item_type == ITEM_WEAPON_CONTAINER &&
+						pObjIndex->item_type == ITEM_WEAPON &&
+						pObjIndex->value[0] == arg.d.obj->value[1])
+						to_obj = arg.d.obj;
+					else
+						return;	// Trying to put the item into a non-container won't work
+				}
+				break;
+
+			case ENT_ROOM:		to_room = arg.d.room; break;
+			}
 		}
 	} else
 		level = info->obj->pIndexData->level;
 
 	obj = create_object(pObjIndex, level, TRUE);
-	if (fInside && CAN_WEAR(obj, ITEM_TAKE) &&
-		(info->obj->item_type == ITEM_CONTAINER ||
-		info->obj->item_type == ITEM_WEAPON_CONTAINER ||
-		info->obj->item_type == ITEM_CART))
+	if(to_room)
+		obj_to_room(obj, to_room);
+	else if( to_obj )
+		obj_to_obj(obj, to_obj);
+	else if( to_mob && CAN_WEAR(obj, ITEM_TAKE) &&
+		(to_mob->carry_number < can_carry_n (to_mob)) &&
+		(get_carry_weight (to_mob) + get_obj_weight (obj) <= can_carry_w (to_mob))) {
+		obj_to_char(obj, to_mob);
+		if (fWear)
+			wear_obj(to_mob, obj, TRUE);
+	} else if(fInside)
 		obj_to_obj(obj, info->obj);
 	else
 		obj_to_room(obj, obj_room(info->obj));

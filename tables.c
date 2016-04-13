@@ -2544,3 +2544,18 @@ const struct flag_type instrument_flags[] = {
 	{ "onehand",	INSTRUMENT_ONEHANDED,	TRUE	},
 	{ NULL,			0,						FALSE }
 };
+
+const struct flag_type corpse_object_flags[] = {
+	{ "cpk",		CORPSE_CPKDEATH,		TRUE },
+	{ "owner_loot",	CORPSE_OWNERLOOT,		TRUE },
+	{ "charred",	CORPSE_CHARRED,			TRUE },
+	{ "frozen",		CORPSE_FROZEN,			TRUE },
+	{ "melted",		CORPSE_MELTED,			TRUE },
+	{ "withered",	CORPSE_WITHERED,		TRUE },
+	{ "pk",			CORPSE_PKDEATH,			TRUE },
+	{ "arena",		CORPSE_ARENADEATH,		TRUE },
+	{ "immortal",	CORPSE_IMMORTAL,		TRUE },
+	{ NULL,			0,						FALSE }
+
+
+};

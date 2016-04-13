@@ -2960,10 +2960,14 @@ SCRIPT_CMD(do_tpoload)
 {
 	char buf[MIL], *rest;
 	long vnum, level;
-	bool fCarry = FALSE;
+	bool fWear = FALSE;
 	OBJ_INDEX_DATA *pObjIndex;
 	OBJ_DATA *obj;
 	SCRIPT_PARAM arg;
+	CHAR_DATA *to_mob = NULL;
+	OBJ_DATA *to_obj = NULL;
+	ROOM_INDEX_DATA *to_room = NULL;
+
 
 	if(!info || !info->token || !token_room(info->token)) return;
 
@@ -2997,22 +3001,64 @@ SCRIPT_CMD(do_tpoload)
 
 		if(level <= 0) level = pObjIndex->level;
 
-		if((rest = one_argument(rest,buf))) {
-			if (!str_cmp(buf,"carry"))
-				fCarry = TRUE;
+		if(rest && *rest) {
+			argument = rest;
+			if(!(rest = expand_argument(info,argument,&arg)))
+				return;
+
+			/*
+			 * Added 3rd argument
+			 * omitted - load to current room
+			 * MOBILE  - load to target mobile
+			 *         - 'W' automatically wear the item if possible
+			 * OBJECT  - load to target object
+			 * ROOM    - load to target room
+			 */
+
+			switch(arg.type) {
+
+			case ENT_MOBILE:	// $MOBILE [wear/carry]
+				to_mob = arg.d.mob;
+				if((rest = one_argument(rest,buf))) {
+					if (!str_cmp(buf, "wear"))
+						fWear = TRUE;
+					// use "none/carry"
+				}
+				break;
+
+			case ENT_OBJECT:
+				if( arg.d.obj && IS_SET(pObjIndex->wear_flags, ITEM_TAKE) ) {
+					if(arg.d.obj->item_type == ITEM_CONTAINER ||
+						arg.d.obj->item_type == ITEM_CART)
+						to_obj = arg.d.obj;
+					else if(arg.d.obj->item_type == ITEM_WEAPON_CONTAINER &&
+						pObjIndex->item_type == ITEM_WEAPON &&
+						pObjIndex->value[0] == arg.d.obj->value[1])
+						to_obj = arg.d.obj;
+					else
+						return;	// Trying to put the item into a non-container won't work
+				}
+				break;
+
+			case ENT_ROOM:		to_room = arg.d.room; break;
+			}
 		}
 	} else
 		level = pObjIndex->level;
 
 	obj = create_object(pObjIndex, level, TRUE);
-
-	if (fCarry && CAN_WEAR(obj, ITEM_TAKE) &&
-		info->token->player &&
-		(info->token->player->carry_number < can_carry_n (info->token->player)) &&
-		(get_carry_weight (info->token->player) + get_obj_weight (obj) <= can_carry_w (info->token->player)))
-		obj_to_char(obj,info->token->player);
-	else
-		obj_to_room(obj, token_room(info->token));
+	if(to_room)
+		obj_to_room(obj, to_room);
+	else if( to_obj )
+		obj_to_obj(obj, to_obj);
+	else if( to_mob && CAN_WEAR(obj, ITEM_TAKE) &&
+		(to_mob->carry_number < can_carry_n (to_mob)) &&
+		(get_carry_weight (to_mob) + get_obj_weight (obj) <= can_carry_w (to_mob))) {
+		obj_to_char(obj, to_mob);
+		if (fWear)
+			wear_obj(to_mob, obj, TRUE);
+	} else
+		obj_to_room(obj, info->room);
 
 	if(rest && *rest) variables_set_object(info->var,rest,obj);
 	p_percent_trigger(NULL, obj, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_REPOP, NULL);

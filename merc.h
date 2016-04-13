@@ -2787,6 +2787,7 @@ enum {
 #define CORPSE_MELTED		(E)
 #define CORPSE_WITHERED		(F)
 #define CORPSE_PKDEATH		(G)	// The corpse was killed in a room with PK allowed, or player was flagged PK
+#define CORPSE_ARENADEATH	(H)
 #define CORPSE_IMMORTAL		(Z)	/* Corpse came from an immortal */
 
 #define DEATHTYPE_ALIVE		0
