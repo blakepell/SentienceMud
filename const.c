@@ -4643,7 +4643,7 @@ const struct group_type group_table [MAX_GROUP] =
     {
     	"archmage skills", { 4, 4, 8, 8 },
 	{ "ice storm", "fire cloud", "discharge",
-	  "eagle eye", "spell trap", "wither",
+	  "eagle eye", "spell trap", "withering cloud",
 	  "maze", "destruction", NULL },
     },
 
