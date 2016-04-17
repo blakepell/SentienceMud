@@ -715,13 +715,13 @@ DECL_IFC_FUN(ifc_iscasting)
 	int sn;
 
 	*ret = ISARG_MOB(0) && ARG_MOB(0)->cast > 0 &&
-		(!ISARG_STR(1) || !*ARG_STR(1) ||
-			((sn = skill_lookup(ARG_STR(1))) > 0 &&
-				ARG_MOB(0)->cast_sn == sn) ||
-			(ISARG_NUM(1) && (token = get_token_char(ARG_MOB(0), ARG_NUM(1), (ISARG_NUM(2) ? ARG_NUM(2) : 1))) &&
+		((ISARG_NUM(1) && (token = get_token_char(ARG_MOB(0), ARG_NUM(1), (ISARG_NUM(2) ? ARG_NUM(2) : 1))) &&
 				token->pIndexData->type == TOKEN_SPELL && ARG_MOB(0)->cast_token == token) ||
 			(ISARG_TOK(1) && ARG_TOK(0)->pIndexData->type == TOKEN_SPELL &&
-				ARG_TOK(1)->player == ARG_MOB(0) && ARG_MOB(0)->cast_token == ARG_TOK(1)));
+				ARG_TOK(1)->player == ARG_MOB(0) && ARG_MOB(0)->cast_token == ARG_TOK(1)) ||
+			!ISARG_STR(1) || !*ARG_STR(1) ||
+			((sn = skill_lookup(ARG_STR(1))) > 0 &&
+				ARG_MOB(0)->cast_sn == sn));
 
 	return TRUE;
 }
@@ -4111,3 +4111,34 @@ DECL_IFC_FUN(ifc_objranged)
 		(ARG_OBJ(0)->value[0] == flag_value(ranged_weapon_class,ARG_STR(1)));
 	return TRUE;
 }
+
+DECL_IFC_FUN(ifc_isbusy)
+{
+	*ret = ISARG_MOB(0) && is_char_busy(ARG_MOB(0));
+	return TRUE;
+}
+
+DECL_IFC_FUN(ifc_iscastsuccess)
+{
+	*ret = ISARG_MOB(0) && (ARG_MOB(0)->cast_successful == MAGICCAST_SUCCESS);
+	return TRUE;
+}
+
+DECL_IFC_FUN(ifc_iscastfailure)
+{
+	*ret = ISARG_MOB(0) && (ARG_MOB(0)->cast_successful == MAGICCAST_FAILURE);
+	return TRUE;
+}
+
+DECL_IFC_FUN(ifc_iscastroomblocked)
+{
+	*ret = ISARG_MOB(0) && (ARG_MOB(0)->cast_successful == MAGICCAST_ROOMBLOCK);
+	return TRUE;
+}
+
+DECL_IFC_FUN(ifc_iscastrecovered)
+{
+	*ret = ISARG_MOB(0) && ARG_MOB(0)->casting_recovered;
+	return TRUE;
+}
+

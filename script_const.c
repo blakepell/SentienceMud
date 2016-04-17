@@ -549,6 +549,8 @@ struct trigger_type trigger_table	[] = {
 {	"combatstyle",			NULL,		TRIGSLOT_COMBATSTYLE,	FALSE, FALSE, FALSE, TRUE	},	// Only on tokens
 {	"damage",				NULL,		TRIGSLOT_DAMAGE,	TRUE,	TRUE,	TRUE,	TRUE	},
 {	"death",				NULL,		TRIGSLOT_REPOP,		TRUE,	FALSE,	TRUE,	TRUE	},
+{	"death_timer",			NULL,		TRIGSLOT_REPOP,		TRUE,	FALSE,	TRUE,	TRUE	},
+{	"defense",				NULL,		TRIGSLOT_COMBATSTYLE,	TRUE, FALSE, FALSE, TRUE	},	// Only on tokens
 {	"delay",				NULL,		TRIGSLOT_GENERAL,	TRUE,	TRUE,	TRUE,	TRUE	},
 {	"drink",				NULL,		TRIGSLOT_GENERAL,	TRUE,	TRUE,	TRUE,	TRUE	},
 {	"drop",					NULL,		TRIGSLOT_GENERAL,	TRUE,	TRUE,	TRUE,	TRUE	},
@@ -651,6 +653,7 @@ struct trigger_type trigger_table	[] = {
 {	"sleep",				NULL,		TRIGSLOT_GENERAL,	TRUE,	TRUE,	TRUE,	TRUE	},
 {	"speech",				NULL,		TRIGSLOT_SPEECH,	TRUE,	TRUE,	TRUE,	TRUE	},
 {	"spell",				NULL,		TRIGSLOT_SPELL,		FALSE,	FALSE,	FALSE,	TRUE	},
+{	"spellbeat",			NULL,		TRIGSLOT_SPELL,		FALSE,	FALSE,	FALSE,	TRUE	},
 {	"spellcast",			NULL,		TRIGSLOT_SPELL,		TRUE,	TRUE,	TRUE,	TRUE	},
 {	"spellinter",			NULL,		TRIGSLOT_SPELL,		FALSE,	FALSE,	FALSE,	TRUE	},
 {	"spellpenetrate",		NULL,		TRIGSLOT_SPELL,		FALSE,	FALSE,	FALSE,	TRUE	},
@@ -723,6 +726,8 @@ int trigger_slots[] = {
 	TRIGSLOT_COMBATSTYLE,	// TRIG_COMBAT_STYLE
 	TRIGSLOT_DAMAGE,		// TRIG_DAMAGE
 	TRIGSLOT_REPOP,			// TRIG_DEATH
+	TRIGSLOT_REPOP,			// TRIG_DEATH_TIMER
+	TRIGSLOT_COMBATSTYLE,	// TRIG_DEFENSE
 	TRIGSLOT_GENERAL,		// TRIG_DELAY
 	TRIGSLOT_GENERAL,		// TRIG_DRINK
 	TRIGSLOT_GENERAL,		// TRIG_DROP
@@ -825,6 +830,7 @@ int trigger_slots[] = {
 	TRIGSLOT_GENERAL,		// TRIG_SLEEP
 	TRIGSLOT_SPEECH,		// TRIG_SPEECH
 	TRIGSLOT_SPELL,			// TRIG_SPELL
+	TRIGSLOT_SPELL,			// TRIG_SPELLBEAT
 	TRIGSLOT_SPELL,			// TRIG_SPELLCAST
 	TRIGSLOT_SPELL,			// TRIG_SPELLINTER
 	TRIGSLOT_SPELL,			// TRIG_SPELLPENETRATE
@@ -990,7 +996,12 @@ IFCHECK_DATA ifcheck_table[] = {
 	{ "isambushing",		IFC_ANY,	"E",	FALSE,	ifc_isambushing,		"ifcheck isambushing" },
 	{ "isangel",			IFC_ANY,	"E",	FALSE,	ifc_isangel,			"ifcheck isangel" },
 	{ "isbrewing",			IFC_ANY,	"Es",	FALSE,	ifc_isbrewing,			"ifcheck isbrewing" },
+	{ "isbusy",				IFC_ANY,	"E",	FALSE,	ifc_isbusy,				"ifcheck isbusy" },
+	{ "iscastfailure",		IFC_ANY,	"Es",	FALSE,	ifc_iscastfailure,		"ifcheck iscastfailure" },
 	{ "iscasting",			IFC_ANY,	"Es",	FALSE,	ifc_iscasting,			"ifcheck iscasting" },
+	{ "iscastrecovered",	IFC_ANY,	"Es",	FALSE,	ifc_iscastrecovered,	"ifcheck iscastrecovered" },
+	{ "iscastroomblocked",	IFC_ANY,	"Es",	FALSE,	ifc_iscastroomblocked,	"ifcheck iscastroomblocked" },
+	{ "iscastsuccess",		IFC_ANY,	"Es",	FALSE,	ifc_iscastsuccess,		"ifcheck iscastsuccess" },
 	{ "ischarm",			IFC_ANY,	"E",	FALSE,	ifc_ischarm,			"ifcheck ischarm" },
 	{ "ischurchexcom",		IFC_ANY,	"E",	FALSE,	ifc_ischurchexcom,		"ifcheck ischurchexcom" },
 	{ "ischurchpk",			IFC_ANY,	"E",	FALSE,	ifc_ischurchpk,			"ifcheck ischurchpk" },

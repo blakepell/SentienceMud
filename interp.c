@@ -1113,6 +1113,9 @@ void interpret( CHAR_DATA *ch, char *argument )
 	    if (ch->cast > 0)
 		stop_casting(ch, TRUE);
 
+		if (ch->script_wait > 0)
+		script_end_failure(ch, TRUE);
+
 		interrupt_script(ch,FALSE);
 
 
@@ -1121,6 +1124,9 @@ void interpret( CHAR_DATA *ch, char *argument )
 
 	    if (victim->cast > 0)
 		stop_casting(victim, TRUE);
+
+		if(victim->script_wait > 0)
+		script_end_failure(victim, TRUE);
 
 		interrupt_script(victim,FALSE);
 
@@ -1231,6 +1237,9 @@ void interpret( CHAR_DATA *ch, char *argument )
 
     if (ch->cast > 0 && !allowed)
 	stop_casting(ch, TRUE);
+
+	if (ch->script_wait > 0 && !allowed)
+		script_end_failure(ch, TRUE);
 
 	if(!allowed) interrupt_script(ch,FALSE);
 
@@ -1800,6 +1809,8 @@ void stop_casting( CHAR_DATA *ch, bool messages )
 		if( p_percent_trigger(NULL,NULL,NULL,ch->cast_token,ch, NULL, NULL,NULL,NULL,TRIG_SPELLINTER, NULL) )
 			messages = FALSE;
 	}
+	free_string(ch->casting_failure_message);
+	ch->casting_failure_message = NULL;
     free_string( ch->cast_target_name );
     ch->cast_target_name = NULL;
     ch->cast = 0;

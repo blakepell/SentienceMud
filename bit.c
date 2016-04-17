@@ -268,7 +268,7 @@ char *affect_loc_name( int location )
  */
 char *affect_bit_name( long vector )
 {
-    static char buf[512];
+    static char buf[1024];
 
     buf[0] = '\0';
     if ( vector & AFF_BLIND         ) strcat( buf, " blind"         );
@@ -306,7 +306,7 @@ char *affect_bit_name( long vector )
 
 char *affect2_bit_name( long vector )
 {
-    static char buf[512];
+    static char buf[1024];
 
     buf[0] = '\0';
     if ( vector & AFF2_SILENCE 	)		strcat( buf, " silence"			);
@@ -337,6 +337,69 @@ char *affect2_bit_name( long vector )
     return ( buf[0] != '\0' ) ? buf+1 : "none";
 }
 
+char *affects_bit_name( long vector, long vector2 )
+{
+    static char buf[2048];
+
+    buf[0] = '\0';
+    if ( vector2 & AFF2_AVATAR_SHIELD )			strcat( buf, " avatar_shield" );
+    if ( vector & AFF_BERSERK )					strcat( buf, " berserk" );
+    if ( vector & AFF_BLIND )					strcat( buf, " blind" );
+    if ( vector & AFF_CALM )					strcat( buf, " calm" );
+    if ( vector & AFF_CHARM )					strcat( buf, " charm" );
+    if ( vector2 & AFF2_CLOAK_OF_GUILE ) 		strcat( buf, " cloak_of_guile" );
+    if ( vector & AFF_CURSE )					strcat( buf, " curse" );
+    if ( vector & AFF_DEATH_GRIP )				strcat( buf, " death_grip" );
+    if ( vector2 & AFF2_DEATHSIGHT )			strcat( buf, " deathsight" );
+    if ( vector & AFF_DETECT_EVIL )				strcat( buf, " detect_evil" );
+    if ( vector & AFF_DETECT_GOOD )				strcat( buf, " detect_good" );
+    if ( vector & AFF_DETECT_HIDDEN )			strcat( buf, " detect_hidden" );
+    if ( vector & AFF_DETECT_INVIS )			strcat( buf, " detect_invis" );
+    if ( vector & AFF_DETECT_MAGIC )			strcat( buf, " detect_magic" );
+    if ( vector2 & AFF2_ELECTRICAL_BARRIER )	strcat( buf, " electrical_barrier" );
+    if ( vector2 & AFF2_ENERGY_FIELD )			strcat( buf, " energy_field" );
+    if ( vector2 & AFF2_ENSNARE )				strcat( buf, " ensnare" );
+    if ( vector2 & AFF2_EVASION )				strcat( buf, " evasion" );
+    if ( vector & AFF_FAERIE_FIRE )				strcat( buf, " faerie_fire" );
+    if ( vector2 & AFF2_FATIGUE )				strcat( buf, " fatigue" );
+    if ( vector2 & AFF2_FIRE_BARRIER )			strcat( buf, " fire_barrier" );
+    if ( vector & AFF_FLYING )					strcat( buf, " flying" );
+    if ( vector & AFF_FRENZY )					strcat( buf, " frenzy" );
+    if ( vector2 & AFF2_FROST_BARRIER )			strcat( buf, " frost_barrier" );
+    if ( vector & AFF_HASTE )					strcat( buf, " haste" );
+    if ( vector2 & AFF2_HEALING_AURA )			strcat( buf, " healing_aura" );
+    if ( vector & AFF_HIDE )					strcat( buf, " hide" );
+    if ( vector2 & AFF2_IMMOBILE )				strcat( buf, " immobile" );
+    if ( vector2 & AFF2_IMPROVED_INVIS )		strcat( buf, " improved_invis" );
+    if ( vector & AFF_INFRARED )				strcat( buf, " infrared" );
+    if ( vector & AFF_INVISIBLE )				strcat( buf, " invisible" );
+    if ( vector2 & AFF2_LIGHT_SHROUD )			strcat( buf, " light_shroud" );
+    if ( vector2 & AFF2_MORPHLOCK )				strcat( buf, " morphlock" );
+    if ( vector2 & AFF2_NEUROTOXIN )			strcat( buf, " neurotoxin" );
+    if ( vector2 & AFF2_PARALYSIS )				strcat( buf, " paralysis" );
+    if ( vector & AFF_PASS_DOOR )				strcat( buf, " pass_door" );
+    if ( vector & AFF_PLAGUE )					strcat( buf, " plague" );
+    if ( vector & AFF_POISON )					strcat( buf, " poison" );
+    if ( vector2 & AFF2_PROTECTED )				strcat( buf, " protected" );
+    if ( vector & AFF_REGENERATION )			strcat( buf, " regeneration" );
+    if ( vector & AFF_SANCTUARY )				strcat( buf, " sanctuary" );
+    if ( vector2 & AFF2_SEE_CLOAK )				strcat( buf, " see_cloak" );
+    if ( vector2 & AFF2_SILENCE )				strcat( buf, " silence" );
+    if ( vector & AFF_SLEEP )					strcat( buf, " sleep" );
+    if ( vector & AFF_SLOW )					strcat( buf, " slow" );
+    if ( vector & AFF_SNEAK )					strcat( buf, " sneak" );
+    if ( vector2 & AFF2_SPELL_DEFLECTION )		strcat( buf, " spell_deflection" );
+    if ( vector2 & AFF2_SPELL_SHIELD )			strcat( buf, " spell_shield" );
+    if ( vector2 & AFF2_STONE_SKIN )			strcat( buf, " stone_skin" );
+    if ( vector & AFF_SWIM )					strcat( buf, " swim" );
+    if ( vector2 & AFF2_TOXIN )					strcat( buf, " toxin" );
+    if ( vector2 & AFF2_WARCRY )				strcat( buf, " warcry" );
+    if ( vector & AFF_WEAKEN )					strcat( buf, " weaken" );
+    if ( vector & AFF_WEB )						strcat( buf, " web" );
+
+
+    return ( buf[0] != '\0' ) ? buf+1 : "none";
+}
 
 /*
  * Return ascii name of extra flags vector.

@@ -20,6 +20,9 @@ const struct script_cmd_type token_cmd_table[] = {
 	{ "awardqp",		do_tpawardqp,		TRUE	},
 	{ "awardxp",		do_tpawardxp,		TRUE	},
 	{ "call",		do_tpcall,		FALSE	},
+	{ "castfailure",	do_tpcastfailure,	FALSE	},
+	{ "castrecover",	do_tpcastrecover,	FALSE	},
+
 	{ "chargebank",		do_tpchargebank,	FALSE	},
 	{ "cloneroom",		do_tpcloneroom,		TRUE	},
 	{ "condition",		do_tpcondition,			FALSE	},
@@ -62,6 +65,7 @@ const struct script_cmd_type token_cmd_table[] = {
 	{ "remember",		do_tpremember,		FALSE	},
 	{ "remove",		do_tpremove,		FALSE	},
 	{ "resetdice",		do_tpresetdice,		TRUE	},
+	{ "scriptwait",		do_tpscriptwait,	TRUE	},
 	{ "settimer",		do_tpsettimer,		FALSE	},
 	{ "showroom",		do_tpshowroom,		TRUE	},
 	{ "skill",			do_tpskill,						TRUE	},
@@ -3058,7 +3062,7 @@ SCRIPT_CMD(do_tpoload)
 		if (fWear)
 			wear_obj(to_mob, obj, TRUE);
 	} else
-		obj_to_room(obj, info->room);
+		obj_to_room(obj, token_room(info->token));
 
 	if(rest && *rest) variables_set_object(info->var,rest,obj);
 	p_percent_trigger(NULL, obj, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_REPOP, NULL);
@@ -3286,6 +3290,7 @@ SCRIPT_CMD(do_tpaltermob)
 	int *ptr = NULL;
 	bool allowpc = FALSE;
 	bool allowarith = TRUE;
+	int dirty_stat = -1;
 
 	if(!info || !info->token) return;
 
@@ -3380,11 +3385,11 @@ SCRIPT_CMD(do_tpaltermob)
 	else if(!str_cmp(field,"maxmana"))	ptr = (int*)&mob->max_mana;
 	else if(!str_cmp(field,"maxmove"))	ptr = (int*)&mob->max_move;
 	else if(!str_cmp(field,"mazed"))	{ ptr = (IS_NPC(mob))?NULL:(int*)&mob->maze_time_left; allowpc = TRUE; }
-	else if(!str_cmp(field,"modcon"))	{ ptr = (int*)&mob->mod_stat[STAT_CON]; allowpc = TRUE; min_sec = IS_NPC(mob)?0:3; }
-	else if(!str_cmp(field,"moddex"))	{ ptr = (int*)&mob->mod_stat[STAT_DEX]; allowpc = TRUE; min_sec = IS_NPC(mob)?0:3; }
-	else if(!str_cmp(field,"modint"))	{ ptr = (int*)&mob->mod_stat[STAT_INT]; allowpc = TRUE; min_sec = IS_NPC(mob)?0:3; }
-	else if(!str_cmp(field,"modstr"))	{ ptr = (int*)&mob->mod_stat[STAT_STR]; allowpc = TRUE; min_sec = IS_NPC(mob)?0:3; }
-	else if(!str_cmp(field,"modwis"))	{ ptr = (int*)&mob->mod_stat[STAT_WIS]; allowpc = TRUE; min_sec = IS_NPC(mob)?0:3; }
+	else if(!str_cmp(field,"modcon"))	{ ptr = (int*)&mob->mod_stat[STAT_CON]; allowpc = TRUE; min_sec = IS_NPC(mob)?0:3; dirty_stat = STAT_CON; }
+	else if(!str_cmp(field,"moddex"))	{ ptr = (int*)&mob->mod_stat[STAT_DEX]; allowpc = TRUE; min_sec = IS_NPC(mob)?0:3; dirty_stat = STAT_DEX; }
+	else if(!str_cmp(field,"modint"))	{ ptr = (int*)&mob->mod_stat[STAT_INT]; allowpc = TRUE; min_sec = IS_NPC(mob)?0:3; dirty_stat = STAT_INT; }
+	else if(!str_cmp(field,"modstr"))	{ ptr = (int*)&mob->mod_stat[STAT_STR]; allowpc = TRUE; min_sec = IS_NPC(mob)?0:3; dirty_stat = STAT_STR; }
+	else if(!str_cmp(field,"modwis"))	{ ptr = (int*)&mob->mod_stat[STAT_WIS]; allowpc = TRUE; min_sec = IS_NPC(mob)?0:3; dirty_stat = STAT_WIS; }
 	else if(!str_cmp(field,"move"))		ptr = (int*)&mob->move;
 	else if(!str_cmp(field,"music"))	ptr = (int*)&mob->music;
 	else if(!str_cmp(field,"norecall"))	ptr = (int*)&mob->no_recall;
@@ -3492,6 +3497,9 @@ SCRIPT_CMD(do_tpaltermob)
 	default:
 		return;
 	}
+
+	if(dirty_stat >= 0 && dirty_stat < MAX_STATS)
+		mob->dirty_stat[dirty_stat] = TRUE;
 }
 
 
@@ -6195,3 +6203,221 @@ SCRIPT_CMD(do_tpcondition)
 
 	gain_condition(mob, cond, value);
 }
+
+// scriptwait $PLAYER NUMBER VNUM VNUM[ $ACTOR_TOKEN]
+SCRIPT_CMD(do_tpscriptwait)
+{
+	char buf[MIL];
+	SCRIPT_PARAM arg;
+	char *rest;
+	CHAR_DATA *mob = NULL;
+	int wait;
+	long success, failure;
+	TOKEN_DATA *actor;
+
+	if(!info || !info->token || IS_NULLSTR(argument)) return;
+
+	info->token->progs->lastreturn = 0;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE) return;
+
+	mob = arg.d.mob;
+
+	if( !mob || IS_NPC(mob) ) return;	// only players
+
+	// Check that the mob is not busy
+	if( is_char_busy( mob ) ) {
+		//send_to_char("script_wait: mob busy\n\r", mob);
+		return;
+	}
+	if( !*rest) return;
+
+	if(!(rest = expand_argument(info,rest,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING: wait = is_number(arg.d.str) ? atoi(arg.d.str) : 0; break;
+	case ENT_NUMBER: wait = arg.d.num; break;
+	default: return;
+	}
+
+	//printf_to_char(mob, "script_wait: wait = %d\n\r", wait);
+
+
+	if( !*rest) return;
+
+	if(!(rest = expand_argument(info,rest,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING: success = is_number(arg.d.str) ? atoi(arg.d.str) : 0; break;
+	case ENT_NUMBER: success = arg.d.num; break;
+	default: return;
+	}
+
+	if(success < 1 || !get_script_index(success, PRG_TPROG)) return;
+
+	//printf_to_char(mob, "script_wait: success = %ld\n\r", success);
+
+
+	if( !*rest) return;
+
+	if(!(rest = expand_argument(info,rest,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING: failure = is_number(arg.d.str) ? atoi(arg.d.str) : 0; break;
+	case ENT_NUMBER: failure = arg.d.num; break;
+	default: return;
+	}
+
+	if(failure < 1 || !get_script_index(failure, PRG_TPROG)) return;
+
+	//printf_to_char(mob, "script_wait: failure = %ld\n\r", failure);
+
+
+	actor = info->token;
+	if(rest && *rest) {
+		if(!(rest = expand_argument(info,rest,&arg)))
+			return;
+
+		if( arg.type == ENT_TOKEN && arg.d.token ) {
+			actor = arg.d.token;
+
+		}
+	}
+
+	//printf_to_char(mob, "script_wait: actor = %ld\n\r", actor->pIndexData->vnum);
+
+	wait = UMAX(wait, 1);
+
+
+	mob->script_wait = wait;
+	mob->script_wait_token = actor;
+	mob->script_wait_success = success;
+	mob->script_wait_failure = failure;
+
+	//printf_to_char(mob, "script_wait started: %d\n\r", wait);
+
+	// Return how long the command decided
+	info->token->progs->lastreturn = wait;
+}
+
+// token castfailure $MOBILE[ MESSAGE]
+// This will only work if the token performing the script is a spell token
+// This prevents undoing the failure by setting the recovery flag.
+SCRIPT_CMD(do_tpcastfailure)
+{
+	char buf[MSL];
+	SCRIPT_PARAM arg;
+	char *rest;
+	CHAR_DATA *mob = NULL;
+
+	if(!info || !info->token || IS_NULLSTR(argument)) return;
+
+	if( info->token->type != TOKEN_SPELL ) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+	mob = arg.d.mob;
+
+	if( mob->cast > 0 && !mob->casting_recovered && mob->cast_successful == MAGICCAST_SUCCESS )
+	{
+		mob->casting_recovered = TRUE;
+
+		if( rest && *rest) {
+
+			expand_string(info,rest,buf);
+			strcat(buf, "\n\r");
+			mob->casting_failure_message = str_dup(buf);
+
+			mob->cast_successful = MAGICCAST_SCRIPT;
+		} else
+			// Leaving off the message defaults to "You lost your concentration"
+			mob->cast_successful = MAGICCAST_FAILURE;
+	}
+}
+
+
+
+// token castrecover $MOBILE
+// This will only work if the token performing the script is a spell token
+
+// Success is checkable with if iscastrecovered $MOBILE and if iscastsuccess $MOBILE
+// This will nothing if $MOBILE isn't casting or the casting is already flagged successful.
+
+// Recovery depends upon what caused the failure.
+// - Room blocks will check both the room tests then the skill, if necessary.
+// - Skill failures will ONLY test against the skill, as it passed the room tests
+SCRIPT_CMD(do_tpcastrecover)
+{
+	char buf[MIL];
+	SCRIPT_PARAM arg;
+	char *rest;
+	CHAR_DATA *mob = NULL;
+
+	if(!info || !info->token || IS_NULLSTR(argument)) return;
+
+	if( info->token->type != TOKEN_SPELL ) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+	mob = arg.d.mob;
+
+	if( mob->cast > 0 && !mob->casting_recovered && mob->cast_successful != MAGICCAST_SUCCESS )
+	{
+		bool recover = TRUE;
+		int chance;
+		mob->casting_recovered = TRUE;
+		if(mob->cast_token) {
+			if(!IS_SET(mob->cast_token->pIndexData->flags,TOKEN_NOSKILLTEST)) {
+				if( mob->cast_successful == MAGICCAST_ROOMBLOCK) {
+					chance = 0;
+
+					if (IS_SET(mob->in_room->room2_flags, ROOM_HARD_MAGIC)) chance += 2;
+					if (mob->in_room->sector_type == SECT_CURSED_SANCTUM) chance += 2;
+					if (!IS_NPC(mob) && chance > 0 && number_range(1,chance) > 1)
+						recover = FALSE;
+				}
+
+				if( recover ) {
+					if (mob->cast_token->pIndexData->value[TOKVAL_SPELL_RATING] > 0) {
+						if (number_range(0,mob->cast_token->pIndexData->value[TOKVAL_SPELL_RATING]) > mob->cast_token->value[TOKVAL_SPELL_RATING])
+							recover = FALSE;
+					} else {
+						if (number_percent() > mob->cast_token->value[TOKVAL_SPELL_RATING])
+							recover = FALSE;
+					}
+				}
+			}
+
+		} else {
+			// This is a skill spell
+			if( mob->cast_successful == MAGICCAST_ROOMBLOCK) {
+				chance = 0;
+
+				if (IS_SET(mob->in_room->room2_flags, ROOM_HARD_MAGIC)) chance += 2;
+				if (mob->in_room->sector_type == SECT_CURSED_SANCTUM) chance += 2;
+				if (!IS_NPC(mob) && chance > 0 && number_range(1,chance) > 1)
+					recover = FALSE;
+			}
+			if (recover && number_percent() > get_skill(mob, mob->cast_sn))
+				recover = FALSE;
+		}
+
+		if(recover)
+			mob->cast_successful = MAGICCAST_SUCCESS;
+	}
+}
+
+
+

@@ -6,6 +6,7 @@
 #include <math.h>
 #include "merc.h"
 #include "interp.h"
+#include "scripts.h"
 #include "tables.h"
 #include "wilds.h"
 
@@ -735,15 +736,16 @@ void mobile_update(void)
 	// Done to allow for TOKEN random type scripts on players, but only if they have tokens!
 	if (!IS_NPC(ch)) {
 	    if(ch->tokens) {
-		if(p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RANDOM, NULL)) continue;
+
+		p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RANDOM, NULL);
 
 		// Prereckoning
-		if (pre_reckoning > 0 && reckoning_timer > 0 && p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_PRERECKONING, NULL))
-		    continue;
+		if (pre_reckoning > 0 && reckoning_timer > 0)
+		    p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_PRERECKONING, NULL);
 
 		// Reckoning
-		if (!pre_reckoning && reckoning_timer > 0 && p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RECKONING, NULL))
-		    continue;
+		if (!pre_reckoning && reckoning_timer > 0)
+		    p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RECKONING, NULL);
 	    }
 	    continue;
 	}
@@ -1547,14 +1549,21 @@ void char_update(void)
 		OBJ_DATA *corpse = ch->pcdata->corpse;
 		ROOM_INDEX_DATA *corpse_room = obj_room(corpse);
 		// Check here, prevent the timer from counting down if the
-		if( p_percent_trigger(ch, NULL, NULL, NULL, ch, ch, NULL, corpse, NULL, TRIG_PRERESURRECT, NULL) )
+		if( p_percent_trigger(ch, NULL, NULL, NULL, ch, ch, NULL, corpse, NULL, TRIG_DEATH_TIMER, NULL) )
 			run_death_timer = FALSE;
 
-		if( run_death_timer && IS_VALID(corpse) && p_percent_trigger(NULL, corpse, NULL, NULL, ch, ch, NULL, corpse, NULL, TRIG_PRERESURRECT, NULL) )
+		if( run_death_timer && IS_VALID(corpse) && p_percent_trigger(NULL, corpse, NULL, NULL, ch, ch, NULL, corpse, NULL, TRIG_DEATH_TIMER, NULL) )
 			run_death_timer = FALSE;
 
-		if( run_death_timer && corpse_room && p_percent_trigger(NULL, NULL, corpse_room, NULL, ch, ch, NULL, corpse, NULL, TRIG_PRERESURRECT, NULL) )
+		if( run_death_timer && corpse_room && p_percent_trigger(NULL, NULL, corpse_room, NULL, ch, ch, NULL, corpse, NULL, TRIG_DEATH_TIMER, NULL) )
 			run_death_timer = FALSE;
+
+		// Perform actions while the player is dead regardless of timer running
+		if( ch->manastore > 0) {
+			// Decay manastore while dead
+			ch->manastore = ch->manastore / 2;
+		}
+
 
 		if( run_death_timer )
 		{
@@ -1620,6 +1629,9 @@ void char_update(void)
 			free_token(token);
 		    }
 		}
+
+		// Idling will clear your manastore
+		ch->manastore = 0;
 
 		if (ch->was_in_room == NULL && ch->in_room != NULL)
 		{
@@ -2460,13 +2472,25 @@ void aggr_update(void)
 	{
 	    if (wch->cast > 0)
 	    {
-		wch->cast--;
-		if (wch->cast <= 0)
-		{
-		    wch->cast = 0;
-		    cast_end(wch);
-		}
+			wch->cast--;
+			if (wch->cast <= 0)
+			{
+			    wch->cast = 0;
+			    cast_end(wch);
+			} else if(wch->cast_token && IS_SET(wch->cast_token->pIndexData->flags, TOKEN_SPELLBEATS))
+ 				p_percent_trigger(NULL, NULL, NULL, wch->cast_token, wch, NULL, NULL, NULL, NULL, TRIG_SPELLBEAT, NULL);
+
 	    }
+
+	    if (wch->script_wait > 0)
+	    {
+			wch->script_wait--;
+			if (wch->script_wait <= 0)
+			{
+			    script_end_success(wch);
+			}
+	    }
+
 
 	    if (wch->bashed > 0)
 	    {

@@ -632,7 +632,11 @@ bool load_char_obj(DESCRIPTOR_DATA *d, char *name)
     //ch->pcdata->bamfout			= str_dup("");
     ch->pcdata->title			= str_dup("");
     for (stat =0; stat < MAX_STATS; stat++)
-	ch->perm_stat[stat]		= 13;
+    {
+		ch->perm_stat[stat]		= 13;
+		ch->mod_stat[stat]		= 0;
+		ch->dirty_stat[stat]	= TRUE;
+	}
     ch->pcdata->condition[COND_THIRST]	= 48;
     ch->pcdata->condition[COND_FULL]	= 48;
     ch->pcdata->condition[COND_HUNGER]	= 48;
@@ -1066,7 +1070,7 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
 	    {
 		int stat;
 		for (stat = 0; stat < MAX_STATS; stat ++)
-		   ch->mod_stat[stat] = fread_number(fp);
+		   set_mod_stat(ch, stat, fread_number(fp));
 		fMatch = TRUE;
 		break;
 	    }
@@ -1076,7 +1080,7 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
 		int stat;
 
 		for (stat = 0; stat < MAX_STATS; stat++)
-		    ch->perm_stat[stat] = fread_number(fp);
+			set_perm_stat(ch, stat, fread_number(fp));
 		fMatch = TRUE;
 		break;
 	    }
@@ -1447,7 +1451,6 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
 	    break;
 
 	case 'M':
-	    KEY("ManaStore",	ch->manastore,		fread_number(fp));
 	    KEY("Mc0",		 ch->pcdata->class_mage,		fread_number(fp));
 	    KEY("Mc1",		 ch->pcdata->class_cleric,		fread_number(fp));
 	    KEY("Mc2",		 ch->pcdata->class_thief,		fread_number(fp));
@@ -3619,8 +3622,8 @@ void fix_character(CHAR_DATA *ch)
     }
 
     for (i = 0; i < MAX_STATS; i++)
-	if (ch->perm_stat[i] > pc_race_table[ch->race].max_stats[i])
-	    ch->perm_stat[i] = pc_race_table[ch->race].max_stats[i];
+		if (ch->perm_stat[i] > pc_race_table[ch->race].max_stats[i])
+	    	set_perm_stat(ch, i, pc_race_table[ch->race].max_stats[i]);
 
     // If imm flag not set, set the default flag
     /*if (ch->tot_level >= LEVEL_IMMORTAL && (ch->pcdata->immortal->imm_flag == NULL))

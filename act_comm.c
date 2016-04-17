@@ -1232,6 +1232,9 @@ void do_quit(CHAR_DATA *ch, char *argument)
 	ch->pcdata->bankbalance = 0;
 	}
 
+	// Reset manastore to zero - even on imms
+	ch->manastore = 0;
+
 	save_char_obj(ch);
 
 	if (MOUNTED(ch))

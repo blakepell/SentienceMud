@@ -855,7 +855,7 @@ void do_train(CHAR_DATA *ch, char *argument)
 
     ch->train		-= cost;
 
-    ch->perm_stat[stat]		+= 1;
+	add_perm_stat(ch, stat, 1);
     act("Your $T increases!", ch, NULL, NULL, NULL, NULL, NULL, pOutput, TO_CHAR);
     act("$n's $T increases!", ch, NULL, NULL, NULL, NULL, NULL, pOutput, TO_ROOM);
 }
@@ -1247,15 +1247,19 @@ void group_add( CHAR_DATA *ch, const char *name, bool deduct)
 
     if (sn != -1)
     {
-	if (ch->pcdata->learned[sn] <= 0) { /* i.e. not known */
-	    ch->pcdata->learned[sn] = 1;
-		if( skill_table[sn].spell_fun == spell_null )
-			skill_entry_addskill(ch, sn, NULL);
-		else
-			skill_entry_addspell(ch, sn, NULL);
-	}
+		if (ch->pcdata->learned[sn] <= 0) { /* i.e. not known */
+			ch->pcdata->learned[sn] = 1;
 
-	return;
+			if( skill_table[sn].spell_fun == spell_null ) {
+				if( skill_entry_findsn( ch->sorted_skills, sn) == NULL)
+					skill_entry_addskill(ch, sn, NULL);
+			} else {
+				if( skill_entry_findsn( ch->sorted_spells, sn) == NULL)
+					skill_entry_addspell(ch, sn, NULL);
+			}
+		}
+
+		return;
     }
 
     /* now check groups */

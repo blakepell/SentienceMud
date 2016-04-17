@@ -816,6 +816,8 @@ void boot_db(void)
 			}
 		}
 
+		fpArea = NULL;
+
 		fclose(fpList);
     }
 
@@ -1871,7 +1873,7 @@ CHAR_DATA *create_mobile(MOB_INDEX_DATA *pMobIndex)
 
 
     for (i = 0; i < MAX_STATS; i ++)
-	mob->perm_stat[i] = UMIN(25,11 + mob->level/4);
+		set_perm_stat_range(mob, i, 11 + mob->level/4, 0, 25);
 
     if (IS_SET(mob->act,ACT_WARRIOR))
     {
@@ -2305,8 +2307,9 @@ CHAR_DATA *clone_mobile(CHAR_DATA *parent)
 
     for (i = 0; i < MAX_STATS; i++)
     {
-	clone->perm_stat[i]	= parent->perm_stat[i];
-	clone->mod_stat[i]	= parent->mod_stat[i];
+		clone->perm_stat[i]	= parent->perm_stat[i];
+		clone->mod_stat[i]	= parent->mod_stat[i];
+		clone->dirty_stat[i] = TRUE;
     }
 
     for (i = 0; i < 3; i++)
@@ -6336,6 +6339,8 @@ CHAR_DATA *persist_load_mobile(FILE *fp)
 		return NULL;
 	ch->version = VERSION_MOBILE_000;
 	ch->id[0] = ch->id[1] = 0;
+	for(i = 0; i < MAX_STATS; i++)
+		ch->dirty_stat[i] = TRUE;
 
 	for (;good;) {
 		word = feof(fp) ? "#-MOBILE" : fread_word(fp);
@@ -6456,20 +6461,20 @@ CHAR_DATA *persist_load_mobile(FILE *fp)
 
 				KEY("Alig",		ch->alignment,		fread_number(fp));
 				if(IS_KEY("AMod")) {
-					ch->mod_stat[STAT_STR] = fread_number(fp);
-					ch->mod_stat[STAT_INT] = fread_number(fp);
-					ch->mod_stat[STAT_WIS] = fread_number(fp);
-					ch->mod_stat[STAT_DEX] = fread_number(fp);
-					ch->mod_stat[STAT_CON] = fread_number(fp);
+					set_mod_stat(ch, STAT_STR, fread_number(fp));
+					set_mod_stat(ch, STAT_INT, fread_number(fp));
+					set_mod_stat(ch, STAT_WIS, fread_number(fp));
+					set_mod_stat(ch, STAT_DEX, fread_number(fp));
+					set_mod_stat(ch, STAT_CON, fread_number(fp));
 					fMatch = TRUE;
 				}
 
 				if(IS_KEY("Attr")) {
-					ch->perm_stat[STAT_STR] = fread_number(fp);
-					ch->perm_stat[STAT_INT] = fread_number(fp);
-					ch->perm_stat[STAT_WIS] = fread_number(fp);
-					ch->perm_stat[STAT_DEX] = fread_number(fp);
-					ch->perm_stat[STAT_CON] = fread_number(fp);
+					set_perm_stat(ch, STAT_STR, fread_number(fp));
+					set_perm_stat(ch, STAT_INT, fread_number(fp));
+					set_perm_stat(ch, STAT_WIS, fread_number(fp));
+					set_perm_stat(ch, STAT_DEX, fread_number(fp));
+					set_perm_stat(ch, STAT_CON, fread_number(fp));
 					fMatch = TRUE;
 				}
 				break;
@@ -6565,7 +6570,6 @@ CHAR_DATA *persist_load_mobile(FILE *fp)
 				KEY("LostParts",	ch->lostparts,	fread_flag(fp));
 				break;
 			case 'M':
-				KEY("ManaStore",	ch->manastore,		fread_number(fp));
 				SKEY("Material",	ch->material);
 				break;
 			case 'N':

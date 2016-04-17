@@ -681,7 +681,7 @@ void reset_char(CHAR_DATA *ch)
 
     /* now restore the character to his/her true condition */
     for (stat = 0; stat < MAX_STATS; stat++)
-	ch->mod_stat[stat] = 0;
+		set_mod_stat(ch, stat, 0);
 
     if (ch->pcdata->true_sex < 0 || ch->pcdata->true_sex > 2)
 	ch->pcdata->true_sex = 0;
@@ -710,11 +710,11 @@ void reset_char(CHAR_DATA *ch)
 	    mod = af->modifier;
 	    switch(af->location)
 	    {
-		case APPLY_STR:         ch->mod_stat[STAT_STR]  += mod; break;
-		case APPLY_DEX:         ch->mod_stat[STAT_DEX]  += mod; break;
-		case APPLY_INT:         ch->mod_stat[STAT_INT]  += mod; break;
-		case APPLY_WIS:         ch->mod_stat[STAT_WIS]  += mod; break;
-		case APPLY_CON:         ch->mod_stat[STAT_CON]  += mod; break;
+		case APPLY_STR:         add_mod_stat(ch,STAT_STR,mod); break;
+		case APPLY_DEX:         add_mod_stat(ch,STAT_DEX,mod); break;
+		case APPLY_INT:         add_mod_stat(ch,STAT_INT,mod); break;
+		case APPLY_WIS:         add_mod_stat(ch,STAT_WIS,mod); break;
+		case APPLY_CON:         add_mod_stat(ch,STAT_CON,mod); break;
 
 		case APPLY_SEX:         ch->sex                 += mod; break;
 		case APPLY_MANA:        ch->max_mana            += mod; break;
@@ -743,11 +743,11 @@ void reset_char(CHAR_DATA *ch)
 	mod = af->modifier;
 	switch(af->location)
 	{
-	    case APPLY_STR:         ch->mod_stat[STAT_STR]  += mod; break;
-	    case APPLY_DEX:         ch->mod_stat[STAT_DEX]  += mod; break;
-	    case APPLY_INT:         ch->mod_stat[STAT_INT]  += mod; break;
-	    case APPLY_WIS:         ch->mod_stat[STAT_WIS]  += mod; break;
-	    case APPLY_CON:         ch->mod_stat[STAT_CON]  += mod; break;
+	    case APPLY_STR:         add_mod_stat(ch,STAT_STR,mod); break;
+	    case APPLY_DEX:         add_mod_stat(ch,STAT_DEX,mod); break;
+	    case APPLY_INT:         add_mod_stat(ch,STAT_INT,mod); break;
+	    case APPLY_WIS:         add_mod_stat(ch,STAT_WIS,mod); break;
+	    case APPLY_CON:         add_mod_stat(ch,STAT_CON,mod); break;
 
 	    case APPLY_SEX:         ch->sex                 += mod; break;
 	    case APPLY_MANA:        ch->max_mana            += mod; break;
@@ -798,51 +798,55 @@ int get_age(CHAR_DATA *ch)
     return 17 + (ch->played + (int) (current_time - ch->logon)) / (4*72000);
 }
 
+void set_mod_stat(CHAR_DATA *ch, int stat, int value)
+{
+	ch->mod_stat[stat] = value;
+	ch->dirty_stat[stat] = TRUE;
+}
+
+void add_mod_stat(CHAR_DATA *ch, int stat, int adjust)
+{
+	ch->mod_stat[stat] += adjust;
+	ch->dirty_stat[stat] = TRUE;
+}
+
+void set_perm_stat(CHAR_DATA *ch, int stat, int value)
+{
+	ch->perm_stat[stat] = value;
+	ch->dirty_stat[stat] = TRUE;
+}
+
+void add_perm_stat(CHAR_DATA *ch, int stat, int adjust)
+{
+	ch->perm_stat[stat] += adjust;
+	ch->dirty_stat[stat] = TRUE;
+}
+
+void set_perm_stat_range(CHAR_DATA *ch, int stat, int value, int mn, int mx)
+{
+	ch->perm_stat[stat] = URANGE(mn, value, mx);
+	ch->dirty_stat[stat] = TRUE;
+}
 
 /* command for retrieving stats */
 int get_curr_stat(CHAR_DATA *ch, int stat)
 {
     int max, cur;
 
-    if (IS_NPC(ch) || ch->level > LEVEL_IMMORTAL)
-	max = 25;
-    else
-    {
-	max = pc_race_table[ch->race].max_stats[stat];
+    if (ch->dirty_stat[stat]) {
 
-        /* nrrk! disabling this! (Syn)
-	if (class_table[ch->pcdata->class_mage].attr_prime == stat)
-	    max += 2;
-	else
-	if (class_table[ch->pcdata->class_cleric].attr_prime == stat)
-	    max += 2;
-	else
-	if (class_table[ch->pcdata->class_thief].attr_prime == stat)
-	    max += 2;
-	else
-	if (class_table[ch->pcdata->class_warrior].attr_prime == stat)
-	    max += 2;
-        */
-//	if ((ch->race == race_lookup("human")) || (ch->race == race_lookup("avatar")))
-//	    max += 1;
+		cur = ch->perm_stat[stat] + ch->mod_stat[stat];
+		max = !IS_NPC(ch) ? pc_race_table[ch->race].max_stats[stat] : 25;
+		if (cur > max) {
+			float t = exp(-0.0075*(cur-max));
+			cur = max + (int)((50-max)*(1-t)/(1+t)+0.5);
+		}
 
- 	//max = UMIN(max,25);
-    }
-
-    /* Making this addition to keep players happy. You *can* go over your racial stat maxes
-       by wearing eq, but for each point past max, it counts at 1/4 efficiency. The problem
-       concerning lack of variation has been resolved by the fact that there is no absolute
-       roof of 25 for all stats anymore. (Syn) */
-
-	// @@@NIB: Changed this to take a logarithm approach, similar to damrolls
-	//		This is to make it progressively harder to increase the stat by one
-	cur = ch->perm_stat[stat] + ch->mod_stat[stat];
-	max = !IS_NPC(ch) ? pc_race_table[ch->race].max_stats[stat] : 25;
-	if (cur > max) {
-		cur = max + (int)((50-max)*(1-exp(-0.0075*(cur-max)))/(1+exp(-0.0075*(cur-max)))+0.5);
+		ch->cur_stat[stat] = UMAX(3,cur);
+		ch->dirty_stat[stat] = FALSE;
 	}
 
-	return UMAX(3,cur);
+	return ch->cur_stat[stat];
 }
 
 
@@ -1101,11 +1105,11 @@ void affect_modify(CHAR_DATA *ch, AFFECT_DATA *paf, bool fAdd)
     switch (paf->location)
     {
 	case APPLY_NONE:						break;
-	case APPLY_STR:           ch->mod_stat[STAT_STR]	+= mod;	break;
-	case APPLY_DEX:           ch->mod_stat[STAT_DEX]	+= mod;	break;
-	case APPLY_INT:           ch->mod_stat[STAT_INT]	+= mod;	break;
-	case APPLY_WIS:           ch->mod_stat[STAT_WIS]	+= mod;	break;
-	case APPLY_CON:           ch->mod_stat[STAT_CON]	+= mod;	break;
+	case APPLY_STR:           add_mod_stat(ch,STAT_STR,mod);	break;
+	case APPLY_DEX:           add_mod_stat(ch,STAT_DEX,mod);	break;
+	case APPLY_INT:           add_mod_stat(ch,STAT_INT,mod);	break;
+	case APPLY_WIS:           add_mod_stat(ch,STAT_WIS,mod);	break;
+	case APPLY_CON:           add_mod_stat(ch,STAT_CON,mod);	break;
 	case APPLY_SEX:           ch->sex			+= mod;	break;
 	case APPLY_MANA:          ch->max_mana			+= mod;	break;
 	case APPLY_HIT:
@@ -1391,6 +1395,47 @@ void affect_remove(CHAR_DATA *ch, AFFECT_DATA *paf)
     affect_fix_char(ch);
     //affect_check(ch,where,vector,vector2);
     return;
+}
+
+bool affect_removeall_obj(OBJ_DATA *obj)
+{
+	AFFECT_DATA *paf, *paf_next;
+	bool is_worn = (obj->carried_by != NULL) && (obj->wear_loc != -1);
+
+	for(paf = obj->affected; paf != NULL; paf = paf_next) {
+		paf_next = paf->next;
+
+		// If worn, remove this affect from the character, JIC
+		if(is_worn) affect_modify(obj->carried_by, paf, FALSE);
+
+		if (paf->bitvector)
+			switch(paf->where) {
+			case TO_OBJECT:
+				MERGE_BIT(obj->extra_flags,obj->extra_flags_perm,paf->bitvector);
+				break;
+			case TO_OBJECT2:
+				MERGE_BIT(obj->extra2_flags,obj->extra2_flags_perm,paf->bitvector);
+				break;
+			case TO_OBJECT3:
+				MERGE_BIT(obj->extra3_flags,obj->extra3_flags_perm,paf->bitvector);
+				break;
+			case TO_OBJECT4:
+				MERGE_BIT(obj->extra4_flags,obj->extra4_flags_perm,paf->bitvector);
+				break;
+			case TO_WEAPON:
+				if (obj->item_type == ITEM_WEAPON)
+					MERGE_BIT(obj->value[4],obj->weapon_flags_perm,paf->bitvector);
+				break;
+			}
+
+		free_affect(paf);
+	}
+
+	obj->affected = NULL;
+
+	if(is_worn) affect_fix_char(obj->carried_by);
+
+	return is_worn;
 }
 
 
@@ -2400,43 +2445,6 @@ int unequip_char(CHAR_DATA *ch, OBJ_DATA *obj, bool show)
 
     /* Remove trigger */
     return (p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_REMOVE, NULL));
-}
-
-
-bool wears_obj_with_spell(CHAR_DATA *ch, int sn)
-{
-    OBJ_DATA *obj;
-
-    for (obj = ch->carrying; obj != NULL; obj = obj->next_content)
-    {
-	if (obj->wear_loc != -1)
-	{
-	    switch (obj->item_type)
-	    {
-		case ITEM_WEAPON:
-		case ITEM_ARMOR:
-		case ITEM_RANGED_WEAPON:
-                    if (obj->value[6] == sn || obj->value[7] == sn)
-			return TRUE;
-
-		    break;
-
-		case ITEM_ARTIFACT:
-                    if (obj->value[1] == sn || obj->value[2] == sn)
-			return TRUE;
-
-                    break;
-
-		case ITEM_LIGHT:
-                    if (obj->value[4] == sn || obj->value[5] == sn)
-			return TRUE;
-
-		    break;
-	    }
-	}
-    }
-
-    return FALSE;
 }
 
 
@@ -4269,7 +4277,8 @@ void resurrect_pc(CHAR_DATA *ch)
     update_pos(ch);
 
 	// Used to handle any post resurrection actions
-    p_percent_trigger(ch, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_RESURRECT, NULL);
+    p_percent_trigger(ch, NULL, NULL, NULL, ch, NULL, NULL, ch->pcdata->corpse, NULL, TRIG_RESURRECT, NULL);
+    p_percent_trigger(NULL, ch->pcdata->corpse, NULL, NULL, ch, ch, NULL, NULL, NULL, TRIG_RESURRECT, NULL);
 }
 
 
@@ -6143,6 +6152,9 @@ void token_from_char(TOKEN_DATA *token)
 	if(token->player->cast_token == token)
 		stop_casting(token->player,TRUE);
 
+	if(token->player->script_wait_token == token)
+		script_end_failure(token->player, TRUE);
+
 	if(token->type == TOKEN_SKILL) skill_entry_removeskill(token->player, 0, token);
 	else if(token->type == TOKEN_SPELL) skill_entry_removespell(token->player, 0, token);
 	else if(token->type == TOKEN_SONG) skill_entry_removesong(token->player, -1, token);
@@ -7874,3 +7886,30 @@ float diminishing_returns(float val, float scale)
 	return trinum * scale;
 }
 
+bool is_char_busy(CHAR_DATA *ch)
+{
+	if(ch == NULL) return FALSE;
+
+	if( ch->cast > 0 ) return TRUE;
+	if( ch->bind > 0 ) return TRUE;
+	if( ch->bomb > 0 ) return TRUE;
+	if( ch->bashed > 0 ) return TRUE;
+	if( ch->resurrect > 0 ) return TRUE;
+	if( ch->brew > 0 ) return TRUE;
+	if( ch->recite > 0 ) return TRUE;
+	if( ch->paroxysm > 0 ) return TRUE;
+	if( ch->panic > 0 ) return TRUE;
+	if( ch->repair > 0 ) return TRUE;
+	if( ch->hide > 0 ) return TRUE;
+	if( ch->fade > 0 ) return TRUE;
+	if( ch->reverie > 0 ) return TRUE;
+	if( ch->trance > 0 ) return TRUE;
+	if( ch->scribe > 0 ) return TRUE;
+	if( ch->inking > 0 ) return TRUE;
+	if( ch->music > 0 ) return TRUE;
+	if( ch->ranged > 0 ) return TRUE;
+	if( ch->script_wait > 0 ) return TRUE;
+
+
+	return FALSE;
+}

@@ -265,7 +265,7 @@ SPELL_FUNC(spell_identify)
 		}
 
 		if ((IS_SAGE(ch) || IS_IMMORTAL(ch)) && obj->value[1] > 0) {
-			sprintf(buf, "{MThere is a %d%% chance that the tattoo will fade with each touch\n\r", obj->value[1]);
+			sprintf(buf, "{MThere is a %d%% chance that the tattoo will fade with each touch{x\n\r", obj->value[1]);
 			add_buf(buffer, buf);
 		}
 		break;
@@ -377,7 +377,7 @@ SPELL_FUNC(spell_identify)
 			if (af->bitvector) {
 				switch(af->where) {
 				case TO_AFFECTS:
-					sprintf(buf,"{MAdds {x%s {Maffect.{x\n", affect_bit_name(af->bitvector));
+					sprintf(buf,"{MAdds {x%s {Maffect.{x\n", affects_bit_name(af->bitvector, af->bitvector2));
 					break;
 				case TO_OBJECT:
 					sprintf(buf,"{MAdds {x%s {Mobject flag.{x\n", extra_bit_name(af->bitvector));
@@ -646,7 +646,7 @@ SPELL_FUNC(spell_word_of_recall)
 
 	location = get_recall_room(ch);
 
-	if (!(location = location_to_room(&recall))) {
+	if (location == NULL) {
 		send_to_char("You are completely lost.\n\r",victim);
 		return FALSE;
 	}

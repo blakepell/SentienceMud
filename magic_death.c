@@ -435,6 +435,7 @@ SPELL_FUNC(spell_raise_dead)
 
 			// Restore information about the victim, then check to see if they can be resurrected
 			p_percent_trigger(victim, NULL, NULL, NULL, ch, NULL, NULL, obj, NULL, TRIG_RESURRECT, NULL);
+			p_percent_trigger(NULL, obj, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_RESURRECT, NULL);
 
 			// Check the corpse for anything blocking the resurrection
 			if (p_percent_trigger( victim, NULL, NULL, NULL, ch, victim, NULL, obj, NULL, TRIG_PRERESURRECT, NULL) )

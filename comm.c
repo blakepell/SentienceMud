@@ -59,6 +59,7 @@
 #include "merc.h"
 #include "interp.h"
 #include "recycle.h"
+#include "scripts.h"
 #include "tables.h"
 #include "wilds.h"
 
@@ -2527,8 +2528,10 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 	ch->race = race;
 
 	/* initialize stats */
-	for (i = 0; i < MAX_STATS; i++)
-	ch->perm_stat[i] = pc_race_table[race].stats[i];
+	for (i = 0; i < MAX_STATS; i++) {
+		ch->perm_stat[i] = pc_race_table[race].stats[i];
+		ch->dirty_stat[i] = TRUE;
+	}
 	ch->act2        = ch->act2|race_table[race].act2;
 	ch->affected_by = ch->affected_by|race_table[race].aff;
 
@@ -2890,7 +2893,9 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 
 	if (ch->level == 0)
 	{
-	ch->perm_stat[class_table[ch->pcdata->class_current].attr_prime] += 3;
+		int prime_stat = class_table[ch->pcdata->class_current].attr_prime;
+		ch->perm_stat[prime_stat] += 3;
+		ch->dirty_stat[prime_stat] = TRUE;
 
 	ch->exp	= 0;
 	ch->hit	= ch->max_hit;
@@ -4151,6 +4156,8 @@ void update_pc_timers(CHAR_DATA *ch)
 	--ch->cast;
 	if (ch->cast <= 0)
 	    cast_end(ch);
+ 	else if(ch->cast_token && IS_SET(ch->cast_token->pIndexData->flags, TOKEN_SPELLBEATS))
+ 		p_percent_trigger(NULL, NULL, NULL, ch->cast_token, ch, NULL, NULL, NULL, NULL, TRIG_SPELLBEAT, NULL);
     }
 
     /* Decrease delay on characters binding */
@@ -4317,6 +4324,16 @@ void update_pc_timers(CHAR_DATA *ch)
 		if (ch->music <= 0)
 		    music_end(ch);
     }
+
+
+    if( ch != NULL && ch->script_wait > 0)
+    {
+		//printf_to_char(ch, "script_wait: %d\n\r", ch->script_wait);
+		--ch->script_wait;
+		if (ch->script_wait <= 0)
+			script_end_success(ch);
+	}
+
 
     if (ch != NULL && ch->ranged > 0)
     {

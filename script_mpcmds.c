@@ -4339,6 +4339,7 @@ SCRIPT_CMD(do_mpaltermob)
 	int *ptr = NULL;
 	bool allowpc = FALSE;
 	bool allowarith = TRUE;
+	int dirty_stat = -1;
 
 	if(!info || !info->mob) return;
 
@@ -4433,11 +4434,11 @@ SCRIPT_CMD(do_mpaltermob)
 	else if(!str_cmp(field,"maxmana"))	ptr = (int*)&mob->max_mana;
 	else if(!str_cmp(field,"maxmove"))	ptr = (int*)&mob->max_move;
 	else if(!str_cmp(field,"mazed"))	{ ptr = (IS_NPC(mob))?NULL:(int*)&mob->maze_time_left; allowpc = TRUE; }
-	else if(!str_cmp(field,"modcon"))	{ ptr = (int*)&mob->mod_stat[STAT_CON]; allowpc = TRUE; min_sec = IS_NPC(mob)?0:3; }
-	else if(!str_cmp(field,"moddex"))	{ ptr = (int*)&mob->mod_stat[STAT_DEX]; allowpc = TRUE; min_sec = IS_NPC(mob)?0:3; }
-	else if(!str_cmp(field,"modint"))	{ ptr = (int*)&mob->mod_stat[STAT_INT]; allowpc = TRUE; min_sec = IS_NPC(mob)?0:3; }
-	else if(!str_cmp(field,"modstr"))	{ ptr = (int*)&mob->mod_stat[STAT_STR]; allowpc = TRUE; min_sec = IS_NPC(mob)?0:3; }
-	else if(!str_cmp(field,"modwis"))	{ ptr = (int*)&mob->mod_stat[STAT_WIS]; allowpc = TRUE; min_sec = IS_NPC(mob)?0:3; }
+	else if(!str_cmp(field,"modcon"))	{ ptr = (int*)&mob->mod_stat[STAT_CON]; allowpc = TRUE; min_sec = IS_NPC(mob)?0:3; dirty_stat = STAT_CON; }
+	else if(!str_cmp(field,"moddex"))	{ ptr = (int*)&mob->mod_stat[STAT_DEX]; allowpc = TRUE; min_sec = IS_NPC(mob)?0:3; dirty_stat = STAT_DEX; }
+	else if(!str_cmp(field,"modint"))	{ ptr = (int*)&mob->mod_stat[STAT_INT]; allowpc = TRUE; min_sec = IS_NPC(mob)?0:3; dirty_stat = STAT_INT; }
+	else if(!str_cmp(field,"modstr"))	{ ptr = (int*)&mob->mod_stat[STAT_STR]; allowpc = TRUE; min_sec = IS_NPC(mob)?0:3; dirty_stat = STAT_STR; }
+	else if(!str_cmp(field,"modwis"))	{ ptr = (int*)&mob->mod_stat[STAT_WIS]; allowpc = TRUE; min_sec = IS_NPC(mob)?0:3; dirty_stat = STAT_WIS; }
 	else if(!str_cmp(field,"move"))		ptr = (int*)&mob->move;
 	else if(!str_cmp(field,"music"))	ptr = (int*)&mob->music;
 	else if(!str_cmp(field,"norecall"))	ptr = (int*)&mob->no_recall;
@@ -4549,6 +4550,9 @@ SCRIPT_CMD(do_mpaltermob)
 	default:
 		return;
 	}
+
+	if(dirty_stat >= 0 && dirty_stat < MAX_STATS)
+		mob->dirty_stat[dirty_stat] = TRUE;
 }
 
 
@@ -7023,3 +7027,4 @@ SCRIPT_CMD(do_mpcondition)
 
 	gain_condition(mob, cond, value);
 }
+

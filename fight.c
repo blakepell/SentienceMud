@@ -538,7 +538,7 @@ bool one_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt, bool secondary)
 
 	if (ch->cast > 0 || ch->music > 0 || ch->brew > 0 || ch->scribe > 0 ||
 		ch->recite > 0 || ch->ranged > 0 || ch->bind > 0 || ch->reverie > 0 ||
-		ch->trance > 0 || ch->ranged > 0 || ch->inking > 0) {
+		ch->trance > 0 || ch->ranged > 0 || ch->inking > 0 || ch->script_wait > 0) {
 		victim->set_death_type = DEATHTYPE_ALIVE;
 		return FALSE;
 	}
@@ -824,14 +824,73 @@ bool one_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt, bool secondary)
 
 	// Check defenses against weapon attacks
 	if (dt >= TYPE_HIT && ch != victim && ch->ranged <= 0) {
+#define NDEFENSES	8
+		bool defenses[NDEFENSES];
+		int slot_defense;
+		int nd;
+		for(slot_defense = 0; slot_defense < NDEFENSES; slot_defense++) defenses[slot_defense] = TRUE;
 
-		if (check_acro(ch, victim, wield)) return FALSE;
-		if (check_catch(ch, victim, wield)) return FALSE;
-		if (check_spear_block(ch, victim, wield)) return FALSE;
-		if (check_parry(ch, victim, wield)) return FALSE;
-		if (check_dodge(ch, victim, wield)) return FALSE;
-		if (check_shield_block(ch,victim, wield)) return FALSE;
-		if (check_speed_swerve(ch,victim, wield)) return FALSE;
+		slot_defense = -1;
+		//send_to_char("Defense Check\n\r", victim);
+
+		for(nd = 0; nd < NDEFENSES; nd++) {
+			int step = number_range(1,NDEFENSES);
+
+			for(;step > 0;) {
+				++slot_defense;
+				if(slot_defense >= NDEFENSES) slot_defense = 0;
+
+				if(defenses[slot_defense])
+					step--;
+			}
+
+			defenses[slot_defense] = FALSE;
+
+			switch(slot_defense) {
+			case 0:
+				//send_to_char("Acrobatics\n\r", victim);
+				if (check_acro(ch, victim, wield)) return FALSE;
+				break;
+
+			case 1:
+				//send_to_char("Catch\n\r", victim);
+				if (check_catch(ch, victim, wield)) return FALSE;
+				break;
+
+			case 2:
+				//send_to_char("Wilderness Spear\n\r", victim);
+				if (check_spear_block(ch, victim, wield)) return FALSE;
+				break;
+
+			case 3:
+				//send_to_char("Parry\n\r", victim);
+				if (check_parry(ch, victim, wield)) return FALSE;
+				break;
+
+			case 4:
+				//send_to_char("Dodge\n\r", victim);
+				if (check_dodge(ch, victim, wield)) return FALSE;
+				break;
+
+			case 5:
+				//send_to_char("Shield Block\n\r", victim);
+				if (check_shield_block(ch,victim, wield)) return FALSE;
+				break;
+
+			case 6:
+				//send_to_char("Swerve\n\r", victim);
+				if (check_speed_swerve(ch,victim, wield)) return FALSE;
+				break;
+
+			case 7:
+				//send_to_char("Custom\n\r", victim);
+				if( p_percent_trigger( victim, NULL, NULL, NULL, ch, NULL, NULL, wield, NULL, TRIG_DEFENSE, NULL) ) return FALSE;
+				break;
+			}
+
+		}
+
+
 	}
 
 
@@ -1942,7 +2001,7 @@ bool check_acro(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *wield)
 		chance = (chance * 5)/3;
 
 	/* shifted players have more of a chance due to their eXtreeeem fighting skills */
-	if (IS_SHIFTED(ch))
+	if (IS_SHIFTED(victim) && !IS_SHIFTED(ch))
 		chance = (chance * 4/3);
 
 	if (IS_NPC(ch) && !IS_NPC(victim) && number_percent () >= chance)
@@ -1995,7 +2054,7 @@ bool check_catch(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *wield)
 		chance /= 2;
 
 	/* shifted players have more of a chance due to their eXtreeeem fighting skills */
-	if (IS_SHIFTED(ch))
+	if (IS_SHIFTED(victim) && !IS_SHIFTED(ch))
 		chance = (chance * 4/3);
 
 	if (IS_NPC(ch) && !IS_NPC(victim)) {
@@ -2066,7 +2125,7 @@ bool check_parry(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *wield)
 		chance = (chance * 5)/3;
 
 	/* shifted players have more of a chance due to their eXtreeeem fighting skills */
-	if (IS_SHIFTED(ch))
+	if (IS_SHIFTED(victim) && !IS_SHIFTED(ch))
 		chance = (chance * 4/3);
 
 	chance += get_curr_stat(victim, STAT_DEX) / 3;
@@ -2162,7 +2221,7 @@ bool check_shield_block_projectile(CHAR_DATA *ch, CHAR_DATA *victim, char *attac
 	chance *= 2;
 
 	/* shifted players have more of a chance due to their eXtreeeem fighting skills */
-	if (IS_SHIFTED(ch))
+	if (IS_SHIFTED(victim) && !IS_SHIFTED(ch))
 	chance = (chance * 4/3);
 
 	if (number_percent () >= chance)
@@ -2254,8 +2313,14 @@ bool check_shield_block(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *wield)
 		chance = (chance * 6)/5;
 
 	/* shifted players have more of a chance due to their eXtreeeem fighting skills */
-	if (IS_SHIFTED(ch))
+	if (IS_SHIFTED(victim) && !IS_SHIFTED(ch))
 		chance = (chance * 4)/3;
+
+	ch->skill_chance = chance;
+	if(p_percent_trigger(NULL, wield, NULL, NULL, ch, victim, NULL, shield, NULL, TRIG_WEAPON_BLOCKED,"pretest"))
+		return FALSE;
+	chance = ch->skill_chance;
+
 
 	if (IS_NPC(ch) && !IS_NPC(victim) && number_percent() >= chance)
 		return FALSE;
@@ -2263,8 +2328,6 @@ bool check_shield_block(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *wield)
 	if (number_percent() >= chance + UMIN( UMIN(victim->tot_level, MAX_MOB_LEVEL) - UMIN(ch->tot_level, MAX_MOB_LEVEL), 15))
 		return FALSE;
 
-	if(p_percent_trigger(NULL, wield, NULL, NULL, ch, victim, NULL, shield, NULL, TRIG_WEAPON_BLOCKED,"pretest"))
-		return FALSE;
 
 	if(!p_percent_trigger(NULL, wield, NULL, NULL, ch, victim, NULL, shield, NULL, TRIG_WEAPON_BLOCKED,"message")) {
 
@@ -2396,7 +2459,7 @@ bool check_dodge(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *wield)
 	chance = (chance * 3)/2;
 
 	/* shifted players have more of a chance due to their eXtreeeem fighting skills */
-	if (IS_SHIFTED(ch))
+	if (IS_SHIFTED(victim) && !IS_SHIFTED(ch))
 	chance = (chance * 4/3);
 
 	roll = number_percent();
@@ -2468,7 +2531,7 @@ bool check_spear_block(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *wield)
 	chance = (chance * 3)/2;
 
 	/* shifted players have more of a chance due to their eXtreeeem fighting skills */
-	if (IS_SHIFTED(ch))
+	if (IS_SHIFTED(victim) && !IS_SHIFTED(ch))
 	chance = (chance * 4/3);
 
 	if (number_percent() >= chance)
@@ -3365,6 +3428,7 @@ OBJ_DATA *raw_kill(CHAR_DATA *victim, bool has_head, bool messages, int corpse_t
 
 	stop_fighting(victim, TRUE);
 	stop_casting(victim, FALSE);
+	script_end_failure(victim, FALSE);
 	interrupt_script(victim, TRUE);
 
 	if (victim->master != NULL)
@@ -3522,6 +3586,11 @@ OBJ_DATA *raw_kill(CHAR_DATA *victim, bool has_head, bool messages, int corpse_t
 	victim->hit = 1;
 	victim->mana = 1;
 	victim->move = 1;
+
+	if(victim->manastore > 0)
+		victim->manastore = victim->manastore / 2;	// They automatically lose half of it just from dying
+	else
+		victim->manastore = 0;
 
 	victim->dead = TRUE;
 
@@ -3821,7 +3890,7 @@ void dam_message(CHAR_DATA *ch, CHAR_DATA *victim, int dam,int dt,bool immune)
 	return;
 
 	if (dam <   0) { vs = "miss";	vp = "misses";		}
-	else if (dam == 0) { vs = "do nothing";	vp = "does nothing";		}
+	else if (dam == 0) { vs = "do nothing to";	vp = "does nothing to";		}
 	else if (percent <=  .5) { vs = "scratch";	vp = "scratches";	}
 	else if (percent <=  .8) { vs = "graze";	vp = "grazes";		}
 	else if (percent <=   1) { vs = "hit";	vp = "hits";		}
@@ -3921,35 +3990,37 @@ void dam_message(CHAR_DATA *ch, CHAR_DATA *victim, int dam,int dt,bool immune)
 	}
 	}
 
+	if( dam > 0 ) {
 #ifdef DEBUG_ALLOW_SHOW_DAMAGE
-	if (IS_SET(ch->act, PLR_SHOWDAMAGE)) {
-		char dambuf[MSL];
+		if (IS_SET(ch->act, PLR_SHOWDAMAGE)) {
+			char dambuf[MSL];
 
-		sprintf(dambuf, " {r({R%d{r){x", dam);
-		strcat(buf2, dambuf);
-	}
+			sprintf(dambuf, " {r({R%d{r){x", dam);
+			strcat(buf2, dambuf);
+		}
 
-	if (IS_SET(victim->act, PLR_SHOWDAMAGE)) {
-		char dambuf[MSL];
+		if (IS_SET(victim->act, PLR_SHOWDAMAGE)) {
+			char dambuf[MSL];
 
-		sprintf(dambuf, " {r({R%d{r){x", dam);
-		strcat(buf3, dambuf);
-	}
+			sprintf(dambuf, " {r({R%d{r){x", dam);
+			strcat(buf3, dambuf);
+		}
 #else
-	if (IS_SET(ch->act, PLR_SHOWDAMAGE) && (IS_IMMORTAL(ch) || is_test_port)) {
-		char dambuf[MSL];
+		if (IS_SET(ch->act, PLR_SHOWDAMAGE) && (IS_IMMORTAL(ch) || is_test_port)) {
+			char dambuf[MSL];
 
-		sprintf(dambuf, " {r({R%d{r){x", dam);
-		strcat(buf2, dambuf);
-	}
+			sprintf(dambuf, " {r({R%d{r){x", dam);
+			strcat(buf2, dambuf);
+		}
 
-	if (IS_SET(victim->act, PLR_SHOWDAMAGE) && (IS_IMMORTAL(ch) || is_test_port)) {
-		char dambuf[MSL];
+		if (IS_SET(victim->act, PLR_SHOWDAMAGE) && (IS_IMMORTAL(ch) || is_test_port)) {
+			char dambuf[MSL];
 
-		sprintf(dambuf, " {r({R%d{r){x", dam);
-		strcat(buf3, dambuf);
-	}
+			sprintf(dambuf, " {r({R%d{r){x", dam);
+			strcat(buf3, dambuf);
+		}
 #endif
+	}
 
 	// Show damage to group members, char and others.
 	if (ch == victim)
@@ -5802,6 +5873,8 @@ void do_flee(CHAR_DATA *ch, char *argument)
 		act("$N follows you as you flee!", ch, ch->pursuit_by, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		if (ch->pursuit_by->cast > 0)
 		stop_casting(ch->pursuit_by, TRUE);
+		if (ch->pursuit_by->script_wait)
+		script_end_failure(ch->pursuit_by, TRUE);
 	interrupt_script(ch->pursuit_by, FALSE);
 		move_char(ch->pursuit_by, door, FALSE);
 		one_hit(ch->pursuit_by, ch, TYPE_HIT, FALSE);

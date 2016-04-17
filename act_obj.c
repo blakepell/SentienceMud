@@ -1216,7 +1216,8 @@ void do_drop(CHAR_DATA *ch, char *argument)
 	    wiznet(buf, NULL, NULL, WIZ_IMMLOG, 0, 0);
 	}
 
-		p_give_trigger(NULL, cart, NULL, ch, cart, TRIG_DROP);
+
+		p_percent_trigger(NULL, cart, NULL, NULL, ch, NULL, NULL, cart, NULL, TRIG_DROP, NULL);
 		p_give_trigger(NULL, NULL, ch->in_room, ch, cart, TRIG_DROP);
 
 	    return;
@@ -1261,7 +1262,7 @@ void do_drop(CHAR_DATA *ch, char *argument)
 	    wiznet(buf, NULL, NULL, WIZ_IMMLOG, 0, 0);
 	}
 
-	    p_give_trigger(NULL, obj, NULL, ch, obj, TRIG_DROP);
+		p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, obj, NULL, TRIG_DROP, NULL);
 	    p_give_trigger(NULL, NULL, ch->in_room, ch, obj, TRIG_DROP);
 
 	if (obj && IS_OBJ_STAT(obj,ITEM_MELT_DROP))
@@ -1271,7 +1272,7 @@ void do_drop(CHAR_DATA *ch, char *argument)
 	    extract_obj(obj);
 	}
 
-	if (obj && ch->in_room->sector_type == SECT_ENCHANTED_FOREST)
+	else if (obj && ch->in_room->sector_type == SECT_ENCHANTED_FOREST)
 	{
 	    act("$p crumbles into dust.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 	    act("$p crumbles into dust.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
@@ -1342,14 +1343,14 @@ void do_drop(CHAR_DATA *ch, char *argument)
 			    wiznet(buf, NULL, NULL, WIZ_IMMLOG, 0, 0);
 			}
 
-		    p_give_trigger(NULL, obj, NULL, ch, obj, TRIG_DROP);
+			p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, obj, NULL, TRIG_DROP, NULL);
 		    p_give_trigger(NULL, NULL, ch->in_room, ch, obj, TRIG_DROP);
 
 
 		    if (IS_SET(obj->extra_flags, ITEM_MELT_DROP))
 			extract_obj(obj);
 
-		    if (ch->in_room->sector_type == SECT_ENCHANTED_FOREST)
+		    else if (ch->in_room->sector_type == SECT_ENCHANTED_FOREST)
 			extract_obj(obj);
 		}
 
@@ -1369,7 +1370,7 @@ void do_drop(CHAR_DATA *ch, char *argument)
 			act(buf, ch, NULL, NULL, match_obj, NULL, NULL, NULL, TO_ROOM);
 		    }
 
-		    if (ch->in_room->sector_type == SECT_ENCHANTED_FOREST)
+		    else if (ch->in_room->sector_type == SECT_ENCHANTED_FOREST)
 		    {
 			short_descr[0] = UPPER(short_descr[0]);
 			sprintf(buf, "{Y({G%2d{Y) {x%s crumbles into dust.", i, short_descr);
@@ -2786,13 +2787,15 @@ bool remove_obj(CHAR_DATA *ch, int iWear, bool fReplace)
     if (!fReplace)
 	return FALSE;
 
-    if (IS_SET(obj->extra_flags, ITEM_NOREMOVE) || !wear_params[iWear][2]) {
-	act("You can't remove $p.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
-	return FALSE;
-    }
+	if( !WEAR_ALWAYSREMOVE(iWear) ) {
+		if (IS_SET(obj->extra_flags, ITEM_NOREMOVE) || !WEAR_REMOVEEQ(iWear)) {
+			act("You can't remove $p.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+			return FALSE;
+		}
 
-    if(p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_PREREMOVE, NULL))
-	return FALSE;
+		if(p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_PREREMOVE, NULL))
+			return FALSE;
+	}
 
     script_lastreturn = 2;	/* Indicate that it is a REMOVE not just a general unequip */
 
@@ -2801,6 +2804,78 @@ bool remove_obj(CHAR_DATA *ch, int iWear, bool fReplace)
 	act("You stop using $p.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
     }
     return TRUE;
+}
+
+// When there is a pair, it will return either the first or left version
+int get_wear_loc(CHAR_DATA *ch, OBJ_DATA *obj)
+{
+	if (obj->item_type == ITEM_LIGHT)
+		return WEAR_LIGHT;
+
+    if (CAN_WEAR(obj, ITEM_WEAR_FINGER))
+		return WEAR_FINGER_L;
+
+    if (CAN_WEAR(obj, ITEM_WEAR_RING_FINGER))
+    	return WEAR_RING_FINGER;
+
+    if (CAN_WEAR(obj, ITEM_WEAR_NECK))
+    	return WEAR_NECK_1;
+
+    if (CAN_WEAR(obj, ITEM_WEAR_BODY))
+    	return WEAR_BODY;
+
+    if (CAN_WEAR(obj, ITEM_WEAR_HEAD))
+    	return WEAR_HEAD;
+
+    if (CAN_WEAR(obj, ITEM_WEAR_FACE))
+    	return WEAR_FACE;
+
+    if (CAN_WEAR(obj, ITEM_WEAR_EYES))
+    	return WEAR_EYES;
+
+    if (CAN_WEAR(obj, ITEM_WEAR_EAR))
+    	return WEAR_EAR_L;
+
+    if (CAN_WEAR(obj, ITEM_WEAR_LEGS))
+    	return WEAR_LEGS;
+
+    if (CAN_WEAR(obj, ITEM_WEAR_ANKLE))
+		return WEAR_ANKLE_L;
+
+    if (CAN_WEAR(obj, ITEM_WEAR_FEET))
+    	return WEAR_FEET;
+
+    if (CAN_WEAR(obj, ITEM_WEAR_HANDS))
+    	return WEAR_HANDS;
+
+    if (CAN_WEAR(obj, ITEM_WEAR_ARMS))
+    	return WEAR_ARMS;
+
+    if (CAN_WEAR(obj, ITEM_WEAR_ABOUT))
+    	return WEAR_ABOUT;
+
+    if (CAN_WEAR(obj, ITEM_WEAR_WAIST))
+    	return WEAR_WAIST;
+
+    if (CAN_WEAR(obj, ITEM_WEAR_WRIST))
+    	return WEAR_WRIST_L;
+
+    if (CAN_WEAR(obj, ITEM_WEAR_SHIELD))
+    	return WEAR_SHIELD;
+
+    if (CAN_WEAR(obj, ITEM_WEAR_BACK))
+    	return WEAR_BACK;
+
+    if (CAN_WEAR(obj, ITEM_WEAR_SHOULDER))
+    	return WEAR_SHOULDER;
+
+    if (CAN_WEAR(obj, ITEM_WIELD))
+    	return WEAR_WIELD;
+
+    if (CAN_WEAR(obj, ITEM_HOLD))
+    	return WEAR_HOLD;
+
+	return WEAR_NONE;
 }
 
 
@@ -3254,11 +3329,11 @@ void do_wear(CHAR_DATA *ch, char *argument)
 		for (obj = ch->carrying; obj != NULL; obj = obj_next)
 		{
 			obj_next = obj->next_content;
-			if (obj->last_wear_loc != WEAR_NONE
-				&& can_see_obj(ch, obj)
-			&& obj->wear_loc == WEAR_NONE
-			&& ch->tot_level >= obj->level)
-			{
+			if (obj->last_wear_loc != WEAR_NONE &&
+				WEAR_AUTOEQUIP(obj->last_wear_loc) &&
+				can_see_obj(ch, obj) &&
+				obj->wear_loc == WEAR_NONE &&
+				ch->tot_level >= obj->level) {
 			if (both_hands_full(ch)
 			&& (CAN_WEAR(obj, ITEM_WEAR_SHIELD)
 				 || CAN_WEAR(obj, ITEM_HOLD)
@@ -3356,8 +3431,9 @@ void do_remove(CHAR_DATA *ch, char *argument)
 	for (obj = ch->carrying; obj != NULL; obj = obj->next_content)
 	{
   	    if (obj->wear_loc != WEAR_NONE
+  	    &&   obj->item_type != ITEM_TATTOO
 	    &&   can_see_obj(ch, obj)
-	    &&   !IS_SET(obj->extra_flags, ITEM_NOREMOVE)
+	    &&   (WEAR_ALWAYSREMOVE(obj->wear_loc) || !IS_SET(obj->extra_flags, ITEM_NOREMOVE))
 	    &&   wear_params[obj->wear_loc][2])
 	    {
 

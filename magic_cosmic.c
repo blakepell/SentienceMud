@@ -84,17 +84,7 @@ SPELL_FUNC(spell_enchant_armor)
 		act("$p glows brightly, then fades...oops.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
 		act("$p glows brightly, then fades.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 
-		/* remove all affects */
-		for (paf = obj->affected; paf; paf = paf_next) {
-			paf_next = paf->next;
-			affect_remove_obj(obj, paf);
-		}
-
-		obj->affected = NULL;
-
-		/* clear all flags */
-		obj->extra_flags = 0;
-		obj->extra2_flags = 0;
+		affect_removeall_obj(obj);
 		return TRUE;
 	}
 
@@ -151,6 +141,47 @@ SPELL_FUNC(spell_enchant_armor)
 	SET_BIT(obj->extra2_flags, ITEM_ENCHANTED);
 	return TRUE;
 }
+
+SPELL_FUNC(spell_enchant_object)
+{
+	OBJ_DATA *obj;
+	AFFECT_DATA *paf;
+	int result, fail;
+
+	obj = (OBJ_DATA *) vo;
+
+/*
+	if (obj->item_type != ITEM_ARMOR) {
+		send_to_char("That isn't armor.\n\r",ch);
+		return FALSE;
+	}
+*/
+
+	if (obj->wear_loc != -1) {
+		send_to_char("You'd better remove it first.\n\r",ch);
+		return FALSE;
+	}
+
+	if (IS_SET(obj->extra2_flags, ITEM_NO_ENCHANT)) {
+		act("$p is beyond your power to enchant.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+		return FALSE;
+	}
+
+	fail = 30;	/* base 30% chance of failure */
+
+	fail -= (level/10);
+
+	fail = URANGE(5,fail,85);
+
+	result = number_percent();
+
+	obj->num_enchanted += 1;
+	SET_BIT(obj->extra2_flags, ITEM_ENCHANTED);
+
+	SET_BIT(obj->extra2_flags, ITEM_ENCHANTED);
+	return TRUE;
+}
+
 
 
 SPELL_FUNC(spell_enchant_weapon)
@@ -226,15 +257,7 @@ SPELL_FUNC(spell_enchant_weapon)
 		act("$n's $p glows brightly, then fizzles and sparks.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 
 		/* remove all affects */
-		for (paf = obj->affected; paf; paf = paf_next) {
-			paf_next = paf->next;
-			affect_remove_obj(obj, paf);
-		}
-
-		obj->affected = NULL;
-
-		obj->extra_flags = 0;
-		obj->extra2_flags = 0;
+		affect_removeall_obj(obj);
 		return TRUE;
 	}
 

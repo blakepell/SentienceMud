@@ -478,6 +478,7 @@ CHAR_DATA *new_char( void )
     ch->vuln_flags_perm    =   0;
 
     ch->cast_target_name 	= NULL;
+    ch->casting_failure_message = NULL;
     ch->projectile_victim	= NULL;
     ch->cast_sn = 0;
     ch->mail = NULL;
@@ -529,6 +530,7 @@ CHAR_DATA *new_char( void )
     {
         ch->perm_stat[i] = 13;
         ch->mod_stat[i] = 0;
+        ch->dirty_stat[i] = TRUE;
     }
 
     ch->quest			= NULL;
@@ -629,6 +631,7 @@ void free_char( CHAR_DATA *ch )
     free_pcdata(ch->pcdata);
     free_ambush(ch->ambush);
     free_string(ch->cast_target_name);
+    free_string(ch->casting_failure_message);
     free_string(ch->projectile_victim);
 
     list_destroy(ch->llocker);
@@ -636,9 +639,12 @@ void free_char( CHAR_DATA *ch )
     list_destroy(ch->ltokens);
     list_destroy(ch->lclonerooms);
 
-	#ifdef IMC
-	imc_freechardata( ch );
-	#endif
+	if( !IS_NPC(ch))
+	{
+#ifdef IMC
+		imc_freechardata( ch );
+#endif
+	}
 
     variable_clearfield(VAR_MOBILE, ch);
     script_clear_mobile(ch);

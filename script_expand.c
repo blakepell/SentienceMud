@@ -277,28 +277,29 @@ char *expand_ifcheck(SCRIPT_VARINFO *info,char *str,int *value)
 		if(xifc >= 0 && xifc < CHK_MAXIFCHECKS) {
 			ifc = &ifcheck_table[xifc];
 
-			if(ifc->numeric) {
-				rest = ifcheck_get_value(info,ifc,str+2,value,&valid);
-				if(rest && valid) {
+			rest = ifcheck_get_value(info,ifc,str+2,value,&valid);
+			if(rest && valid) {
+				if( !ifc->numeric )
+					*value = *value && 1;	// Make sure T/F is set values  1/0
+
 //					strcpy(buf,"expand_ifcheck 1:");
 //					for(xifc = 0; xifc < 20 && rest[xifc]; xifc++)
 //						sprintf(buf + 15 + 3*xifc," %2.2X", rest[xifc]&0xFF);
 //					wiznet(buf,NULL,NULL,WIZ_TESTING,0,0);
-					rest = skip_whitespace(rest);
-					if(*rest != ESCAPE_END) {
-						DBG2EXITVALUE2(INVALID);
-						return expand_skip(str);
-					}
-					++rest;
+				rest = skip_whitespace(rest);
+				if(*rest != ESCAPE_END) {
+					DBG2EXITVALUE2(INVALID);
+					return expand_skip(str);
+				}
+				++rest;
 
 //					strcpy(buf,"expand_ifcheck 2:");
 //					for(xifc = 0; xifc < 20 && rest[xifc]; xifc++)
 //						sprintf(buf + 15 + 3*xifc," %2.2X", rest[xifc]&0xFF);
 //					wiznet(buf,NULL,NULL,WIZ_TESTING,0,0);
 
-					DBG2EXITVALUE1(PTR,rest);
-					return rest;
-				}
+				DBG2EXITVALUE1(PTR,rest);
+				return rest;
 			}
 		}
 	}

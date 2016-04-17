@@ -518,6 +518,7 @@ void do_cast(CHAR_DATA *ch, char *argument)
 	int i;
 	char buf[MSL];
 	char temp[MSL];
+	int chance;
 	SKILL_ENTRY *spell;
 
 	argument = one_argument(argument, arg1);
@@ -605,6 +606,25 @@ void do_cast(CHAR_DATA *ch, char *argument)
 		if(p_percent_trigger(NULL,NULL,NULL,spell->token,ch,NULL,NULL, NULL, NULL, TRIG_PRESPELL, NULL))
 			return;
 
+		ch->cast_successful = MAGICCAST_SUCCESS;
+		if(!IS_SET(ch->cast_token->pIndexData->flags,TOKEN_NOSKILLTEST)) {
+			chance = 0;
+			if (IS_SET(ch->in_room->room2_flags, ROOM_HARD_MAGIC)) chance += 2;
+			if (ch->in_room->sector_type == SECT_CURSED_SANCTUM) chance += 2;
+			if (!IS_NPC(ch) && chance > 0 && number_range(1,chance) > 1) {
+				ch->cast_successful = MAGICCAST_ROOMBLOCK;
+			} else {
+				if (ch->cast_token->pIndexData->value[TOKVAL_SPELL_RATING] > 0) {
+					if (number_range(0,ch->cast_token->pIndexData->value[TOKVAL_SPELL_RATING]) > ch->cast_token->value[TOKVAL_SPELL_RATING])
+						ch->cast_successful = MAGICCAST_FAILURE;
+				} else {
+					if (number_percent() > ch->cast_token->value[TOKVAL_SPELL_RATING])
+						ch->cast_successful = MAGICCAST_FAILURE;
+				}
+
+			}
+		}
+
 		beats = ch->tempstore[0];
 	} else if( spell->sn > 0 && skill_table[spell->sn].spell_fun != spell_null ) {
 		int skill = get_skill( ch, spell->sn );
@@ -637,6 +657,17 @@ void do_cast(CHAR_DATA *ch, char *argument)
 
 		if(p_percent_trigger(NULL,NULL,ch->in_room,NULL,ch,NULL,NULL, NULL, NULL, TRIG_PRECAST,"check"))
 			return;
+
+
+		ch->cast_successful = MAGICCAST_SUCCESS;
+		chance = 0;
+		if (IS_SET(ch->in_room->room2_flags, ROOM_HARD_MAGIC)) chance += 2;
+		if (ch->in_room->sector_type == SECT_CURSED_SANCTUM) chance += 2;
+		if (!IS_NPC(ch) && chance > 0 && number_range(1,chance) > 1)
+			ch->cast_successful = MAGICCAST_ROOMBLOCK;
+		else if (number_percent() > get_skill(ch,spell->sn))
+			ch->cast_successful = MAGICCAST_FAILURE;
+
 
 		beats = skill_table[spell->sn].beats;
 	} else {
@@ -677,6 +708,8 @@ void do_cast(CHAR_DATA *ch, char *argument)
 		i = 1000;
 
 	beats = beats * i / 1000;
+
+	ch->casting_recovered = FALSE;
 
 	CAST_STATE(ch, beats);
 }
@@ -837,7 +870,7 @@ void cast_end(CHAR_DATA *ch)
 		return;
 	}
 
-
+	// TODO: Need to work this into the mix
 	/* Spell trap in the room ? */
 	for (trap = ch->in_room->contents; trap; trap = trap->next_content) {
 		if (trap->item_type == ITEM_SPELL_TRAP) {
@@ -864,23 +897,26 @@ void cast_end(CHAR_DATA *ch)
 		}
 	}
 
+	if( ch->cast_successful == MAGICCAST_ROOMBLOCK) {
+		send_to_char("You can't seem to focus your mana into the spell.\n\r", ch);
+		deduct_mana(ch,mana / 3);
+		return;
+	}
+
 	if(token) {
-		if(!IS_SET(token->pIndexData->flags,TOKEN_NOSKILLTEST)) {
-			chance = 0;
-			if (IS_SET(ch->in_room->room2_flags, ROOM_HARD_MAGIC)) chance += 2;
-			if (ch->in_room->sector_type == SECT_CURSED_SANCTUM) chance += 2;
-			if (!IS_NPC(ch) && chance > 0 && number_range(1,chance) > 1) {
-				send_to_char("You can't seem to focus your mana into the spell.\n\r", ch);
-				deduct_mana(ch,mana / 3);
-				return;
-			} else {
-				if (number_range(0,token->pIndexData->value[TOKVAL_SPELL_RATING]) > token->value[TOKVAL_SPELL_RATING]) {
-					send_to_char("You lost your concentration.\n\r", ch);
-					token_skill_improve(ch,token,FALSE,1);
-					deduct_mana(ch,mana / 2);
-					return;
-				}
-			}
+		if( ch->cast_successful == MAGICCAST_FAILURE ) {
+			send_to_char("You lost your concentration.\n\r", ch);
+			token_skill_improve(ch,token,FALSE,1);
+			deduct_mana(ch,mana / 2);
+			return;
+		}
+
+		if( ch->cast_successful == MAGICCAST_SCRIPT ) {
+			if( !IS_NULLSTR(ch->casting_failure_message) )
+				send_to_char(ch->casting_failure_message, ch);
+			token_skill_improve(ch,token,FALSE,1);
+			deduct_mana(ch,mana / 2);
+			return;
 		}
 
 		deduct_mana(ch,mana);
@@ -908,16 +944,17 @@ void cast_end(CHAR_DATA *ch)
 		}
 
 	} else {
-		chance = 0;
-		if (IS_SET(ch->in_room->room2_flags, ROOM_HARD_MAGIC)) chance += 2;
-		if (ch->in_room->sector_type == SECT_CURSED_SANCTUM) chance += 2;
-		if (!IS_NPC(ch) && chance > 0 && number_range(1,chance) > 1) {
-			send_to_char("You can't seem to focus your mana into the spell.\n\r", ch);
-			deduct_mana(ch,mana / 3);
+		if( ch->cast_successful == MAGICCAST_FAILURE ) {
+			send_to_char("You lost your concentration.\n\r", ch);
+			check_improve(ch,sn,FALSE,1);
+			deduct_mana(ch,mana / 2);
 			return;
 		}
-		if (number_percent() > get_skill(ch,sn)) {
-			send_to_char("You lost your concentration.\n\r", ch);
+
+		if( ch->cast_successful == MAGICCAST_SCRIPT ) {
+			if( !IS_NULLSTR(ch->casting_failure_message) )
+				send_to_char(ch->casting_failure_message, ch);
+
 			check_improve(ch,sn,FALSE,1);
 			deduct_mana(ch,mana / 2);
 			return;
@@ -935,7 +972,8 @@ void cast_end(CHAR_DATA *ch)
 		} else
 			(*skill_table[sn].spell_fun) (sn, ch->tot_level, ch, vo, target);
 
-		check_improve(ch,sn,TRUE,1);
+
+		check_improve(ch,sn,!ch->casting_recovered,1);
 
 	}
 
@@ -952,6 +990,9 @@ void cast_end(CHAR_DATA *ch)
 			}
 		}
 	}
+
+	free_string(ch->casting_failure_message);
+	ch->casting_failure_message = NULL;
 
 	free_string(ch->cast_target_name);
 	ch->cast_target_name = NULL;

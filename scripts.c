@@ -5166,3 +5166,50 @@ bool visit_script_execute(ROOM_INDEX_DATA *room, void *argv[], int argc, int dep
 	return ret > 0;
 }
 
+void script_end_success(CHAR_DATA *ch)
+{
+	TOKEN_DATA *tok = NULL;
+	SCRIPT_DATA *script = NULL;
+	VARIABLE **var = NULL;
+
+	if( ch->script_wait_token && ch->script_wait_success > 0) {
+		script = get_script_index(ch->script_wait_success,PRG_TPROG);
+		tok = ch->script_wait_token;
+		var = &tok->progs->vars;
+	}
+
+	ch->script_wait = 0;
+	ch->script_wait_success = 0;
+	ch->script_wait_failure = 0;
+	ch->script_wait_token = NULL;
+
+
+	if( script != NULL )
+		execute_script(script->vnum, script, NULL, NULL, NULL, tok, ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL,0,0,0,0,0);
+
+}
+
+void script_end_failure(CHAR_DATA *ch, bool messages)
+{
+	TOKEN_DATA *tok = NULL;
+	SCRIPT_DATA *script = NULL;
+	VARIABLE **var = NULL;
+
+	if( ch->script_wait_token && ch->script_wait_failure > 0) {
+		script = get_script_index(ch->script_wait_failure,PRG_TPROG);
+		tok = ch->script_wait_token;
+		var = &tok->progs->vars;
+	}
+
+	ch->script_wait = 0;
+	ch->script_wait_success = 0;
+	ch->script_wait_failure = 0;
+	ch->script_wait_token = NULL;
+
+
+	if( script != NULL )
+		execute_script(script->vnum, script, NULL, NULL, NULL, tok, ch, NULL, NULL, NULL, NULL, NULL, (messages?NULL:"silent"), NULL,0,0,0,0,0);
+}
+
+
+

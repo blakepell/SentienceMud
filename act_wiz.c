@@ -2016,7 +2016,7 @@ void do_mstat(CHAR_DATA *ch, char *argument)
 	    affect_loc_name(paf->location),
 	    paf->modifier,
 	    paf->duration,
-	    affect_bit_name(paf->bitvector));
+	    affects_bit_name(paf->bitvector, paf->bitvector2));
 	send_to_char(buf, ch);
     }
 
@@ -2029,7 +2029,7 @@ void do_mstat(CHAR_DATA *ch, char *argument)
 	    affect_loc_name(paf->location),
 	    paf->modifier,
 	    paf->duration,
-	    affect_bit_name(paf->bitvector));
+	    affects_bit_name(paf->bitvector, paf->bitvector2));
 	send_to_char(buf, ch);
     }
 
@@ -4584,7 +4584,7 @@ void do_mset(CHAR_DATA *ch, char *argument)
 	    return;
 	}
 
-	victim->perm_stat[STAT_STR] = value;
+	set_perm_stat(victim, STAT_STR, value);
 	return;
     }
 
@@ -4753,7 +4753,7 @@ void do_mset(CHAR_DATA *ch, char *argument)
             return;
         }
 
-        victim->perm_stat[STAT_INT] = value;
+		set_perm_stat(victim, STAT_INT, value);
         return;
     }
 
@@ -4767,7 +4767,7 @@ void do_mset(CHAR_DATA *ch, char *argument)
 	    return;
 	}
 
-	victim->perm_stat[STAT_WIS] = value;
+	set_perm_stat(victim, STAT_WIS, value);
 	return;
     }
 
@@ -4782,7 +4782,7 @@ void do_mset(CHAR_DATA *ch, char *argument)
 	    return;
 	}
 
-	victim->perm_stat[STAT_DEX] = value;
+	set_perm_stat(victim, STAT_DEX, value);
 	return;
     }
 
@@ -4797,7 +4797,7 @@ void do_mset(CHAR_DATA *ch, char *argument)
 	    return;
 	}
 
-	victim->perm_stat[STAT_CON] = value;
+	set_perm_stat(victim, STAT_CON, value);
 	return;
     }
 
@@ -5996,8 +5996,10 @@ void do_immortalise(CHAR_DATA *ch, char *argument)
 		affect_remove(victim, victim->affected);
 
     /* lower their stats significantly*/
-    for (i = 0; i < MAX_STATS; i++)
-	victim->perm_stat[i] = UMAX(victim->perm_stat[i] - number_range(4,6), 13);
+    for (i = 0; i < MAX_STATS; i++) {
+		int val = victim->perm_stat[i] - number_range(4,6);
+		set_perm_stat(victim, i, UMAX(val, 13));
+	}
 
 	victim->affected_by_perm = race_table[victim->race].aff;
 	victim->affected_by2_perm = race_table[victim->race].aff2;

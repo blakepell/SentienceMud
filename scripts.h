@@ -137,8 +137,9 @@ enum ifcheck_enum {
 
 	/* IS */
 		CHK_ISACTIVE,CHK_ISAMBUSHING,CHK_ISANGEL,
-		CHK_ISBREWING,
-		CHK_ISCASTING,CHK_ISCHARM,CHK_ISCHURCHEXCOM,CHK_ISCHURCHPK,CHK_ISCLONEROOM,CHK_ISCPKPROOF,CHK_ISCROSSZONE,
+		CHK_ISBREWING,CHK_ISBUSY,
+		CHK_ISCASTFAILURE,CHK_ISCASTING,CHK_ISCASTRECOVERED,CHK_ISCASTROOMBLOCKED,CHK_ISCASTSUCCESS,
+		CHK_ISCHARM,CHK_ISCHURCHEXCOM,CHK_ISCHURCHPK,CHK_ISCLONEROOM,CHK_ISCPKPROOF,CHK_ISCROSSZONE,
 		CHK_ISDEAD,CHK_ISDELAY,CHK_ISDEMON,
 		CHK_ISEVIL,
 		CHK_ISFADING,CHK_ISFIGHTING,CHK_ISFLYING,CHK_ISFOLLOW,
@@ -1340,6 +1341,7 @@ DECL_IFC_FUN(ifc_isactive);
 DECL_IFC_FUN(ifc_isambushing);
 DECL_IFC_FUN(ifc_isangel);
 DECL_IFC_FUN(ifc_isbrewing);
+DECL_IFC_FUN(ifc_isbusy);
 DECL_IFC_FUN(ifc_iscasting);
 DECL_IFC_FUN(ifc_ischarm);
 DECL_IFC_FUN(ifc_ischurchexcom);
@@ -1585,6 +1587,10 @@ DECL_IFC_FUN(ifc_objweapon);
 DECL_IFC_FUN(ifc_objweaponstat);
 DECL_IFC_FUN(ifc_objranged);
 
+DECL_IFC_FUN(ifc_iscastsuccess);
+DECL_IFC_FUN(ifc_iscastfailure);
+DECL_IFC_FUN(ifc_iscastroomblocked);
+DECL_IFC_FUN(ifc_iscastrecovered);
 
 
 
@@ -1775,6 +1781,10 @@ void variable_index_fix(void);
 // Prototype for find_path() in hunt.c
 int find_path( long in_room_vnum, long out_room_vnum, CHAR_DATA *ch, int depth, int in_zone );
 void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument);
+
+void script_end_success(CHAR_DATA *ch);
+void script_end_failure(CHAR_DATA *ch, bool messages);
+
 
 /* Commands */
 int mpcmd_lookup(char *command);
@@ -2118,6 +2128,9 @@ SCRIPT_CMD(do_opcondition);
 SCRIPT_CMD(do_rpcondition);
 SCRIPT_CMD(do_tpcondition);
 
+SCRIPT_CMD(do_tpscriptwait);
+SCRIPT_CMD(do_tpcastfailure);
+SCRIPT_CMD(do_tpcastrecover);
 
 #include "tables.h"
 

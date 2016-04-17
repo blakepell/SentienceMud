@@ -196,6 +196,9 @@ void do_chat_enter(CHAR_DATA *ch, char *argument)
 	}
     }
 
+    // Reset manastore upon entering the rift
+    ch->manastore = 0;
+
     char_from_room(ch);
     char_to_room(ch, get_room_index(ROOM_VNUM_CHAT));
 

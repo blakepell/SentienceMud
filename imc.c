@@ -145,7 +145,7 @@ size_t imcstrlcpy( char *dst, const char *src, size_t siz )
    register size_t n = siz;
 
    /*
-    * Copy as many bytes as will fit 
+    * Copy as many bytes as will fit
     */
    if( n != 0 && --n != 0 )
    {
@@ -158,7 +158,7 @@ size_t imcstrlcpy( char *dst, const char *src, size_t siz )
    }
 
    /*
-    * Not enough room in dst, add NUL and traverse rest of src 
+    * Not enough room in dst, add NUL and traverse rest of src
     */
    if( n == 0 )
    {
@@ -188,7 +188,7 @@ size_t imcstrlcat( char *dst, const char *src, size_t siz )
    size_t dlen;
 
    /*
-    * Find the end of dst and adjust bytes left but don't go past end 
+    * Find the end of dst and adjust bytes left but don't go past end
     */
    while( n-- != 0 && *d != '\0' )
       d++;
@@ -260,7 +260,7 @@ void imcbug( const char *format, ... )
 
 /*
    Original Code from SW:FotE 1.1
-   Reworked strrep function. 
+   Reworked strrep function.
    Fixed a few glaring errors. It also will not overrun the bounds of a string.
    -- Xorith
 */
@@ -1247,7 +1247,7 @@ char *imcfread_line( FILE * fp )
    *pline = '\0';
 
    /*
-    * Since tildes generally aren't found at the end of lines, this seems workable. Will enable reading old configs. 
+    * Since tildes generally aren't found at the end of lines, this seems workable. Will enable reading old configs.
     */
    if( line[strlen( line ) - 1] == '~' )
       line[strlen( line ) - 1] = '\0';
@@ -1494,7 +1494,7 @@ void imc_write_buffer( const char *txt, SERVER_DATA *server )
    size_t length;
 
    /*
-    * This should never happen 
+    * This should never happen
     */
    if( !server || server->desc < 1 )
    {
@@ -1503,7 +1503,7 @@ void imc_write_buffer( const char *txt, SERVER_DATA *server )
    }
 
    /*
-    * This should never happen either 
+    * This should never happen either
     */
    if( !server->outbuf )
    {
@@ -1522,7 +1522,7 @@ void imc_write_buffer( const char *txt, SERVER_DATA *server )
       if( server->outsize > 64000 )
       {
          /*
-          * empty buffer 
+          * empty buffer
           */
          server->outtop = 0;
          imcbug( "Buffer overflow: %ld. Purging.", server->outsize );
@@ -1563,7 +1563,7 @@ void imc_write_packet( IMC_PACKET * p )
 
 server = imc_find_network( p );
    /*
-    * Assemble your buffer, and at the same time disassemble the packet struct to free the memory 
+    * Assemble your buffer, and at the same time disassemble the packet struct to free the memory
     */
    snprintf( txt, IMC_BUFF_SIZE, "%s %lu %s %s %s", p->from, ++imc_sequencenumber, this_imcmud->localname, p->type, p->to );
    for( data = p->first_data; data; data = data->next )
@@ -1755,7 +1755,7 @@ PFUN( imc_recv_tell )
    }
 
    /*
-    * Tell social 
+    * Tell social
     */
    if( reply == 2 ) {
 	if ( this_imcmud->channsep != '@')
@@ -1905,7 +1905,7 @@ void imc_display_channel( IMC_CHANNEL * c, const char *from, char *txt, int emot
 
 #if !defined(IMCSTANDALONE)
       /*
-       * Freaking stupid PC_DATA crap! 
+       * Freaking stupid PC_DATA crap!
        */
       if( IS_NPC( ch ) )
          continue;
@@ -2056,7 +2056,7 @@ void imc_sendmessage( const IMC_CHANNEL * c, const char *name, const char *text,
    IMC_PACKET *p;
 
    /*
-    * Private channel 
+    * Private channel
     */
    if( !c->open )
    {
@@ -2066,7 +2066,7 @@ void imc_sendmessage( const IMC_CHANNEL * c, const char *name, const char *text,
       p = imc_newpacket( name, "ice-msg-p", to, imc_network_of( imc_mudof(to) ));
    }
    /*
-    * Public channel 
+    * Public channel
     */
    else
       p = imc_newpacket( name, "ice-msg-b", "*@*" , imc_network_of(imc_channel_mudof(c->name)));
@@ -2140,7 +2140,7 @@ const char *get_local_chanwho( IMC_CHANNEL * c )
    if( col != 0 )
       snprintf( buf + strlen( buf ), IMC_BUFF_SIZE - strlen( buf ), "%s", "\r\n" );
    /*
-    * Send no response to a broadcast request if nobody is listening. 
+    * Send no response to a broadcast request if nobody is listening.
     */
    if( count == 0 )
       imcstrlcat( buf, "Nobody\r\n", IMC_BUFF_SIZE );
@@ -2201,7 +2201,7 @@ char *imccenterline( const char *string, int length )
       amount = 1;
 
    /*
-    * Justice, you are the String God! 
+    * Justice, you are the String God!
     */
    snprintf( outbuf, 400, "%*s%s%*s", ( amount / 2 ), "", string,
              ( ( amount / 2 ) * 2 ) == amount ? ( amount / 2 ) : ( ( amount / 2 ) + 1 ), "" );
@@ -2674,7 +2674,7 @@ PFUN( imc_recv_beep )
    }
 
    /*
-    * always display the TRUE name here 
+    * always display the TRUE name here
     */
    imc_printf( vic, "~c\a%s imcbeeps you.~!\r\n", fix_sender(q->from) );
 }
@@ -2910,7 +2910,7 @@ int imc_get_ucache_gender( const char *name )
    }
 
    /*
-    * -1 means you aren't in the list and need to be put there. 
+    * -1 means you aren't in the list and need to be put there.
     */
    return -1;
 }
@@ -2948,7 +2948,7 @@ void imc_prune_ucache( void )
       next_ucache = ucache->next;
 
       /*
-       * Info older than 30 days is removed since this person likely hasn't logged in at all 
+       * Info older than 30 days is removed since this person likely hasn't logged in at all
        */
       if( imc_time - ucache->time >= 2592000 )
       {
@@ -3038,7 +3038,7 @@ PFUN( imc_recv_ucache_request )
    gender = imc_get_ucache_gender( user );
 
    /*
-    * Gender of -1 means they aren't in the mud's ucache table. Don't waste the reply packet. 
+    * Gender of -1 means they aren't in the mud's ucache table. Don't waste the reply packet.
     */
    if( gender == -1 )
       return;
@@ -3083,7 +3083,7 @@ PFUN( imc_recv_closenotify )
 void imc_register_default_packets( void )
 {
    /*
-    * Once registered, these are not cleared unless the mud is shut down 
+    * Once registered, these are not cleared unless the mud is shut down
     */
    if( default_packets_registered )
       return;
@@ -3141,7 +3141,7 @@ void imc_parse_packet( char *packet )
    packet = imcone_argument( packet, p->to );
 
    /*
-    * Banned muds are silently dropped - thanks to WynterNyght@IoG for noticing this was missing. 
+    * Banned muds are silently dropped - thanks to WynterNyght@IoG for noticing this was missing.
     */
    if( imc_isbanned( p->from ) )
    {
@@ -3164,12 +3164,12 @@ void imc_parse_packet( char *packet )
    ( *pfun ) ( p, packet );
 
    /*
-    * This might seem slow, but we need to track muds who don't send is-alive packets 
+    * This might seem slow, but we need to track muds who don't send is-alive packets
     */
    if( !(r = imc_find_reminfo( imc_mudof( p->from ) ) ) )
 	imc_new_reminfo( imc_mudof( p->from ), "Unknown", imc_network_of(imc_mudof( p->from )), "Unknown", p->route );
-   /* 
-    * since we have multiple server connections, lets just reset this when we 
+   /*
+    * since we have multiple server connections, lets just reset this when we
     * get a packet, this way if one server sends us a close connection, we wont
     * have to wait for an is-alive packet from another one before we can talk
     * to them again. If we get a packet from them, they must be alive.....
@@ -3197,11 +3197,11 @@ void imc_parse_packet( char *packet )
          else
             imcstrlcpy( serverpath, p->route, LGST );
 	  }
- 
+
      if( strcasecmp( imc_network_of(serverpath), "Unknown" ) ) {
      r->network = IMCSTRALLOC( imc_network_of(serverpath) );
      r->path = IMCSTRALLOC( p->route );
-     r->expired = FALSE; 
+     r->expired = FALSE;
 	}
  }
    IMCDISPOSE( p );
@@ -3289,7 +3289,7 @@ bool imc_write_socket( SERVER_DATA *server )
 {
    const char *ptr = server->outbuf;
    int nleft = server->outtop, nwritten = 0;
-   
+
    if( nleft <= 0 )
       return 1;
 
@@ -3367,7 +3367,7 @@ void imc_process_authentication( char *packet, SERVER_DATA *server )
       }
 
       /*
-       * Lets encrypt this bastard now! 
+       * Lets encrypt this bastard now!
        */
       auth_value = atol( pw );
       snprintf( pwd, SMST, "%ld%s%s", auth_value, server->clientpw, server->serverpw );
@@ -3379,7 +3379,7 @@ void imc_process_authentication( char *packet, SERVER_DATA *server )
    }
 
    /*
-    * SHA-256 response is pretty simple. If you blew the authentication, it happened on the server anyway. 
+    * SHA-256 response is pretty simple. If you blew the authentication, it happened on the server anyway.
     * * rname=servername pw=Networkname
     */
    if( !strcasecmp( command, "SHA256-AUTH-APPR" ) )
@@ -3390,7 +3390,7 @@ void imc_process_authentication( char *packet, SERVER_DATA *server )
    }
 
    /*
-    * The old way. Nice and icky, but still very much required for compatibility. 
+    * The old way. Nice and icky, but still very much required for compatibility.
     */
    if( !strcasecmp( command, "PW" ) )
    {
@@ -3526,7 +3526,7 @@ void imc_loop( void )
       server->imcwait--;
 
    /*
-    * Condition reached only if network shutdown after startup 
+    * Condition reached only if network shutdown after startup
     */
    if( server->imcwait == 1 )
    {
@@ -3554,7 +3554,7 @@ void imc_loop( void )
       continue;
 
    /*
-    * Will prune the cache once every 24hrs after bootup time 
+    * Will prune the cache once every 24hrs after bootup time
     */
    if( imcucache_clock <= imc_time )
    {
@@ -3977,10 +3977,8 @@ void imc_freechardata( CHAR_DATA * ch )
    IMC_IGNORE *ign, *ign_next;
    int x;
 
-#if !defined(IMCSTANDALONE)
    if( IS_NPC( ch ) )
       return;
-#endif
 
    if( CH_IMCDATA( ch ) == NULL )
       return;
@@ -4153,12 +4151,12 @@ void imc_readchannel( IMC_CHANNEL * channel, FILE * fp )
             if( !strcasecmp( word, "End" ) )
             {
                /*
-                * Legacy support to convert channel permissions 
+                * Legacy support to convert channel permissions
                 */
                if( channel->level > IMCPERM_IMP )
                {
                   /*
-                   * The IMCPERM_NONE condition should realistically never happen.... 
+                   * The IMCPERM_NONE condition should realistically never happen....
                    */
                   if( channel->level < this_imcmud->minlevel )
                      channel->level = IMCPERM_NONE;
@@ -4825,7 +4823,7 @@ void IMC_saveservers( void )
    FILE *fp;
    SERVER_DATA *server;
 
-   if( !( fp = fopen( IMC_SERVER_FILE, "w" ) ) ) 
+   if( !( fp = fopen( IMC_SERVER_FILE, "w" ) ) )
    {
 	imclog( "%s", "Couldn't write to IMC server file." );
 	return;
@@ -5104,7 +5102,7 @@ bool imc_read_config( int desc )
          IMCCREATE( this_imcmud, SITEINFO, 1 );
 
          /*
-          * If someone can think of better default values, I'm all ears. Until then, keep your bitching to yourselves. 
+          * If someone can think of better default values, I'm all ears. Until then, keep your bitching to yourselves.
           */
          this_imcmud->minlevel = 10;
          this_imcmud->immlevel = 101;
@@ -5463,7 +5461,7 @@ bool imc_server_connect( SERVER_DATA *server )
    IMCCREATE( server->outbuf, char, server->outsize );
 
    /*
-    * The MUD is electing to enable SHA256 - this is the default setting 
+    * The MUD is electing to enable SHA256 - this is the default setting
     */
    if( server->sha256 )
    {
@@ -5498,7 +5496,7 @@ bool imc_server_connect( SERVER_DATA *server )
          snprintf( buf, LGST, "SHA256-AUTH-REQ %s", this_imcmud->localname );
    }
    /*
-    * The MUD is electing not to use SHA256 for whatever reason - this must be specifically set 
+    * The MUD is electing not to use SHA256 for whatever reason - this must be specifically set
     */
    else
       snprintf( buf, LGST, "PW %s %s version=%d autosetup %s",
@@ -5553,7 +5551,7 @@ void free_imcdata( bool complete )
    }
 
    /*
-    * This stuff is only killed off if the mud itself shuts down. For those of you Valgrinders out there. 
+    * This stuff is only killed off if the mud itself shuts down. For those of you Valgrinders out there.
     */
    if( complete )
    {
@@ -5709,7 +5707,7 @@ bool imc_startup_network( bool connected, SERVER_DATA *serverc )
    serverc->state = IMC_AUTH1;
 
    /*
-    * Connect to server 
+    * Connect to server
     */
    if( !imc_server_connect( serverc ) )
    {
@@ -5729,7 +5727,7 @@ void imc_startup( bool force, int desc, bool connected )
 if (imc_is_connected( ) == FALSE)
    {
    /*
-    * The Command table is required for operation. Like.... duh? 
+    * The Command table is required for operation. Like.... duh?
     */
    if( first_imc_command == NULL )
    {
@@ -5741,24 +5739,24 @@ if (imc_is_connected( ) == FALSE)
    }
 
    /*
-    * Configuration required for network operation. 
+    * Configuration required for network operation.
     */
    if( !imc_read_config( desc ) )
       return;
 
    /*
-    * Lets register all the default packet handlers 
+    * Lets register all the default packet handlers
     */
    imc_register_default_packets(  );
 
    /*
-    * Help information should persist even when the network is not connected... 
+    * Help information should persist even when the network is not connected...
     */
    if( first_imc_help == NULL )
       imc_load_helps(  );
 
    /*
-    * ... as should the color table. 
+    * ... as should the color table.
     */
    if( first_imc_color == NULL )
       imc_load_color_table(  );
@@ -5925,7 +5923,7 @@ IMC_CMD( imcsetup )
    }
 
    /*
-    * Permission check -- Xorith 
+    * Permission check -- Xorith
     */
    if( c && c->level > IMCPERM( ch ) )
    {
@@ -5978,7 +5976,7 @@ IMC_CMD( imcsetup )
       }
 
       /*
-       * Small change here to give better feedback to the ch -- Xorith 
+       * Small change here to give better feedback to the ch -- Xorith
        */
       snprintf( buf, LGST, "Renamed channel %s localname '%s', to '%s'.\r\n", c->name, c->local_name, arg1 );
       IMCSTRFREE( c->local_name );
@@ -5986,7 +5984,7 @@ IMC_CMD( imcsetup )
       imc_to_char( buf, ch );
 
       /*
-       * Reset the format with the new local name 
+       * Reset the format with the new local name
        */
       imcformat_channel( ch, c, 4, FALSE );
       imc_save_channels(  );
@@ -6131,7 +6129,7 @@ IMC_CMD( imcsetup )
       }
 
       /*
-       * Added permission checking here -- Xorith 
+       * Added permission checking here -- Xorith
        */
       if( permvalue > IMCPERM( ch ) )
       {
@@ -6193,7 +6191,7 @@ IMC_CMD( imcchanlist )
          continue;
 
       /*
-       * If it's locally configured and we're not listening, then color it red -- Xorith 
+       * If it's locally configured and we're not listening, then color it red -- Xorith
        */
       if( c->local_name )
       {
@@ -6210,7 +6208,7 @@ IMC_CMD( imcchanlist )
       count++; /* Keep a count -- Xorith */
    }
    /*
-    * Show the count and a bit of text explaining the red color -- Xorith 
+    * Show the count and a bit of text explaining the red color -- Xorith
     */
    imc_printf( ch, "\r\n~W%d ~cchannels found.", count );
    imc_to_char( "\r\n~RRed ~clocal name indicates a channel not being listened to.\r\n", ch );
@@ -6342,7 +6340,7 @@ IMC_CMD( imctell )
       return;
 
    /*
-    * Tell socials. Suggested by Darien@Sandstorm 
+    * Tell socials. Suggested by Darien@Sandstorm
     */
    if( argument[0] == '@' )
    {
@@ -6385,7 +6383,7 @@ IMC_CMD( imcreply )
    char buf1[LGST];
 
    /*
-    * just check for deny 
+    * just check for deny
     */
    if( IMCIS_SET( IMCFLAG( ch ), IMC_DENYTELL ) )
    {
@@ -6421,7 +6419,7 @@ IMC_CMD( imcreply )
       return;
 
    /*
-    * Tell socials. Suggested by Darien@Sandstorm 
+    * Tell socials. Suggested by Darien@Sandstorm
     */
    if( argument[0] == '@' )
    {
@@ -6699,7 +6697,7 @@ IMC_CMD( imclist )
    int count = 0, end;
 
    /*
-    * Silly little thing, but since imcchanlist <channel> works... why not? -- Xorith 
+    * Silly little thing, but since imcchanlist <channel> works... why not? -- Xorith
     */
    if( argument && argument[0] != '\0' )
    {
@@ -6713,7 +6711,7 @@ IMC_CMD( imclist )
    imcpager_printf( ch, "~c%-15.15s ~B%-40.40s~! ~g%-15.15s ~G%s", "Name", "IMC2 Version", "Network", "Server" );
 
    /*
-    * Put local mud on the list, why was this not done? It's a mud isn't it? 
+    * Put local mud on the list, why was this not done? It's a mud isn't it?
 
    imcpager_printf( ch, "\r\n\r\n~c%-15.15s ~B%-40.40s",
                     this_imcmud->localname, this_imcmud->versionid );
@@ -6722,7 +6720,7 @@ IMC_CMD( imclist )
    {
          imcstrlcpy( netname, p->network, SMST );
       /*
-       * If there is more then one path use the second path 
+       * If there is more then one path use the second path
        */
       if( p->path && p->path[0] != '\0' )
       {
@@ -6777,10 +6775,10 @@ IMC_CMD( imcdisconnect )
 			if (server && server->state > IMC_OFFLINE)
    imc_shutdown( FALSE, server );
 		return;
-   }	else 
+   }	else
 	{
-      int value = atoi( argument );		
-		
+      int value = atoi( argument );
+
 		for( server = first_server; server; server = server->next, count++)
 			if (value == count && server && server->state > IMC_OFFLINE)
    imc_shutdown( FALSE, server );
@@ -6869,7 +6867,7 @@ IMC_CMD( imcconfig )
          imc_to_char( "~GConnected.\r\n", ch );
       else       if( server->state == IMC_OFFLINE )
          imc_to_char( "~RDisconnected.\r\n", ch );
-      else 
+      else
          imc_to_char( "~CConnecting.\r\n", ch );
       imc_printf( ch, "~wServerAddr     : ~G%s\r\n", server->rhost );
       imc_printf( ch, "~wServerPort     : ~G%d\r\n", server->rport );
@@ -7040,7 +7038,7 @@ IMC_CMD( imcconfig )
       imc_save_config(  );
       return;
    }
-    
+
     value = atoi( arg1 );
     count = 1;
 
@@ -7330,7 +7328,7 @@ IMC_CMD( imc_deny_channel )
    }
 
    /*
-    * Assumed to be denying a channel by this stage. 
+    * Assumed to be denying a channel by this stage.
     */
    if( !( channel = imc_findchannel( argument ) ) )
    {
@@ -7409,7 +7407,7 @@ IMC_CMD( imcpermset )
    }
 
    /*
-    * Just something to avoid looping through the channel clean-up --Xorith 
+    * Just something to avoid looping through the channel clean-up --Xorith
     */
    if( IMCPERM( victim ) == permvalue )
    {
@@ -7429,10 +7427,10 @@ IMC_CMD( imcpermset )
 
    imc_printf( ch, "~YPermission level for %s has been changed to %s\r\n", CH_IMCNAME( victim ), imcperm_names[permvalue] );
    /*
-    * Channel Clean-Up added by Xorith 9-24-03 
+    * Channel Clean-Up added by Xorith 9-24-03
     */
    /*
-    * Note: Let's not clean up IMC_DENY for a player. Never know... 
+    * Note: Let's not clean up IMC_DENY for a player. Never know...
     */
    if( IMC_LISTEN( victim ) != NULL && imc_is_connected() == TRUE )
    {
@@ -7778,7 +7776,7 @@ IMC_CMD( imccedit )
    }
 
    /*
-    * MY GOD! What an inefficient mess you've made Samson! 
+    * MY GOD! What an inefficient mess you've made Samson!
     */
    if( !strcasecmp( option, "alias" ) )
    {
@@ -8357,7 +8355,7 @@ const char *imc_send_social( CHAR_DATA * ch, char *argument, int telloption )
    mud[0] = '\0';
 
    /*
-    * Name of social, remainder of argument is assumed to hold the target 
+    * Name of social, remainder of argument is assumed to hold the target
     */
    argument = imcone_argument( argument, arg1 );
 
@@ -8606,7 +8604,7 @@ bool imc_command_hook( CHAR_DATA * ch, const char *command, char *argument )
 
 #if defined(IMCCIRCLE) || (_TBAMUD)
    /*
-    * CircleMUD parser leaves leading spaces after splitting one argument 
+    * CircleMUD parser leaves leading spaces after splitting one argument
     */
    skip_spaces( &argument );
 #endif
@@ -8650,7 +8648,7 @@ bool imc_command_hook( CHAR_DATA * ch, const char *command, char *argument )
    }
 
    /*
-    * Assumed to be aiming for a channel if you get this far down 
+    * Assumed to be aiming for a channel if you get this far down
     */
    c = imc_findchannel( command );
 
@@ -8712,7 +8710,7 @@ bool imc_command_hook( CHAR_DATA * ch, const char *command, char *argument )
    {
       case ',':
          /*
-          * Strip the , and then extra spaces - Remcon 6-28-03 
+          * Strip the , and then extra spaces - Remcon 6-28-03
           */
          argument++;
          while( isspace( *argument ) )
@@ -8721,7 +8719,7 @@ bool imc_command_hook( CHAR_DATA * ch, const char *command, char *argument )
          break;
       case '@':
          /*
-          * Strip the @ and then extra spaces - Remcon 6-28-03 
+          * Strip the @ and then extra spaces - Remcon 6-28-03
           */
          argument++;
          while( isspace( *argument ) )

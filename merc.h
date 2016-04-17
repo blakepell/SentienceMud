@@ -964,6 +964,7 @@ struct	descriptor_data
     OBJ_DATA *		input_obj;
     ROOM_INDEX_DATA *	input_room;
     TOKEN_DATA *	input_tok;
+
 };
 
 
@@ -2584,8 +2585,12 @@ enum {
 #define WEAR_PARAM_SHIFTED	3
 #define WEAR_PARAM_AFFECTS	4
 #define WEAR_PARAM_UNEQ_DEATH	5
+#define WEAR_PARAM_ALWAYSREMOVE	6
 
+#define WEAR_REMOVEEQ(x)			(wear_params[(x)][WEAR_PARAM_REMOVE])
+#define WEAR_AUTOEQUIP(x)			(wear_params[(x)][WEAR_PARAM_AUTOEQ])
 #define WEAR_UNEQUIP_DEATH(x)		(wear_params[(x)][WEAR_PARAM_UNEQ_DEATH])
+#define WEAR_ALWAYSREMOVE(x)		(wear_params[(x)][WEAR_PARAM_ALWAYSREMOVE])
 
 /*
  * Equipment wear locations.
@@ -3070,6 +3075,7 @@ struct token_index_data
 #define TOKEN_NOSKILLTEST	(H)	/* Doesn't do a skill test when action is completed */
 #define TOKEN_SINGULAR		(I)
 #define TOKEN_SEE_ALL		(J)	// Allows the token to ignore SIGHT rules
+#define TOKEN_SPELLBEATS	(K)	// Allows the spell token to fire TRIG_SPELLBEATs while casting (as this can be spammy)
 #define TOKEN_PERMANENT		(Z)	/* May not be removed unless the source is extracted.
 									For players, this will be make them removable only by editting pfiles or through specific calls in the code */
 
@@ -3212,6 +3218,11 @@ struct limb_data {
 	OBJ_DATA *obj[OBJ_LAYERS];
 };
 
+#define MAGICCAST_SUCCESS		0
+#define MAGICCAST_FAILURE		1
+#define MAGICCAST_ROOMBLOCK		2
+#define MAGICCAST_SCRIPT		3	// Failure caused by scripting -
+
 /*
  * One character (PC or NPC).
  */
@@ -3323,6 +3334,14 @@ struct	char_data
     int				song_mana;
     OBJ_DATA		*song_instrument;
 
+    int				script_wait;
+    long			script_wait_success;
+    long			script_wait_failure;
+	//CHAR_DATA		*script_wait_mob;
+	//OBJ_DATA		*script_wait_obj;
+	//ROOM_INDEX_DATA	*script_wait_room;
+	TOKEN_DATA		*script_wait_token;
+
     int			fade;
     int			fade_dir;
     int			ship_move;
@@ -3419,6 +3438,8 @@ struct	char_data
     /* stats */
     int			perm_stat[MAX_STATS];
     int			mod_stat[MAX_STATS];
+    int			cur_stat[MAX_STATS];
+    bool		dirty_stat[MAX_STATS];
 
     /* parts */
     long		form;
@@ -3569,6 +3590,17 @@ struct	char_data
     LLIST *		laffected;
 
     int			deathsight_vision;
+    int			cast_successful;	// Flag set when the casting is started indicating whether the result is successful
+    								// - This will allow channeling spell tokens to know if the spell would be successful.
+    								// - This will be modifiable by spell tokesn to force it to be a failure,
+    								// -   or, if not already performed, attempt to switch the failure to a success.
+
+    								// 0 = SUCCESS
+    								// 1 = SKILL FAILURE
+    								// 2 = ROOM FAILURE
+    								// 3 = SCRIPTED
+	bool		casting_recovered;	// Flag set if a spell recovery was attempted, regardless if it was successful.
+	char		*casting_failure_message;
 
 /*
 	struct char_data_stats {
@@ -4726,6 +4758,8 @@ enum trigger_index_enum {
 	TRIG_COMBAT_STYLE,
 	TRIG_DAMAGE,
 	TRIG_DEATH,
+	TRIG_DEATH_TIMER,
+	TRIG_DEFENSE,
 	TRIG_DELAY,
 	TRIG_DRINK,
 	TRIG_DROP,
@@ -4828,6 +4862,7 @@ enum trigger_index_enum {
 	TRIG_SLEEP,
 	TRIG_SPEECH,
 	TRIG_SPELL,
+	TRIG_SPELLBEAT,
 	TRIG_SPELLCAST,
 	TRIG_SPELLINTER,
 	TRIG_SPELLPENETRATE,
@@ -6067,6 +6102,7 @@ long flag_value( const struct flag_type *flag_table, char *argument);
 char *	affect_loc_name	args( ( int location ) );
 char *	affect_bit_name	args( ( long vector ) );
 char *	affect2_bit_name	args( ( long vector ) );
+char *	affects_bit_name	args( ( long vector, long vector2 ) );
 char *	extra_bit_name	args( ( long extra_flags ) );
 char * 	wear_bit_name	args( ( int wear_flags ) );
 char *	act_bit_name	args( ( int act_type, long act_flags ) );
@@ -6184,6 +6220,7 @@ void repair_end( CHAR_DATA *ch );
 void save_last_wear( CHAR_DATA *ch );
 void scribe_end( CHAR_DATA *ch, sh_int sn, sh_int sn2, sh_int sn3 );
 void ink_end( CHAR_DATA *ch, CHAR_DATA *victim, sh_int loc, sh_int sn, sh_int sn2, sh_int sn3 );
+int get_wear_loc(CHAR_DATA *ch, OBJ_DATA *obj);
 void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace);
 void change_money(CHAR_DATA *ch, CHAR_DATA *changer, long gold, long silver);
 
@@ -6589,6 +6626,13 @@ int	get_weapon_skill args(( CHAR_DATA *ch, int sn ) );
 int     get_age         args( ( CHAR_DATA *ch ) );
 void	reset_char	args( ( CHAR_DATA *ch )  );
 int	get_trust	args( ( CHAR_DATA *ch ) );
+
+void set_mod_stat(CHAR_DATA *ch, int stat, int value);
+void add_mod_stat(CHAR_DATA *ch, int stat, int adjust);
+void set_perm_stat(CHAR_DATA *ch, int stat, int value);
+void set_perm_stat_range(CHAR_DATA *ch, int stat, int value, int mn, int mx);
+void add_perm_stat(CHAR_DATA *ch, int stat, int adjust);
+
 int	get_curr_stat	args( ( CHAR_DATA *ch, int stat ) );
 int 	get_max_train	args( ( CHAR_DATA *ch, int stat ) );
 int	can_carry_n	args( ( CHAR_DATA *ch ) );
@@ -6600,6 +6644,7 @@ void	affect_to_obj	args( ( OBJ_DATA *obj, AFFECT_DATA *paf ) );
 void	catalyst_to_obj	args( ( OBJ_DATA *obj, AFFECT_DATA *paf ) );
 void	affect_to_room	args( ( ROOM_INDEX_DATA *room, AFFECT_DATA *paf ) );
 void	affect_remove	args( ( CHAR_DATA *ch, AFFECT_DATA *paf ) );
+bool	affect_removeall_obj	args( ( OBJ_DATA *obj ) );
 bool	affect_remove_obj args( (OBJ_DATA *obj, AFFECT_DATA *paf ) );
 void	affect_strip	args( ( CHAR_DATA *ch, int sn ) );
 void	affect_strip_obj	args( ( OBJ_DATA *obj, int sn ) );
@@ -6626,7 +6671,6 @@ int	apply_ac	args( ( OBJ_DATA *obj, int iWear, int type ) );
 OD *	get_eq_char	args( ( CHAR_DATA *ch, int iWear ) );
 void	equip_char	args( ( CHAR_DATA *ch, OBJ_DATA *obj, int iWear ) );
 int	unequip_char	args( ( CHAR_DATA *ch, OBJ_DATA *obj, bool show ) );
-bool wears_obj_with_spell(CHAR_DATA *ch, int sn);
 int	count_obj_list	args( ( OBJ_INDEX_DATA *obj, OBJ_DATA *list ) );
 void	obj_from_room	args( ( OBJ_DATA *obj ) );
 void	obj_to_room	args( ( OBJ_DATA *obj, ROOM_INDEX_DATA *pRoomIndex ) );
@@ -7258,7 +7302,7 @@ void connection_remove(DESCRIPTOR_DATA *d);
 
 
 /* act_info.c */
-extern int wear_params[MAX_WEAR][6];
+extern int wear_params[MAX_WEAR][7];
 
 char *get_script_prompt_string(CHAR_DATA *ch, char *key);
 bool script_spell_deflection(CHAR_DATA *ch, CHAR_DATA *victim, TOKEN_DATA *token, SCRIPT_DATA *script, int mana);
@@ -7393,5 +7437,6 @@ bool obj_has_money(CHAR_DATA *ch, OBJ_DATA *container);
 void loot_corpse(CHAR_DATA *ch, OBJ_DATA *corpse);
 
 int music_lookup( char *name);
+bool is_char_busy(CHAR_DATA *ch);
 
 #endif /* !def __MERC_H__ */
