@@ -1093,7 +1093,7 @@ char *expand_entity_church(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 			arg->d.str = &str_empty[0];
 		break;
 
-	case ENTITY_CHURCH_TYPE:
+	case ENTITY_CHURCH_SIZE:
 		arg->type = ENT_STRING;
 		if( arg->d.church ) {
 			strcpy(arg->buf, get_chsize_from_number(arg->d.church->size));
@@ -1102,6 +1102,7 @@ char *expand_entity_church(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 			arg->d.str = &str_empty[0];
 
 		break;
+
 	case ENTITY_CHURCH_FLAG:
 		arg->type = ENT_STRING;
 		if( arg->d.church && arg->d.church->flag && arg->d.church->flag[0] ) {
@@ -1174,10 +1175,11 @@ char *expand_entity_church_id(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->d.str = &str_empty[0];
 		break;
 
-	case ENTITY_CHURCH_TYPE:
+	case ENTITY_CHURCH_SIZE:
 		arg->type = ENT_STRING;
 		arg->d.str = &str_empty[0];
 		break;
+
 	case ENTITY_CHURCH_FLAG:
 		arg->type = ENT_STRING;
 		arg->d.str = &str_empty[0];

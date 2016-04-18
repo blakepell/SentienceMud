@@ -102,7 +102,8 @@ enum ifcheck_enum {
 	/* C */
 	CHK_CANDROP,CHK_CANGET,CHK_CANHUNT,CHK_CANPRACTICE,CHK_CANPUT,
 	CHK_CANSCARE,CHK_CARRIEDBY,CHK_CARRIES,CHK_CARRYLEFT,
-	CHK_CHURCH,CHK_CHURCHHASRELIC,CHK_CHURCHONLINE,CHK_CHURCHRANK,CHK_CLAN,CHK_CLASS,CHK_CLONES,
+	CHK_CHURCH,CHK_CHURCHHASRELIC,CHK_CHURCHONLINE,CHK_CHURCHRANK,CHK_CHURCHSIZE,
+	CHK_CLAN,CHK_CLASS,CHK_CLONES,
 	CHK_COMM,CHK_CONTAINER,CHK_COS,CHK_CPKFIGHTS,CHK_CPKLOSS,CHK_CPKRATIO,CHK_CPKWINS,CHK_CURHIT,
 	CHK_CURMANA,CHK_CURMOVE,
 
@@ -747,7 +748,7 @@ enum entity_persist_enum {
 
 enum entity_church_enum {
 	ENTITY_CHURCH_NAME = ESCAPE_EXTRA,
-	ENTITY_CHURCH_TYPE,
+	ENTITY_CHURCH_SIZE,
 	ENTITY_CHURCH_FLAG,
 	ENTITY_CHURCH_FOUNDER,
 	ENTITY_CHURCH_MOTD,
@@ -1206,7 +1207,7 @@ extern ENT_FIELD entity_prior[];
 extern bool entity_allow_vars[];
 extern bool forced_command;
 extern int trigger_table_size;
-extern int trigger_slots_size;
+//extern int trigger_slots_size;
 extern ROOM_INDEX_DATA room_used_for_wilderness;
 extern ROOM_INDEX_DATA room_pointer_vlink;
 extern ROOM_INDEX_DATA room_pointer_environment;
@@ -1591,7 +1592,7 @@ DECL_IFC_FUN(ifc_iscastsuccess);
 DECL_IFC_FUN(ifc_iscastfailure);
 DECL_IFC_FUN(ifc_iscastroomblocked);
 DECL_IFC_FUN(ifc_iscastrecovered);
-
+DECL_IFC_FUN(ifc_churchsize);
 
 
 /* Opcode functions */

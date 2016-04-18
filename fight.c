@@ -3729,59 +3729,63 @@ void group_gain(CHAR_DATA *ch, CHAR_DATA *victim)
 
 	for (gch = ch->in_room->people; gch != NULL; gch = gch->next_in_room)
 	{
-	OBJ_DATA *obj;
-	OBJ_DATA *obj_next;
+		OBJ_DATA *obj;
+		OBJ_DATA *obj_next;
 
-	if (!is_same_group(gch, ch) || IS_NPC(gch))
-		continue;
+		if (!is_same_group(gch, ch) || IS_NPC(gch))
+			continue;
 
-	if (!(IS_IMMORTAL(gch) || gch->tot_level == 120))
-	{
-		xp = xp_compute(gch, victim, group_levels);
-		/* Check for reckoning boost in addition to experience boost. If reckoning is active, do a
-		flat 2x experience -- Areo */
-		if (boost_table[BOOST_EXPERIENCE].boost != 100 || boost_table[BOOST_RECKONING].boost != 100)
+		xp = xp_compute(gch, victim, group_levels);	// This is computed so that objects can get experience
+		if (!(IS_IMMORTAL(gch) || gch->tot_level == 120))
 		{
-		if (boost_table[BOOST_RECKONING].boost != 100)
-		{
-			sprintf(buf, "{W%d%% experience!{x\n\r", boost_table[BOOST_RECKONING].boost);
-			send_to_char(buf,gch);
-			xp = (xp * boost_table[BOOST_RECKONING].boost)/100;
-		}
-		else
-		if (boost_table[BOOST_EXPERIENCE].boost != 100)
-		{
-		sprintf(buf, "{W%d%% experience!{x\n\r", boost_table[BOOST_EXPERIENCE].boost);
-		send_to_char(buf, gch);
-		xp = (xp * boost_table[BOOST_EXPERIENCE].boost)/100;
-		}
+			int pc_xp = xp;
+			/* Check for reckoning boost in addition to experience boost. If reckoning is active, do a flat 2x experience -- Areo */
+			if (boost_table[BOOST_EXPERIENCE].boost != 100 || boost_table[BOOST_RECKONING].boost != 100)
+			{
+				if (boost_table[BOOST_RECKONING].boost != 100)
+				{
+					sprintf(buf, "{W%d%% experience!{x\n\r", boost_table[BOOST_RECKONING].boost);
+					send_to_char(buf,gch);
+					pc_xp = (xp * boost_table[BOOST_RECKONING].boost)/100;
+				}
+				else if (boost_table[BOOST_EXPERIENCE].boost != 100)
+				{
+					sprintf(buf, "{W%d%% experience!{x\n\r", boost_table[BOOST_EXPERIENCE].boost);
+					send_to_char(buf, gch);
+					pc_xp = (xp * boost_table[BOOST_EXPERIENCE].boost)/100;
+				}
+			}
+
+			if (ch->leader != NULL && get_skill(ch->leader, gsn_leadership) < number_percent()) {
+				pc_xp *= 1.05;
+			}
+			sprintf(buf, "{BYou receive {C%d {Bexperience points.\n\r{x", xp);
+			send_to_char(buf, gch);
+			gain_exp(gch, pc_xp);
 		}
 
-		if (ch->leader != NULL
-			&& get_skill(ch->leader, gsn_leadership) < number_percent()) {
-		xp *= 1.05;
-		}
-		sprintf(buf, "{BYou receive {C%d {Bexperience points.\n\r{x", xp);
-		send_to_char(buf, gch);
-		gain_exp(gch, xp);
-	}
-
-	for (obj = ch->carrying; obj != NULL; obj = obj_next)
-	{
-		obj_next = obj->next_content;
-		if (obj->wear_loc == WEAR_NONE)
-		continue;
-
-		if ((IS_OBJ_STAT(obj, ITEM_ANTI_EVIL)    && IS_EVIL(ch)   )
-			||   (IS_OBJ_STAT(obj, ITEM_ANTI_GOOD)    && IS_GOOD(ch)   )
-			||   (IS_OBJ_STAT(obj, ITEM_ANTI_NEUTRAL) && IS_NEUTRAL(ch)))
+		for (obj = gch->carrying; obj != NULL; obj = obj_next)
 		{
-		act("You are zapped by $p.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
-		act("$n is zapped by $p.",   ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
-		obj_from_char(obj);
-		obj_to_room(obj, ch->in_room);
+			obj_next = obj->next_content;
+			if (obj->wear_loc == WEAR_NONE)
+				continue;
+
+			obj->tempstore[0] = xp;
+			obj->tempstore[1] = OBJ_XPGAIN_GROUP;	// 1
+			p_percent_trigger(NULL, obj, NULL, NULL, gch, NULL, NULL, NULL, NULL, TRIG_XPGAIN, NULL);
+
+
+			if ((IS_OBJ_STAT(obj, ITEM_ANTI_EVIL)    && IS_EVIL(gch)   )
+				||   (IS_OBJ_STAT(obj, ITEM_ANTI_GOOD)    && IS_GOOD(gch)   )
+				||   (IS_OBJ_STAT(obj, ITEM_ANTI_NEUTRAL) && IS_NEUTRAL(gch)))
+			{
+				act("You are zapped by $p.", gch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+				act("$n is zapped by $p.",   gch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
+				obj_from_char(obj);
+				obj_to_room(obj, gch->in_room);
+			}
+
 		}
-	}
 	}
 }
 
@@ -3789,36 +3793,36 @@ void group_gain(CHAR_DATA *ch, CHAR_DATA *victim)
 // Compute exp for a kill.
 int xp_compute(CHAR_DATA *gch, CHAR_DATA *victim, int total_levels)
 {
-   int xp;
-   int base_exp;
-   int multiplier;
-   char buf[MAX_STRING_LENGTH];
-   OBJ_DATA *obj;
-   int bonus_xp = 0;
+	int xp;
+	int base_exp;
+	int multiplier;
+	char buf[MAX_STRING_LENGTH];
+	OBJ_DATA *obj;
+	int bonus_xp = 0;
+	int gch_tot_level;
+	int diff_level;
 
-   multiplier = victim->tot_level;
-   if (victim->tot_level < 30)
-   	base_exp = 100;
-   else if (victim->tot_level < 60)
-	base_exp = 120;
-   else if (victim->tot_level < 90)
-	base_exp = 140;
-   else
-	base_exp = 150;
+	multiplier = victim->tot_level;
+	if (victim->tot_level < 30)			base_exp = 100;
+	else if (victim->tot_level < 60)	base_exp = 120;
+	else if (victim->tot_level < 90)	base_exp = 140;
+	else								base_exp = 150;
 
-   // adjust exp based on level difference
-   base_exp -= ((gch->tot_level - victim->tot_level));
-   if (victim->tot_level > gch->tot_level)
-	   base_exp += ((victim->tot_level - gch->tot_level)) / 2;
+	gch_tot_level = UMIN(120, gch->tot_level);	// Clamp the level
+	diff_level = gch_tot_level - victim->tot_level;
 
-   xp = base_exp * multiplier;
+	// adjust exp based on level difference
+	base_exp -= ((diff_level));
+	if (victim->tot_level > gch_tot_level)
+		base_exp += ((-diff_level)) / 2;
 
-   xp = (int) ((float) xp * (float) ((float) gch->tot_level / (float) total_levels));
+	xp = base_exp * multiplier;
+
+   xp = (int) ((float) xp * (float) ((float) gch_tot_level / (float) total_levels));
 
    // HACK! stop people from leveling in plith.
-   if ((gch->tot_level - victim->tot_level) > 25
-   &&  !str_cmp(gch->in_room->area->name, "Plith"))
-	   xp = (int) xp * 1/(gch->tot_level - victim->tot_level);
+   if (diff_level > 25 && !str_cmp(gch->in_room->area->name, "Plith"))
+	   xp = (int) xp / diff_level;
 
    // Nothing for killing pets
    if (IS_SET(victim->act,ACT_PET))
@@ -3863,13 +3867,14 @@ int xp_compute(CHAR_DATA *gch, CHAR_DATA *victim, int total_levels)
 	}
 
 	if( xp > 0 && bonus_xp > 0 ) {
-		printf_to_char(gch, "{W%d%% more experience!{x", bonus_xp);
+		if(!(IS_IMMORTAL(gch) || gch->tot_level == 120))
+			printf_to_char(gch, "{W%d%% more experience!{x", bonus_xp);
 		xp = (100 + bonus_xp) * xp / 100;
 	}
-   // kind of a hack but oh well
-   xp = UMAX(xp, 0);
+	// kind of a hack but oh well
+	xp = UMAX(xp, 0);
 
-   return xp;
+	return xp;
 }
 
 

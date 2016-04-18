@@ -152,7 +152,7 @@ void save_char_obj(CHAR_DATA *ch)
 	    fwrite_obj_new(ch, ch->locker, fp, 0);
 
 	if (ch->tokens != NULL)
-	    fwrite_token(ch, ch->tokens, fp);
+	    fwrite_token(ch->tokens, fp);
 
         fprintf(fp, "#END\n");
         fprintf(fp, "#END\n");
@@ -2239,6 +2239,9 @@ void fwrite_obj_new(CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest)
     if( !IS_NULLSTR(obj->owner_short) )
     	fprintf(fp, "OwnerShort %s~\n", obj->owner_short);
 
+	if(obj->tokens != NULL)
+		fwrite_token(obj->tokens, fp);
+
 
     fprintf(fp, "End\n\n");
 
@@ -2882,6 +2885,15 @@ OBJ_DATA *fread_obj_new(FILE *fp)
 	    break;
 
 	case 'T':
+		if (!str_cmp(word, "TOKEN"))
+	    {
+			TOKEN_DATA *token = fread_token(fp);
+			token_to_obj(token, obj);
+			fMatch		= TRUE;
+			break;
+	    }
+
+
 	    KEY("TimesAllowedFixed", obj->times_allowed_fixed, fread_number(fp));
 	    KEY("Timer",	obj->timer,		fread_number(fp));
 	    KEY("Time",	obj->timer,		fread_number(fp));
@@ -3910,13 +3922,13 @@ bool find_class_skill(CHAR_DATA *ch, int class)
 
 
 /* write a token */
-void fwrite_token(CHAR_DATA *ch, TOKEN_DATA *token, FILE *fp)
+void fwrite_token(TOKEN_DATA *token, FILE *fp)
 {
     int i;
 
     /* recursion so that lists read in correct order instead of flipping */
     if (token->next != NULL)
-	fwrite_token(ch, token->next, fp);
+	fwrite_token(token->next, fp);
 
     fprintf(fp, "#TOKEN %ld\n", token->pIndexData->vnum);
 

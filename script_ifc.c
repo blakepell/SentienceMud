@@ -87,12 +87,20 @@ extern bool wiznet_script;
 
 #define ARG_BOOL(x) ( (ISARG_NUM(x) && ARG_NUM(x) != 0) || (ISARG_STR(x) && !str_cmp(ARG_STR(x), "true")) )
 
+long flag_value_ifcheck(const struct flag_type *flag_table, char *argument)
+{
+	long flag = flag_value(flag_table, argument);
+
+	return (flag != NO_FLAG) ? flag : 0;
+}
+
+
 // Checks if the "act" field on the mob has the given flags
 DECL_IFC_FUN(ifc_act)
 {
 	*ret = (ISARG_MOB(0) && ISARG_STR(1) &&
-		((IS_NPC(ARG_MOB(0)) && IS_SET(ARG_MOB(0)->act, flag_value(act_flags,ARG_STR(1)))) ||
-		(!IS_NPC(ARG_MOB(0)) && IS_SET(ARG_MOB(0)->act, flag_value(plr_flags,ARG_STR(1))))));
+		((IS_NPC(ARG_MOB(0)) && IS_SET(ARG_MOB(0)->act, flag_value_ifcheck(act_flags,ARG_STR(1)))) ||
+		(!IS_NPC(ARG_MOB(0)) && IS_SET(ARG_MOB(0)->act, flag_value_ifcheck(plr_flags,ARG_STR(1))))));
 	return TRUE;
 }
 
@@ -100,22 +108,22 @@ DECL_IFC_FUN(ifc_act)
 DECL_IFC_FUN(ifc_act2)
 {
 	*ret = (ISARG_MOB(0) && ISARG_STR(1) &&
-		((IS_NPC(ARG_MOB(0)) && IS_SET(ARG_MOB(0)->act2, flag_value(act2_flags,ARG_STR(1)))) ||
-		(!IS_NPC(ARG_MOB(0)) && IS_SET(ARG_MOB(0)->act2, flag_value(plr2_flags,ARG_STR(1))))));
+		((IS_NPC(ARG_MOB(0)) && IS_SET(ARG_MOB(0)->act2, flag_value_ifcheck(act2_flags,ARG_STR(1)))) ||
+		(!IS_NPC(ARG_MOB(0)) && IS_SET(ARG_MOB(0)->act2, flag_value_ifcheck(plr2_flags,ARG_STR(1))))));
 	return TRUE;
 }
 
 // Checks if the "affected_by" field on the mob has the given flags
 DECL_IFC_FUN(ifc_affected)
 {
-	*ret = (ISARG_MOB(0) && ISARG_STR(1) && IS_SET(ARG_MOB(0)->affected_by, flag_value( affect_flags,ARG_STR(1))));
+	*ret = (ISARG_MOB(0) && ISARG_STR(1) && IS_SET(ARG_MOB(0)->affected_by, flag_value_ifcheck( affect_flags,ARG_STR(1))));
 	return TRUE;
 }
 
 // Checks if the "affected_by2" field on the mob has the given flags
 DECL_IFC_FUN(ifc_affected2)
 {
-	*ret = (ISARG_MOB(0) && ISARG_STR(1) && IS_SET(ARG_MOB(0)->affected_by2, flag_value( affect2_flags,ARG_STR(1))));
+	*ret = (ISARG_MOB(0) && ISARG_STR(1) && IS_SET(ARG_MOB(0)->affected_by2, flag_value_ifcheck( affect2_flags,ARG_STR(1))));
 	return TRUE;
 }
 
@@ -277,6 +285,21 @@ DECL_IFC_FUN(ifc_churchonline)
 	return TRUE;
 }
 
+DECL_IFC_FUN(ifc_churchsize)
+{
+	if(ISARG_MOB(0)) {
+		mob = ARG_MOB(0);
+		*ret = (!IS_NPC(mob) && mob->church) ? mob->church->size : 0;
+		return TRUE;
+	} else if(ISARG_STR(0)) {
+		CHURCH_DATA *church = find_church_name(ARG_STR(0));
+
+		*ret = church ? church->size : 0;
+	}
+
+	return FALSE;
+}
+
 DECL_IFC_FUN(ifc_churchrank)
 {
 	if(ISARG_MOB(0)) {
@@ -308,7 +331,7 @@ DECL_IFC_FUN(ifc_clones)
 DECL_IFC_FUN(ifc_container)
 {
 	*ret = ISARG_OBJ(0) && ARG_OBJ(0)->item_type == ITEM_CONTAINER &&
-		IS_SET(ARG_OBJ(0)->value[1], flag_value(container_flags,ARG_STR(1)));
+		IS_SET(ARG_OBJ(0)->value[1], flag_value_ifcheck(container_flags,ARG_STR(1)));
 	return TRUE;
 }
 
@@ -464,7 +487,7 @@ DECL_IFC_FUN(ifc_exitflag)
 
 		if( !(ex = ARG_EXIT(0).r->exit[ARG_EXIT(0).door]) ) return FALSE;
 
-		*ret = IS_SET(ex->exit_info, flag_value(exit_flags,ARG_STR(1)));
+		*ret = IS_SET(ex->exit_info, flag_value_ifcheck(exit_flags,ARG_STR(1)));
 	} else {
 
 
@@ -478,7 +501,7 @@ DECL_IFC_FUN(ifc_exitflag)
 
 		door = get_num_dir(ARG_STR(1));
 
-		*ret = (room && door >= 0 && room->exit[door] && IS_SET(room->exit[door]->exit_info, flag_value(exit_flags,ARG_STR(2))));
+		*ret = (room && door >= 0 && room->exit[door] && IS_SET(room->exit[door]->exit_info, flag_value_ifcheck(exit_flags,ARG_STR(2))));
 	}
 	return TRUE;
 }
@@ -492,7 +515,7 @@ DECL_IFC_FUN(ifc_fullness)
 DECL_IFC_FUN(ifc_furniture)
 {
 	*ret = ISARG_OBJ(0) && ARG_OBJ(0)->item_type == ITEM_FURNITURE &&
-		IS_SET(ARG_OBJ(0)->value[2], flag_value(furniture_flags,ARG_STR(1)));
+		IS_SET(ARG_OBJ(0)->value[2], flag_value_ifcheck(furniture_flags,ARG_STR(1)));
 	return TRUE;
 }
 
@@ -671,7 +694,7 @@ DECL_IFC_FUN(ifc_identical)
 
 DECL_IFC_FUN(ifc_imm)
 {
-	*ret = (ISARG_MOB(0) && IS_SET(ARG_MOB(0)->imm_flags, flag_value(imm_flags,ARG_STR(1))));
+	*ret = (ISARG_MOB(0) && IS_SET(ARG_MOB(0)->imm_flags, flag_value_ifcheck(imm_flags,ARG_STR(1))));
 	return TRUE;
 }
 
@@ -1339,25 +1362,25 @@ DECL_IFC_FUN(ifc_objexists)
 
 DECL_IFC_FUN(ifc_objextra)
 {
-	*ret = (ISARG_OBJ(0) && ISARG_STR(1) && IS_SET(ARG_OBJ(0)->extra_flags, flag_value(extra_flags,ARG_STR(1))));
+	*ret = (ISARG_OBJ(0) && ISARG_STR(1) && IS_SET(ARG_OBJ(0)->extra_flags, flag_value_ifcheck(extra_flags,ARG_STR(1))));
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_objextra2)
 {
-	*ret = (ISARG_OBJ(0) && ISARG_STR(1) && IS_SET(ARG_OBJ(0)->extra2_flags, flag_value(extra2_flags,ARG_STR(1))));
+	*ret = (ISARG_OBJ(0) && ISARG_STR(1) && IS_SET(ARG_OBJ(0)->extra2_flags, flag_value_ifcheck(extra2_flags,ARG_STR(1))));
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_objextra3)
 {
-	*ret = (ISARG_OBJ(0) && ISARG_STR(1) && IS_SET(ARG_OBJ(0)->extra3_flags, flag_value(extra3_flags,ARG_STR(1))));
+	*ret = (ISARG_OBJ(0) && ISARG_STR(1) && IS_SET(ARG_OBJ(0)->extra3_flags, flag_value_ifcheck(extra3_flags,ARG_STR(1))));
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_objextra4)
 {
-	*ret = (ISARG_OBJ(0) && ISARG_STR(1) && IS_SET(ARG_OBJ(0)->extra4_flags, flag_value(extra4_flags,ARG_STR(1))));
+	*ret = (ISARG_OBJ(0) && ISARG_STR(1) && IS_SET(ARG_OBJ(0)->extra4_flags, flag_value_ifcheck(extra4_flags,ARG_STR(1))));
 	return TRUE;
 }
 
@@ -1460,7 +1483,7 @@ DECL_IFC_FUN(ifc_objval7)
 
 DECL_IFC_FUN(ifc_objwear)
 {
-	*ret = (ISARG_OBJ(0) && ISARG_STR(1) && IS_SET(ARG_OBJ(0)->wear_flags, flag_value(wear_flags,ARG_STR(1))));
+	*ret = (ISARG_OBJ(0) && ISARG_STR(1) && IS_SET(ARG_OBJ(0)->wear_flags, flag_value_ifcheck(wear_flags,ARG_STR(1))));
 	return TRUE;
 }
 
@@ -1496,7 +1519,7 @@ DECL_IFC_FUN(ifc_objweightleft)
 
 DECL_IFC_FUN(ifc_off)
 {
-	*ret = (ISARG_MOB(0) && IS_SET(ARG_MOB(0)->off_flags, flag_value( off_flags,ARG_STR(1))));
+	*ret = (ISARG_MOB(0) && IS_SET(ARG_MOB(0)->off_flags, flag_value_ifcheck( off_flags,ARG_STR(1))));
 	return TRUE;
 }
 
@@ -1508,7 +1531,7 @@ DECL_IFC_FUN(ifc_order)
 
 DECL_IFC_FUN(ifc_parts)
 {
-	*ret = (ISARG_MOB(0) && ISARG_STR(1) && IS_SET(ARG_MOB(0)->parts, flag_value(part_flags,ARG_STR(1))));
+	*ret = (ISARG_MOB(0) && ISARG_STR(1) && IS_SET(ARG_MOB(0)->parts, flag_value_ifcheck(part_flags,ARG_STR(1))));
 	return TRUE;
 }
 
@@ -1629,14 +1652,14 @@ DECL_IFC_FUN(ifc_pneuma)
 DECL_IFC_FUN(ifc_portal)
 {
 	*ret = ISARG_OBJ(0) && ARG_OBJ(0)->item_type == ITEM_PORTAL &&
-		IS_SET(ARG_OBJ(0)->value[2], flag_value(portal_flags,ARG_STR(1)));
+		IS_SET(ARG_OBJ(0)->value[2], flag_value_ifcheck(portal_flags,ARG_STR(1)));
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_portalexit)
 {
 	*ret = ISARG_OBJ(0) && ARG_OBJ(0)->item_type == ITEM_PORTAL &&
-		IS_SET(ARG_OBJ(0)->value[1], flag_value(exit_flags,ARG_STR(1)));
+		IS_SET(ARG_OBJ(0)->value[1], flag_value_ifcheck(exit_flags,ARG_STR(1)));
 	return TRUE;
 }
 
@@ -1688,7 +1711,7 @@ DECL_IFC_FUN(ifc_rand)
 
 DECL_IFC_FUN(ifc_res)
 {
-	*ret = (ISARG_MOB(0) && VALID_STR(1) && IS_SET(ARG_MOB(0)->res_flags, flag_value(res_flags,ARG_STR(1))));
+	*ret = (ISARG_MOB(0) && VALID_STR(1) && IS_SET(ARG_MOB(0)->res_flags, flag_value_ifcheck(res_flags,ARG_STR(1))));
 	return TRUE;
 }
 
@@ -1716,11 +1739,11 @@ DECL_IFC_FUN(ifc_roomflag)
 		if(!(pWilds = get_wilds_from_uid(NULL,ARG_NUM(0))))
 			*ret = FALSE;
 		else if((room = get_wilds_vroom(pWilds, ARG_NUM(1), ARG_NUM(2))))
-			*ret = (IS_SET(room->room_flags, flag_value(room_flags,ARG_STR(3))));
+			*ret = (IS_SET(room->room_flags, flag_value_ifcheck(room_flags,ARG_STR(3))));
 		else if(!(pTerrain = get_terrain_by_coors (pWilds, ARG_NUM(1), ARG_NUM(2))))
 			*ret = FALSE;
 		else
-			*ret = (IS_SET(pTerrain->template->room_flags, flag_value(room_flags,ARG_STR(3))));
+			*ret = (IS_SET(pTerrain->template->room_flags, flag_value_ifcheck(room_flags,ARG_STR(3))));
 
 	} else {
 		if(!ISARG_STR(1)) return FALSE;
@@ -1729,7 +1752,7 @@ DECL_IFC_FUN(ifc_roomflag)
 		else if(ISARG_ROOM(0)) room = ARG_ROOM(0);
 		else if(ISARG_TOK(0)) room = token_room(ARG_TOK(0));
 		else return FALSE;
-		*ret = (room && IS_SET(room->room_flags, flag_value(room_flags,ARG_STR(1))));
+		*ret = (room && IS_SET(room->room_flags, flag_value_ifcheck(room_flags,ARG_STR(1))));
 	}
 
 	return TRUE;
@@ -1747,11 +1770,11 @@ DECL_IFC_FUN(ifc_roomflag2)
 		if(!(pWilds = get_wilds_from_uid(NULL,ARG_NUM(0))))
 			*ret = FALSE;
 		else if((room = get_wilds_vroom(pWilds, ARG_NUM(1), ARG_NUM(2))))
-			*ret = (IS_SET(room->room2_flags, flag_value(room2_flags,ARG_STR(3))));
+			*ret = (IS_SET(room->room2_flags, flag_value_ifcheck(room2_flags,ARG_STR(3))));
 		else if(!(pTerrain = get_terrain_by_coors (pWilds, ARG_NUM(1), ARG_NUM(2))))
 			*ret = FALSE;
 		else
-			*ret = (IS_SET(pTerrain->template->room2_flags, flag_value(room2_flags,ARG_STR(3))));
+			*ret = (IS_SET(pTerrain->template->room2_flags, flag_value_ifcheck(room2_flags,ARG_STR(3))));
 
 	} else {
 		if(!ISARG_STR(1)) return FALSE;
@@ -1760,7 +1783,7 @@ DECL_IFC_FUN(ifc_roomflag2)
 		else if(ISARG_ROOM(0)) room = ARG_ROOM(0);
 		else if(ISARG_TOK(0)) room = token_room(ARG_TOK(0));
 		else return FALSE;
-		*ret = (room && IS_SET(room->room2_flags, flag_value(room2_flags,ARG_STR(1))));
+		*ret = (room && IS_SET(room->room2_flags, flag_value_ifcheck(room2_flags,ARG_STR(1))));
 	}
 
 	return TRUE;
@@ -1790,7 +1813,7 @@ DECL_IFC_FUN(ifc_sector)
 		if(!(pWilds = get_wilds_from_uid(NULL,ARG_NUM(0))))
 			*ret = FALSE;
 		else if((room = get_wilds_vroom(pWilds, ARG_NUM(1), ARG_NUM(2))))
-			*ret = (room->sector_type == flag_value( sector_flags,ARG_STR(3)));
+			*ret = (room->sector_type == flag_value_ifcheck( sector_flags,ARG_STR(3)));
 		else if(!(pTerrain = get_terrain_by_coors (pWilds, ARG_NUM(1), ARG_NUM(2))))
 			*ret = FALSE;
 		else
@@ -2213,14 +2236,14 @@ DECL_IFC_FUN(ifc_vnum)
 
 DECL_IFC_FUN(ifc_vuln)
 {
-	*ret = (ISARG_MOB(0) && ISARG_STR(1) && IS_SET(ARG_MOB(0)->vuln_flags, flag_value(vuln_flags,ARG_STR(1))));
+	*ret = (ISARG_MOB(0) && ISARG_STR(1) && IS_SET(ARG_MOB(0)->vuln_flags, flag_value_ifcheck(vuln_flags,ARG_STR(1))));
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_weapon)
 {
 	*ret = ISARG_OBJ(0) && ARG_OBJ(0)->item_type == ITEM_WEAPON &&
-		IS_SET(ARG_OBJ(0)->value[4], flag_value(weapon_type2,ARG_STR(1)));
+		IS_SET(ARG_OBJ(0)->value[4], flag_value_ifcheck(weapon_type2,ARG_STR(1)));
 	return TRUE;
 }
 
@@ -2264,7 +2287,9 @@ DECL_IFC_FUN(ifc_wears)
 DECL_IFC_FUN(ifc_wearused)
 {
 	int wl;
-	*ret = ISARG_MOB(0) && ((wl = flag_value(wear_loc_flags,ARG_STR(1))) != WEAR_NONE)
+
+	// invalid flags will return NO_FLAG (-99)
+	*ret = ISARG_MOB(0) && ((wl = flag_value(wear_loc_flags,ARG_STR(1))) > WEAR_NONE)
 		&& get_eq_char(ARG_MOB(0), wl);
 	return TRUE;
 }
@@ -2335,146 +2360,169 @@ DECL_IFC_FUN(ifc_bit)
 
 DECL_IFC_FUN(ifc_flag_act)
 {
-	*ret = ISARG_STR(0) ? flag_value(act_flags,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(act_flags,ARG_STR(0)) : 0;
+	if(*ret == NO_FLAG) *ret = 0;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_flag_act2)
 {
-	*ret = ISARG_STR(0) ? flag_value(act2_flags,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(act2_flags,ARG_STR(0)) : 0;
+	if(*ret == NO_FLAG) *ret = 0;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_flag_affect)
 {
-	*ret = ISARG_STR(0) ? flag_value(affect_flags,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(affect_flags,ARG_STR(0)) : 0;
+	if(*ret == NO_FLAG) *ret = 0;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_flag_affect2)
 {
-	*ret = ISARG_STR(0) ? flag_value(affect2_flags,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(affect2_flags,ARG_STR(0)) : 0;
+	if(*ret == NO_FLAG) *ret = 0;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_flag_container)
 {
-	*ret = ISARG_STR(0) ? flag_value(container_flags,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(container_flags,ARG_STR(0)) : 0;
+	if(*ret == NO_FLAG) *ret = 0;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_flag_exit)
 {
-	*ret = ISARG_STR(0) ? flag_value(exit_flags,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(exit_flags,ARG_STR(0)) : 0;
+	if(*ret == NO_FLAG) *ret = 0;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_flag_extra)
 {
-	*ret = ISARG_STR(0) ? flag_value(extra_flags,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(extra_flags,ARG_STR(0)) : 0;
+	if(*ret == NO_FLAG) *ret = 0;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_flag_extra2)
 {
-	*ret = ISARG_STR(0) ? flag_value(extra2_flags,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(extra2_flags,ARG_STR(0)) : 0;
+	if(*ret == NO_FLAG) *ret = 0;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_flag_extra3)
 {
-	*ret = ISARG_STR(0) ? flag_value(extra3_flags,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(extra3_flags,ARG_STR(0)) : 0;
+	if(*ret == NO_FLAG) *ret = 0;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_flag_extra4)
 {
-	*ret = ISARG_STR(0) ? flag_value(extra4_flags,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(extra4_flags,ARG_STR(0)) : 0;
+	if(*ret == NO_FLAG) *ret = 0;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_flag_form)
 {
-	*ret = ISARG_STR(0) ? flag_value(form_flags,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(form_flags,ARG_STR(0)) : 0;
+	if(*ret == NO_FLAG) *ret = 0;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_flag_furniture)
 {
-	*ret = ISARG_STR(0) ? flag_value(furniture_flags,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(furniture_flags,ARG_STR(0)) : 0;
+	if(*ret == NO_FLAG) *ret = 0;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_flag_imm)
 {
-	*ret = ISARG_STR(0) ? flag_value(imm_flags,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(imm_flags,ARG_STR(0)) : 0;
+	if(*ret == NO_FLAG) *ret = 0;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_flag_interrupt)
 {
-	*ret = ISARG_STR(0) ? flag_value(interrupt_action_types,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(interrupt_action_types,ARG_STR(0)) : 0;
+	if(*ret == NO_FLAG) *ret = 0;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_flag_off)
 {
-	*ret = ISARG_STR(0) ? flag_value(off_flags,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(off_flags,ARG_STR(0)) : 0;
+	if(*ret == NO_FLAG) *ret = 0;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_flag_part)
 {
-	*ret = ISARG_STR(0) ? flag_value(part_flags,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(part_flags,ARG_STR(0)) : 0;
+	if(*ret == NO_FLAG) *ret = 0;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_flag_portal)
 {
-	*ret = ISARG_STR(0) ? flag_value(portal_flags,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(portal_flags,ARG_STR(0)) : 0;
+	if(*ret == NO_FLAG) *ret = 0;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_flag_res)
 {
-	*ret = ISARG_STR(0) ? flag_value(res_flags,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(res_flags,ARG_STR(0)) : 0;
+	if(*ret == NO_FLAG) *ret = 0;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_flag_room)
 {
-	*ret = ISARG_STR(0) ? flag_value(room_flags,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(room_flags,ARG_STR(0)) : 0;
+	if(*ret == NO_FLAG) *ret = 0;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_flag_room2)
 {
-	*ret = ISARG_STR(0) ? flag_value(room2_flags,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(room2_flags,ARG_STR(0)) : 0;
+	if(*ret == NO_FLAG) *ret = 0;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_flag_vuln)
 {
-	*ret = ISARG_STR(0) ? flag_value(vuln_flags,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(vuln_flags,ARG_STR(0)) : 0;
+	if(*ret == NO_FLAG) *ret = 0;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_flag_weapon)
 {
-	*ret = ISARG_STR(0) ? flag_value(weapon_type2,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(weapon_type2,ARG_STR(0)) : 0;
+	if(*ret == NO_FLAG) *ret = 0;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_flag_wear)
 {
-	*ret = ISARG_STR(0) ? flag_value(wear_flags,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(wear_flags,ARG_STR(0)) : 0;
+	if(*ret == NO_FLAG) *ret = 0;
 	return TRUE;
 }
 
 
 DECL_IFC_FUN(ifc_value_ac)
 {
-	*ret = ISARG_STR(0) ? flag_value(ac_type,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(ac_type,ARG_STR(0)) : 0;
 	return TRUE;
 }
 
@@ -2486,31 +2534,31 @@ DECL_IFC_FUN(ifc_value_damage)
 
 DECL_IFC_FUN(ifc_value_position)
 {
-	*ret = ISARG_STR(0) ? flag_value(position_flags,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(position_flags,ARG_STR(0)) : 0;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_value_ranged)
 {
-	*ret = ISARG_STR(0) ? flag_value(ranged_weapon_class,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(ranged_weapon_class,ARG_STR(0)) : 0;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_value_relic)
 {
-	*ret = ISARG_STR(0) ? flag_value(relic_types,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(relic_types,ARG_STR(0)) : 0;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_value_sector)
 {
-	*ret = ISARG_STR(0) ? flag_value(sector_flags,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(sector_flags,ARG_STR(0)) : 0;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_value_size)
 {
-	*ret = ISARG_STR(0) ? flag_value(size_flags,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(size_flags,ARG_STR(0)) : 0;
 	return TRUE;
 }
 
@@ -2522,31 +2570,31 @@ DECL_IFC_FUN(ifc_value_toxin)
 
 DECL_IFC_FUN(ifc_value_type)
 {
-	*ret = ISARG_STR(0) ? flag_value(type_flags,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(type_flags,ARG_STR(0)) : 0;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_value_weapon)
 {
-	*ret = ISARG_STR(0) ? flag_value(weapon_class,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(weapon_class,ARG_STR(0)) : 0;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_value_wear)
 {
-	*ret = ISARG_STR(0) ? flag_value(wear_loc_flags,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(wear_loc_flags,ARG_STR(0)) : 0;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_value_moon)
 {
-	*ret = ISARG_STR(0) ? flag_value(moon_phases,ARG_STR(0)) : -1;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(moon_phases,ARG_STR(0)) : -1;
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_value_acstr)
 {
-	*ret = ISARG_STR(0) ? flag_value(armor_strength_table,ARG_STR(0)) : -1;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(armor_strength_table,ARG_STR(0)) : -1;
 	return TRUE;
 }
 
@@ -2621,7 +2669,7 @@ DECL_IFC_FUN(ifc_timeofday)
 
 	if(ISARG_STR(0)) {
 
-		val = flag_value(time_of_day_flags,ARG_STR(0));
+		val = flag_value_ifcheck(time_of_day_flags,ARG_STR(0));
 
 		if(IS_SET(val, TOD_AFTERMIDNIGHT)) {
 			if(time_info.hour > 0 && time_info.hour < 5) { *ret = TRUE; return TRUE; }
@@ -2998,7 +3046,7 @@ DECL_IFC_FUN(ifc_hascatalyst)
 	if(ISARG_MOB(0)) { mob = ARG_MOB(0); room = NULL; }
 	else if(ISARG_ROOM(0)) { mob = NULL; room = ARG_ROOM(0); }
 	else return FALSE;
-	*ret = ((mob || room) && ISARG_STR(1) && ISARG_STR(2) && ISARG_NUM(3)) ? has_catalyst(mob,room,flag_value(catalyst_types,ARG_STR(1)),flag_value(catalyst_method_types,ARG_STR(2)),ARG_NUM(3),ISARG_NUM(4)?ARG_NUM(4):CATALYST_MAXSTRENGTH) : 0;
+	*ret = ((mob || room) && ISARG_STR(1) && ISARG_STR(2) && ISARG_NUM(3)) ? has_catalyst(mob,room,flag_value_ifcheck(catalyst_types,ARG_STR(1)),flag_value_ifcheck(catalyst_method_types,ARG_STR(2)),ARG_NUM(3),ISARG_NUM(4)?ARG_NUM(4):CATALYST_MAXSTRENGTH) : 0;
 	return TRUE;
 }
 
@@ -3085,25 +3133,25 @@ DECL_IFC_FUN(ifc_objfrag)
 
 DECL_IFC_FUN(ifc_tempstore1)
 {
-	*ret = ISARG_MOB(0) ? ARG_MOB(0)->tempstore[0] : 0;
+	*ret = ISARG_MOB(0) ? ARG_MOB(0)->tempstore[0] : (ISARG_OBJ(0) ? ARG_OBJ(0)->tempstore[0] : 0);
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_tempstore2)
 {
-	*ret = ISARG_MOB(0) ? ARG_MOB(0)->tempstore[1] : 0;
+	*ret = ISARG_MOB(0) ? ARG_MOB(0)->tempstore[1] : (ISARG_OBJ(0) ? ARG_OBJ(0)->tempstore[1] : 0);
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_tempstore3)
 {
-	*ret = ISARG_MOB(0) ? ARG_MOB(0)->tempstore[2] : 0;
+	*ret = ISARG_MOB(0) ? ARG_MOB(0)->tempstore[2] : (ISARG_OBJ(0) ? ARG_OBJ(0)->tempstore[2] : 0);
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_tempstore4)
 {
-	*ret = ISARG_MOB(0) ? ARG_MOB(0)->tempstore[3] : 0;
+	*ret = ISARG_MOB(0) ? ARG_MOB(0)->tempstore[3] : (ISARG_OBJ(0) ? ARG_OBJ(0)->tempstore[3] : 0);
 	return TRUE;
 }
 
@@ -3115,7 +3163,7 @@ DECL_IFC_FUN(ifc_strlen)
 
 DECL_IFC_FUN(ifc_lostparts)
 {
-	*ret = (ISARG_MOB(0) && ISARG_STR(1) && IS_SET(ARG_MOB(0)->lostparts, flag_value(part_flags,ARG_STR(1))));
+	*ret = (ISARG_MOB(0) && ISARG_STR(1) && IS_SET(ARG_MOB(0)->lostparts, flag_value_ifcheck(part_flags,ARG_STR(1))));
 	return TRUE;
 }
 
@@ -3593,13 +3641,13 @@ DECL_IFC_FUN(ifc_isaffectgroup)
 
 DECL_IFC_FUN(ifc_affectbit)
 {
-	*ret = ISARG_AFF(0) && ISARG_STR(1) && IS_SET(ARG_AFF(0)->bitvector, flag_value(affect_flags,ARG_STR(1)));
+	*ret = ISARG_AFF(0) && ISARG_STR(1) && IS_SET(ARG_AFF(0)->bitvector, flag_value_ifcheck(affect_flags,ARG_STR(1)));
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_affectbit2)
 {
-	*ret = ISARG_AFF(0) && ISARG_STR(1) && IS_SET(ARG_AFF(0)->bitvector, flag_value(affect2_flags,ARG_STR(1)));
+	*ret = ISARG_AFF(0) && ISARG_STR(1) && IS_SET(ARG_AFF(0)->bitvector, flag_value_ifcheck(affect2_flags,ARG_STR(1)));
 	return TRUE;
 }
 
@@ -3960,7 +4008,7 @@ DECL_IFC_FUN(ifc_register)
 // if comm $<player> <flags>
 DECL_IFC_FUN(ifc_comm)
 {
-	*ret = VALID_PLAYER(0) && ISARG_STR(1) && IS_SET(ARG_MOB(0)->comm, flag_value(comm_flags, ARG_STR(1)));
+	*ret = VALID_PLAYER(0) && ISARG_STR(1) && IS_SET(ARG_MOB(0)->comm, flag_value_ifcheck(comm_flags, ARG_STR(1)));
 	return TRUE;
 }
 
@@ -3968,7 +4016,8 @@ DECL_IFC_FUN(ifc_comm)
 // Usually used for $[[flagcomm <flags>]]
 DECL_IFC_FUN(ifc_flag_comm)
 {
-	*ret = ISARG_STR(0) ? flag_value(comm_flags,ARG_STR(0)) : 0;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(comm_flags,ARG_STR(0)) : 0;
+	if(*ret == NO_FLAG) *ret = 0;
 	return TRUE;
 }
 
@@ -4070,14 +4119,14 @@ DECL_IFC_FUN(ifc_objcorpse)
 {
 	*ret = ISARG_OBJ(0) && ISARG_STR(1) &&
 		(ARG_OBJ(0)->item_type == ITEM_CORPSE_NPC || ARG_OBJ(0)->item_type == ITEM_CORPSE_PC) &&
-		IS_SET(CORPSE_FLAGS(ARG_OBJ(0)), flag_value(corpse_object_flags,ARG_STR(1)));
+		IS_SET(CORPSE_FLAGS(ARG_OBJ(0)), flag_value_ifcheck(corpse_object_flags,ARG_STR(1)));
 	return TRUE;
 }
 
 DECL_IFC_FUN(ifc_flag_corpse)
 {
-	*ret = ISARG_STR(0) ? flag_value(corpse_object_flags,ARG_STR(0)) : 0;
-
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(corpse_object_flags,ARG_STR(0)) : 0;
+	if(*ret == NO_FLAG) *ret = 0;
 	return TRUE;
 }
 
@@ -4100,7 +4149,7 @@ DECL_IFC_FUN(ifc_objweaponstat)
 {
 	*ret = ISARG_OBJ(0) && ISARG_STR(1) &&
 		(ARG_OBJ(0)->item_type == ITEM_WEAPON) &&
-		IS_SET(ARG_OBJ(0)->value[4],flag_value(weapon_type2,ARG_STR(1)));
+		IS_SET(ARG_OBJ(0)->value[4],flag_value_ifcheck(weapon_type2,ARG_STR(1)));
 	return TRUE;
 }
 

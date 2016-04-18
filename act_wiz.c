@@ -41,6 +41,9 @@
 extern void persist_save(void);
 extern char *token_index_getvaluename(TOKEN_INDEX_DATA *token, int v);
 extern void affect_fix_char(CHAR_DATA *ch);
+extern bool newlock;
+extern bool wizlock;
+
 
 int gconfig_read (void)
 {
@@ -81,61 +84,73 @@ int gconfig_read (void)
            case 'E':
                 if (!str_cmp(word, "END"))
                 {
-			gconfig.next_mob_uid[3] = gconfig.next_mob_uid[1];
-			gconfig.next_mob_uid[2] = gconfig.next_mob_uid[0] + UID_INC - (gconfig.next_mob_uid[0] & UID_MASK);
-			if(!gconfig.next_mob_uid[2]) gconfig.next_mob_uid[3]++;
+					gconfig.next_mob_uid[3] = gconfig.next_mob_uid[1];
+					gconfig.next_mob_uid[2] = gconfig.next_mob_uid[0] + UID_INC - (gconfig.next_mob_uid[0] & UID_MASK);
+					if(!gconfig.next_mob_uid[2]) gconfig.next_mob_uid[3]++;
 
-			gconfig.next_obj_uid[3] = gconfig.next_obj_uid[1];
-			gconfig.next_obj_uid[2] = gconfig.next_obj_uid[0] + UID_INC - (gconfig.next_obj_uid[0] & UID_MASK);
-			if(!gconfig.next_obj_uid[2]) gconfig.next_obj_uid[3]++;
+					gconfig.next_obj_uid[3] = gconfig.next_obj_uid[1];
+					gconfig.next_obj_uid[2] = gconfig.next_obj_uid[0] + UID_INC - (gconfig.next_obj_uid[0] & UID_MASK);
+					if(!gconfig.next_obj_uid[2]) gconfig.next_obj_uid[3]++;
 
-			gconfig.next_token_uid[3] = gconfig.next_token_uid[1];
-			gconfig.next_token_uid[2] = gconfig.next_token_uid[0] + UID_INC - (gconfig.next_token_uid[0] & UID_MASK);
-			if(!gconfig.next_token_uid[2]) gconfig.next_token_uid[3]++;
+					gconfig.next_token_uid[3] = gconfig.next_token_uid[1];
+					gconfig.next_token_uid[2] = gconfig.next_token_uid[0] + UID_INC - (gconfig.next_token_uid[0] & UID_MASK);
+					if(!gconfig.next_token_uid[2]) gconfig.next_token_uid[3]++;
 
-			gconfig.next_vroom_uid[3] = gconfig.next_vroom_uid[1];
-			gconfig.next_vroom_uid[2] = gconfig.next_vroom_uid[0] + UID_INC - (gconfig.next_vroom_uid[0] & UID_MASK);
-			if(!gconfig.next_vroom_uid[2]) gconfig.next_vroom_uid[3]++;
+					gconfig.next_vroom_uid[3] = gconfig.next_vroom_uid[1];
+					gconfig.next_vroom_uid[2] = gconfig.next_vroom_uid[0] + UID_INC - (gconfig.next_vroom_uid[0] & UID_MASK);
+					if(!gconfig.next_vroom_uid[2]) gconfig.next_vroom_uid[3]++;
 
 
-			if(!gconfig.next_church_uid) gconfig.next_church_uid++;
-                    fclose(fp);
-                    gconfig_write();
-                    return(0); /* Success*/
-                }
-
-            break;
+					if(!gconfig.next_church_uid) gconfig.next_church_uid++;
+					fclose(fp);
+					gconfig_write();
+					return(0); /* Success*/
+				}
+	            break;
 
             case 'N':
             	if(!str_cmp(word,"NextMobUID")) {
-			gconfig.next_mob_uid[0] = fread_number(fp);
-			gconfig.next_mob_uid[1] = fread_number(fp);
-			fMatch = TRUE;
-			break;
-		}
+					gconfig.next_mob_uid[0] = fread_number(fp);
+					gconfig.next_mob_uid[1] = fread_number(fp);
+					fMatch = TRUE;
+					break;
+				}
             	if(!str_cmp(word,"NextObjUID")) {
-			gconfig.next_obj_uid[0] = fread_number(fp);
-			gconfig.next_obj_uid[1] = fread_number(fp);
-			fMatch = TRUE;
-			break;
-		}
+					gconfig.next_obj_uid[0] = fread_number(fp);
+					gconfig.next_obj_uid[1] = fread_number(fp);
+					fMatch = TRUE;
+					break;
+				}
             	if(!str_cmp(word,"NextTokenUID")) {
-			gconfig.next_token_uid[0] = fread_number(fp);
-			gconfig.next_token_uid[1] = fread_number(fp);
-			fMatch = TRUE;
-			break;
-		}
+					gconfig.next_token_uid[0] = fread_number(fp);
+					gconfig.next_token_uid[1] = fread_number(fp);
+					fMatch = TRUE;
+					break;
+				}
             	if(!str_cmp(word,"NextVRoomUID")) {
-			gconfig.next_vroom_uid[0] = fread_number(fp);
-			gconfig.next_vroom_uid[1] = fread_number(fp);
-			fMatch = TRUE;
-			break;
-		}
+					gconfig.next_vroom_uid[0] = fread_number(fp);
+					gconfig.next_vroom_uid[1] = fread_number(fp);
+					fMatch = TRUE;
+					break;
+				}
                 KEY ("NextAreaUID", gconfig.next_area_uid, fread_number(fp));
                 KEY ("NextWildsUID", gconfig.next_wilds_uid, fread_number(fp));
                 KEY ("NextVlinkUID", gconfig.next_vlink_uid, fread_number(fp));
                 KEY ("NextChurchUID", gconfig.next_church_uid, fread_number(fp));
-            break;
+
+                if(!str_cmp(word,"Newlock")) {
+					newlock = TRUE;
+					fMatch = TRUE;
+					break;
+				}
+	            break;
+			case 'W':
+                if(!str_cmp(word,"Newlock")) {
+					wizlock = TRUE;
+					fMatch = TRUE;
+					break;
+				}
+				break;
 
         } /* end switch */
 
@@ -169,6 +184,9 @@ int gconfig_write(void)
     fprintf(fp, "NextWildsUID %ld\n", gconfig.next_wilds_uid);
     fprintf(fp, "NextVlinkUID %ld\n", gconfig.next_vlink_uid);
     fprintf(fp, "NextChurchUID %ld\n", gconfig.next_church_uid);
+    if(newlock) fprintf(fp, "Newlock\n");
+    if(wizlock) fprintf(fp, "Wizlock\n");
+
     fprintf(fp, "END\n");
     fclose(fp);
 /*    log_string("act_wiz.c, gconfig_write(): Config written to 'gconfig.rc'.");*/
@@ -3761,7 +3779,6 @@ void do_peace(CHAR_DATA *ch, char *argument)
 
 void do_wizlock(CHAR_DATA *ch, char *argument)
 {
-    extern bool wizlock;
     wizlock = !wizlock;
 
     if (wizlock)
@@ -3774,12 +3791,14 @@ void do_wizlock(CHAR_DATA *ch, char *argument)
 	wiznet("$N removes wizlock.",ch,NULL,0,0,0);
 	send_to_char("Game un-wizlocked.\n\r", ch);
     }
+
+	gconfig_write();
+
 }
 
 
 void do_newlock(CHAR_DATA *ch, char *argument)
 {
-    extern bool newlock;
     newlock = !newlock;
 
     if (newlock)
@@ -3792,6 +3811,8 @@ void do_newlock(CHAR_DATA *ch, char *argument)
 	wiznet("$N allows new characters back in.",ch,NULL,0,0,0);
         send_to_char("Newlock removed.\n\r", ch);
     }
+
+	gconfig_write();
 }
 
 void do_testport(CHAR_DATA *ch, char *argument)

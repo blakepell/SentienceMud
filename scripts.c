@@ -2736,7 +2736,7 @@ bool has_trigger(LLIST **bank, int trigger)
 
 //	DBG3MSG3("trigger = %d, name = '%s', slot = %d\n",trigger, trigger_table[trigger].name,trigger_slots[trigger]);
 
-	slot = trigger_slots[trigger];
+	slot = trigger_table[trigger].slot;
 
 	if(bank) {
 		iterator_start(&it, bank[slot]);
@@ -3082,7 +3082,7 @@ int test_string_trigger(char *string, MATCH_STRING match, int type,
 		PRETURN;
 	}
 
-	slot = trigger_slots[type];
+	slot = trigger_table[type].slot;
 
 
 	if (mob) {
@@ -3323,7 +3323,7 @@ int test_number_trigger(int number, MATCH_NUMBER match, int type,
 		PRETURN;
 	}
 
-	slot = trigger_slots[type];
+	slot = trigger_table[type].slot;
 
 
 	if (mob) {
@@ -3534,13 +3534,13 @@ int test_number_sight_trigger(int number, MATCH_NUMBER match, int type, int type
 	}
 
 	// They must be in the same slot
-	if( trigger_slots[type] != trigger_slots[typeall] )
+	if( trigger_table[type].slot != trigger_table[typeall].slot )
 	{
 		bug("test_number_sight_trigger: slot mismatch for sighted trigger %d.", type);
 		PRETURN;
 	}
 
-	slot = trigger_slots[typeall];
+	slot = trigger_table[typeall].slot;
 
 	if (mob) {
 		script_mobile_addref(mob);
@@ -3867,7 +3867,7 @@ int test_vnumname_trigger(char *name, int vnum, int type,
 		PRETURN;
 	}
 
-	slot = trigger_slots[type];
+	slot = trigger_table[type].slot;
 
 
 	if (mob) {
@@ -4197,7 +4197,7 @@ int script_login(CHAR_DATA *ch) // @@@NIB
 	}
 
 	// Run the TRIG_LOGIN
-	slot = trigger_slots[TRIG_LOGIN];
+	slot = trigger_table[TRIG_LOGIN].slot;
 
 	// Save the UID
 	uid[0] = ch->id[0];

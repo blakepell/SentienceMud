@@ -3948,6 +3948,9 @@ struct	obj_data
     long extra3_flags_perm;
     long extra4_flags_perm;
     long weapon_flags_perm;	// Used by weapon objects for use with TO_WEAPON
+
+    int			tempstore[4];		/* Temporary storage values for script processing */
+
 };
 
 /* fragility */
@@ -3961,6 +3964,8 @@ struct	obj_data
 #define OBJ_ARMOR_MEDIUM 	2
 #define OBJ_ARMOR_STRONG 	3
 #define OBJ_ARMOR_HEAVY 	4
+
+#define OBJ_XPGAIN_GROUP	1		// XP gained from the group_gain function, which is only received when a kill is made
 
 struct destination_data {
 	ROOM_INDEX_DATA *room;	// For an existing room
@@ -6933,7 +6938,7 @@ void fwrite_pet      args( ( CHAR_DATA *pet, FILE *fp) );
 void read_permanent_objs ( );
 void save_char_obj	args( ( CHAR_DATA *ch ) );
 void write_permanent_objs ( );
-void fwrite_token(CHAR_DATA *ch, TOKEN_DATA *token, FILE *fp);
+void fwrite_token(TOKEN_DATA *token, FILE *fp);
 TOKEN_DATA *fread_token(FILE *fp);
 
 

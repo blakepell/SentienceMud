@@ -2961,6 +2961,10 @@ SCRIPT_CMD(do_opalterobj)
 		else if(!str_cmp(field,"fixes"))	{ ptr = (int*)&obj->times_allowed_fixed; min_sec = 5; }
 		else if(!str_cmp(field,"type"))		{ ptr = (int*)&obj->item_type; min_sec = 7; }
 		else if(!str_cmp(field,"cost"))		{ ptr = (int*)&obj->cost; min_sec = 5; }
+		else if(!str_cmp(field,"tempstore1"))	ptr = (int*)&obj->tempstore[0];
+		else if(!str_cmp(field,"tempstore2"))	ptr = (int*)&obj->tempstore[1];
+		else if(!str_cmp(field,"tempstore3"))	ptr = (int*)&obj->tempstore[2];
+		else if(!str_cmp(field,"tempstore4"))	ptr = (int*)&obj->tempstore[3];
 
 		if(!ptr) return;
 

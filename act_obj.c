@@ -1985,14 +1985,14 @@ void do_repair(CHAR_DATA *ch, char *argument)
     {
         if (obj->times_fixed >= obj->times_allowed_fixed)
 	{
-	    act("{C$n says 'I'm sorry $N, that item is beyond repair.{x", pMob, ch, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+	    act("{C$n says 'I'm sorry $N, that item is beyond repair.'{x", pMob, ch, NULL, NULL, NULL, NULL, NULL, TO_ALL);
 	    return;
 	}
 
 	if (obj->condition >= 100)
 	{
 	    act("{C$n says 'There would be no point in repairing that item. It's in good condition.'{x",
-	        pMob, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+	        pMob, ch, NULL, NULL, NULL, NULL, NULL, TO_ALL);
 	    return;
 	}
 
@@ -2000,7 +2000,7 @@ void do_repair(CHAR_DATA *ch, char *argument)
 	if ((ch->gold * 100 + ch->silver) < cost)
 	{
 	    sprintf(buf, "{C$n says '$N, you will need %d silver for me to repair that item.'{x", obj->level * 100);
-	    act(buf, pMob, ch, NULL, NULL, NULL, NULL, NULL, TO_VICT);
+	    act(buf, pMob, ch, NULL, NULL, NULL, NULL, NULL, TO_ALL);
 	    return;
 	}
 

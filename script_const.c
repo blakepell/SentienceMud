@@ -384,7 +384,7 @@ ENT_FIELD entity_conn[] = {
 
 ENT_FIELD entity_church[] = {
 	{"name",		ENTITY_CHURCH_NAME,			ENT_STRING	},
-	{"type",		ENTITY_CHURCH_TYPE,			ENT_STRING	},
+	{"size",		ENTITY_CHURCH_SIZE,			ENT_STRING	},
 	{"flag",		ENTITY_CHURCH_FLAG,			ENT_STRING	},
 	{"founder",		ENTITY_CHURCH_FOUNDER,		ENT_MOBILE	},
 	{"motd",		ENTITY_CHURCH_MOTD,			ENT_STRING	},
@@ -686,6 +686,7 @@ struct trigger_type trigger_table	[] = {
 };
 int trigger_table_size = elementsof(trigger_table);
 
+/*
 int trigger_slots[] = {
 	TRIGSLOT_ACTION,		// TRIG_ACT
 	TRIGSLOT_REPOP,			// TRIG_AFTERDEATH
@@ -861,6 +862,7 @@ int trigger_slots[] = {
 	TRIGSLOT_GENERAL,		// TRIG_ZAP
 };
 int trigger_slots_size = elementsof(trigger_slots);
+*/
 
 IFCHECK_DATA ifcheck_table[] = {
 	// name					prog type	params	return	function				help reference
@@ -899,6 +901,7 @@ IFCHECK_DATA ifcheck_table[] = {
 	{ "churchhasrelic",		IFC_ANY,	"ES",	FALSE,	ifc_churchhasrelic,		"ifcheck churchhasrelic" },
 	{ "churchonline",		IFC_ANY,	"E",	TRUE,	ifc_churchonline,		"ifcheck churchonline" },
 	{ "churchrank",			IFC_ANY,	"E",	TRUE,	ifc_churchrank,			"ifcheck churchrank" },
+	{ "churchsize",			IFC_ANY,	"E",	TRUE,	ifc_churchsize,			"ifcheck churchsize" },
 	{ "clan",				IFC_NONE,	"ES",	FALSE,	ifc_clan,				"ifcheck clan" },
 	{ "class",				IFC_NONE,	"ES",	FALSE,	ifc_class,				"ifcheck class" },
 	{ "clones",				IFC_M,		"E",	TRUE,	ifc_clones,				"ifcheck clones" },
