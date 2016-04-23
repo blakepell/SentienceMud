@@ -184,5 +184,5 @@ void do_heal(CHAR_DATA *ch, char *argument)
      if (sn == -1)
 	return;
 
-     spell(sn,mob->level,mob,ch,TARGET_CHAR);
+     spell(sn,mob->level,mob,ch,TARGET_CHAR, WEAR_NONE);
 }

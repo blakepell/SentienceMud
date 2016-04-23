@@ -6,91 +6,94 @@
 
 // Commands used by token scripts
 const struct script_cmd_type token_cmd_table[] = {
-	{ "addaffect",		do_tpaddaffect,		TRUE	},
-	{ "addaffectname",	do_tpaddaffectname,	TRUE	},
-	{ "adjust",		do_tpadjust,		FALSE	},
-	{ "alterexit",		do_tpalterexit,		FALSE	},
-	{ "altermob",		do_tpaltermob,		TRUE	},
-	{ "alterobj",		do_tpalterobj,		TRUE	},
-	{ "alterroom",		do_tpalterroom,		TRUE	},
-	{ "asound",		do_tpasound,		FALSE	},
-	{ "awardgold",		do_tpawardgold,		TRUE	},
-	{ "awardpneuma",	do_tpawardpneuma,	TRUE	},
-	{ "awardprac",		do_tpawardprac,		TRUE	},
-	{ "awardqp",		do_tpawardqp,		TRUE	},
-	{ "awardxp",		do_tpawardxp,		TRUE	},
-	{ "call",		do_tpcall,		FALSE	},
-	{ "castfailure",	do_tpcastfailure,	FALSE	},
-	{ "castrecover",	do_tpcastrecover,	FALSE	},
-
-	{ "chargebank",		do_tpchargebank,	FALSE	},
-	{ "cloneroom",		do_tpcloneroom,		TRUE	},
-	{ "condition",		do_tpcondition,			FALSE	},
-	{ "damage",		do_tpdamage,		FALSE	},
-	{ "dequeue",		do_tpdequeue,		FALSE	},
-	{ "destroyroom",	do_tpdestroyroom,	TRUE	},
-	{ "echo",		do_tpecho,		FALSE	},
-	{ "echoaround",		do_tpechoaround,	FALSE	},
-	{ "echoat",		do_tpechoat,		FALSE	},
-	{ "echobattlespam",	do_tpechobattlespam,	FALSE	},
-	{ "echochurch",		do_tpechochurch,	FALSE	},
+	{ "addaffect",			do_tpaddaffect,			TRUE	},
+	{ "addaffectname",		do_tpaddaffectname,		TRUE	},
+	{ "addspell",			do_tpaddspell,			TRUE	},
+	{ "adjust",				do_tpadjust,			FALSE	},
+	{ "alteraffect",		do_tpalteraffect,		TRUE	},
+	{ "alterexit",			do_tpalterexit,			FALSE	},
+	{ "altermob",			do_tpaltermob,			TRUE	},
+	{ "alterobj",			do_tpalterobj,			TRUE	},
+	{ "alterroom",			do_tpalterroom,			TRUE	},
+	{ "asound",				do_tpasound,			FALSE	},
+	{ "awardgold",			do_tpawardgold,			TRUE	},
+	{ "awardpneuma",		do_tpawardpneuma,		TRUE	},
+	{ "awardprac",			do_tpawardprac,			TRUE	},
+	{ "awardqp",			do_tpawardqp,			TRUE	},
+	{ "awardxp",			do_tpawardxp,			TRUE	},
+	{ "call",				do_tpcall,				FALSE	},
+	{ "castfailure",		do_tpcastfailure,		FALSE	},
+	{ "castrecover",		do_tpcastrecover,		FALSE	},
+	{ "chargebank",			do_tpchargebank,		FALSE	},
+	{ "cloneroom",			do_tpcloneroom,			TRUE	},
+	{ "condition",			do_tpcondition,			FALSE	},
+	{ "crier",				do_tpcrier,				FALSE	},
+	{ "damage",				do_tpdamage,			FALSE	},
+	{ "dequeue",			do_tpdequeue,			FALSE	},
+	{ "destroyroom",		do_tpdestroyroom,		TRUE	},
+	{ "echo",				do_tpecho,				FALSE	},
+	{ "echoaround",			do_tpechoaround,		FALSE	},
+	{ "echoat",				do_tpechoat,			FALSE	},
+	{ "echobattlespam",		do_tpechobattlespam,	FALSE	},
+	{ "echochurch",			do_tpechochurch,		FALSE	},
 	{ "echogrouparound",	do_tpechogrouparound,	FALSE	},
-	{ "echogroupat",	do_tpechogroupat,	FALSE	},
-	{ "echoleadaround",	do_tpecholeadaround,	FALSE	},
-	{ "echoleadat",		do_tpecholeadat,	FALSE	},
-	{ "echonotvict",	do_tpechonotvict,	FALSE	},
-	{ "echoroom",		do_tpechoroom,		FALSE	},
-	{ "force",		do_tpforce,		FALSE	},
-	{ "forget",		do_tpforget,		FALSE	},
-	{ "gdamage",		do_tpgdamage,		FALSE	},
-	{ "gecho",       	do_tpgecho,		FALSE	},
-	{ "gforce",		do_tpgforce,		FALSE	},
-	{ "give",		do_tpgive,		FALSE	},
-	{ "goto",		do_tpgoto,		FALSE	},
-	{ "gtransfer",		do_tpgtransfer,		FALSE	},
-	{ "input",		do_tpinput,		FALSE	},
-	{ "interrupt",		do_tpinterrupt,		FALSE	},
-	{ "junk",		do_tpjunk,		FALSE	},
-	{ "link",		do_tplink,		FALSE	},
-	{ "mload",		do_tpmload,		FALSE	},
-	{ "oload",		do_tpoload,		FALSE	},
-	{ "otransfer",		do_tpotransfer,		FALSE	},
-	{ "peace",		do_tppeace,		FALSE	},
-	{ "persist",		do_tppersist,		FALSE	},
-	{ "prompt",		do_tpprompt,		FALSE	},
-	{ "purge",		do_tppurge,		FALSE	},
-	{ "queue",		do_tpqueue,		FALSE	},
-	{ "raisedead",		do_tpraisedead,		TRUE	},
-	{ "rawkill",		do_tprawkill,		FALSE	},
-	{ "remember",		do_tpremember,		FALSE	},
-	{ "remove",		do_tpremove,		FALSE	},
-	{ "resetdice",		do_tpresetdice,		TRUE	},
-	{ "scriptwait",		do_tpscriptwait,	TRUE	},
-	{ "settimer",		do_tpsettimer,		FALSE	},
-	{ "showroom",		do_tpshowroom,		TRUE	},
-	{ "skill",			do_tpskill,						TRUE	},
-	{ "skillgroup",			do_tpskillgroup,			TRUE	},
-	{ "skimprove",		do_tpskimprove,		TRUE	},
-	{ "startcombat",	do_tpstartcombat,	FALSE	},
-	{ "stringmob",		do_tpstringmob,		TRUE	},
-	{ "stringobj",		do_tpstringobj,		TRUE	},
-	{ "stripaffect",	do_tpstripaffect,	TRUE	},
+	{ "echogroupat",		do_tpechogroupat,		FALSE	},
+	{ "echoleadaround",		do_tpecholeadaround,	FALSE	},
+	{ "echoleadat",			do_tpecholeadat,		FALSE	},
+	{ "echonotvict",		do_tpechonotvict,		FALSE	},
+	{ "echoroom",			do_tpechoroom,			FALSE	},
+	{ "force",				do_tpforce,				FALSE	},
+	{ "forget",				do_tpforget,			FALSE	},
+	{ "gdamage",			do_tpgdamage,			FALSE	},
+	{ "gecho",      	 	do_tpgecho,				FALSE	},
+	{ "gforce",				do_tpgforce,			FALSE	},
+	{ "give",				do_tpgive,				FALSE	},
+	{ "goto",				do_tpgoto,				FALSE	},
+	{ "gtransfer",			do_tpgtransfer,			FALSE	},
+	{ "input",				do_tpinput,				FALSE	},
+	{ "interrupt",			do_tpinterrupt,			FALSE	},
+	{ "junk",				do_tpjunk,				FALSE	},
+	{ "link",				do_tplink,				FALSE	},
+	{ "mload",				do_tpmload,				FALSE	},
+	{ "oload",				do_tpoload,				FALSE	},
+	{ "otransfer",			do_tpotransfer,			FALSE	},
+	{ "peace",				do_tppeace,				FALSE	},
+	{ "persist",			do_tppersist,			FALSE	},
+	{ "prompt",				do_tpprompt,			FALSE	},
+	{ "purge",				do_tppurge,				FALSE	},
+	{ "queue",				do_tpqueue,				FALSE	},
+	{ "raisedead",			do_tpraisedead,			TRUE	},
+	{ "rawkill",			do_tprawkill,			FALSE	},
+	{ "remember",			do_tpremember,			FALSE	},
+	{ "remove",				do_tpremove,			FALSE	},
+	{ "remspell",			do_tpremspell,			TRUE	},
+	{ "resetdice",			do_tpresetdice,			TRUE	},
+	{ "scriptwait",			do_tpscriptwait,		TRUE	},
+	{ "settimer",			do_tpsettimer,			FALSE	},
+	{ "showroom",			do_tpshowroom,			TRUE	},
+	{ "skill",				do_tpskill,				TRUE	},
+	{ "skillgroup",			do_tpskillgroup,		TRUE	},
+	{ "skimprove",			do_tpskimprove,			TRUE	},
+	{ "startcombat",		do_tpstartcombat,		FALSE	},
+	{ "stringmob",			do_tpstringmob,			TRUE	},
+	{ "stringobj",			do_tpstringobj,			TRUE	},
+	{ "stripaffect",		do_tpstripaffect,		TRUE	},
 	{ "stripaffectname",	do_tpstripaffectname,	TRUE	},
-	{ "transfer",		do_tptransfer,		FALSE	},
-	{ "usecatalyst",	do_tpusecatalyst,	FALSE	},
-	{ "varclear",		do_tpvarclear,		FALSE	},
-	{ "varclearon",		do_tpvarclearon,	FALSE	},
-	{ "varcopy",		do_tpvarcopy,		FALSE	},
-	{ "varsave",		do_tpvarsave,		FALSE	},
-	{ "varsaveon",		do_tpvarsaveon,		FALSE	},
-	{ "varset",		do_tpvarset,		FALSE	},
-	{ "varseton",		do_tpvarseton,		FALSE	},
-	{ "vforce",		do_tpvforce,		FALSE	},
-	{ "wiretransfer",	do_tpwiretransfer,	FALSE	},
-	{ "xcall",		do_tpxcall,		FALSE	},
-	{ "zecho",		do_tpzecho,		FALSE	},
-	{ "zot",		do_tpzot,		TRUE	},
-	{ NULL,			NULL,			FALSE	}
+	{ "transfer",			do_tptransfer,			FALSE	},
+	{ "usecatalyst",		do_tpusecatalyst,		FALSE	},
+	{ "varclear",			do_tpvarclear,			FALSE	},
+	{ "varclearon",			do_tpvarclearon,		FALSE	},
+	{ "varcopy",			do_tpvarcopy,			FALSE	},
+	{ "varsave",			do_tpvarsave,			FALSE	},
+	{ "varsaveon",			do_tpvarsaveon,			FALSE	},
+	{ "varset",				do_tpvarset,			FALSE	},
+	{ "varseton",			do_tpvarseton,			FALSE	},
+	{ "vforce",				do_tpvforce,			FALSE	},
+	{ "wiretransfer",		do_tpwiretransfer,		FALSE	},
+	{ "xcall",				do_tpxcall,				FALSE	},
+	{ "zecho",				do_tpzecho,				FALSE	},
+	{ "zot",				do_tpzot,				TRUE	},
+	{ NULL,					NULL,					FALSE	}
 };
 
 // Commands accessible by other scripts
@@ -331,20 +334,46 @@ char *tp_getlocation(SCRIPT_VARINFO *info, char *argument, ROOM_INDEX_DATA **roo
 	ROOM_INDEX_DATA *loc;
 	WILDS_DATA *pWilds;
 	SCRIPT_PARAM arg;
+	int x, y;
 
 	*room = NULL;
 	if((rest = expand_argument(info,argument,&arg))) {
 		switch(arg.type) {
+		// Nothing was on the string, so it will assume the current room
 		case ENT_NONE:	*room = token_room(info->token); break;
 		case ENT_NUMBER:
-			*room = get_room_index(arg.d.num);
+			x = arg.d.num;
+			if((rest = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
+				y = arg.d.num;
+				if((rest = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
+					if(!(pWilds = get_wilds_from_uid(NULL, arg.d.num))) break;
+
+					if (x > (pWilds->map_size_x - 1) || y > (pWilds->map_size_y - 1)) break;
+
+					// if safe is used, it will not go to bad rooms
+					if((rest2 = expand_argument(info,rest,&arg)) && arg.type == ENT_STRING &&
+						!str_cmp(arg.d.str,"safe") && !check_for_bad_room(pWilds, x, y))
+						break;
+
+					rest = rest2;
+					room_used_for_wilderness.wilds = pWilds;
+					room_used_for_wilderness.x = x;
+					room_used_for_wilderness.y = y;
+					*room = &room_used_for_wilderness;
+				}
+			} else
+				*room = get_room_index(x);
 			break;
-		case ENT_STRING:
+
+		case ENT_STRING: // Special named locations
 			if(arg.d.str[0] == '@')
+				// Points to an exit, like @north or @down
 				*room = get_exit_dest(token_room(info->token), arg.d.str+1);
 			else if(!str_cmp(arg.d.str,"here"))
+				// Rather self-explanatory
 				*room = token_room(info->token);
-			else if(!str_cmp(arg.d.str,"vroom")) {
+			else if(!str_cmp(arg.d.str,"vroom") || !str_cmp(arg.d.str,"clone")) {
+				// Locates a clone room: vroom <vnum> <id1> <id2>
 				int vnum,id1, id2;
 				if((rest2 = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
 					rest = rest2;
@@ -362,29 +391,25 @@ char *tp_getlocation(SCRIPT_VARINFO *info, char *argument, ROOM_INDEX_DATA **roo
 					}
 				}
 			} else if(!str_cmp(arg.d.str,"wilds")) {
-				int x, y;
+				if((rest = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
+					x = arg.d.num;
+					if((rest = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
+						y = arg.d.num;
+						if((rest = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
+							if(!(pWilds = get_wilds_from_uid(NULL, arg.d.num))) break;
 
-				x = arg.d.num;
-				if((rest2 = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
-					rest = rest2;
-					y = arg.d.num;
-					if((rest2 = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
-						rest = rest2;
-						if(!(pWilds = get_wilds_from_uid(NULL, arg.d.num))) break;
+							if (x > (pWilds->map_size_x - 1) || y > (pWilds->map_size_y - 1)) break;
 
-						if (x > (pWilds->map_size_x - 1) || y > (pWilds->map_size_y - 1)) break;
+							// if safe is used, it will not go to bad rooms
+							if((rest2 = expand_argument(info,rest,&arg)) && arg.type == ENT_STRING &&
+								!str_cmp(arg.d.str,"safe") && !check_for_bad_room(pWilds, x, y))
+								break;
 
-						// if safe is used, it will not go to bad rooms
-						if((rest2 = expand_argument(info,rest,&arg)) && arg.type == ENT_STRING &&
-							!str_cmp(arg.d.str,"safe") && !check_for_bad_room(pWilds, x, y))
-							break;
-
-						rest = rest2;
-						room_used_for_wilderness.wilds = pWilds;
-						room_used_for_wilderness.x = x;
-						room_used_for_wilderness.y = y;
-						*room = &room_used_for_wilderness;
-					} else {
+							room_used_for_wilderness.wilds = pWilds;
+							room_used_for_wilderness.x = x;
+							room_used_for_wilderness.y = y;
+							*room = &room_used_for_wilderness;
+						}
 					}
 				}
 			} else {
@@ -436,6 +461,7 @@ char *tp_getolocation(SCRIPT_VARINFO *info, char *argument, ROOM_INDEX_DATA **ro
 	ROOM_INDEX_DATA *loc;
 	WILDS_DATA *pWilds;
 	SCRIPT_PARAM arg;
+	int x, y;
 
 	*room = NULL;
 	*container = NULL;
@@ -445,8 +471,35 @@ char *tp_getolocation(SCRIPT_VARINFO *info, char *argument, ROOM_INDEX_DATA **ro
 		switch(arg.type) {
 		case ENT_NONE:	*room = token_room(info->token); break;
 		case ENT_NUMBER:
-			*room = get_room_index(arg.d.num);
+			// Can either be a room index or a wilderness room
+			// Room: <vnum>
+			// Wilderness coordinates: <x> <y> <w>
+
+			x = arg.d.num;
+			if((rest2 = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
+				rest = rest2;
+				y = arg.d.num;
+				if((rest2 = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
+					rest = rest2;
+					if(!(pWilds = get_wilds_from_uid(NULL, arg.d.num))) break;
+
+					if (x > (pWilds->map_size_x - 1) || y > (pWilds->map_size_y - 1)) break;
+
+					// if safe is used, it will not go to bad rooms
+					if((rest2 = expand_argument(info,rest,&arg)) && arg.type == ENT_STRING &&
+						!str_cmp(arg.d.str,"safe") && !check_for_bad_room(pWilds, x, y))
+						break;
+
+					rest = rest2;
+					room_used_for_wilderness.wilds = pWilds;
+					room_used_for_wilderness.x = x;
+					room_used_for_wilderness.y = y;
+					*room = &room_used_for_wilderness;
+				}
+			} else
+				*room = get_room_index(x);
 			break;
+
 		case ENT_STRING:
 			if(arg.d.str[0] == '@')
 				*room = get_exit_dest(token_room(info->token), arg.d.str+1);
@@ -470,8 +523,6 @@ char *tp_getolocation(SCRIPT_VARINFO *info, char *argument, ROOM_INDEX_DATA **ro
 					}
 				}
 			} else if(!str_cmp(arg.d.str,"wilds")) {
-				int x, y;
-
 				x = arg.d.num;
 				if((rest2 = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
 					rest = rest2;
@@ -492,7 +543,6 @@ char *tp_getolocation(SCRIPT_VARINFO *info, char *argument, ROOM_INDEX_DATA **ro
 						room_used_for_wilderness.x = x;
 						room_used_for_wilderness.y = y;
 						*room = &room_used_for_wilderness;
-					} else {
 					}
 				}
 			} else {
@@ -1751,7 +1801,6 @@ SCRIPT_CMD(do_tpinterrupt)
 	// Indicate what was stopped, zero being nothing
 	info->token->progs->lastreturn = ret;
 }
-
 
 SCRIPT_CMD(do_tpalterobj)
 {
@@ -3787,6 +3836,7 @@ SCRIPT_CMD(do_tpaddaffect)
 	long bv, bv2;
 	CHAR_DATA *mob = NULL;
 	OBJ_DATA *obj = NULL;
+	int wear_loc = WEAR_NONE;
 	SCRIPT_PARAM arg;
 	AFFECT_DATA af;
 
@@ -3922,6 +3972,18 @@ SCRIPT_CMD(do_tpaddaffect)
 
 	if(bv2 == NO_FLAG) bv2 = 0;
 
+	if(rest && *rest) {
+		if(!(rest = expand_argument(info,rest,&arg))) {
+			bug("MpAddaffect - Error in parsing.",0);
+			return;
+		}
+
+		switch(arg.type) {
+		case ENT_OBJECT: wear_loc = arg.d.obj ? arg.d.obj->wear_loc : WEAR_NONE; break;
+		default: return;
+		}
+	}
+
 	memset(&af,0,sizeof(af));
 	af.group	= group;
 	af.where     = where;
@@ -3932,6 +3994,8 @@ SCRIPT_CMD(do_tpaddaffect)
 	af.duration  = (hours < 0) ? -1 : hours;
 	af.bitvector = bv;
 	af.bitvector2 = bv2;
+	af.slot = wear_loc;
+
 	if(mob) affect_join(mob, &af);
 	else affect_join_obj(obj,&af);
 }
@@ -3943,6 +4007,7 @@ SCRIPT_CMD(do_tpaddaffectname)
 	long bv, bv2;
 	CHAR_DATA *mob = NULL;
 	OBJ_DATA *obj = NULL;
+	int wear_loc = WEAR_NONE;
 	SCRIPT_PARAM arg;
 	AFFECT_DATA af;
 
@@ -4090,6 +4155,18 @@ SCRIPT_CMD(do_tpaddaffectname)
 
 	if(bv2 == NO_FLAG) bv2 = 0;
 
+	if(rest && *rest) {
+		if(!(rest = expand_argument(info,rest,&arg))) {
+			bug("MpAddaffect - Error in parsing.",0);
+			return;
+		}
+
+		switch(arg.type) {
+		case ENT_OBJECT: wear_loc = arg.d.obj ? arg.d.obj->wear_loc : WEAR_NONE; break;
+		default: return;
+		}
+	}
+
 	af.group	= group;
 	af.where     = where;
 	af.type      = -1;
@@ -4100,6 +4177,7 @@ SCRIPT_CMD(do_tpaddaffectname)
 	af.bitvector = bv;
 	af.bitvector2 = bv2;
 	af.custom_name = name;
+	af.slot = wear_loc;
 	if(mob) affect_join_full(mob, &af);
 	else affect_join_full_obj(obj,&af);
 }
@@ -5167,12 +5245,12 @@ SCRIPT_CMD(do_tpshowroom)
 		for(viewer = room->people; viewer; viewer = next) {
 			next = viewer->next_in_room;
 			if(!IS_NPC(viewer) && (force || (IS_AWAKE(viewer) && check_vision(viewer,dest,false,false))))
-				show_room(viewer,dest,true,true);
+				show_room(viewer,dest,true,true,false);
 		}
 	} else if(!IS_NPC(viewer)) {
 		// There is no awake check or vision check here since it is to one mob.
 		//  This can be used in things like DREAMS, seeing yourself at a certain location!
-		show_room(viewer,dest,true,true);
+		show_room(viewer,dest,true,true,false);
 	}
 }
 
@@ -6152,7 +6230,6 @@ SCRIPT_CMD(do_tpskillgroup)
 // Adjusts the specified condition by the given value
 SCRIPT_CMD(do_tpcondition)
 {
-	char buf[MIL];
 	SCRIPT_PARAM arg;
 	char *rest;
 	CHAR_DATA *mob = NULL;
@@ -6210,7 +6287,6 @@ SCRIPT_CMD(do_tpcondition)
 // scriptwait $PLAYER NUMBER VNUM VNUM[ $ACTOR_TOKEN]
 SCRIPT_CMD(do_tpscriptwait)
 {
-	char buf[MIL];
 	SCRIPT_PARAM arg;
 	char *rest;
 	CHAR_DATA *mob = NULL;
@@ -6360,7 +6436,6 @@ SCRIPT_CMD(do_tpcastfailure)
 // - Skill failures will ONLY test against the skill, as it passed the room tests
 SCRIPT_CMD(do_tpcastrecover)
 {
-	char buf[MIL];
 	SCRIPT_PARAM arg;
 	char *rest;
 	CHAR_DATA *mob = NULL;
@@ -6422,5 +6497,408 @@ SCRIPT_CMD(do_tpcastrecover)
 	}
 }
 
+// addspell $OBJECT STRING[ NUMBER]
+SCRIPT_CMD(do_tpaddspell)
+{
+	SCRIPT_PARAM arg;
+	char *rest;
+	SPELL_DATA *spell, *spell_new;
+	OBJ_DATA *target;
+	int level;
+	int sn;
+	AFFECT_DATA *paf;
 
+	if(!info || !info->token || IS_NULLSTR(argument)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_OBJECT || !arg.d.obj) return;
+
+	target = arg.d.obj;
+	level = target->level;
+
+	if(!(rest = expand_argument(info,rest,&arg)))
+		return;
+
+	if(arg.type != ENT_STRING || IS_NULLSTR(arg.d.str)) return;
+
+	sn = skill_lookup(arg.d.str);
+	if( sn <= 0 ) return;
+
+	// Add security check for the spell function
+	if(skill_table[sn].spell_fun == spell_null) return;
+
+	if( rest && *rest ) {
+		if(!(rest = expand_argument(info,rest,&arg)))
+			return;
+
+		// Must be a number, positive and no greater than the object's level
+		if(arg.type != ENT_NUMBER || arg.d.num < 1 || arg.d.num > target->level) return;
+
+		level = arg.d.num;
+
+	}
+
+	// Check if the spell already exists on the object
+	for(spell = target->spells; spell != NULL; spell = spell->next)
+	{
+		if( spell->sn == sn ) {
+			spell->level = level;
+
+			// If the object is currently worn and shares affects, update the affect
+			if( target->carried_by != NULL && target->wear_loc != WEAR_NONE ) {
+				if (target->item_type != ITEM_WAND &&
+					target->item_type != ITEM_STAFF &&
+					target->item_type != ITEM_SCROLL &&
+					target->item_type != ITEM_POTION &&
+					target->item_type != ITEM_TATTOO &&
+					target->item_type != ITEM_PILL) {
+
+
+					for( paf = target->carried_by->affected; paf != NULL; paf = paf->next ) {
+						if( paf->type == sn && paf->slot == target->wear_loc ) {
+
+							// Update the level if affect's level is higher
+							if( paf->level > level )
+								paf->level = level;
+
+							// Add security aspect to allow raising the level?
+
+							break;
+						}
+					}
+				}
+			}
+			return;
+		}
+	}
+
+	// Spell is new to the object, so add it
+	spell_new = new_spell();
+	spell_new->sn = sn;
+	spell_new->level = level;
+
+	spell_new->next = target->spells;
+	target->spells = spell_new;
+
+
+	// If the target is currently being worn and shares affects, add it to the wearer
+	if( target->carried_by != NULL && target->wear_loc != WEAR_NONE ) {
+		if (target->item_type != ITEM_WAND &&
+			target->item_type != ITEM_STAFF &&
+			target->item_type != ITEM_SCROLL &&
+			target->item_type != ITEM_POTION &&
+			target->item_type != ITEM_TATTOO &&
+			target->item_type != ITEM_PILL) {
+
+			for (paf = target->carried_by->affected; paf != NULL; paf = paf->next)
+			{
+				if (paf->type == sn)
+					break;
+			}
+
+			if (paf == NULL || paf->level < level) {
+				affect_strip(target->carried_by, sn);
+				obj_cast_spell(sn, level + MAGIC_WEAR_SPELL, target->carried_by, target->carried_by, target);
+			}
+		}
+	}
+}
+
+
+// remspell $OBJECT STRING[ silent]
+SCRIPT_CMD(do_tpremspell)
+{
+	SCRIPT_PARAM arg;
+	char *rest;
+	SPELL_DATA *spell, *spell_prev;
+	OBJ_DATA *target;
+	int level;
+	int sn;
+	bool found = FALSE, show = TRUE;
+	AFFECT_DATA *paf;
+
+	if(!info || !info->token || IS_NULLSTR(argument)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_OBJECT || !arg.d.obj) return;
+
+	target = arg.d.obj;
+
+	if(!(rest = expand_argument(info,rest,&arg)))
+		return;
+
+	if(arg.type != ENT_STRING || IS_NULLSTR(arg.d.str)) return;
+
+	sn = skill_lookup(arg.d.str);
+	if( sn <= 0 ) return;
+
+	// Add security check for the spell function
+	if(skill_table[sn].spell_fun == spell_null) return;
+
+	if( rest && *rest ) {
+		if(!(rest = expand_argument(info,rest,&arg)))
+			return;
+
+		if(arg.type != ENT_STRING || IS_NULLSTR(arg.d.str)) return;
+
+		if( !str_cmp(arg.d.str, "silent") )
+			show = FALSE;
+	}
+
+
+	found = FALSE;
+	spell_prev = NULL;
+	for(spell = target->spells; spell; spell_prev = spell, spell = spell->next) {
+		if( spell->sn == sn ) {
+			if( spell_prev != NULL )
+				spell_prev->next = spell->next;
+			else
+				target->spells = spell->next;
+
+			level = spell->level;
+
+			free_spell(spell);
+
+			found = TRUE;
+			break;
+		}
+	}
+
+	if( found && target->carried_by != NULL && target->wear_loc != WEAR_NONE) {
+		if (target->item_type != ITEM_WAND &&
+			target->item_type != ITEM_STAFF &&
+			target->item_type != ITEM_SCROLL &&
+			target->item_type != ITEM_POTION &&
+			target->item_type != ITEM_TATTOO &&
+			target->item_type != ITEM_PILL) {
+
+			OBJ_DATA *obj_tmp;
+			int spell_level = level;
+			int found_loc = WEAR_NONE;
+
+			// Find the first affect that matches this spell and is derived from the object
+			for (paf = target->carried_by->affected; paf != NULL; paf = paf->next)
+			{
+				if (paf->type == spell->sn && paf->slot == target->wear_loc)
+					break;
+			}
+
+			if( !paf ) {
+				// This spell was not applied by this object
+				return;
+			}
+
+			found = FALSE;
+			level = 0;
+
+
+			// If there's another obj with the same spell put that one on
+			for (obj_tmp = target->carried_by->carrying; obj_tmp; obj_tmp = obj_tmp->next_content)
+			{
+				if( obj_tmp->wear_loc != WEAR_NONE && target != obj_tmp ) {
+					for (spell = obj_tmp->spells; spell != NULL; spell = spell ->next) {
+						if (spell->sn == sn && spell->level > level ) {
+							level = spell->level;	// Keep the maximum
+							found_loc = obj_tmp->wear_loc;
+							found = TRUE;
+						}
+					}
+				}
+			}
+
+			if(!found) {
+				// No other worn object had this spell available
+
+				if( show ) {
+					if (skill_table[sn].msg_off) {
+						send_to_char(skill_table[sn].msg_off, target->carried_by);
+						send_to_char("\n\r", target->carried_by);
+					}
+				}
+
+				affect_strip(target->carried_by, spell->sn);
+			} else if( level > spell_level ) {
+				level -= spell_level;		// Get the difference
+
+				// Update all affects to the current maximum and its slot
+				for(; paf; paf = paf->next ) {
+					paf->level += level;
+					paf->slot = found_loc;
+				}
+			}
+
+
+		}
+	}
+}
+
+
+// alteraffect $AFFECT STRING OP NUMBER
+// Current limitations: only level and duration
+// Altering other aspects such as modifiers will require updating the owner of the affect, which isn't available here
+SCRIPT_CMD(do_tpalteraffect)
+{
+	char buf[MIL],field[MIL],*rest;
+	SCRIPT_PARAM arg;
+	AFFECT_DATA *paf;
+	int value;
+
+	if(!info || !info->token || IS_NULLSTR(argument)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_AFFECT || !arg.d.aff) return;
+
+	paf = arg.d.aff;
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpAlterAffect - Error in parsing.",0);
+		return;
+	}
+
+	if( IS_NULLSTR(rest) ) return;
+
+	if( arg.type != ENT_STRING || IS_NULLSTR(arg.d.str) ) return;
+
+	strncpy(field,arg.d.str,MIL-1);
+
+
+	if( !str_cmp(field, "level") ) {
+		argument = one_argument(rest,buf);
+
+		if(!(rest = expand_argument(info,argument,&arg))) {
+			bug("TpAlterAffect - Error in parsing.",0);
+			return;
+		}
+
+		switch(arg.type) {
+		case ENT_STRING: value = is_number(arg.d.str) ? atoi(arg.d.str) : 0; break;
+		case ENT_NUMBER: value = arg.d.num; break;
+		default: return;
+		}
+
+
+		switch(buf[0]) {
+		case '=':
+			if( value > 0 && value < paf->level )
+				paf->level = value;
+
+			break;
+
+		case '+':
+			if( value < 0 ) {
+				paf->level += value;
+				if( paf->level < 1 )
+					paf->level = 1;
+			}
+			break;
+
+		case '-':
+			if( value > 0 ) {
+				paf->level -= value;
+				if( paf->level < 1 )
+					paf->level = 1;
+			}
+			break;
+
+		}
+
+		return;
+	}
+
+	if(!str_cmp(field, "duration")) {
+		argument = one_argument(rest,buf);
+
+		if(!(rest = expand_argument(info,argument,&arg))) {
+			bug("TpAlterAffect - Error in parsing.",0);
+			return;
+		}
+
+		if( paf->slot != WEAR_NONE ) {
+			bug("TpAlterAffect - Attempting to modify duration of an object given affect.",0);
+			return;
+		}
+
+		if( paf->group == AFFGROUP_RACIAL ) {
+			bug("TpAlterAffect - Attempting to modify duration of a racial affect.",0);
+			return;
+		}
+
+		if(!str_cmp(buf, "toggle")) {
+			paf->duration = -paf->duration;
+			return;
+		}
+
+
+		switch(arg.type) {
+		case ENT_STRING: value = is_number(arg.d.str) ? atoi(arg.d.str) : 0; break;
+		case ENT_NUMBER: value = arg.d.num; break;
+		default: return;
+		}
+
+		switch(buf[0]) {
+		case '=':
+			if( value != 0 ) {
+				paf->duration = value;
+			}
+
+			break;
+
+		case '+':
+			if( paf->duration < 0 )
+			{
+				paf->duration += value;
+				if( paf->duration >= 0 )
+					paf->duration = -1;
+			}
+			else
+			{
+				paf->duration += value;
+				if( paf->duration < 0 )
+					paf->duration = 0;
+			}
+			break;
+
+		case '-':
+			if( paf->duration < 0 )
+			{
+				paf->duration -= value;
+				if( paf->duration >= 0 )
+					paf->duration = -1;
+			}
+			else
+			{
+				paf->duration -= value;
+				if( paf->duration < 0 )
+					paf->duration = 0;
+			}
+			break;
+
+		}
+	}
+}
+
+// Syntax: crier STRING
+SCRIPT_CMD(do_tpcrier)
+{
+	char buf[MSL];
+
+	if(!info || !info->token) return;
+
+	expand_string(info,argument,buf+2);
+
+	buf[0] = '{';
+	buf[1] = 'M';
+
+	if(!buf[2]) return;
+
+	strcat(buf, "{x");
+
+	crier_announce(buf);
+}
 

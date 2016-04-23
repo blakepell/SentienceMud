@@ -270,6 +270,7 @@ SPELL_FUNC(spell_giant_strength)
 	af.modifier = 1 + (level >= 18) + (level >= 25) + (level >= 32);
 	af.bitvector = 0;
 	af.bitvector2 = 0;
+	af.slot = obj_wear_loc;
 	affect_to_char(victim, &af);
 
 	send_to_char("Your muscles surge with heightened power!\n\r", victim);
@@ -309,6 +310,7 @@ SPELL_FUNC(spell_stone_skin)
 	af.modifier = -30 - (level/2);
 	af.bitvector = 0;
 	af.bitvector2 = AFF2_STONE_SKIN;
+	af.slot = obj_wear_loc;
 	affect_to_char(victim, &af);
 	act("$n's skin turns to stone.", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	send_to_char("Your skin turns to stone.\n\r", victim);
@@ -397,6 +399,7 @@ SPELL_FUNC(spell_stone_touch)
 		return FALSE;
 	}
 
+	af.slot	= WEAR_NONE;
 	af.where = TO_AFFECTS;
 	af.group = AFFGROUP_MAGICAL;
 	af.type = sn;

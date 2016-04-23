@@ -338,6 +338,9 @@ void gain_exp(CHAR_DATA *ch, int gain)
 			ch->exp = 0;
 			ch->level += 1;
 			ch->tot_level += 1;
+			if( IS_SET(ch->affected_by2_perm, AFF2_DEATHSIGHT) )
+				ch->deathsight_vision = ch->tot_level;
+
 			sprintf(buf,"%s gained level %d",ch->name,ch->level);
 
 			sprintf(buf, "All congratulate %s who is now level %d!!!", ch->name, ch->tot_level);
@@ -2127,10 +2130,10 @@ void char_update(void)
 
 	    if (paf->duration > 0) // spells with a finite duration
 	    {
-		paf->duration--;
-		if (number_range(0,4) == 0 && paf->level > 0)
-		  paf->level--;  // spell strength fades with time
-            }
+			paf->duration--;
+			if (number_range(0,4) == 0 && paf->level > 0)
+		  		paf->level--;  // spell strength fades with time
+		}
 	    else if (paf->duration < 0) // infinite spells, like on eq
 	    {
 		;
@@ -2687,6 +2690,7 @@ void aggr_update(void)
 			    act("{D$n is blinded by smoke!{x",
 				    wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
+				af.slot	= WEAR_NONE;
 			    af.where     = TO_AFFECTS;
 			    af.group     = AFFGROUP_PHYSICAL;
 			    af.type      = gsn_blindness;
@@ -2742,6 +2746,7 @@ void aggr_update(void)
 				wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 			act("You are blinded by the toxic haze around you!",
 				wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+			af.slot	= WEAR_NONE;
 			af.where     = TO_AFFECTS;
 			af.type      = gsn_blindness;
 			af.level     = obj->level;
@@ -2760,6 +2765,7 @@ void aggr_update(void)
 				wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 			act("You are poisoned by the toxic haze around you!",
 				wch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+			af.slot	= WEAR_NONE;
 			af.where     = TO_AFFECTS;
 			af.type      = gsn_poison;
 			af.level     = obj->level * 3/4;

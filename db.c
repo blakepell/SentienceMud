@@ -1907,6 +1907,7 @@ CHAR_DATA *create_mobile(MOB_INDEX_DATA *pMobIndex)
     mob->perm_stat[STAT_CON] += (mob->size - SIZE_MEDIUM) / 2;
 
     memset(&af,0,sizeof(af));
+	af.slot	= WEAR_NONE;	// None of the subsequent affects are from worn objects
 
     /* Put spells on here*/
     if (IS_AFFECTED(mob,AFF_INVISIBLE))
@@ -5155,7 +5156,7 @@ void persist_save_object(FILE *fp, OBJ_DATA *obj, bool multiple)
 
 		if(paf->location >= APPLY_SKILL && paf->location < APPLY_SKILL_MAX) {
 			if(!skill_table[paf->location - APPLY_SKILL].name) continue;
-			fprintf(fp, "AffObjSk '%s' %3d %3d %3d %3d %3d %3d '%s' %10ld\n",
+			fprintf(fp, "AffObjSk '%s' %3d %3d %3d %3d %3d %3d '%s' %10ld %10ld\n",
 				skill_table[paf->type].name,
 				paf->where,
 				paf->group,
@@ -5164,9 +5165,10 @@ void persist_save_object(FILE *fp, OBJ_DATA *obj, bool multiple)
 				paf->modifier,
 				APPLY_SKILL,
 				skill_table[paf->location - APPLY_SKILL].name,
-				paf->bitvector);	// **
+				paf->bitvector,
+				paf->bitvector2);	// **
 		} else {
-			fprintf(fp, "AffObjSk '%s' %3d %3d %3d %3d %3d %3d %10ld\n",
+			fprintf(fp, "AffObjSk '%s' %3d %3d %3d %3d %3d %3d %10ld %10ld\n",
 				skill_table[paf->type].name,
 				paf->where,
 				paf->group,
@@ -5174,7 +5176,8 @@ void persist_save_object(FILE *fp, OBJ_DATA *obj, bool multiple)
 				paf->duration,
 				paf->modifier,
 				paf->location,
-				paf->bitvector);	// **
+				paf->bitvector,
+				paf->bitvector2);	// **
 		}
 	}
 
@@ -5183,7 +5186,7 @@ void persist_save_object(FILE *fp, OBJ_DATA *obj, bool multiple)
 
 		if(paf->location >= APPLY_SKILL && paf->location < APPLY_SKILL_MAX) {
 			if(!skill_table[paf->location - APPLY_SKILL].name) continue;
-			fprintf(fp, "AffObjNm '%s' %3d %3d %3d %3d %3d %3d '%s' %10ld\n",
+			fprintf(fp, "AffObjNm '%s' %3d %3d %3d %3d %3d %3d '%s' %10ld %10ld\n",
 				paf->custom_name,
 				paf->where,
 				paf->group,
@@ -5192,9 +5195,10 @@ void persist_save_object(FILE *fp, OBJ_DATA *obj, bool multiple)
 				paf->modifier,
 				APPLY_SKILL,
 				skill_table[paf->location - APPLY_SKILL].name,
-				paf->bitvector);	// **
+				paf->bitvector,
+				paf->bitvector2);	// **
 		} else {
-			fprintf(fp, "AffObjNm '%s' %3d %3d %3d %3d %3d %3d %10ld\n",
+			fprintf(fp, "AffObjNm '%s' %3d %3d %3d %3d %3d %3d %10ld %10ld\n",
 				paf->custom_name,
 				paf->where,
 				paf->group,
@@ -5202,7 +5206,8 @@ void persist_save_object(FILE *fp, OBJ_DATA *obj, bool multiple)
 				paf->duration,
 				paf->modifier,
 				paf->location,
-				paf->bitvector);	// **
+				paf->bitvector,
+				paf->bitvector2);	// **
 		}
 	}
 
@@ -5215,7 +5220,7 @@ void persist_save_object(FILE *fp, OBJ_DATA *obj, bool multiple)
 
 		if(paf->location >= APPLY_SKILL && paf->location < APPLY_SKILL_MAX) {
 			if(!skill_table[paf->location - APPLY_SKILL].name) continue;
-				fprintf(fp, "AffMob %3d %3d %3d %3d %3d %3d '%s' %10ld\n",
+				fprintf(fp, "AffMob %3d %3d %3d %3d %3d %3d '%s' %10ld %10ld\n",
 					paf->where,
 					paf->group,
 					paf->level,
@@ -5223,16 +5228,18 @@ void persist_save_object(FILE *fp, OBJ_DATA *obj, bool multiple)
 					paf->modifier,
 					APPLY_SKILL,
 					skill_table[paf->location - APPLY_SKILL].name,
-					paf->bitvector);	// **
+					paf->bitvector,
+					paf->bitvector2);	// **
 			} else {
-				fprintf(fp, "AffMob %3d %3d %3d %3d %3d %3d %10ld\n",
+				fprintf(fp, "AffMob %3d %3d %3d %3d %3d %3d %10ld %10ld\n",
 					paf->where,
 					paf->group,
 					paf->level,
 					paf->duration,
 					paf->modifier,
 					paf->location,
-					paf->bitvector);	// **
+					paf->bitvector,
+					paf->bitvector2);	// **
 		}
 	}
 
@@ -5404,7 +5411,7 @@ void persist_save_mobile(FILE *fp, CHAR_DATA *ch)
 		if (!paf->custom_name && (paf->type < 0 || paf->type>= MAX_SKILL))
 			continue;
 
-		fprintf(fp, "%s '%s' '%s' %3d %3d %3d %3d %3d %10ld %10ld\n",
+		fprintf(fp, "%s '%s' '%s' %3d %3d %3d %3d %3d %10ld %10ld %3d\n",
 			(paf->custom_name?"Affcgn":"Affcg"),
 			(paf->custom_name?paf->custom_name:skill_table[paf->type].name),
 			flag_string(affgroup_mobile_flags,paf->group),
@@ -5414,7 +5421,8 @@ void persist_save_mobile(FILE *fp, CHAR_DATA *ch)
 			paf->modifier,
 			paf->location,
 			paf->bitvector,
-			paf->bitvector2);
+			paf->bitvector2,
+			paf->slot);
 	}
 
 	// Save Variables
@@ -5933,6 +5941,8 @@ OBJ_DATA *persist_load_object(FILE *fp)
 							paf->location += sn;
 					}
 					paf->bitvector = fread_number(fp);
+					if(obj->version >= VERSION_OBJECT_003)
+						paf->bitvector = fread_number(fp);
 					paf->next = obj->affected;
 					obj->affected = paf;
 					fMatch = TRUE;
@@ -5967,6 +5977,8 @@ OBJ_DATA *persist_load_object(FILE *fp)
 							paf->location += sn;
 					}
 					paf->bitvector = fread_number(fp);
+					if(obj->version >= VERSION_OBJECT_003)
+						paf->bitvector = fread_number(fp);
 					paf->next = obj->affected;
 					obj->affected = paf;
 					fMatch = TRUE;
@@ -6003,6 +6015,8 @@ OBJ_DATA *persist_load_object(FILE *fp)
 								paf->location += sn;
 						}
 						paf->bitvector = fread_number(fp);
+						if(obj->version >= VERSION_OBJECT_003)
+							paf->bitvector = fread_number(fp);
 						paf->next = obj->affected;
 						obj->affected = paf;
 					}
@@ -6368,6 +6382,10 @@ CHAR_DATA *persist_load_mobile(FILE *fp)
 					else
 						good = FALSE;
 
+					if( item->wear_loc != WEAR_NONE ) {
+						list_addlink(ch->lworn, item);
+					}
+
 					break;
 				}
 				if (!str_cmp(word,"#TOKEN")) {
@@ -6420,6 +6438,9 @@ CHAR_DATA *persist_load_mobile(FILE *fp)
 						}
 						paf->bitvector = fread_number(fp);
 						paf->bitvector2 = fread_number(fp);
+						if( ch->version >= VERSION_MOBILE_001)
+							paf->slot = fread_number(fp);
+
 						paf->next = ch->affected;
 						ch->affected = paf;
 					}
@@ -6452,6 +6473,8 @@ CHAR_DATA *persist_load_mobile(FILE *fp)
 							}
 							paf->bitvector = fread_number(fp);
 							paf->bitvector2 = fread_number(fp);
+							if( ch->version >= VERSION_MOBILE_001)
+								paf->slot = fread_number(fp);
 							paf->next = ch->affected;
 							ch->affected = paf;
 						}

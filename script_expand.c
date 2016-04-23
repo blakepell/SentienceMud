@@ -1602,6 +1602,10 @@ char *expand_entity_mobile(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->type = ENT_PLLIST_ROOM;
 		arg->d.blist = arg->d.mob ? arg->d.mob->lclonerooms : NULL;
 		break;
+	case ENTITY_MOB_WORN:
+		arg->type = ENT_PLLIST_OBJ;
+		arg->d.blist = arg->d.mob ? arg->d.mob->lworn : NULL;
+		break;
 	default: return NULL;
 	}
 
@@ -1812,6 +1816,10 @@ char *expand_entity_mobile_id(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->type = ENT_PLLIST_ROOM;
 		arg->d.blist = NULL;
 		break;
+	case ENTITY_MOB_WORN:
+		arg->type = ENT_PLLIST_OBJ;
+		arg->d.blist = NULL;
+		break;
 
 	default: return NULL;
 	}
@@ -1887,6 +1895,13 @@ char *expand_entity_object(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->type = ENT_PLLIST_ROOM;
 		arg->d.blist = arg->d.obj ? arg->d.obj->lclonerooms : NULL;
 		break;
+	case ENTITY_OBJ_AFFECTS:
+		arg->type = ENT_OLLIST_AFF;
+		arg->d.list.ptr.aff = self ? &self->affected: NULL;
+		arg->d.list.owner = self;
+		break;
+
+	// SPELLS?
 	default: return NULL;
 	}
 
@@ -1958,6 +1973,11 @@ char *expand_entity_object_id(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 	case ENTITY_OBJ_CLONEROOMS:
 		arg->type = ENT_PLLIST_ROOM;
 		arg->d.blist = NULL;
+		break;
+	case ENTITY_OBJ_AFFECTS:
+		arg->type = ENT_OLLIST_AFF;
+		arg->d.list.ptr.aff = NULL;
+		arg->d.list.owner = NULL;
 		break;
 	default: return NULL;
 	}
@@ -3764,7 +3784,7 @@ char *expand_entity_plist_token(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg
 
 char *expand_entity_song(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 {
-	struct music_type* pSong = NULL;
+	const struct music_type* pSong = NULL;
 
 	if( arg->d.song >= 0 && arg->d.song < MAX_SONGS && music_table[arg->d.song].name != NULL )
 		pSong = &music_table[arg->d.song];

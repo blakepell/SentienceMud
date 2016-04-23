@@ -130,6 +130,7 @@ SPELL_FUNC(spell_fire_barrier)
 		return FALSE;
 	}
 
+	af.slot = obj_wear_loc;
 	af.where = TO_AFFECTS;
 	af.group = AFFGROUP_MAGICAL;
 	af.type = sn;
@@ -298,6 +299,7 @@ SPELL_FUNC(spell_fireproof)
 		return FALSE;
 	}
 
+	af.slot	= WEAR_NONE;
 	af.where = TO_OBJECT;
 	af.group = AFFGROUP_ENCHANT;
 	af.type = sn;

@@ -1373,7 +1373,6 @@ void do_rehearse( CHAR_DATA *ch, char *argument )
 	char buf[MAX_STRING_LENGTH];
 	char arg[MSL];
 	int sn;
-	int this_class;
 	CHAR_DATA *mob;
 	bool wasbard;
 	bool found = FALSE;

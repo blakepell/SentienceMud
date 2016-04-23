@@ -42,6 +42,17 @@ char *	const	dir_name	[]		=
     "north", "east", "south", "west", "up", "down", "northeast",  "northwest", "southeast", "southwest"
 };
 
+int parse_door(char *name)
+{
+	int i;
+	for(i = 0; i < MAX_DIR; i++) {
+		if( !str_cmp(name, dir_name[i]) )
+			return i;
+	}
+
+	return -1;
+}
+
 
 const	sh_int	rev_dir		[]		=
 {
@@ -198,7 +209,6 @@ bool exit_destination_data(EXIT_DATA *pexit, DESTINATION_DATA *pDest)
 	ROOM_INDEX_DATA *to_room = NULL;
 	WILDS_DATA *in_wilds = NULL;
 	WILDS_DATA *to_wilds = NULL;
-	WILDS_TERRAIN *pTerrain;
 	int to_vroom_x = 0;
 	int to_vroom_y = 0;
 
@@ -758,6 +768,7 @@ bool check_room_flames(CHAR_DATA *ch)
 		    af.duration  = 2;
 		    af.bitvector = AFF_BLIND;
 		    af.bitvector2 = 0;
+			af.slot	= WEAR_NONE;
 		}
 	    }
 	    else
@@ -2441,6 +2452,7 @@ memset(&af,0,sizeof(af));
 	af.modifier  = 0;
 	af.bitvector = AFF_SNEAK;
 	af.bitvector2 = 0;
+		af.slot	= WEAR_NONE;
 	affect_to_char(ch, &af);
         send_to_char("You successfully move into a sneaking position.\n\r", ch);
     }
@@ -3333,7 +3345,7 @@ bool move_success(CHAR_DATA *ch)
 
 	if (!(pexit = in_room->exit[door])) {
 		//Updated show_room_to_char to show_room -- Tieryo 08/18/2010
-		show_room(ch,ch->in_room,false,false);
+		show_room(ch,ch->in_room,false,false,false);
 	        act("\n\rYou can't go any further.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	        return FALSE;
 	}
@@ -3341,7 +3353,7 @@ bool move_success(CHAR_DATA *ch)
 	if (IS_SET(pexit->exit_info, EX_CLOSED) &&
 		(!IS_AFFECTED(ch, AFF_PASS_DOOR) || IS_SET(pexit->exit_info,EX_NOPASS))) {
 		//Updated show_room_to_char to show_room --Tieryo 08/18/2010
-		show_room(ch,ch->in_room,false,false);
+		show_room(ch,ch->in_room,false,false,false);
 	        act("\n\rYou can't go any further.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	        return FALSE;
 	}
@@ -3561,6 +3573,7 @@ memset(&af,0,sizeof(af));
 	af.modifier  = 3;
 	af.bitvector = 0;
         af.bitvector2 = AFF2_EVASION;
+		af.slot	= WEAR_NONE;
 	affect_to_char(ch, &af);
         send_to_char("You shroud yourself in your cloak, prepared to be evasive.\n\r", ch);
 	check_improve(ch,gsn_evasion,TRUE,3);
@@ -3885,6 +3898,7 @@ void do_takeoff(CHAR_DATA *ch, char *argument)
 		af.bitvector = AFF_FLYING;
 		af.bitvector2 = 0;
 		af.custom_name = NULL;
+		af.slot	= WEAR_NONE;
 		affect_to_char(MOUNTED(ch), &af);
 	} else {
 		if(IS_AFFECTED(ch, AFF_FLYING) || is_affected(ch,gsn_flight)) {
@@ -3942,6 +3956,7 @@ void do_takeoff(CHAR_DATA *ch, char *argument)
 		af.bitvector = AFF_FLYING;
 		af.bitvector2 = 0;
 		af.custom_name = NULL;
+		af.slot	= WEAR_NONE;
 		affect_to_char(ch, &af);
 		check_improve(ch,gsn_flight,TRUE,3);
 	}

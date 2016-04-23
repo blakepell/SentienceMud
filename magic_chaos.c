@@ -50,6 +50,7 @@ SPELL_FUNC(spell_curse)
 		af.modifier = +1;
 		af.bitvector = ITEM_EVIL;
 		af.bitvector2 = 0;
+		af.slot	= WEAR_NONE;
 		affect_to_obj(obj,&af);
 
 		act("$p glows with a malevolent aura.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ALL);
@@ -75,6 +76,7 @@ SPELL_FUNC(spell_curse)
 		af.modifier = -1 * (level / 8);
 		af.bitvector = AFF_CURSE;
 		af.bitvector2 = 0;
+		af.slot	= WEAR_NONE;
 		affect_to_char(victim, &af);
 
 		send_to_char("You feel unclean.\n\r", victim);
@@ -101,7 +103,7 @@ SPELL_FUNC(spell_demonfire)
 		dam /= 2;
 
 	damage(ch, victim, dam, sn, DAM_NEGATIVE ,TRUE);
-	spell_curse(gsn_curse, 3 * level / 4, ch, (void *) victim,TARGET_CHAR);
+	spell_curse(gsn_curse, 3 * level / 4, ch, (void *) victim,TARGET_CHAR, WEAR_NONE);
 	return TRUE;
 }
 
@@ -192,6 +194,7 @@ SPELL_FUNC(spell_slow)
 	af.modifier = -1 - (level >= 18) - (level >= 25) - (level >= 32);
 	af.bitvector = AFF_SLOW;
 	af.bitvector2 = 0;
+	af.slot	= WEAR_NONE;
 	affect_to_char(victim, &af);
 	send_to_char("You feel yourself slow i n g  d  o   w    n...\n\r", victim);
 	act("$n starts to move in slow motion.",victim,NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
@@ -216,6 +219,7 @@ SPELL_FUNC(spell_weaken)
 	af.modifier  = -1 * (level / 13);
 	af.bitvector = AFF_WEAKEN;
 	af.bitvector2 = 0;
+	af.slot	= WEAR_NONE;
 	affect_to_char(victim, &af);
 	send_to_char("You feel your strength slip away.\n\r", victim);
 	act("$n looks tired and weak.",victim,NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);

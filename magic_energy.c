@@ -23,7 +23,7 @@ SPELL_FUNC(spell_cosmic_blast)
 	dam = dice(level,8);
 	damage(ch,victim,dam,sn,DAM_ENERGY,TRUE);
 
-	spell_blindness(gsn_blindness, 3 * level / 4, ch, (void *) victim,TARGET_CHAR);
+	spell_blindness(gsn_blindness, 3 * level / 4, ch, (void *) victim,TARGET_CHAR, WEAR_NONE);
 	return TRUE;
 }
 
@@ -95,6 +95,7 @@ SPELL_FUNC(spell_energy_field)
 		return FALSE;
 	}
 
+	af.slot = obj_wear_loc;
 	af.where = TO_AFFECTS;
 	af.group = AFFGROUP_MAGICAL;
 	af.type = sn;
@@ -134,6 +135,7 @@ SPELL_FUNC(spell_shield)
 		return FALSE;
 	}
 
+	af.slot = obj_wear_loc;
 	af.where = TO_AFFECTS;
 	af.group = AFFGROUP_MAGICAL;
 	af.type = sn;

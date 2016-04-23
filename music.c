@@ -23,14 +23,12 @@ void do_play(CHAR_DATA *ch, char *argument)
     char arg[MAX_INPUT_LENGTH];
     char arg2[MAX_INPUT_LENGTH];
     char buf[MAX_INPUT_LENGTH];
-    int counter = 0;
     int this_class = 0;
     int chance = 0;
     int level;
     int target;
     int mana;
     int beats;
-	bool found = FALSE;
 
     if( IS_NPC(ch) ) return;	// No NPC bards
 
@@ -296,14 +294,12 @@ void music_end( CHAR_DATA *ch )
 	TOKEN_DATA *token = NULL;
 	SCRIPT_DATA *script = NULL;
 	int mana;
-	void *vo;
 	unsigned long id[2];
 	int type;
 	int song_num;
 	int sn;
 	int target;
-	int chance;	// @@@NIB : 20070126 : hard_magic
-	struct music_type* pSong = NULL;
+	const struct music_type* pSong = NULL;
 	bool offensive = FALSE;
 	bool wasdead;
 
@@ -362,7 +358,7 @@ void music_end( CHAR_DATA *ch )
 						if(skill_table[sn].target == TAR_CHAR_OFFENSIVE || skill_table[sn].target == TAR_OBJ_CHAR_DEF)
 							offensive = TRUE;
 						if (check_spell_deflection(ch, mob, sn))
-							(*skill_table[sn].spell_fun) (sn, ch->tot_level, ch, mob, TARGET_CHAR);
+							(*skill_table[sn].spell_fun) (sn, ch->tot_level, ch, mob, TARGET_CHAR, WEAR_NONE);
 					}
 
 				}
@@ -376,7 +372,7 @@ void music_end( CHAR_DATA *ch )
 						if(skill_table[sn].target == TAR_CHAR_OFFENSIVE || skill_table[sn].target == TAR_OBJ_CHAR_DEF)
 							offensive = TRUE;
 						if (check_spell_deflection(ch, mob, sn))
-							(*skill_table[sn].spell_fun) (sn, ch->tot_level, ch, mob, TARGET_CHAR);
+							(*skill_table[sn].spell_fun) (sn, ch->tot_level, ch, mob, TARGET_CHAR, WEAR_NONE);
 					}
 
 				}
@@ -390,7 +386,7 @@ void music_end( CHAR_DATA *ch )
 						if(skill_table[sn].target == TAR_CHAR_OFFENSIVE || skill_table[sn].target == TAR_OBJ_CHAR_DEF)
 							offensive = TRUE;
 						if (check_spell_deflection(ch, mob, sn))
-							(*skill_table[sn].spell_fun) (sn, ch->tot_level, ch, mob, TARGET_CHAR);
+							(*skill_table[sn].spell_fun) (sn, ch->tot_level, ch, mob, TARGET_CHAR, WEAR_NONE);
 					}
 
 				}
@@ -477,19 +473,19 @@ void music_end( CHAR_DATA *ch )
 					if( sn1 > 0 )
 					{
 						if (check_spell_deflection(ch, mob, sn1))
-							(*skill_table[sn1].spell_fun) (sn1, ch->tot_level, ch, mob, TARGET_CHAR);
+							(*skill_table[sn1].spell_fun) (sn1, ch->tot_level, ch, mob, TARGET_CHAR, WEAR_NONE);
 					}
 
 					if( sn2 > 0 && (IS_VALID(mob) && (mob->id[0] == id[0] && mob->id[1] == id[1]) && (mob->dead == wasdead)) )
 					{
 						if (check_spell_deflection(ch, mob, sn2))
-							(*skill_table[sn2].spell_fun) (sn2, ch->tot_level, ch, mob, TARGET_CHAR);
+							(*skill_table[sn2].spell_fun) (sn2, ch->tot_level, ch, mob, TARGET_CHAR, WEAR_NONE);
 					}
 
 					if( sn3 > 0 && (IS_VALID(mob) && (mob->id[0] == id[0] && mob->id[1] == id[1]) && (mob->dead == wasdead)) )
 					{
 						if (check_spell_deflection(ch, mob, sn3))
-							(*skill_table[sn3].spell_fun) (sn3, ch->tot_level, ch, mob, TARGET_CHAR);
+							(*skill_table[sn3].spell_fun) (sn3, ch->tot_level, ch, mob, TARGET_CHAR, WEAR_NONE);
 					}
 
 				}
@@ -523,17 +519,17 @@ void music_end( CHAR_DATA *ch )
 
 					if( sn1 > 0 )
 					{
-						(*skill_table[sn1].spell_fun) (sn1, ch->tot_level, ch, mob, TARGET_CHAR);
+						(*skill_table[sn1].spell_fun) (sn1, ch->tot_level, ch, mob, TARGET_CHAR, WEAR_NONE);
 					}
 
 					if( sn2 > 0 && (IS_VALID(mob) && (mob->id[0] == id[0] && mob->id[1] == id[1]) && (mob->dead == wasdead)) )
 					{
-						(*skill_table[sn2].spell_fun) (sn2, ch->tot_level, ch, mob, TARGET_CHAR);
+						(*skill_table[sn2].spell_fun) (sn2, ch->tot_level, ch, mob, TARGET_CHAR, WEAR_NONE);
 					}
 
 					if( sn3 > 0 && (IS_VALID(mob) && (mob->id[0] == id[0] && mob->id[1] == id[1]) && (mob->dead == wasdead)) )
 					{
-						(*skill_table[sn3].spell_fun) (sn3, ch->tot_level, ch, mob, TARGET_CHAR);
+						(*skill_table[sn3].spell_fun) (sn3, ch->tot_level, ch, mob, TARGET_CHAR, WEAR_NONE);
 					}
 
 				}
@@ -563,19 +559,19 @@ void music_end( CHAR_DATA *ch )
 					if( sn1 > 0 && !is_same_group(ch, mob))
 					{
 						if (check_spell_deflection(ch, mob, sn1))
-							(*skill_table[sn1].spell_fun) (sn1, ch->tot_level, ch, mob, TARGET_CHAR);
+							(*skill_table[sn1].spell_fun) (sn1, ch->tot_level, ch, mob, TARGET_CHAR, WEAR_NONE);
 					}
 
 					if( sn2 > 0 && (IS_VALID(mob) && (mob->id[0] == id[0] && mob->id[1] == id[1]) && (mob->dead == wasdead) && !is_same_group(ch, mob)) )
 					{
 						if (check_spell_deflection(ch, mob, sn2))
-							(*skill_table[sn2].spell_fun) (sn2, ch->tot_level, ch, mob, TARGET_CHAR);
+							(*skill_table[sn2].spell_fun) (sn2, ch->tot_level, ch, mob, TARGET_CHAR, WEAR_NONE);
 					}
 
 					if( sn3 > 0 && (IS_VALID(mob) && (mob->id[0] == id[0] && mob->id[1] == id[1]) && (mob->dead == wasdead) && !is_same_group(ch, mob)) )
 					{
 						if (check_spell_deflection(ch, mob, sn3))
-							(*skill_table[sn3].spell_fun) (sn3, ch->tot_level, ch, mob, TARGET_CHAR);
+							(*skill_table[sn3].spell_fun) (sn3, ch->tot_level, ch, mob, TARGET_CHAR, WEAR_NONE);
 					}
 				}
 				else
@@ -601,17 +597,17 @@ void music_end( CHAR_DATA *ch )
 
 				if( sn1 > 0 )
 				{
-					(*skill_table[sn1].spell_fun) (sn1, ch->tot_level, ch, mob, TARGET_CHAR);
+					(*skill_table[sn1].spell_fun) (sn1, ch->tot_level, ch, mob, TARGET_CHAR, WEAR_NONE);
 				}
 
 				if( sn2 > 0 && (IS_VALID(mob) && (mob->id[0] == id[0] && mob->id[1] == id[1]) && (mob->dead == wasdead)) )
 				{
-					(*skill_table[sn2].spell_fun) (sn2, ch->tot_level, ch, mob, TARGET_CHAR);
+					(*skill_table[sn2].spell_fun) (sn2, ch->tot_level, ch, mob, TARGET_CHAR, WEAR_NONE);
 				}
 
 				if( sn3 > 0 && (IS_VALID(mob) && (mob->id[0] == id[0] && mob->id[1] == id[1]) && (mob->dead == wasdead)) )
 				{
-					(*skill_table[sn3].spell_fun) (sn3, ch->tot_level, ch, mob, TARGET_CHAR);
+					(*skill_table[sn3].spell_fun) (sn3, ch->tot_level, ch, mob, TARGET_CHAR, WEAR_NONE);
 				}
 
 			}
@@ -631,17 +627,17 @@ void music_end( CHAR_DATA *ch )
 
 				if( sn1 > 0 )
 				{
-					(*skill_table[sn1].spell_fun) (sn1, ch->tot_level, ch, mob, TARGET_NONE);
+					(*skill_table[sn1].spell_fun) (sn1, ch->tot_level, ch, mob, TARGET_NONE, WEAR_NONE);
 				}
 
 				if( sn2 > 0 && (IS_VALID(mob) && (mob->id[0] == id[0] && mob->id[1] == id[1]) && (mob->dead == wasdead)) )
 				{
-					(*skill_table[sn2].spell_fun) (sn2, ch->tot_level, ch, mob, TARGET_NONE);
+					(*skill_table[sn2].spell_fun) (sn2, ch->tot_level, ch, mob, TARGET_NONE, WEAR_NONE);
 				}
 
 				if( sn3 > 0 && (IS_VALID(mob) && (mob->id[0] == id[0] && mob->id[1] == id[1]) && (mob->dead == wasdead)) )
 				{
-					(*skill_table[sn3].spell_fun) (sn3, ch->tot_level, ch, mob, TARGET_NONE);
+					(*skill_table[sn3].spell_fun) (sn3, ch->tot_level, ch, mob, TARGET_NONE, WEAR_NONE);
 				}
 
 			}

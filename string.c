@@ -717,9 +717,7 @@ bool string_argremove_phrase(char *src, char *phrase, char *buf)
 {
 	char *left_start = src;
 	char *left_end = src;
-	char *right_start;
 	char arg[MIL];
-	int i;
 
 	if( !src || !buf || IS_NULLSTR(phrase) ) return FALSE;
 

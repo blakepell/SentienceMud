@@ -354,7 +354,7 @@ bool dragon( CHAR_DATA *ch, char *spell_name )
 
     if ( ( sn = skill_lookup( spell_name ) ) < 0 )
 	return FALSE;
-    (*skill_table[sn].spell_fun) ( sn, ch->tot_level, ch, victim, TARGET_CHAR);
+    (*skill_table[sn].spell_fun) ( sn, ch->tot_level, ch, victim, TARGET_CHAR, WEAR_NONE);
     return TRUE;
 }
 
@@ -415,7 +415,7 @@ bool spec_breath_gas( CHAR_DATA *ch )
 
     if ( ( sn = skill_lookup( "gas breath" ) ) < 0 )
 	return FALSE;
-    (*skill_table[sn].spell_fun) ( sn, ch->tot_level, ch, NULL,TARGET_CHAR);
+    (*skill_table[sn].spell_fun) ( sn, ch->tot_level, ch, NULL,TARGET_CHAR, WEAR_NONE);
     return TRUE;
 }
 
@@ -974,7 +974,7 @@ bool spec_poison( CHAR_DATA *ch )
     act( "You bite $N!",  ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR    );
     act( "$n bites $N!",  ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT );
     act( "$n bites you!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT    );
-    spell_poison( gsn_poison, ch->tot_level, ch, victim,TARGET_CHAR);
+    spell_poison( gsn_poison, ch->tot_level, ch, victim,TARGET_CHAR, WEAR_NONE);
     return TRUE;
 }
 

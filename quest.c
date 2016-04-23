@@ -559,7 +559,7 @@ void do_quest(CHAR_DATA *ch, char *argument)
 
 	obj_to_char(an_obj, ch);
 
-	spell_identify(0, ch->tot_level, ch,an_obj, TARGET_OBJ);
+	spell_identify(0, ch->tot_level, ch,an_obj, TARGET_OBJ, WEAR_NONE);
 	extract_obj(an_obj) ;
 	return;
     }

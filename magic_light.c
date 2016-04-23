@@ -29,6 +29,7 @@ bool visit_func_flash (ROOM_INDEX_DATA *room, void *argv[], int argc, int depth,
 		send_to_char("{WYou force the light to explode outward in a blinding flash.{x\n\r", ch);
 	}
 
+	af.slot	= WEAR_NONE;
 	af.where = TO_AFFECTS;
 	af.group = AFFGROUP_MAGICAL;
 	af.type = gsn_blindness;
@@ -96,6 +97,7 @@ SPELL_FUNC(spell_improved_invisibility)
 		return FALSE;
 	}
 
+	af.slot = obj_wear_loc;
 	af.where = TO_AFFECTS;
 	af.group = AFFGROUP_MAGICAL;
 	af.type = sn;
@@ -177,7 +179,7 @@ SPELL_FUNC(spell_starflare)
 					dam /= 3;
 
 				damage(ch, victim, dam, sn, 0, TRUE);
-				spell_blindness(gsn_blindness, level, ch, (void *) victim, TARGET_CHAR);
+				spell_blindness(gsn_blindness, level, ch, (void *) victim, TARGET_CHAR, WEAR_NONE);
 
 				level -= 4;
 			}

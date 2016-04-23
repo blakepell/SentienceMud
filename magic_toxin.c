@@ -20,6 +20,7 @@ SPELL_FUNC(spell_fatigue)
 	if (is_affected(victim, sn) || saves_spell(level, victim,DAM_OTHER))
 		return FALSE;
 
+	af.slot	= WEAR_NONE;
 	af.where = TO_AFFECTS;
 	af.group = AFFGROUP_MAGICAL;
 	af.type = sn;
@@ -86,6 +87,7 @@ SPELL_FUNC(spell_paralysis)
 		return FALSE;
 	}
 
+	af.slot	= WEAR_NONE;
 	af.where = TO_AFFECTS;
 	af.group = AFFGROUP_MAGICAL;
 	af.type = sn;
@@ -114,6 +116,7 @@ SPELL_FUNC(spell_plague)
 		return FALSE;
 	}
 
+	af.slot	= WEAR_NONE;
 	af.where = TO_AFFECTS;
 	af.group = AFFGROUP_MAGICAL;
 	af.type = sn;
@@ -172,6 +175,7 @@ SPELL_FUNC(spell_poison)
 				return FALSE;
 			}
 
+			af.slot	= WEAR_NONE;
 			af.where = TO_WEAPON;
 			af.group = AFFGROUP_WEAPON;
 			af.type	= sn;
@@ -205,6 +209,7 @@ SPELL_FUNC(spell_poison)
 		return FALSE;
 	}
 
+	af.slot	= WEAR_NONE;
 	af.where = TO_AFFECTS;
 	af.group = AFFGROUP_MAGICAL;
 	af.type = sn;
@@ -286,6 +291,7 @@ SPELL_FUNC(spell_toxin_neurotoxin)
 		return FALSE;
 	}
 
+	af.slot	= WEAR_NONE;
 	af.where = TO_AFFECTS;
 	af.group = AFFGROUP_BIOLOGICAL;
 	af.type = gsn_neurotoxin;
@@ -324,6 +330,7 @@ SPELL_FUNC(spell_toxin_paralysis)
 	act("{G$n begins to look pale and $s flesh blanches.{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	act("{GYou feel paralyzing toxins race through your body.{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
+	af.slot	= WEAR_NONE;
 	af.where = TO_AFFECTS;
 	af.group = AFFGROUP_BIOLOGICAL;
 	af.type = skill_lookup("paralysis");
@@ -366,6 +373,7 @@ SPELL_FUNC(spell_toxin_weakness)
 	}
 
 	if (!is_affected(victim, gsn_fatigue)) {
+		af.slot	= WEAR_NONE;
 		af.where = TO_AFFECTS;
 		af.group = AFFGROUP_BIOLOGICAL;
 		af.type = gsn_fatigue;
@@ -381,6 +389,7 @@ SPELL_FUNC(spell_toxin_weakness)
 	}
 
 	if (!is_affected(victim, gsn_weaken)) {
+		af.slot	= WEAR_NONE;
 		af.where = TO_AFFECTS;
 		af.group = AFFGROUP_BIOLOGICAL;
 		af.type = gsn_weaken;
@@ -428,6 +437,7 @@ SPELL_FUNC(spell_toxin_venom)
 
 	if (victim->fighting) stop_fighting(victim, TRUE);
 
+	af.slot	= WEAR_NONE;
 	af.where = TO_AFFECTS;
 	af.group = AFFGROUP_BIOLOGICAL;
 	af.type = gsn_sleep;

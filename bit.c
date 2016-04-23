@@ -53,6 +53,7 @@ const struct flag_stat_type flag_stat_table[] =
     {   apply_flags,		TRUE	},
     {   wear_loc_flags,		TRUE	},
     {   wear_loc_strings,	TRUE	},
+    {	wear_loc_names,		TRUE	},
     {   container_flags,	FALSE	},
 
 /* ROM specific flags: */

@@ -2322,7 +2322,7 @@ TEDIT(tedit_show)
 			while(( trigger = (PROG_LIST *)iterator_nextdata(&it))) {
 				sprintf(buf, "{C[{W%4d{C]{x %-20ld %-10s %-6s\n\r", cnt,
 					trigger->vnum,trigger_name(trigger->trig_type),
-					trigger_phrase(trigger->trig_type,trigger->trig_phrase));
+					trigger_phrase_olcshow(trigger->trig_type,trigger->trig_phrase, FALSE, TRUE));
 				send_to_char(buf, ch);
 				cnt++;
 			}
@@ -2874,6 +2874,22 @@ TEDIT (tedit_addtprog)
 			return FALSE;
 		}
 		sprintf(phrase,"%d",sn);
+	}
+	else if( value == TRIG_EXIT ||
+		value == TRIG_EXALL ||
+		value == TRIG_KNOCK ||
+		value == TRIG_KNOCKING) {
+		int door = parse_door(phrase);
+		if( door < 0 ) {
+			send_to_char("Invalid direction for exit/exall/knock/knocking trigger.\n\r", ch);
+			return FALSE;
+		}
+		sprintf(phrase,"%d",door);
+	} else if( value == TRIG_OPEN || value == TRIG_CLOSE) {
+		int door = parse_door(phrase);
+		if( door >= 0 && door < MAX_DIR ) {
+			sprintf(phrase,"%d",door);
+		}
 	}
 
     if ((code = get_script_index (atol(num), PRG_TPROG)) == NULL)

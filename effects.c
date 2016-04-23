@@ -182,6 +182,7 @@ memset(&af,0,sizeof(af));
             af.modifier  = -1;
             af.bitvector = 0;
 	    af.bitvector2 = 0;
+	af.slot	= WEAR_NONE;
             affect_join( victim, &af );
 	}
 
@@ -289,7 +290,8 @@ memset(&af,0,sizeof(af));
             af.location     = APPLY_HITROLL;
             af.modifier     = (-4 - number_range(0,level/10));
             af.bitvector    = AFF_BLIND;
-	    af.bitvector2   = 0;
+		    af.bitvector2   = 0;
+			af.slot	= WEAR_NONE;
 
             affect_to_char(victim,&af);
 	}
@@ -759,7 +761,8 @@ void toxic_fumes_effect(CHAR_DATA *victim,CHAR_DATA *ch)
     // Interrupt what they are doing too!
     interpret(victim,"cringe");
     victim->position = POS_RESTING;
-memset(&af,0,sizeof(af));
+	memset(&af,0,sizeof(af));
+	af.slot	= WEAR_NONE;
 	af.bitvector = 0;
 	af.modifier = 0;
 	af.group = AFFGROUP_BIOLOGICAL;

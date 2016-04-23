@@ -251,7 +251,8 @@ $(EXE): $(O_FILES) $(BUILD_NUMBER_FILE)
 	-chmod 775 $(EXE)
 
 $(OBJDIR)/%.o:	%.c
-	$(CC) -c $(C_FLAGS) $< -o $(OBJDIR)/$(basename $<).o
+	@echo Building $<...
+	@$(CC) -c $(C_FLAGS) $< -o $(OBJDIR)/$(basename $<).o
 
 %_c.diff:	$(PATH1)/%.c
 	-diff -wbBdp $< $(patsubst $(PATH1)/%,$(PATH2)/%,$<) >> $(DIFF_TXT)

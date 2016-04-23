@@ -2344,6 +2344,7 @@ memset(&af,0,sizeof(af));
             af.modifier  = 0;
             af.bitvector = WEAPON_POISON;
 	    af.bitvector2 = 0;
+		af.slot	= WEAR_NONE;
             affect_to_obj(obj,&af);
 
 		/* The better you get, the less likely people SEE it
@@ -2673,6 +2674,7 @@ memset(&af,0,sizeof(af));
 	af.modifier  = 0;
 	af.bitvector = AFF_POISON;
 	af.bitvector2 = 0;
+	af.slot	= WEAR_NONE;
 	affect_join(ch, &af);
     }
 
@@ -2760,6 +2762,7 @@ void do_eat(CHAR_DATA *ch, char *argument)
 		af.modifier  = 0;
 		af.bitvector = AFF_POISON;
 		af.bitvector2 = 0;
+		af.slot	= WEAR_NONE;
 		affect_join(ch, &af);
 	    }
 	    break;
@@ -5499,7 +5502,7 @@ void do_inspect(CHAR_DATA *ch, char *argument)
 	}
     /*send_to_char("The shop keeper gives you a little information about the product.\n\r", ch);*/
     act("$n gives you a little information about the product.{x", keeper, ch, NULL, NULL, NULL, NULL, NULL, TO_VICT);
-    spell_identify(0, ch->tot_level, ch, obj, TARGET_OBJ);
+    spell_identify(0, ch->tot_level, ch, obj, TARGET_OBJ, WEAR_NONE);
 
 }
 
@@ -6532,17 +6535,17 @@ void do_hands(CHAR_DATA *ch, char *argument)
     act("{C$n's hands glow a brilliant blue.{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
     sn = skill_lookup("cure disease");
-    spell_cure_disease(sn, ch->tot_level, ch, victim, TARGET_CHAR);
+    spell_cure_disease(sn, ch->tot_level, ch, victim, TARGET_CHAR, WEAR_NONE);
 
     sn = skill_lookup("cure poison");
-    spell_cure_poison(sn, ch->tot_level, ch, victim, TARGET_CHAR);
+    spell_cure_poison(sn, ch->tot_level, ch, victim, TARGET_CHAR, WEAR_NONE);
 
     sn = skill_lookup("cure blindness");
-    spell_cure_blindness(sn, ch->tot_level, ch, victim, TARGET_CHAR);
+    spell_cure_blindness(sn, ch->tot_level, ch, victim, TARGET_CHAR, WEAR_NONE);
 
     /* @@@NIB : 20070127 : for curing the toxic fumes*/
     sn = skill_lookup("cure toxic");
-    spell_cure_toxic(sn, ch->tot_level, ch, victim, TARGET_CHAR);
+    spell_cure_toxic(sn, ch->tot_level, ch, victim, TARGET_CHAR, WEAR_NONE);
     check_improve(ch, gsn_healing_hands, TRUE, 1);
 }
 
@@ -7040,6 +7043,7 @@ memset(&af,0,sizeof(af));
 
             af.bitvector = weapon;
 	    af.bitvector2 = 0;
+		af.slot	= WEAR_NONE;
             affect_to_obj(obj,&af);
 
             act("$n carefully infuses $p with a magical enchantment.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);

@@ -71,6 +71,7 @@ SPELL_FUNC(spell_silence)
 		return FALSE;
 	}
 
+	af.slot	= WEAR_NONE;
 	af.where = TO_AFFECTS;
 	af.group = AFFGROUP_MAGICAL;
 	af.type = sn;

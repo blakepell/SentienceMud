@@ -963,6 +963,7 @@ bool one_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt, bool secondary)
 				af.modifier  = -1;
 				af.bitvector = AFF_POISON;
 				af.bitvector2 = 0;
+				af.slot	= WEAR_NONE;
 				affect_join(victim, &af);
 			}
 
@@ -1091,6 +1092,7 @@ bool one_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt, bool secondary)
 				af.duration  = 1 + wield->level/12;
 				af.bitvector = AFF_BLIND;
 				af.bitvector2 = 0;
+				af.slot	= WEAR_NONE;
 				affect_to_char(victim, &af);
 				send_to_char("You are blinded!\n\r", victim);
 				act("$n appears to be blinded.",victim,NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
@@ -2593,7 +2595,6 @@ void update_pos(CHAR_DATA *victim)
 bool set_fighting(CHAR_DATA *ch, CHAR_DATA *victim)
 {
 	OBJ_DATA *obj;
-	char buf[MAX_STRING_LENGTH];
 
 	if (ch->in_room == NULL || victim->in_room == NULL)
 		return FALSE;
@@ -3618,10 +3619,10 @@ OBJ_DATA *raw_kill(CHAR_DATA *victim, bool has_head, bool messages, int corpse_t
 
 	victim->position = POS_STANDING;
 
-	spell_fly(skill_lookup("fly"), victim->tot_level, victim, victim, TARGET_CHAR);
-	spell_detect_invis(skill_lookup("detect invis"), victim->tot_level, victim, victim, TARGET_CHAR);
-	spell_detect_hidden(skill_lookup("detect hidden"), victim->tot_level, victim, victim, TARGET_CHAR);
-	spell_infravision(skill_lookup("infravision"), victim->tot_level, victim, victim, TARGET_CHAR);
+	spell_fly(gsn_fly, victim->tot_level, victim, victim, TARGET_CHAR, WEAR_NONE);
+	spell_detect_invis(gsn_detect_invis, victim->tot_level, victim, victim, TARGET_CHAR, WEAR_NONE);
+	spell_detect_hidden(gsn_detect_hidden, victim->tot_level, victim, victim, TARGET_CHAR, WEAR_NONE);
+	spell_infravision(gsn_infravision, victim->tot_level, victim, victim, TARGET_CHAR, WEAR_NONE);
 
 	// Do anything that might be required AFTER you truly die, such as expire any affects
 	p_percent_trigger(victim, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_AFTERDEATH, NULL);
@@ -4233,6 +4234,7 @@ void do_berserk(CHAR_DATA *ch, char *argument)
 		af.modifier	= UMAX(1,ch->tot_level/10);
 		af.bitvector 	= AFF_BERSERK;
 		af.bitvector2 = 0;
+		af.slot	= WEAR_NONE;
 
 		af.location	= APPLY_HITROLL;
 		affect_to_char(ch,&af);
@@ -4873,6 +4875,7 @@ void do_bite(CHAR_DATA *ch, char *argument)
 					af.modifier = -1 * number_range(1,3);
 					af.bitvector = 0;
 					af.bitvector2 = AFF2_TOXIN;
+					af.slot	= WEAR_NONE;
 					affect_to_char(victim, &af);
 				}
 			} else {
@@ -4901,6 +4904,7 @@ void do_bite(CHAR_DATA *ch, char *argument)
 						af.modifier  = -1;
 						af.bitvector = AFF_POISON;
 						af.bitvector2 = 0;
+						af.slot	= WEAR_NONE;
 						affect_join(victim, &af);
 					}
 				}
@@ -4939,7 +4943,7 @@ void bitten_end(CHAR_DATA *ch)
 	act("{R$n's face flushes red as the toxins reach $s brain.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
 	affect_strip(ch, gsn_toxins);
-	(*toxin_table[ch->bitten_type].spell) (gsn_toxins, ch->bitten_level, NULL, ch, TARGET_CHAR);
+	(*toxin_table[ch->bitten_type].spell) (gsn_toxins, ch->bitten_level, NULL, ch, TARGET_CHAR, WEAR_NONE);
 
 	ch->bitten = 0;
 	ch->bitten_level = 0;
@@ -5076,6 +5080,7 @@ void do_dirt(CHAR_DATA *ch, char *argument)
 		af.modifier	= -4;
 		af.bitvector 	= AFF_BLIND;
 		af.bitvector2 = 0;
+		af.slot	= WEAR_NONE;
 
 		affect_to_char(victim,&af);
 
@@ -5099,6 +5104,7 @@ void do_dirt(CHAR_DATA *ch, char *argument)
 			af.modifier	= -4;
 			af.bitvector 	= AFF_BLIND;
 			af.bitvector2 = 0;
+			af.slot	= WEAR_NONE;
 
 			affect_to_char(ch,&af);
 			return;
@@ -5203,7 +5209,7 @@ void do_breathe(CHAR_DATA *ch, char *argument)
 
 	WAIT_STATE(ch,skill_table[gsn_breath].beats);
 
-	(*breath_fun[i]) (*breath_gsn[i] , ch->tot_level, ch, victim, TARGET_CHAR);
+	(*breath_fun[i]) (*breath_gsn[i] , ch->tot_level, ch, victim, TARGET_CHAR, WEAR_NONE);
 
 	check_improve(ch,gsn_breath,TRUE,4);
 }
@@ -5690,6 +5696,7 @@ void do_blackjack(CHAR_DATA *ch, char *argument)
 			af.modifier = 0;
 			af.bitvector = AFF_SLEEP;
 			af.bitvector2 = 0;
+			af.slot	= WEAR_NONE;
 
 			REMOVE_BIT(victim->affected_by, AFF_HIDE);
 
@@ -7303,6 +7310,7 @@ void do_warcry(CHAR_DATA *ch, char *argument)
 	af.modifier  = 4;
 	af.bitvector = 0;
 	af.bitvector2 = AFF2_WARCRY;
+	af.slot	= WEAR_NONE;
 
 	for (victim = ch->in_room->people; victim != NULL; victim = victim->next_in_room) {
 		if ((victim->leader == ch || victim == ch) && !IS_AFFECTED2(victim, AFF2_WARCRY) && number_percent() < chance) {

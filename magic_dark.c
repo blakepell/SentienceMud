@@ -49,6 +49,7 @@ SPELL_FUNC(spell_dark_shroud)
 	af.modifier = 0;
 	af.bitvector = 0;
 	af.bitvector2 = AFF2_DARK_SHROUD;
+	af.slot = obj_wear_loc;
 	affect_to_char(victim, &af);
 
 	if(room_is_dark(ch->in_room) || is_darked(ch->in_room))

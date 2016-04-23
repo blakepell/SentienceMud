@@ -201,6 +201,7 @@ extern	const	struct	flag_type	rprog_flags[];
 extern  const   struct  flag_type	room_condition_flags[];
 extern	const	struct	flag_type	sector_flags[];
 extern	const	struct	flag_type	door_resets[];
+extern	const struct flag_type wear_loc_names[];
 extern	const	struct	flag_type	wear_loc_strings[];
 extern	const	struct	flag_type	wear_loc_flags[];
 extern	const	struct	flag_type	res_flags[];

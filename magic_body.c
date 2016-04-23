@@ -32,6 +32,7 @@ SPELL_FUNC(spell_blindness)
 	af.duration = 1 + level/6;
 	af.bitvector = AFF_BLIND;
 	af.bitvector2 = 0;
+	af.slot	= WEAR_NONE;
 	affect_to_char(victim, &af);
 	send_to_char("You are blinded!\n\r", victim);
 	act("$n appears to be blinded.",victim,NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
@@ -85,7 +86,7 @@ SPELL_FUNC(spell_colour_spray)
 	if (saves_spell(level, victim,DAM_LIGHT))
 		dam /= 2;
 	else
-		spell_blindness(gsn_blindness,level/2,ch,(void *) victim,TARGET_CHAR);
+		spell_blindness(gsn_blindness,level/2,ch,(void *) victim,TARGET_CHAR, WEAR_NONE);
 
 	damage(ch, victim, dam, sn, DAM_LIGHT,TRUE);
 	return TRUE;
@@ -340,6 +341,7 @@ SPELL_FUNC(spell_haste)
 	af.modifier  = 1 + (level >= 18) + (level >= 25) + (level >= 32);
 	af.bitvector = AFF_HASTE;
 	af.bitvector2 = 0;
+	af.slot = obj_wear_loc;
 	affect_to_char(victim, &af);
 
 	send_to_char("You feel yourself moving more quickly.\n\r", victim);
@@ -410,6 +412,7 @@ SPELL_FUNC(spell_healing_aura)
 	af.modifier = 0;
 	af.bitvector = 0;
 	af.bitvector2 = AFF2_HEALING_AURA;
+	af.slot = obj_wear_loc;
 	affect_to_char(gch, &af);
 	send_to_char("You feel a warm glow within you.\n\r", gch);
 	if (ch != gch)
@@ -450,6 +453,7 @@ SPELL_FUNC(spell_infravision)
 	af.modifier = 0;
 	af.bitvector = AFF_INFRARED;
 	af.bitvector2 = 0;
+	af.slot = obj_wear_loc;
 	affect_to_char(victim, &af);
 	send_to_char("Your eyes glow red.\n\r", victim);
 	return TRUE;
@@ -481,6 +485,7 @@ SPELL_FUNC(spell_invis)
 		af.modifier = 0;
 		af.bitvector = ITEM_INVIS;
 		af.bitvector2 = 0;
+		af.slot	= WEAR_NONE;
 		affect_to_obj(obj,&af);
 
 		act("$p fades out of sight.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ALL);
@@ -511,6 +516,7 @@ SPELL_FUNC(spell_invis)
 	af.modifier = 0;
 	af.bitvector = AFF_INVISIBLE;
 	af.bitvector2 = 0;
+	af.slot = obj_wear_loc;
 	affect_to_char(victim, &af);
 	send_to_char("You fade out of existence.\n\r", victim);
 	return TRUE;
@@ -527,8 +533,8 @@ SPELL_FUNC(spell_mass_healing)
 
 	for (gch = ch->in_room->people; gch; gch = gch->next_in_room) {
 		if (((IS_NPC(ch) && IS_NPC(gch)) || (!IS_NPC(ch) && !IS_NPC(gch))) && can_see(ch, gch)) {
-			spell_heal(heal_num,level,ch,(void *) gch,TARGET_CHAR);
-			spell_refresh(refresh_num,level,ch,(void *) gch,TARGET_CHAR);
+			spell_heal(heal_num,level,ch,(void *) gch,TARGET_CHAR, WEAR_NONE);
+			spell_refresh(refresh_num,level,ch,(void *) gch,TARGET_CHAR, WEAR_NONE);
 		}
 	}
 	return TRUE;
@@ -557,6 +563,7 @@ SPELL_FUNC(spell_mass_invis)
 		af.modifier = 0;
 		af.bitvector = AFF_INVISIBLE;
 		af.bitvector2 = 0;
+		af.slot	= WEAR_NONE;
 		affect_to_char(gch, &af);
 	}
 	return TRUE;
@@ -596,6 +603,7 @@ SPELL_FUNC(spell_regeneration)
 	af.modifier  = 0;
 	af.bitvector = AFF_REGENERATION;
 	af.bitvector2 = 0;
+	af.slot = obj_wear_loc;
 	affect_to_char(gch, &af);
 	send_to_char("You feel yourself regenerating.\n\r", gch);
 

@@ -1467,7 +1467,7 @@ void do_survey(CHAR_DATA *ch, char *argument)
     act("You aren't on a boat.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 }
 
-void show_room(CHAR_DATA *ch, ROOM_INDEX_DATA *room, bool remote, bool silent)
+void show_room(CHAR_DATA *ch, ROOM_INDEX_DATA *room, bool remote, bool silent, bool automatic)
 {
 	char buf[MAX_STRING_LENGTH];
 	char arg1[MAX_INPUT_LENGTH];
@@ -1739,10 +1739,10 @@ void show_room(CHAR_DATA *ch, ROOM_INDEX_DATA *room, bool remote, bool silent)
 	}
 
 	/* VIZZWILDS - Check if char is in a wilderness room, and if so display wilds map */
-	if (room->wilds && ((!str_cmp(arg1, "auto") && ((!IS_NPC(ch) &&
+	if (room->wilds && ((automatic && ((!IS_NPC(ch) &&
 		IS_SET(room->room2_flags, ROOM_VIRTUAL_ROOM) &&
 		!IS_SET(ch->comm, COMM_BRIEF)))) ||
-		(str_cmp(arg1, "auto") && !IS_NPC(ch) &&
+		(!automatic && !IS_NPC(ch) &&
 		IS_SET(room->room2_flags, ROOM_VIRTUAL_ROOM)))) {
 		int vp_x, vp_y;
 
@@ -1754,7 +1754,7 @@ void show_room(CHAR_DATA *ch, ROOM_INDEX_DATA *room, bool remote, bool silent)
 	if(!IS_NPC(ch) && !IS_SET(room->room2_flags, ROOM_VIRTUAL_ROOM) &&
 		IS_SET(room->room_flags, ROOM_VIEWWILDS) &&
 		room->viewwilds &&
-		(str_cmp(arg1,"auto") || !IS_SET(ch->comm, COMM_BRIEF))) {
+		(!automatic || !IS_SET(ch->comm, COMM_BRIEF))) {
 		int vp_x, vp_y;
 
 		vp_x = get_squares_to_show_x(ch->wildview_bonus_x);
@@ -1820,9 +1820,14 @@ void do_look(CHAR_DATA * ch, char *argument)
     /*
      * 'look' or 'look auto'
      */
-    if (arg1[0] == '\0' || !str_cmp(arg1, "auto"))
+    if (arg1[0] == '\0')
     {
-	    show_room(ch,ch->in_room,false,false);
+	    show_room(ch,ch->in_room,false,false,false);
+	    return;
+	}
+
+	if (!str_cmp(arg1, "auto")) {
+	    show_room(ch,ch->in_room,false,false,true);
 	    return;
 	}
 
@@ -1958,7 +1963,7 @@ void do_look(CHAR_DATA * ch, char *argument)
 		act("$n peers into the crystal ball.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
 		//Updated from show_room_to_char to show_room. -- Tieryo 08/18/2010
-		show_room(ch,victim->in_room,true,false);
+		show_room(ch,victim->in_room,true,false,false);
 		return;
 	    }
 	}
@@ -2029,7 +2034,7 @@ void do_look(CHAR_DATA * ch, char *argument)
 		    act("{YYou look through the eyes of $N:{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
 			//Updated show_room_to_char to show_room. -- Tieryo 08/18/2010
-			show_room(ch,victim->in_room,true,false);
+			show_room(ch,victim->in_room,true,false,false);
 		}
 		else
 		    act("The soul of $T has left this world.", ch, NULL, NULL, NULL, NULL, NULL, obj->owner, TO_CHAR);
@@ -2053,7 +2058,7 @@ void do_look(CHAR_DATA * ch, char *argument)
 		    if (perform_lore)
 		    {
 			send_to_char ("\n\r{YFrom your studies you can conclude the following information: {X\n\r", ch);
-			spell_identify(gsn_lore, ch->tot_level,ch, (void *) obj, TARGET_OBJ);
+			spell_identify(gsn_lore, ch->tot_level,ch, (void *) obj, TARGET_OBJ, WEAR_NONE);
 		    }
 		    p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_LORE_EX, NULL);
 		    check_improve(ch, gsn_lore, TRUE, 10);
@@ -2072,7 +2077,7 @@ void do_look(CHAR_DATA * ch, char *argument)
 		    if (perform_lore)
 		    {
 			send_to_char("\n\r{YFrom your studies you can conclude the following information: {X\n\r", ch);
-			spell_identify(gsn_lore, ch->tot_level, ch, (void *) obj, TARGET_OBJ);
+			spell_identify(gsn_lore, ch->tot_level, ch, (void *) obj, TARGET_OBJ, WEAR_NONE);
 		    }
 
 		    p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_LORE_EX, NULL);
@@ -2092,7 +2097,7 @@ void do_look(CHAR_DATA * ch, char *argument)
 		    if (perform_lore)
 		    {
 			send_to_char("\n\r{YFrom your studies you can conclude the following information: {X\n\r", ch);
-			spell_identify(gsn_lore, ch->tot_level,ch, (void *) obj, TARGET_OBJ);
+			spell_identify(gsn_lore, ch->tot_level,ch, (void *) obj, TARGET_OBJ, WEAR_NONE);
 		    }
 
 		    p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_LORE_EX, NULL);
@@ -2123,7 +2128,7 @@ void do_look(CHAR_DATA * ch, char *argument)
 		    if (perform_lore)
 		    {
 			send_to_char("\n\r{YFrom your studies you can conclude the following information: {X\n\r", ch);
-			spell_identify(gsn_lore, ch->tot_level, ch, (void *) obj, TARGET_OBJ);
+			spell_identify(gsn_lore, ch->tot_level, ch, (void *) obj, TARGET_OBJ, WEAR_NONE);
 		    }
 
 		    p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_LORE_EX, NULL);
@@ -2139,7 +2144,7 @@ void do_look(CHAR_DATA * ch, char *argument)
 		    if (perform_lore)
 		    {
 			send_to_char("\n\r{YFrom your studies you can conclude the following information: {X\n\r", ch);
-			spell_identify(gsn_lore, ch->tot_level, ch, (void *) obj, TARGET_OBJ);
+			spell_identify(gsn_lore, ch->tot_level, ch, (void *) obj, TARGET_OBJ, WEAR_NONE);
 		    }
 
 		    p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_LORE_EX, NULL);
@@ -2155,7 +2160,7 @@ void do_look(CHAR_DATA * ch, char *argument)
 		    if (perform_lore)
 		    {
 			send_to_char("\n\r{YFrom your studies you can conclude the following information: {X\n\r", ch);
-			spell_identify(gsn_lore, ch->tot_level, ch, (void *) obj, TARGET_OBJ);
+			spell_identify(gsn_lore, ch->tot_level, ch, (void *) obj, TARGET_OBJ, WEAR_NONE);
 		    }
 
 		    p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_LORE_EX, NULL);
@@ -2208,25 +2213,25 @@ void do_look(CHAR_DATA * ch, char *argument)
 
     /* look <direction> */
     if (!str_cmp(arg1, "n") || !str_cmp(arg1, "north"))
-	door = 0;
+	door = DIR_NORTH;
     else if (!str_cmp(arg1, "e") || !str_cmp(arg1, "east"))
-	door = 1;
+	door = DIR_EAST;
     else if (!str_cmp(arg1, "s") || !str_cmp(arg1, "south"))
-	door = 2;
+	door = DIR_SOUTH;
     else if (!str_cmp(arg1, "w") || !str_cmp(arg1, "west"))
-	door = 3;
+	door = DIR_WEST;
     else if (!str_cmp(arg1, "u") || !str_cmp(arg1, "up"))
-	door = 4;
+	door = DIR_UP;
     else if (!str_cmp(arg1, "d") || !str_cmp(arg1, "down"))
-	door = 5;
+	door = DIR_DOWN;
     else if (!str_cmp(arg1, "ne") || !str_cmp(arg1, "northeast"))
-	door = 6;
+	door = DIR_NORTHEAST;
     else if (!str_cmp(arg1, "nw") || !str_cmp(arg1, "northwest"))
-	door = 7;
+	door = DIR_NORTHWEST;
     else if (!str_cmp(arg1, "se") || !str_cmp(arg1, "southeast"))
-	door = 8;
+	door = DIR_SOUTHEAST;
     else if (!str_cmp(arg1, "sw") || !str_cmp(arg1, "southwest"))
-	door = 9;
+	door = DIR_SOUTHWEST;
     else {
 	send_to_char("You do not see that here.\n\r", ch);
 	return;

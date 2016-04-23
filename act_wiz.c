@@ -43,6 +43,7 @@ extern char *token_index_getvaluename(TOKEN_INDEX_DATA *token, int v);
 extern void affect_fix_char(CHAR_DATA *ch);
 extern bool newlock;
 extern bool wizlock;
+extern bool is_test_port;
 
 
 int gconfig_read (void)
@@ -144,8 +145,15 @@ int gconfig_read (void)
 					break;
 				}
 	            break;
+			case 'T':
+                if(!str_cmp(word,"Testport")) {
+					is_test_port = TRUE;
+					fMatch = TRUE;
+					break;
+				}
+				break;
 			case 'W':
-                if(!str_cmp(word,"Newlock")) {
+                if(!str_cmp(word,"Wizlock")) {
 					wizlock = TRUE;
 					fMatch = TRUE;
 					break;
@@ -186,6 +194,7 @@ int gconfig_write(void)
     fprintf(fp, "NextChurchUID %ld\n", gconfig.next_church_uid);
     if(newlock) fprintf(fp, "Newlock\n");
     if(wizlock) fprintf(fp, "Wizlock\n");
+    if(is_test_port) fprintf(fp, "Testport\n");
 
     fprintf(fp, "END\n");
     fclose(fp);
@@ -2028,26 +2037,28 @@ void do_mstat(CHAR_DATA *ch, char *argument)
     for (paf = victim->affected; paf != NULL; paf = paf->next) if(!paf->custom_name)
     {
 	sprintf(buf,
-	    "{C* {BLevel {W%3d {Baffect {x%-20.20s{B modifies {x%-12s{B by {x%2d{B for {x%2d{B hours with bits {x%s\n\r",
+	    "{C* {BLevel {W%3d {Baffect {x%-20.20s{B modifies {x%-12s{B by {x%2d{B for {x%2d{B hours with bits {x%s{B on slot {x%s\n\r",
 	    paf->level,
 	    skill_table[(int) paf->type].name,
 	    affect_loc_name(paf->location),
 	    paf->modifier,
 	    paf->duration,
-	    affects_bit_name(paf->bitvector, paf->bitvector2));
+	    affects_bit_name(paf->bitvector, paf->bitvector2),
+	    flag_string(wear_loc_names, paf->slot));
 	send_to_char(buf, ch);
     }
 
     for (paf = victim->affected; paf != NULL; paf = paf->next) if(paf->custom_name)
     {
 	sprintf(buf,
-	    "{C* {BLevel {W%3d {Baffect {x%-20.20s{B modifies {x%-12s{B by {x%2d{B for {x%2d{B hours with bits {x%s\n\r",
+	    "{C* {BLevel {W%3d {Baffect {x%-20.20s{B modifies {x%-12s{B by {x%2d{B for {x%2d{B hours with bits {x%s{B on slot {x%s\n\r",
 	    paf->level,
 	    paf->custom_name,
 	    affect_loc_name(paf->location),
 	    paf->modifier,
 	    paf->duration,
-	    affects_bit_name(paf->bitvector, paf->bitvector2));
+	    affects_bit_name(paf->bitvector, paf->bitvector2),
+	    flag_string(wear_loc_names, paf->slot));
 	send_to_char(buf, ch);
     }
 
@@ -3817,7 +3828,6 @@ void do_newlock(CHAR_DATA *ch, char *argument)
 
 void do_testport(CHAR_DATA *ch, char *argument)
 {
-    extern bool is_test_port;
     is_test_port = !is_test_port;
 
     if (is_test_port)
@@ -3830,6 +3840,7 @@ void do_testport(CHAR_DATA *ch, char *argument)
 		wiznet("$N disables Test Port Mode.",ch,NULL,0,0,0);
 		send_to_char("Test Port Mode disabled.\n\r", ch);
     }
+    gconfig_write();
 }
 
 /*

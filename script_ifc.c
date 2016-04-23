@@ -2169,7 +2169,6 @@ DECL_IFC_FUN(ifc_varnumber)
 
 DECL_IFC_FUN(ifc_vardefined)
 {
-	char buf[MIL];
 	PROG_DATA * progs = NULL;
 	pVARIABLE var;
 	if(ISARG_MOB(0)) { progs = ARG_MOB(0)->progs; ++argv; }
@@ -3635,7 +3634,13 @@ DECL_IFC_FUN(ifc_affectgroup)
 
 DECL_IFC_FUN(ifc_isaffectgroup)
 {
-	*ret = ISARG_AFF(0) && ISARG_STR(1) && (ARG_AFF(0)->group == flag_value(apply_types,ARG_STR(1)));
+	*ret = FALSE;
+	if(ISARG_AFF(0) && ISARG_STR(1)) {
+		if(ARG_AFF(0)->where == TO_OBJECT || ARG_AFF(0)->where == TO_WEAPON)
+			*ret = ARG_AFF(0)->group == flag_lookup(ARG_STR(1), affgroup_object_flags);
+		else
+			*ret = ARG_AFF(0)->group == flag_lookup(ARG_STR(1), affgroup_mobile_flags);
+	}
 	return TRUE;
 }
 
@@ -3648,6 +3653,12 @@ DECL_IFC_FUN(ifc_affectbit)
 DECL_IFC_FUN(ifc_affectbit2)
 {
 	*ret = ISARG_AFF(0) && ISARG_STR(1) && IS_SET(ARG_AFF(0)->bitvector, flag_value_ifcheck(affect2_flags,ARG_STR(1)));
+	return TRUE;
+}
+
+DECL_IFC_FUN(ifc_isaffectwhere)
+{
+	*ret = ISARG_AFF(0) && ISARG_STR(1) && (ARG_AFF(0)->where == flag_value(apply_types, ARG_STR(1)));
 	return TRUE;
 }
 
@@ -4103,8 +4114,6 @@ DECL_IFC_FUN(ifc_canget)
 // if canput $mobile $object $container [boolean]
 DECL_IFC_FUN(ifc_canput)
 {
-	bool silent;
-
 	if(!ISARG_MOB(0)) return FALSE;
 	if(!ISARG_OBJ(1)) return FALSE;
 	if(!ISARG_OBJ(2)) return FALSE;
@@ -4188,6 +4197,20 @@ DECL_IFC_FUN(ifc_iscastroomblocked)
 DECL_IFC_FUN(ifc_iscastrecovered)
 {
 	*ret = ISARG_MOB(0) && ARG_MOB(0)->casting_recovered;
+	return TRUE;
+}
+
+// hasspell[ OBJECT] STRING
+DECL_IFC_FUN(ifc_hasspell)
+{
+	*ret = FALSE;
+	if(ISARG_STR(0)) {
+		if(obj)
+			*ret = obj_has_spell(obj, ARG_STR(0));
+	} else if(ISARG_OBJ(0) && ISARG_STR(1)) {
+		*ret = obj_has_spell(ARG_OBJ(0), ARG_STR(1));
+	}
+
 	return TRUE;
 }
 

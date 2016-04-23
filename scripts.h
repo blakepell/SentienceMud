@@ -90,9 +90,16 @@ enum {
 
 
 
+
 enum ifcheck_enum {
 	/* A */
-	CHK_ABS=0,CHK_ACT,CHK_ACT2,CHK_AFFECTED,CHK_AFFECTED2,CHK_AFFECTEDNAME,CHK_AFFECTEDSPELL,CHK_AGE,CHK_ALIGN,CHK_ANGLE,
+	CHK_ABS=0,CHK_ACT,CHK_ACT2,
+	CHK_AFFECTBIT,CHK_AFFECTBIT2,
+	CHK_AFFECTED,CHK_AFFECTED2,CHK_AFFECTEDNAME,CHK_AFFECTEDSPELL,
+	CHK_AFFECTGROUP,CHK_AFFECTLOCATION,CHK_AFFECTMODIFIER,
+	CHK_AFFECTSKILL,CHK_AFFECTTIMER,
+
+	CHK_AGE,CHK_ALIGN,CHK_ANGLE,
 	CHK_AREAHASLAND,CHK_AREAID,CHK_AREALANDX,CHK_AREALANDY,
 	CHK_ARENAFIGHTS,CHK_ARENALOSS,CHK_ARENARATIO,CHK_ARENAWINS,CHK_AREAX,CHK_AREAY,
 
@@ -127,7 +134,8 @@ enum ifcheck_enum {
 	CHK_GROUPSTR,CHK_GROUPWIS,CHK_GRPSIZE,
 
 	/* H */
-	CHK_HANDSFULL,CHK_HAS,CHK_HASCATALYST,CHK_HASENVIRONMENT,CHK_HASPROMPT,CHK_HASQUEUE,CHK_HASSHIP,CHK_HASSUBCLASS,
+	CHK_HANDSFULL,CHK_HAS,CHK_HASCATALYST,CHK_HASENVIRONMENT,CHK_HASPROMPT,CHK_HASQUEUE,
+	CHK_HASSHIP,CHK_HASSPELL,CHK_HASSUBCLASS,
 	CHK_HASTARGET,CHK_HASTOKEN,
 	CHK_HASVLINK,CHK_HEALREGEN,CHK_HITDAMAGE,CHK_HITDAMCLASS,CHK_HITDAMTYPE,CHK_HITSKILLTYPE,
 	CHK_HOUR,CHK_HPCNT,CHK_HUNGER,
@@ -137,7 +145,13 @@ enum ifcheck_enum {
 	CHK_ID,CHK_ID2,CHK_IDENTICAL,CHK_IMM,CHK_INCHURCH,CHK_INNATURE,CHK_INPUTWAIT,CHK_INWILDS,
 
 	/* IS */
-		CHK_ISACTIVE,CHK_ISAMBUSHING,CHK_ISANGEL,
+		CHK_ISACTIVE,
+		CHK_ISAFFECTCUSTOM,
+		CHK_ISAFFECTGROUP,
+		CHK_ISAFFECTSKILL,
+		CHK_ISAFFECTWHERE,
+
+		CHK_ISAMBUSHING,CHK_ISANGEL,
 		CHK_ISBREWING,CHK_ISBUSY,
 		CHK_ISCASTFAILURE,CHK_ISCASTING,CHK_ISCASTRECOVERED,CHK_ISCASTROOMBLOCKED,CHK_ISCASTSUCCESS,
 		CHK_ISCHARM,CHK_ISCHURCHEXCOM,CHK_ISCHURCHPK,CHK_ISCLONEROOM,CHK_ISCPKPROOF,CHK_ISCROSSZONE,
@@ -624,6 +638,7 @@ enum entity_mobile_enum {
 	ENTITY_MOB_SONGTARGET,
 	ENTITY_MOB_SONGTOKEN,
 	ENTITY_MOB_INSTRUMENT,
+	ENTITY_MOB_WORN,
 	ENTITY_MOB_NEXT,
 };
 
@@ -642,7 +657,8 @@ enum entity_object_enum {
 	ENTITY_OBJ_AREA,
 	ENTITY_OBJ_EXTRADESC,
 	ENTITY_OBJ_CLONEROOMS,
-	ENTITY_OBJ_NEXT
+	ENTITY_OBJ_NEXT,
+	ENTITY_OBJ_AFFECTS
 };
 
 enum entity_room_enum {
@@ -1594,6 +1610,22 @@ DECL_IFC_FUN(ifc_iscastroomblocked);
 DECL_IFC_FUN(ifc_iscastrecovered);
 DECL_IFC_FUN(ifc_churchsize);
 
+DECL_IFC_FUN(ifc_isaffectcustom);
+DECL_IFC_FUN(ifc_affectskill);
+DECL_IFC_FUN(ifc_isaffectskill);
+DECL_IFC_FUN(ifc_affectlocation);
+DECL_IFC_FUN(ifc_affectmodifier);
+DECL_IFC_FUN(ifc_affecttimer);
+DECL_IFC_FUN(ifc_affectgroup);
+DECL_IFC_FUN(ifc_isaffectgroup);
+DECL_IFC_FUN(ifc_affectbit);
+DECL_IFC_FUN(ifc_affectbit2);
+DECL_IFC_FUN(ifc_isaffectwhere);
+
+
+DECL_IFC_FUN(ifc_hasspell);
+
+
 
 /* Opcode functions */
 DECL_OPC_FUN(opc_end);
@@ -1654,6 +1686,7 @@ ROOM_INDEX_DATA *get_exit_dest(ROOM_INDEX_DATA *room, char *argument);
 bool script_change_exit(ROOM_INDEX_DATA *pRoom, ROOM_INDEX_DATA *pToRoom, int door);
 char *trigger_name(int type);
 char *trigger_phrase(int type, char *phrase);
+char *trigger_phrase_olcshow(int type, char *phrase, bool is_rprog, bool is_tprog);
 void script_clear_mobile(CHAR_DATA *ptr);
 void script_clear_object(OBJ_DATA *ptr);
 void script_clear_room(ROOM_INDEX_DATA *ptr);
@@ -2132,6 +2165,25 @@ SCRIPT_CMD(do_tpcondition);
 SCRIPT_CMD(do_tpscriptwait);
 SCRIPT_CMD(do_tpcastfailure);
 SCRIPT_CMD(do_tpcastrecover);
+
+
+SCRIPT_CMD(do_mpaddspell);
+SCRIPT_CMD(do_mpremspell);
+SCRIPT_CMD(do_mpalteraffect);
+SCRIPT_CMD(do_mpcrier);
+SCRIPT_CMD(do_opaddspell);
+SCRIPT_CMD(do_opremspell);
+SCRIPT_CMD(do_opalteraffect);
+SCRIPT_CMD(do_opcrier);
+SCRIPT_CMD(do_rpaddspell);
+SCRIPT_CMD(do_rpremspell);
+SCRIPT_CMD(do_rpalteraffect);
+SCRIPT_CMD(do_rpcrier);
+SCRIPT_CMD(do_tpaddspell);
+SCRIPT_CMD(do_tpremspell);
+SCRIPT_CMD(do_tpalteraffect);
+SCRIPT_CMD(do_tpcrier);
+
 
 #include "tables.h"
 

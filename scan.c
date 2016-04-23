@@ -55,7 +55,6 @@ void scan_direction(CHAR_DATA *ch, ROOM_INDEX_DATA *start_room, int max_depth, i
 	int to_x, to_y;
 	DESTINATION_DATA dest;
 	EXIT_DATA *pExit;
-	WILDS_TERRAIN *pTerrain;
 	WILDS_VLINK *pVLink = NULL;
 
 	// Initialize current destination data to the start room
@@ -144,10 +143,7 @@ void scan_direction(CHAR_DATA *ch, ROOM_INDEX_DATA *start_room, int max_depth, i
 void do_scan(CHAR_DATA *ch, char *argument)
 {
 	char arg1[MAX_INPUT_LENGTH];
-	ROOM_INDEX_DATA *scan_room, *dest;
-	EXIT_DATA *pExit;
 	int door;
-	int depth;
 	int max_depth;
 	int skill;
 

@@ -153,6 +153,7 @@ SPELL_FUNC(spell_electrical_barrier)
 		return FALSE;
 	}
 
+	af.slot	= WEAR_NONE;
 	af.where = TO_AFFECTS;
 	af.group = AFFGROUP_MAGICAL;
 	af.type = sn;
@@ -162,6 +163,7 @@ SPELL_FUNC(spell_electrical_barrier)
 	af.modifier = 0;
 	af.bitvector = 0;
 	af.bitvector2 = AFF2_ELECTRICAL_BARRIER;
+	af.slot = obj_wear_loc;
 	affect_to_char(victim, &af);
 	act("{WCrackling blue arcs of electricity whip up and around $n forming a hazy barrier.{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	send_to_char("{WYou are surrounded by an electrical barrier.\n\r{x", victim);

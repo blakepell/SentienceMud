@@ -78,6 +78,7 @@ SPELL_FUNC(spell_fly)
 	af.modifier = 0;
 	af.bitvector = AFF_FLYING;
 	af.bitvector2 = 0;
+	af.slot = obj_wear_loc;
 	affect_to_char(victim, &af);
 
 	send_to_char("Your feet rise off the ground.\n\r", victim);
@@ -121,6 +122,7 @@ SPELL_FUNC(spell_underwater_breathing)
 	af.location = 0;
 	af.bitvector = AFF_SWIM;
 	af.bitvector2 = 0;
+	af.slot = obj_wear_loc;
 	affect_to_char(victim, &af);
 	send_to_char("You feel a strange sensation as gills sprout behind your ears.\n\r", victim);
 	if (ch != victim) act("Gills sprout from behind $N's ears.",ch,victim, NULL, NULL, NULL, NULL, NULL,TO_CHAR);

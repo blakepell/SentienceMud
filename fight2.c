@@ -443,6 +443,7 @@ memset(&af,0,sizeof(af));
 	else
 	    num_classes += ((ch->tot_level >= 31) + (ch->tot_level >= 61) + (ch->tot_level >= 91));
 
+	af.slot	= WEAR_NONE;
 	// Add some affects
 	af.where     = TO_AFFECTS;
 	af.group     = AFFGROUP_METARACIAL;

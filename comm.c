@@ -606,10 +606,10 @@ int main(int argc, char **argv)
     }
 #endif
 
-    if(port == PORT_TEST) newlock = TRUE;	/* The alpha port is initially set to newlock*/
-    if(port == PORT_TEST) wizlock = TRUE;	/* Newlock/Wizlock all ports for now */
+    //if(port == PORT_TEST) newlock = TRUE;	/* The alpha port is initially set to newlock*/
+    //if(port == PORT_TEST) wizlock = TRUE;	/* Newlock/Wizlock all ports for now */
 
-    if(port == PORT_TEST || port == PORT_ALPHA || port == PORT_SYN) is_test_port = TRUE;
+    //if(port == PORT_TEST || port == PORT_ALPHA || port == PORT_SYN) is_test_port = TRUE;
 
     RedirectOutput();
 
@@ -3801,8 +3801,13 @@ void act_new(char *format, CHAR_DATA *ch,
 //            }
 
             ++str;
-            while ((*point = *i) != '\0')
-                ++point, ++i;
+            if( i != NULL ) {
+	            while ((*point = *i) != '\0')
+	                ++point, ++i;
+			} else {
+				strcpy(point, "<NULL>");
+				point += 6;
+			}
         }
 
         *point++ = '\n';
@@ -4332,6 +4337,9 @@ void update_pc_timers(CHAR_DATA *ch)
 		--ch->script_wait;
 		if (ch->script_wait <= 0)
 			script_end_success(ch);
+		else
+		{
+		}
 	}
 
 

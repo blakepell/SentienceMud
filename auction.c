@@ -107,7 +107,7 @@ void do_auction( CHAR_DATA *ch, char * argument )
 		send_to_char( buf, ch );
 	    }
 	    spell_identify( 0, ch->tot_level, ch,
-	    	(void *) auction_info.item, TARGET_OBJ );
+	    	(void *) auction_info.item, TARGET_OBJ, WEAR_NONE );
 	    return;
 	}
 
@@ -131,7 +131,7 @@ void do_auction( CHAR_DATA *ch, char * argument )
 	    send_to_char( buf, ch );
 	}
 
-	spell_identify( 0, ch->tot_level, ch, (void *) auction_info.item, TARGET_OBJ );
+	spell_identify( 0, ch->tot_level, ch, (void *) auction_info.item, TARGET_OBJ, WEAR_NONE );
 	if ( ch->tot_level < obj->level - 25 && !IS_REMORT(ch))
 	{
 	    send_to_char("{RWARNING: You will not be able to save this item.{x\n\r",

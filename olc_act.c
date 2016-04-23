@@ -1581,7 +1581,7 @@ REDIT(redit_show)
 			while(( trigger = (PROG_LIST *)iterator_nextdata(&it))) {
 				sprintf(buf, "{r[{W%4d{r]{x %-20ld %-10s %-10s\n\r", cnt,
 					trigger->vnum,trigger_name(trigger->trig_type),
-					trigger_phrase(trigger->trig_type,trigger->trig_phrase));
+					trigger_phrase_olcshow(trigger->trig_type,trigger->trig_phrase, TRUE, FALSE));
 				add_buf(buf1, buf);
 				cnt++;
 			}
@@ -4391,7 +4391,7 @@ OEDIT(oedit_show)
 		if(list_size(pObj->progs[slot]) > 0) ++cnt;
 
 	if (cnt > 0) {
-		sprintf(buf, "{R%-6s %-20s %-10s %-10s\n\r{x", "Number", "MobProg Vnum", "Trigger", "Phrase");
+		sprintf(buf, "{R%-6s %-20s %-10s %-10s\n\r{x", "Number", "ObjProg Vnum", "Trigger", "Phrase");
 		add_buf(buffer, buf);
 
 		sprintf(buf, "{R%-6s %-20s %-10s %-10s\n\r{x", "------", "-------------", "-------", "------");
@@ -4402,7 +4402,7 @@ OEDIT(oedit_show)
 			while(( trigger = (PROG_LIST *)iterator_nextdata(&it))) {
 				sprintf(buf, "{B[{W%4d{B]{x %-20ld %-10s %-6s\n\r", cnt,
 					trigger->vnum,trigger_name(trigger->trig_type),
-					trigger_phrase(trigger->trig_type,trigger->trig_phrase));
+					trigger_phrase_olcshow(trigger->trig_type,trigger->trig_phrase, FALSE, FALSE));
 				add_buf(buffer, buf);
 				cnt++;
 			}
@@ -6538,7 +6538,7 @@ MEDIT(medit_show)
 				while(( trigger = (PROG_LIST *)iterator_nextdata(&it))) {
 					sprintf(buf, "{C[{W%4d{C]{x %-20ld %-10s %-6s\n\r", cnt,
 						trigger->vnum,trigger_name(trigger->trig_type),
-						trigger_phrase(trigger->trig_type,trigger->trig_phrase));
+						trigger_phrase_olcshow(trigger->trig_type,trigger->trig_phrase, FALSE, FALSE));
 					add_buf(buffer, buf);
 					cnt++;
 				}
@@ -8223,6 +8223,15 @@ MEDIT (medit_addmprog)
 		}
 		sprintf(phrase,"%d",sn);
 	}
+	else if( value == TRIG_EXIT ||
+		value == TRIG_EXALL ) {
+		int door = parse_door(phrase);
+		if( door < 0 ) {
+			send_to_char("Invalid direction for exit/exall trigger.\n\r", ch);
+			return FALSE;
+		}
+		sprintf(phrase,"%d",door);
+	}
 
     if ((code = get_script_index (atol(num), PRG_MPROG)) == NULL)
     {
@@ -8549,6 +8558,16 @@ OEDIT (oedit_addoprog)
     value = tindex;//trigger_table[tindex].value;
     slot = trigger_table[tindex].slot;
 
+	if( value == TRIG_EXIT ||
+		value == TRIG_EXALL ) {
+		int door = parse_door(phrase);
+		if( door < 0 ) {
+			send_to_char("Invalid direction for exit/exall trigger.\n\r", ch);
+			return FALSE;
+		}
+		sprintf(phrase,"%d",door);
+	}
+
 
   if ((code = get_script_index (atol(num), PRG_OPROG)) == NULL)
   {
@@ -8636,6 +8655,20 @@ REDIT (redit_addrprog)
 
     value = tindex;//trigger_table[tindex].value;
     slot = trigger_table[tindex].slot;
+
+	if( value == TRIG_EXIT ||
+		value == TRIG_EXALL ||
+		value == TRIG_OPEN ||
+		value == TRIG_CLOSE ||
+		value == TRIG_KNOCK ||
+		value == TRIG_KNOCKING ) {
+		int door = parse_door(phrase);
+		if( door < 0 ) {
+			send_to_char("Invalid direction for exit/exall/open/close/knock/knocking trigger.\n\r", ch);
+			return FALSE;
+		}
+		sprintf(phrase,"%d",door);
+	}
 
 
     if ((code = get_script_index (atol(num), PRG_RPROG)) == NULL)

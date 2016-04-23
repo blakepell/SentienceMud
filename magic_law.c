@@ -34,6 +34,7 @@ SPELL_FUNC(spell_armor)
 		return FALSE;
 	}
 
+	af.slot = obj_wear_loc;
 	af.where = TO_AFFECTS;
 	af.group = AFFGROUP_MAGICAL;
 	af.type = sn;
@@ -73,6 +74,7 @@ SPELL_FUNC(spell_cloak_of_guile)
 		return FALSE;
 	}
 
+	af.slot = obj_wear_loc;
 	af.where = TO_AFFECTS;
 	af.group = AFFGROUP_MAGICAL;
 	af.type = sn;
@@ -119,6 +121,7 @@ SPELL_FUNC(spell_faerie_fire)
 	if (IS_AFFECTED(victim, AFF_FAERIE_FIRE))
 		return FALSE;
 
+	af.slot	= WEAR_NONE;
 	af.where = TO_AFFECTS;
 	af.group = AFFGROUP_MAGICAL;
 	af.type = sn;
@@ -557,6 +560,7 @@ SPELL_FUNC(spell_pass_door)
 		return FALSE;
 	}
 
+	af.slot = obj_wear_loc;
 	af.where = TO_AFFECTS;
 	af.group = AFFGROUP_MAGICAL;
 	af.type = sn;
@@ -635,7 +639,6 @@ SPELL_FUNC(spell_word_of_recall)
 {
 	CHAR_DATA *victim = (CHAR_DATA *) vo;
 	ROOM_INDEX_DATA *location;
-	LOCATION recall;
 
 	if (IS_NPC(victim))
 		return FALSE;

@@ -174,7 +174,7 @@ bool check_spell_deflection(CHAR_DATA *ch, CHAR_DATA *victim, int sn)
 			act("{Y$n's spell bounces off onto $N!{x", ch,  rch, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
 		}
 
-		(*skill_table[sn].spell_fun)(sn, ch != NULL ? ch->tot_level : af->level, ch != NULL ? ch : rch, rch, TARGET_CHAR);
+		(*skill_table[sn].spell_fun)(sn, ch != NULL ? ch->tot_level : af->level, ch != NULL ? ch : rch, rch, TARGET_CHAR, WEAR_NONE);
 	} else {
 		if (ch != NULL) {
 			act("{YYour spell bounces around for a while, then dies out.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);

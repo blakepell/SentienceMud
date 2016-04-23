@@ -202,6 +202,7 @@ SPELL_FUNC(spell_death_grip)
 	af.modifier = 0;
 	af.bitvector = AFF_DEATH_GRIP;
 	af.bitvector2 = 0;
+	af.slot = obj_wear_loc;
 	affect_to_char(victim, &af);
 
 	act("{D$n's weapon grip tightens as in death.{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
@@ -243,6 +244,7 @@ SPELL_FUNC(spell_deathsight)
 	af.duration = perm ? -1 : (level/3);
 	af.bitvector = 0;
 	af.bitvector2 = AFF2_DEATHSIGHT;
+	af.slot = obj_wear_loc;
 	affect_to_char(ch, &af);
 	send_to_char("{DYour mind opens up to the world of the dead.\n\r", victim);
 	act("{D$n's eyes momentarily flicker darker.{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);

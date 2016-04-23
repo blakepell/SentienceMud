@@ -21,6 +21,12 @@ ROOM_INDEX_DATA room_pointer_environment;
 
 bool opc_skip_block(SCRIPT_CB *block,int level,bool endblock);
 
+char *	const	dir_name_phrase	[]		=
+{
+    "0 (north)", "1 (east)", "2 (south)", "3 (west)", "4 (up)", "5 (down)", "6 (northeast)",  "7 (northwest)", "8 (southeast)", "9 (southwest)"
+};
+
+
 void script_clear_mobile(CHAR_DATA *ptr)
 {
 	register int lp;
@@ -320,7 +326,6 @@ int ifcheck_lookup(char *name, int type)
 
 char *ifcheck_get_value(SCRIPT_VARINFO *info,IFCHECK_DATA *ifc,char *text,int *ret,bool *valid)
 {
-	char buf[MIL];
 	int i;
 	SCRIPT_PARAM argv[IFC_MAXPARAMS];
 
@@ -2937,6 +2942,49 @@ char *trigger_phrase(int type, char *phrase)
 	return phrase;
 }
 
+char *trigger_phrase_olcshow(int type, char *phrase, bool is_rprog, bool is_tprog)
+{
+	int sn;
+	if(type >= 0 && type < trigger_table_size && trigger_table[type].name) {
+		if(type == TRIG_SPELLCAST) {
+			sn = atoi(phrase);
+			if(sn < 0) return "reserved";
+			return skill_table[sn].name;
+		}
+
+		if(	type == TRIG_EXIT ||
+			type == TRIG_EXALL ||
+			type == TRIG_KNOCK ||
+			type == TRIG_KNOCKING) {
+			sn = atoi(phrase);
+
+			if( sn < 0 || sn >= MAX_DIR) return "nowhere";
+
+			return dir_name[sn];
+		}
+
+		// Only care if is_rprog/is_tprog is set
+		if((is_rprog || is_tprog) && (type == TRIG_OPEN || type == TRIG_CLOSE)) {
+			sn = atoi(phrase);
+
+			if( is_rprog ) {
+				if( sn < 0 || sn >= MAX_DIR) return "nowhere";
+
+				return dir_name[sn];
+			} else {
+				if( sn < 0 || sn >= MAX_DIR) return phrase;
+
+				return dir_name_phrase[sn];
+			}
+
+
+
+		}
+	}
+
+	return phrase;
+
+}
 
 // Common entry point for all the queued commands!
 void script_interpret(SCRIPT_VARINFO *info, char *command)

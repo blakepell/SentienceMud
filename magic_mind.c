@@ -26,7 +26,7 @@ SPELL_FUNC(spell_calm)
 		if (!check_spell_deflection(ch, vch, sn))
 			continue;
 
-		if (IS_AFFECTED(vch,AFF_CALM) || IS_AFFECTED(vch,AFF_BERSERK) || (!is_same_group(vch, ch) && !is_same_group(vch, ch->fighting)))
+		if (IS_AFFECTED(vch,AFF_CALM) || IS_AFFECTED(vch,AFF_BERSERK) || IS_AFFECTED(vch,AFF_FRENZY) || (!is_same_group(vch, ch) && !is_same_group(vch, ch->fighting)))
 			continue;
 
 		found = TRUE;
@@ -35,6 +35,7 @@ SPELL_FUNC(spell_calm)
 		if (vch->fighting || vch->position == POS_FIGHTING)
 			stop_fighting(vch,FALSE);
 
+		af.slot	= WEAR_NONE;
 		af.where = TO_AFFECTS;
 		af.group = AFFGROUP_MENTAL;
 		af.type = sn;
@@ -83,7 +84,7 @@ SPELL_FUNC(spell_charm_person)
 		return FALSE;
 	}
 
-	if (IS_NPC(victim) || victim->tot_level >= (ch->tot_level+15)) {
+	if (IS_NPC(victim) && victim->tot_level >= (ch->tot_level+15)) {
 		act("$N seems unaffected by your attempted charm.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		return FALSE;
 	}
@@ -99,6 +100,7 @@ SPELL_FUNC(spell_charm_person)
 	if (!add_grouped(victim, ch, TRUE))
 		return FALSE;
 
+	af.slot	= WEAR_NONE;
 	af.where = TO_AFFECTS;
 	af.group = AFFGROUP_MENTAL;
 	af.type = sn;
@@ -142,6 +144,7 @@ SPELL_FUNC(spell_detect_hidden)
 		return FALSE;
 	}
 
+	af.slot = obj_wear_loc;
 	af.where = TO_AFFECTS;
 	af.group = AFFGROUP_MAGICAL;
 	af.type = sn;
@@ -181,6 +184,7 @@ SPELL_FUNC(spell_detect_invis)
 		return FALSE;
 	}
 
+	af.slot = obj_wear_loc;
 	af.where = TO_AFFECTS;
 	af.group = AFFGROUP_MAGICAL;
 	af.type = sn;
@@ -220,6 +224,7 @@ SPELL_FUNC(spell_detect_magic)
 		return FALSE;
 	}
 
+	af.slot = obj_wear_loc;
 	af.where = TO_AFFECTS;
 	af.group = AFFGROUP_MAGICAL;
 	af.type = sn;
@@ -273,6 +278,7 @@ SPELL_FUNC(spell_frenzy)
 		return FALSE;
 	}
 
+	af.slot = obj_wear_loc;
 	af.where = TO_AFFECTS;
 	af.group = AFFGROUP_DIVINE;
 	af.type = sn;
@@ -340,7 +346,7 @@ SPELL_FUNC(spell_morphlock)
 
 	}
 
-
+	af.slot = obj_wear_loc;
 	af.where = TO_AFFECTS;
 	af.group = AFFGROUP_MENTAL;
 	af.type = sn;
@@ -365,6 +371,7 @@ SPELL_FUNC(spell_sleep)
 		(level + 2) < victim->tot_level || saves_spell(level-4, victim,DAM_CHARM))
 		return FALSE;
 
+	af.slot	= WEAR_NONE;
 	af.where = TO_AFFECTS;
 	af.group = AFFGROUP_MAGICAL;
 	af.type = sn;
@@ -416,10 +423,11 @@ SPELL_FUNC(spell_third_eye)
 		}
 	}
 
-	act("{YYou send a flow of dark power into $p, binding it to $S soul.{x", ch, victim, NULL, NULL, NULL, skull, NULL, TO_CHAR);
+	act("{YYou send a flow of dark power into $p, binding it to $S soul.{x", ch, victim, NULL, skull, NULL, NULL, NULL, TO_CHAR);
 	act("{Y$n grasps $p and chants words of dark power.{x", ch, NULL, NULL, skull, NULL, NULL, NULL, TO_ROOM);
 	send_to_char("{WYou get a momentary shiver up your spine.{x\n\r", victim);
 
+	af.slot	= WEAR_NONE;
 	af.where = TO_OBJECT;
 	af.group = AFFGROUP_ENCHANT;
 	af.type	= sn;

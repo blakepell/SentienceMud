@@ -79,8 +79,6 @@ SPELL_FUNC(spell_enchant_armor)
 
 	/* item disenchanted */
 	if (result < (fail / 3))  {
-		AFFECT_DATA *paf_next;
-
 		act("$p glows brightly, then fades...oops.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
 		act("$p glows brightly, then fades.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 
@@ -145,7 +143,6 @@ SPELL_FUNC(spell_enchant_armor)
 SPELL_FUNC(spell_enchant_object)
 {
 	OBJ_DATA *obj;
-	AFFECT_DATA *paf;
 	int result, fail;
 
 	obj = (OBJ_DATA *) vo;
@@ -188,7 +185,6 @@ SPELL_FUNC(spell_enchant_weapon)
 {
 	OBJ_DATA *obj;
 	AFFECT_DATA *paf;
-	AFFECT_DATA *paf_next;
 	AFFECT_DATA *paf_hit;
 	AFFECT_DATA *paf_dam;
 	int result;

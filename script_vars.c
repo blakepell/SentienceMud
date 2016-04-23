@@ -1155,7 +1155,6 @@ bool variables_argremove_string_index(ppVARIABLE list,char *name,int argindex)
 	pVARIABLE var = variable_create(list,name,FALSE,FALSE);
 	char *nstr;
 	int len;
-	char buf[MIL];
 
 	if(!var) return FALSE;
 
@@ -1195,7 +1194,6 @@ bool variables_argremove_string_phrase(ppVARIABLE list,char *name,char *phrase)
 	pVARIABLE var = variable_create(list,name,FALSE,FALSE);
 	char *nstr;
 	int len;
-	char buf[MIL];
 
 	if(!var) return FALSE;
 

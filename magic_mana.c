@@ -134,7 +134,7 @@ SPELL_FUNC(spell_counter_spell)
 
 		victim->mana -= mana/3;
 		ch->mana -= (mana * 2)/3;
-		(*skill_table[sn].spell_fun)(sn, 3 * ch->tot_level/4, victim, vo, target);
+		(*skill_table[sn].spell_fun)(sn, 3 * ch->tot_level/4, victim, vo, target, WEAR_NONE);
 	} else
 		stop_casting(victim, TRUE);
 
@@ -228,7 +228,6 @@ SPELL_FUNC(spell_dispel_room)
 	ROOM_INDEX_DATA *rev_pRoom;
 	int index;
 	bool exists = FALSE;
-	bool custom = FALSE;
 	char buf[MAX_STRING_LENGTH];
 	char buf2[MAX_STRING_LENGTH];
 
@@ -437,6 +436,7 @@ SPELL_FUNC(spell_spell_deflection)
 		return FALSE;
 	}
 
+	af.slot = obj_wear_loc;
 	af.where = TO_AFFECTS;
 	af.group = AFFGROUP_MAGICAL;
 	af.type = sn;
@@ -476,6 +476,7 @@ SPELL_FUNC(spell_spell_shield)
 		return FALSE;
 	}
 
+	af.slot = obj_wear_loc;
 	af.where = TO_AFFECTS;
 	af.group = AFFGROUP_MAGICAL;
 	af.type = sn;

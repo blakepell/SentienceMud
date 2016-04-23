@@ -306,6 +306,7 @@ if (PULLING_CART(ch) && portal->item_type != ITEM_SHIP)
  			af.modifier  = 0;
 			af.bitvector = AFF_SNEAK;
 			af.bitvector2 = 0;
+			af.slot	= WEAR_NONE;
 			affect_to_char(ch, &af);
 			send_to_char("You assume a sneaking posture.\n\r", ch);
 		}

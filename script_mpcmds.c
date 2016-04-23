@@ -16,34 +16,34 @@ const struct script_cmd_type mob_cmd_table[] = {
 	{ "altermob",			do_mpaltermob,			TRUE	},
 	{ "alterobj",			do_mpalterobj,			TRUE	},
 	{ "alterroom",			do_mpalterroom,			TRUE	},
-	{ "appear",			do_mpvis,			FALSE	},
+	{ "appear",				do_mpvis,			FALSE	},
 	{ "asound", 			do_mpasound,			FALSE	},
-	{ "assist",			do_mpassist,			FALSE	},
-	{ "at",				do_mpat,			FALSE	},
+	{ "assist",				do_mpassist,			FALSE	},
+	{ "at",					do_mpat,			FALSE	},
 	{ "awardgold",			do_mpawardgold,			TRUE	},
 	{ "awardpneuma",		do_mpawardpneuma,		TRUE	},
 	{ "awardprac",			do_mpawardprac,			TRUE	},
 	{ "awardqp",			do_mpawardqp,			TRUE	},
 	{ "awardxp",			do_mpawardxp,			TRUE	},
-	{ "call",			do_mpcall,			FALSE	},
-	{ "cancel",			do_mpcancel,			FALSE	},
-	{ "cast",			do_mpcast,			FALSE	},
+	{ "call",				do_mpcall,			FALSE	},
+	{ "cancel",				do_mpcancel,			FALSE	},
+	{ "cast",				do_mpcast,			FALSE	},
 	{ "chargebank",			do_mpchargebank,		FALSE	},
 	{ "chargemoney",		do_mpchargemoney,		FALSE	},
 	{ "cloneroom",			do_mpcloneroom,			TRUE	},
-	{ "condition",		do_mpcondition,			FALSE	},
-	{ "damage",			do_mpdamage,			FALSE	},
+	{ "condition",			do_mpcondition,			FALSE	},
+	{ "damage",				do_mpdamage,			FALSE	},
 	{ "decdeity",			do_mpdecdeity,			TRUE	},
 	{ "decpneuma",			do_mpdecpneuma,			TRUE	},
 	{ "decprac",			do_mpdecprac,			TRUE	},
 	{ "decquest",			do_mpdecquest,			TRUE	},
 	{ "dectrain",			do_mpdectrain,			TRUE	},
-	{ "delay",			do_mpdelay,			FALSE	},
+	{ "delay",				do_mpdelay,			FALSE	},
 	{ "dequeue",			do_mpdequeue,			FALSE	},
 	{ "destroyroom",		do_mpdestroyroom,		TRUE	},
-	{ "echo",			do_mpecho,			FALSE	},
+	{ "echo",				do_mpecho,			FALSE	},
 	{ "echoaround",			do_mpechoaround,		FALSE	},
-	{ "echoat",			do_mpechoat,			FALSE	},
+	{ "echoat",				do_mpechoat,			FALSE	},
 	{ "echobattlespam",		do_mpechobattlespam,		FALSE	},
 	{ "echochurch",			do_mpechochurch,		FALSE	},
 	{ "echogrouparound",		do_mpechogrouparound,		FALSE	},
@@ -52,46 +52,46 @@ const struct script_cmd_type mob_cmd_table[] = {
 	{ "echoleadat",			do_mpecholeadat,		FALSE	},
 	{ "echonotvict",		do_mpechonotvict,		FALSE	},
 	{ "echoroom",			do_mpechoroom,			FALSE	},
-	{ "flee",			do_mpflee,			FALSE	},
-	{ "force",			do_mpforce,			FALSE	},
-	{ "forget",			do_mpforget,			FALSE	},
+	{ "flee",				do_mpflee,			FALSE	},
+	{ "force",				do_mpforce,			FALSE	},
+	{ "forget",				do_mpforget,			FALSE	},
 	{ "gdamage",			do_mpgdamage,			FALSE	},
-	{ "gecho",			do_mpgecho,			FALSE	},
-	{ "gforce",			do_mpgforce,			FALSE	},
-	{ "goto",			do_mpgoto,			FALSE	},
+	{ "gecho",				do_mpgecho,			FALSE	},
+	{ "gforce",				do_mpgforce,			FALSE	},
+	{ "goto",				do_mpgoto,			FALSE	},
 	{ "gtransfer",			do_mpgtransfer,			FALSE	},
-	{ "hunt",			do_mphunt,			FALSE	},
-	{ "input",			do_mpinput,			FALSE	},
+	{ "hunt",				do_mphunt,			FALSE	},
+	{ "input",				do_mpinput,			FALSE	},
 	{ "interrupt",			do_mpinterrupt,			FALSE	},
 	{ "disappear",    		do_mpinvis,			FALSE	},
-	{ "junk",			do_mpjunk,			FALSE	},
-	{ "kill",			do_mpkill,			FALSE	},
-	{ "link",			do_mplink,			FALSE	},
-	{ "mload",			do_mpmload,			FALSE	},
-	{ "oload",			do_mpoload,			FALSE	},
+	{ "junk",				do_mpjunk,			FALSE	},
+	{ "kill",				do_mpkill,			FALSE	},
+	{ "link",				do_mplink,			FALSE	},
+	{ "mload",				do_mpmload,			FALSE	},
+	{ "oload",				do_mpoload,			FALSE	},
 	{ "otransfer",			do_mpotransfer,			FALSE	},
-	{ "peace",			do_mppeace,			FALSE	},
-	{ "persist",		do_mppersist,		FALSE	},
-	{ "prompt",			do_mpprompt,			FALSE	},
-	{ "purge",			do_mppurge,			FALSE	},
-	{ "queue",			do_mpqueue,			FALSE	},
+	{ "peace",				do_mppeace,			FALSE	},
+	{ "persist",			do_mppersist,		FALSE	},
+	{ "prompt",				do_mpprompt,			FALSE	},
+	{ "purge",				do_mppurge,			FALSE	},
+	{ "queue",				do_mpqueue,			FALSE	},
 	{ "raisedead",			do_mpraisedead,			TRUE	},
 	{ "rawkill",			do_mprawkill,			FALSE	},
 	{ "remember",			do_mpremember,			FALSE	},
-	{ "remove",			do_mpremove,			FALSE	},
+	{ "remove",				do_mpremove,			FALSE	},
 	{ "resetdice",			do_mpresetdice,			TRUE	},
 	{ "selfdestruct",		do_mpselfdestruct,		FALSE	},
 	{ "settimer",			do_mpsettimer,			FALSE	},
 	{ "showroom",			do_mpshowroom,			TRUE	},
-	{ "skill",			do_mpskill,						TRUE	},
+	{ "skill",				do_mpskill,						TRUE	},
 	{ "skillgroup",			do_mpskillgroup,			TRUE	},
 	{ "skimprove",			do_mpskimprove,			TRUE	},
 	{ "startcombat",		do_mpstartcombat,		FALSE	},
 	{ "stringmob",			do_mpstringmob,			TRUE	},
 	{ "stringobj",			do_mpstringobj,			TRUE	},
 	{ "stripaffect",		do_mpstripaffect,		TRUE	},
-	{ "stripaffectname",		do_mpstripaffectname,		TRUE	},
-	{ "take",			do_mptake,			FALSE	},
+	{ "stripaffectname",	do_mpstripaffectname,		TRUE	},
+	{ "take",				do_mptake,			FALSE	},
 	{ "teleport", 			do_mpteleport,			FALSE	},
 	{ "transfer",			do_mptransfer,			FALSE	},
 	{ "usecatalyst",		do_mpusecatalyst,		FALSE	},
@@ -100,13 +100,18 @@ const struct script_cmd_type mob_cmd_table[] = {
 	{ "varcopy",			do_mpvarcopy,			FALSE	},
 	{ "varsave",			do_mpvarsave,			FALSE	},
 	{ "varsaveon",			do_mpvarsaveon,			FALSE	},
-	{ "varset",			do_mpvarset,			FALSE	},
+	{ "varset",				do_mpvarset,			FALSE	},
 	{ "varseton",			do_mpvarseton,			FALSE	},
-	{ "vforce",			do_mpvforce,			FALSE	},
+	{ "vforce",				do_mpvforce,			FALSE	},
 	{ "wiretransfer",		do_mpwiretransfer,		FALSE	},
-	{ "xcall",			do_mpxcall,			FALSE	},
-	{ "zecho",			do_mpzecho,			FALSE	},
-	{ "zot",			do_mpzot,			TRUE	},
+	{ "xcall",				do_mpxcall,			FALSE	},
+	{ "zecho",				do_mpzecho,			FALSE	},
+	{ "zot",				do_mpzot,			TRUE	},
+
+	{ "addspell",			do_mpaddspell,			TRUE	},
+	{ "remspell",			do_mpremspell,			TRUE	},
+	{ "alteraffect",		do_mpalteraffect,			TRUE	},
+	{ "crier",				do_mpcrier,			FALSE	},
 
 	{ NULL,				NULL,				FALSE	}
 };
@@ -401,24 +406,18 @@ char *mp_getlocation(SCRIPT_VARINFO *info, char *argument, ROOM_INDEX_DATA **roo
 	WILDS_DATA *pWilds;
 	SCRIPT_PARAM arg;
 	EXIT_DATA *ex;
+	int x, y;
 
 	*room = NULL;
 	if((rest = expand_argument(info,argument,&arg))) {
 		switch(arg.type) {
-		case ENT_NONE:
-			// Nothing was on the string, so it will assume the current room
-			*room = info->mob->in_room;
-			break;
-		case ENT_NUMBER: {
-			// Room: <vnum>
-			int x, y;
-
+		// Nothing was on the string, so it will assume the current room
+		case ENT_NONE: *room = info->mob->in_room; break;
+		case ENT_NUMBER:
 			x = arg.d.num;
-			if((rest2 = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
-				rest = rest2;
+			if((rest = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
 				y = arg.d.num;
-				if((rest2 = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
-					rest = rest2;
+				if((rest = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
 					if(!(pWilds = get_wilds_from_uid(NULL, arg.d.num))) break;
 
 					if (x > (pWilds->map_size_x - 1) || y > (pWilds->map_size_y - 1)) break;
@@ -433,15 +432,12 @@ char *mp_getlocation(SCRIPT_VARINFO *info, char *argument, ROOM_INDEX_DATA **roo
 					room_used_for_wilderness.x = x;
 					room_used_for_wilderness.y = y;
 					*room = &room_used_for_wilderness;
-				} else {
 				}
 			} else
 				*room = get_room_index(x);
 			break;
-		}
-		case ENT_STRING:
-			// Special named locations
 
+		case ENT_STRING: // Special named locations
 			if(arg.d.str[0] == '@')
 				// Points to an exit, like @north or @down
 				*room = get_exit_dest(info->mob->in_room, arg.d.str+1);
@@ -463,6 +459,28 @@ char *mp_getlocation(SCRIPT_VARINFO *info, char *argument, ROOM_INDEX_DATA **roo
 
 							id2 = arg.d.num;
 							*room = get_clone_room(get_room_index(vnum),id1,id2);
+						}
+					}
+				}
+			} else if(!str_cmp(arg.d.str,"wilds")) {
+				if((rest = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
+					x = arg.d.num;
+					if((rest = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
+						y = arg.d.num;
+						if((rest = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
+							if(!(pWilds = get_wilds_from_uid(NULL, arg.d.num))) break;
+
+							if (x > (pWilds->map_size_x - 1) || y > (pWilds->map_size_y - 1)) break;
+
+							// if safe is used, it will not go to bad rooms
+							if((rest2 = expand_argument(info,rest,&arg)) && arg.type == ENT_STRING &&
+								!str_cmp(arg.d.str,"safe") && !check_for_bad_room(pWilds, x, y))
+								break;
+
+							room_used_for_wilderness.wilds = pWilds;
+							room_used_for_wilderness.x = x;
+							room_used_for_wilderness.y = y;
+							*room = &room_used_for_wilderness;
 						}
 					}
 				}
@@ -534,6 +552,7 @@ char *mp_getolocation(SCRIPT_VARINFO *info, char *argument, ROOM_INDEX_DATA **ro
 	WILDS_DATA *pWilds;
 	SCRIPT_PARAM arg;
 	EXIT_DATA *ex;
+	int x, y;
 
 	*room = NULL;
 	*container = NULL;
@@ -545,11 +564,10 @@ char *mp_getolocation(SCRIPT_VARINFO *info, char *argument, ROOM_INDEX_DATA **ro
 			// Nothing was on the string, so it will assume the current room
 			*room = info->mob->in_room;
 			break;
-		case ENT_NUMBER: {
+		case ENT_NUMBER:
 			// Can either be a room index or a wilderness room
 			// Room: <vnum>
 			// Wilderness coordinates: <x> <y> <w>
-			int x, y;
 
 			x = arg.d.num;
 			if((rest2 = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
@@ -571,12 +589,11 @@ char *mp_getolocation(SCRIPT_VARINFO *info, char *argument, ROOM_INDEX_DATA **ro
 					room_used_for_wilderness.x = x;
 					room_used_for_wilderness.y = y;
 					*room = &room_used_for_wilderness;
-				} else {
 				}
 			} else
 				*room = get_room_index(x);
 			break;
-		}
+
 		case ENT_STRING:
 			// Special named locations
 
@@ -605,7 +622,6 @@ char *mp_getolocation(SCRIPT_VARINFO *info, char *argument, ROOM_INDEX_DATA **ro
 					}
 				}
 			} else if(!str_cmp(arg.d.str,"wilds")) {
-				int x, y;
 
 				x = arg.d.num;
 				if((rest2 = expand_argument(info,rest,&arg)) && arg.type == ENT_NUMBER) {
@@ -627,7 +643,6 @@ char *mp_getolocation(SCRIPT_VARINFO *info, char *argument, ROOM_INDEX_DATA **ro
 						room_used_for_wilderness.x = x;
 						room_used_for_wilderness.y = y;
 						*room = &room_used_for_wilderness;
-					} else {
 					}
 				} else
 					*room = get_room_index(x);
@@ -858,6 +873,9 @@ SCRIPT_CMD(do_mpasound)
 			}
 	}
 }
+
+
+
 
 ///////////////////////////////////////////
 //
@@ -1440,7 +1458,7 @@ SCRIPT_CMD(do_mpcast)
 		if (!obj) return;
 		to = obj;
 	}
-	(*skill_table[sn].spell_fun)(sn, info->mob->level, info->mob, to, skill_table[sn].target);
+	(*skill_table[sn].spell_fun)(sn, info->mob->level, info->mob, to, skill_table[sn].target, WEAR_NONE);
 	return;
 }
 
@@ -2985,9 +3003,9 @@ SCRIPT_CMD(do_mpoload)
 
 			switch(arg.type) {
 			case ENT_STRING:
-				if(!str_cmp(buf, "room"))
+				if(!str_cmp(arg.d.str, "room"))
 					fToroom = TRUE;
-				else if(!str_cmp(buf, "wear"))
+				else if(!str_cmp(arg.d.str, "wear"))
 					fWear = TRUE;
 				break;
 
@@ -4910,6 +4928,7 @@ SCRIPT_CMD(do_mpaddaffect)
 	long bv, bv2;
 	CHAR_DATA *mob = NULL;
 	OBJ_DATA *obj = NULL;
+	int wear_loc = WEAR_NONE;
 	SCRIPT_PARAM arg;
 	AFFECT_DATA af;
 
@@ -5045,6 +5064,18 @@ SCRIPT_CMD(do_mpaddaffect)
 
 	if(bv2 == NO_FLAG) bv2 = 0;
 
+	if(rest && *rest) {
+		if(!(rest = expand_argument(info,rest,&arg))) {
+			bug("MpAddaffect - Error in parsing.",0);
+			return;
+		}
+
+		switch(arg.type) {
+		case ENT_OBJECT: wear_loc = arg.d.obj ? arg.d.obj->wear_loc : WEAR_NONE; break;
+		default: return;
+		}
+	}
+
 	af.group	= group;
 	af.where     = where;
 	af.type      = skill;
@@ -5055,6 +5086,7 @@ SCRIPT_CMD(do_mpaddaffect)
 	af.bitvector = bv;
 	af.bitvector2 = bv2;
 	af.custom_name = NULL;
+	af.slot = wear_loc;
 	if(mob) affect_join_full(mob, &af);
 	else affect_join_full_obj(obj,&af);
 }
@@ -5066,6 +5098,7 @@ SCRIPT_CMD(do_mpaddaffectname)
 	long bv, bv2;
 	CHAR_DATA *mob = NULL;
 	OBJ_DATA *obj = NULL;
+	int wear_loc = WEAR_NONE;
 	SCRIPT_PARAM arg;
 	AFFECT_DATA af;
 
@@ -5208,6 +5241,18 @@ SCRIPT_CMD(do_mpaddaffectname)
 
 	if(bv2 == NO_FLAG) bv2 = 0;
 
+	if(rest && *rest) {
+		if(!(rest = expand_argument(info,rest,&arg))) {
+			bug("MpAddaffect - Error in parsing.",0);
+			return;
+		}
+
+		switch(arg.type) {
+		case ENT_OBJECT: wear_loc = arg.d.obj ? arg.d.obj->wear_loc : WEAR_NONE; break;
+		default: return;
+		}
+	}
+
 	af.group	= group;
 	af.where     = where;
 	af.type      = -1;
@@ -5218,6 +5263,7 @@ SCRIPT_CMD(do_mpaddaffectname)
 	af.bitvector = bv;
 	af.bitvector2 = bv2;
 	af.custom_name = name;
+	af.slot = wear_loc;
 	if(mob) affect_join_full(mob, &af);
 	else affect_join_full_obj(obj,&af);
 }
@@ -6229,12 +6275,12 @@ SCRIPT_CMD(do_mpshowroom)
 		for(viewer = room->people; viewer; viewer = next) {
 			next = viewer->next_in_room;
 			if(!IS_NPC(viewer) && (force || (IS_AWAKE(viewer) && check_vision(viewer,dest,false,false))))
-				show_room(viewer,dest,true,true);
+				show_room(viewer,dest,true,true,false);
 		}
 	} else if(!IS_NPC(viewer)) {
 		// There is no awake check or vision check here since it is to one mob.
 		//  This can be used in things like DREAMS, seeing yourself at a certain location!
-		show_room(viewer,dest,true,true);
+		show_room(viewer,dest,true,true,false);
 	}
 }
 
@@ -6977,7 +7023,6 @@ SCRIPT_CMD(do_mpskillgroup)
 // Adjusts the specified condition by the given value
 SCRIPT_CMD(do_mpcondition)
 {
-	char buf[MIL];
 	SCRIPT_PARAM arg;
 	char *rest;
 	CHAR_DATA *mob = NULL;
@@ -7030,5 +7075,413 @@ SCRIPT_CMD(do_mpcondition)
 	}
 
 	gain_condition(mob, cond, value);
+}
+
+
+// addspell $OBJECT STRING[ NUMBER]
+SCRIPT_CMD(do_mpaddspell)
+{
+	SCRIPT_PARAM arg;
+	char *rest;
+	SPELL_DATA *spell, *spell_new;
+	OBJ_DATA *target;
+	int level;
+	int sn;
+	AFFECT_DATA *paf;
+
+	if(!info || !info->mob || IS_NULLSTR(argument)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_OBJECT || !arg.d.obj) return;
+
+	target = arg.d.obj;
+	level = target->level;
+
+	if(!(rest = expand_argument(info,rest,&arg)))
+		return;
+
+	if(arg.type != ENT_STRING || IS_NULLSTR(arg.d.str)) return;
+
+	sn = skill_lookup(arg.d.str);
+	if( sn <= 0 ) return;
+
+	// Add security check for the spell function
+	if(skill_table[sn].spell_fun == spell_null) return;
+
+	if( rest && *rest ) {
+		if(!(rest = expand_argument(info,rest,&arg)))
+			return;
+
+		// Must be a number, positive and no greater than the object's level
+		if(arg.type != ENT_NUMBER || arg.d.num < 1 || arg.d.num > target->level) return;
+
+		level = arg.d.num;
+
+	}
+
+	// Check if the spell already exists on the object
+	for(spell = target->spells; spell != NULL; spell = spell->next)
+	{
+		if( spell->sn == sn ) {
+			spell->level = level;
+
+			// If the object is currently worn and shares affects, update the affect
+			if( target->carried_by != NULL && target->wear_loc != WEAR_NONE ) {
+				if (target->item_type != ITEM_WAND &&
+					target->item_type != ITEM_STAFF &&
+					target->item_type != ITEM_SCROLL &&
+					target->item_type != ITEM_POTION &&
+					target->item_type != ITEM_TATTOO &&
+					target->item_type != ITEM_PILL) {
+
+
+					for( paf = target->carried_by->affected; paf != NULL; paf = paf->next ) {
+						if( paf->type == sn && paf->slot == target->wear_loc ) {
+
+							// Update the level if affect's level is higher
+							if( paf->level > level )
+								paf->level = level;
+
+							// Add security aspect to allow raising the level?
+
+							break;
+						}
+					}
+				}
+			}
+			return;
+		}
+	}
+
+	// Spell is new to the object, so add it
+	spell_new = new_spell();
+	spell_new->sn = sn;
+	spell_new->level = level;
+
+	spell_new->next = target->spells;
+	target->spells = spell_new;
+
+
+	// If the target is currently being worn and shares affects, add it to the wearer
+	if( target->carried_by != NULL && target->wear_loc != WEAR_NONE ) {
+		if (target->item_type != ITEM_WAND &&
+			target->item_type != ITEM_STAFF &&
+			target->item_type != ITEM_SCROLL &&
+			target->item_type != ITEM_POTION &&
+			target->item_type != ITEM_TATTOO &&
+			target->item_type != ITEM_PILL) {
+
+			for (paf = target->carried_by->affected; paf != NULL; paf = paf->next)
+			{
+				if (paf->type == sn)
+					break;
+			}
+
+			if (paf == NULL || paf->level < level) {
+				affect_strip(target->carried_by, sn);
+				obj_cast_spell(sn, level + MAGIC_WEAR_SPELL, target->carried_by, target->carried_by, target);
+			}
+		}
+	}
+}
+
+
+// remspell $OBJECT STRING[ silent]
+SCRIPT_CMD(do_mpremspell)
+{
+	SCRIPT_PARAM arg;
+	char *rest;
+	SPELL_DATA *spell, *spell_prev;
+	OBJ_DATA *target;
+	int level;
+	int sn;
+	bool found = FALSE, show = TRUE;
+	AFFECT_DATA *paf;
+
+	if(!info || !info->mob || IS_NULLSTR(argument)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_OBJECT || !arg.d.obj) return;
+
+	target = arg.d.obj;
+
+	if(!(rest = expand_argument(info,rest,&arg)))
+		return;
+
+	if(arg.type != ENT_STRING || IS_NULLSTR(arg.d.str)) return;
+
+	sn = skill_lookup(arg.d.str);
+	if( sn <= 0 ) return;
+
+	// Add security check for the spell function
+	if(skill_table[sn].spell_fun == spell_null) return;
+
+	if( rest && *rest ) {
+		if(!(rest = expand_argument(info,rest,&arg)))
+			return;
+
+		if(arg.type != ENT_STRING || IS_NULLSTR(arg.d.str)) return;
+
+		if( !str_cmp(arg.d.str, "silent") )
+			show = FALSE;
+	}
+
+
+	found = FALSE;
+	spell_prev = NULL;
+	for(spell = target->spells; spell; spell_prev = spell, spell = spell->next) {
+		if( spell->sn == sn ) {
+			if( spell_prev != NULL )
+				spell_prev->next = spell->next;
+			else
+				target->spells = spell->next;
+
+			level = spell->level;
+
+			free_spell(spell);
+
+			found = TRUE;
+			break;
+		}
+	}
+
+	if( found && target->carried_by != NULL && target->wear_loc != WEAR_NONE) {
+		if (target->item_type != ITEM_WAND &&
+			target->item_type != ITEM_STAFF &&
+			target->item_type != ITEM_SCROLL &&
+			target->item_type != ITEM_POTION &&
+			target->item_type != ITEM_TATTOO &&
+			target->item_type != ITEM_PILL) {
+
+			OBJ_DATA *obj_tmp;
+			int spell_level = level;
+			int found_loc = WEAR_NONE;
+
+			// Find the first affect that matches this spell and is derived from the object
+			for (paf = target->carried_by->affected; paf != NULL; paf = paf->next)
+			{
+				if (paf->type == spell->sn && paf->slot == target->wear_loc)
+					break;
+			}
+
+			if( !paf ) {
+				// This spell was not applied by this object
+				return;
+			}
+
+			found = FALSE;
+			level = 0;
+
+
+			// If there's another obj with the same spell put that one on
+			for (obj_tmp = target->carried_by->carrying; obj_tmp; obj_tmp = obj_tmp->next_content)
+			{
+				if( obj_tmp->wear_loc != WEAR_NONE && target != obj_tmp ) {
+					for (spell = obj_tmp->spells; spell != NULL; spell = spell ->next) {
+						if (spell->sn == sn && spell->level > level ) {
+							level = spell->level;	// Keep the maximum
+							found_loc = obj_tmp->wear_loc;
+							found = TRUE;
+						}
+					}
+				}
+			}
+
+			if(!found) {
+				// No other worn object had this spell available
+
+				if( show ) {
+					if (skill_table[sn].msg_off) {
+						send_to_char(skill_table[sn].msg_off, target->carried_by);
+						send_to_char("\n\r", target->carried_by);
+					}
+				}
+
+				affect_strip(target->carried_by, spell->sn);
+			} else if( level > spell_level ) {
+				level -= spell_level;		// Get the difference
+
+				// Update all affects to the current maximum and its slot
+				for(; paf; paf = paf->next ) {
+					paf->level += level;
+					paf->slot = found_loc;
+				}
+			}
+
+
+		}
+	}
+}
+
+
+// alteraffect $AFFECT STRING OP NUMBER
+// Current limitations: only level and duration
+// Altering other aspects such as modifiers will require updating the owner of the affect, which isn't available here
+SCRIPT_CMD(do_mpalteraffect)
+{
+	char buf[MIL],field[MIL],*rest;
+	SCRIPT_PARAM arg;
+	AFFECT_DATA *paf;
+	int value;
+
+	if(!info || !info->mob || IS_NULLSTR(argument)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_AFFECT || !arg.d.aff) return;
+
+	paf = arg.d.aff;
+
+	if(!(rest = expand_argument(info,rest,&arg))) {
+		bug("TpAlterAffect - Error in parsing.",0);
+		return;
+	}
+
+	if( IS_NULLSTR(rest) ) return;
+
+	if( arg.type != ENT_STRING || IS_NULLSTR(arg.d.str) ) return;
+
+	strncpy(field,arg.d.str,MIL-1);
+
+
+	if( !str_cmp(field, "level") ) {
+		argument = one_argument(rest,buf);
+
+		if(!(rest = expand_argument(info,argument,&arg))) {
+			bug("TpAlterAffect - Error in parsing.",0);
+			return;
+		}
+
+		switch(arg.type) {
+		case ENT_STRING: value = is_number(arg.d.str) ? atoi(arg.d.str) : 0; break;
+		case ENT_NUMBER: value = arg.d.num; break;
+		default: return;
+		}
+
+
+		switch(buf[0]) {
+		case '=':
+			if( value > 0 && value < paf->level )
+				paf->level = value;
+
+			break;
+
+		case '+':
+			if( value < 0 ) {
+				paf->level += value;
+				if( paf->level < 1 )
+					paf->level = 1;
+			}
+			break;
+
+		case '-':
+			if( value > 0 ) {
+				paf->level -= value;
+				if( paf->level < 1 )
+					paf->level = 1;
+			}
+			break;
+
+		}
+
+		return;
+	}
+
+	if(!str_cmp(field, "duration")) {
+		argument = one_argument(rest,buf);
+
+		if(!(rest = expand_argument(info,argument,&arg))) {
+			bug("TpAlterAffect - Error in parsing.",0);
+			return;
+		}
+
+		if( paf->slot != WEAR_NONE ) {
+			bug("MpAlterAffect - Attempting to modify duration of an object given affect.",0);
+			return;
+		}
+
+		if( paf->group == AFFGROUP_RACIAL ) {
+			bug("MpAlterAffect - Attempting to modify duration of a racial affect.",0);
+			return;
+		}
+
+
+		if(!str_cmp(buf, "toggle")) {
+			paf->duration = -paf->duration;
+			return;
+		}
+
+
+		switch(arg.type) {
+		case ENT_STRING: value = is_number(arg.d.str) ? atoi(arg.d.str) : 0; break;
+		case ENT_NUMBER: value = arg.d.num; break;
+		default: return;
+		}
+
+		switch(buf[0]) {
+		case '=':
+			if( value != 0 ) {
+				paf->duration = value;
+			}
+
+			break;
+
+		case '+':
+			if( paf->duration < 0 )
+			{
+				paf->duration += value;
+				if( paf->duration >= 0 )
+					paf->duration = -1;
+			}
+			else
+			{
+				paf->duration += value;
+				if( paf->duration < 0 )
+					paf->duration = 0;
+			}
+			break;
+
+		case '-':
+			if( paf->duration < 0 )
+			{
+				paf->duration -= value;
+				if( paf->duration >= 0 )
+					paf->duration = -1;
+			}
+			else
+			{
+				paf->duration -= value;
+				if( paf->duration < 0 )
+					paf->duration = 0;
+			}
+			break;
+
+		}
+	}
+}
+
+
+// Syntax: crier STRING
+SCRIPT_CMD(do_mpcrier)
+{
+	char buf[MSL];
+
+	if(!info || !info->mob) return;
+
+	expand_string(info,argument,buf+2);
+
+	buf[0] = '{';
+	buf[1] = 'M';
+
+	if(!buf[2]) return;
+
+	strcat(buf, "{x");
+
+	crier_announce(buf);
 }
 

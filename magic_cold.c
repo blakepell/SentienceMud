@@ -30,6 +30,7 @@ SPELL_FUNC(spell_chill_touch)
 		af.modifier = -1;
 		af.bitvector = 0;
 		af.bitvector2 = 0;
+		af.slot	= WEAR_NONE;
 		affect_join(victim, &af);
 	} else
 		dam /= 2;
@@ -69,6 +70,7 @@ SPELL_FUNC(spell_frost_barrier)
 	af.modifier = 0;
 	af.bitvector = 0;
 	af.bitvector2 = AFF2_FROST_BARRIER;
+	af.slot = obj_wear_loc;
 	affect_to_char(victim, &af);
 	act("{BYou hear a low-pitched humming sound as the temperature around $n drops.{x", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	send_to_char("{BThe temperature of the air around you drops rapidly, forming a frost barrier.{x\n\r", victim);

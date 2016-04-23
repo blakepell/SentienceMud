@@ -737,7 +737,6 @@ void cast_end(CHAR_DATA *ch)
 	int type;
 	int sn;
 	int target;
-	int chance;	// @@@NIB : 20070126 : hard_magic
 
 	send_to_char("{WYou have completed your casting.{x\n\r", ch);
 	act("{W$n has completed $s casting.{x", ch , NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
@@ -968,9 +967,9 @@ void cast_end(CHAR_DATA *ch)
 
 		if (target == TARGET_CHAR && victim && IS_AFFECTED2(victim, AFF2_SPELL_DEFLECTION)) {
 			if (check_spell_deflection(ch, victim, sn))
-				(*skill_table[sn].spell_fun) (sn, ch->tot_level, ch, vo, target);
+				(*skill_table[sn].spell_fun) (sn, ch->tot_level, ch, vo, target, WEAR_NONE);
 		} else
-			(*skill_table[sn].spell_fun) (sn, ch->tot_level, ch, vo, target);
+			(*skill_table[sn].spell_fun) (sn, ch->tot_level, ch, vo, target, WEAR_NONE);
 
 
 		check_improve(ch,sn,!ch->casting_recovered,1);
@@ -1007,6 +1006,7 @@ void obj_cast_spell(int sn, int level, CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DAT
 {
     void *vo;
     int target = TARGET_NONE;
+    int wear_loc = obj ? obj->wear_loc : WEAR_NONE;
 
     if (sn <= 0)
 	return;
@@ -1120,10 +1120,10 @@ void obj_cast_spell(int sn, int level, CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DAT
     if (target == TARGET_CHAR && victim != NULL)
     {
 	if (check_spell_deflection(ch, victim, sn))
-	    (*skill_table[sn].spell_fun) (sn, level, ch, vo, target);
+	    (*skill_table[sn].spell_fun) (sn, level, ch, vo, target, wear_loc);
     }
     else
-        (*skill_table[sn].spell_fun) (sn, level, ch, vo,target);
+        (*skill_table[sn].spell_fun) (sn, level, ch, vo,target, wear_loc);
 
     if ((skill_table[sn].target == TAR_CHAR_OFFENSIVE
         || (skill_table[sn].target == TAR_OBJ_CHAR_OFF && target == TARGET_CHAR))
@@ -1254,7 +1254,7 @@ void obj_cast(int sn, int level, OBJ_DATA *obj, ROOM_INDEX_DATA *room, char *arg
     ||   (target == TARGET_OBJ  && target_obj != NULL)
     ||    target == TARGET_ROOM
     ||    target == TARGET_NONE)
-	(*skill_table[sn].spell_fun)(sn, obj->level, ch, vo, target);
+	(*skill_table[sn].spell_fun)(sn, obj->level, ch, vo, target, WEAR_NONE);
     else
     {
 	sprintf(buf, "obj_cast: %s(%ld) couldn't find its target", obj->short_descr, obj->pIndexData->vnum);

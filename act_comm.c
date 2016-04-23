@@ -1956,6 +1956,7 @@ void stop_grouped(CHAR_DATA *ch)
 }
 
 
+
 /* MOVED: channels.c
    Town crier announcement.*/
 void crier_announce(char *argument)

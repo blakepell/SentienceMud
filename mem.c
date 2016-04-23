@@ -293,6 +293,7 @@ AFFECT_DATA *new_affect(void)
 
     *af = af_zero;
     af->custom_name = NULL;
+    af->slot = WEAR_NONE;
 
     top_affect++;
 
@@ -544,6 +545,7 @@ CHAR_DATA *new_char( void )
 
     ch->llocker			= list_create(FALSE);
     ch->lcarrying		= list_create(FALSE);
+    ch->lworn			= list_create(FALSE);
     ch->ltokens			= list_create(FALSE);
     ch->lclonerooms		= list_create(FALSE);
 
@@ -636,6 +638,7 @@ void free_char( CHAR_DATA *ch )
 
     list_destroy(ch->llocker);
     list_destroy(ch->lcarrying);
+    list_destroy(ch->lworn);
     list_destroy(ch->ltokens);
     list_destroy(ch->lclonerooms);
 

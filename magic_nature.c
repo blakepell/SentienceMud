@@ -166,6 +166,7 @@ SPELL_FUNC(spell_ensnare)
 		return FALSE;
 	}
 
+	af.slot	= WEAR_NONE;
 	af.where = TO_AFFECTS;
 	af.type = sn;
 	af.location = APPLY_DEX;
@@ -266,6 +267,7 @@ SPELL_FUNC(spell_web)
 		return FALSE;
 	}
 
+	af.slot	= WEAR_NONE;
 	af.where     = TO_AFFECTS;
 	af.group    = AFFGROUP_PHYSICAL;
 	af.type      = sn;

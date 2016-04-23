@@ -1062,21 +1062,21 @@ void affect_modify(CHAR_DATA *ch, AFFECT_DATA *paf, bool fAdd)
 		switch (paf->where)
 		{
 			case TO_AFFECTS:
-			SET_BIT(ch->affected_by, paf->bitvector);
-			SET_BIT(ch->affected_by2, paf->bitvector2);
+				SET_BIT(ch->affected_by, paf->bitvector);
+				SET_BIT(ch->affected_by2, paf->bitvector2);
 
-			if( IS_SET(paf->bitvector2, AFF2_DEATHSIGHT) && (paf->level > ch->deathsight_vision) )
-				ch->deathsight_vision = paf->level;
+				if( IS_SET(paf->bitvector2, AFF2_DEATHSIGHT) && (paf->level > ch->deathsight_vision) )
+					ch->deathsight_vision = paf->level;
 
 			break;
 			case TO_IMMUNE:
-			SET_BIT(ch->imm_flags,paf->bitvector);
+				SET_BIT(ch->imm_flags,paf->bitvector);
 			break;
 			case TO_RESIST:
-			SET_BIT(ch->res_flags,paf->bitvector);
+				SET_BIT(ch->res_flags,paf->bitvector);
 			break;
 			case TO_VULN:
-			SET_BIT(ch->vuln_flags,paf->bitvector);
+				SET_BIT(ch->vuln_flags,paf->bitvector);
 			break;
 		}
     }
@@ -1089,10 +1089,10 @@ void affect_modify(CHAR_DATA *ch, AFFECT_DATA *paf, bool fAdd)
 		MERGE_BIT(ch->affected_by2, ch->affected_by2_perm, paf->bitvector2);
 		break;
 	    case TO_IMMUNE:
-		MERGE_BIT(ch->imm_flags,ch->imm_flags_perm,paf->bitvector);
+			MERGE_BIT(ch->imm_flags,ch->imm_flags_perm,paf->bitvector);
 		break;
 	    case TO_RESIST:
-		MERGE_BIT(ch->res_flags,ch->res_flags_perm,paf->bitvector);
+			MERGE_BIT(ch->res_flags,ch->res_flags_perm,paf->bitvector);
 		break;
 	    case TO_VULN:
 		MERGE_BIT(ch->vuln_flags,ch->vuln_flags_perm,paf->bitvector);
@@ -1550,6 +1550,21 @@ void affect_strip_name(CHAR_DATA *ch, char *name)
     }
 }
 
+void affect_stripall_wearloc(CHAR_DATA *ch, int wear_loc)
+{
+    AFFECT_DATA *paf;
+    AFFECT_DATA *paf_next;
+
+    if( wear_loc == WEAR_NONE ) return;
+
+    for (paf = ch->affected; paf != NULL; paf = paf_next)
+    {
+		paf_next = paf->next;
+		if (paf->slot == wear_loc)
+	    	affect_remove(ch, paf);
+    }
+}
+
 /*
  * Strip all affects of a given sn.
  */
@@ -1660,7 +1675,7 @@ void affect_join(CHAR_DATA *ch, AFFECT_DATA *paf)
 	if(paf->custom_name) {
 		for (paf_old = ch->affected; paf_old != NULL; paf_old = paf_old->next) {
 			if (paf_old->custom_name && paf_old->custom_name == paf->custom_name) {
-				paf->level = (paf->level += paf_old->level) / 2;
+				paf->level = (paf->level + paf_old->level) / 2;
 				paf->duration += paf_old->duration;
 				paf->modifier += paf_old->modifier;
 				affect_remove(ch, paf_old);
@@ -1670,7 +1685,7 @@ void affect_join(CHAR_DATA *ch, AFFECT_DATA *paf)
 	} else {
 		for (paf_old = ch->affected; paf_old != NULL; paf_old = paf_old->next) {
 			if (!paf_old->custom_name && paf_old->type == paf->type) {
-				paf->level = (paf->level += paf_old->level) / 2;
+				paf->level = (paf->level + paf_old->level) / 2;
 				paf->duration += paf_old->duration;
 				paf->modifier += paf_old->modifier;
 				affect_remove(ch, paf_old);
@@ -1697,7 +1712,7 @@ void affect_join_full(CHAR_DATA *ch, AFFECT_DATA *paf)
 				paf_old->location == paf->location &&
 				paf_old->bitvector == paf->bitvector &&
 				paf_old->bitvector2 == paf->bitvector2) {
-				paf->level = (paf->level += paf_old->level) / 2;
+				paf->level = (paf->level + paf_old->level) / 2;
 				paf->duration += paf_old->duration;
 				paf->modifier += paf_old->modifier;
 				affect_remove(ch, paf_old);
@@ -1710,7 +1725,7 @@ void affect_join_full(CHAR_DATA *ch, AFFECT_DATA *paf)
 				paf_old->location == paf->location &&
 				paf_old->bitvector == paf->bitvector &&
 				paf_old->bitvector2 == paf->bitvector2) {
-				paf->level = (paf->level += paf_old->level) / 2;
+				paf->level = (paf->level + paf_old->level) / 2;
 				paf->duration += paf_old->duration;
 				paf->modifier += paf_old->modifier;
 				affect_remove(ch, paf_old);
@@ -1734,7 +1749,7 @@ void affect_join_obj(OBJ_DATA *obj, AFFECT_DATA *paf)
 	if(paf->custom_name) {
 		for (paf_old = obj->affected; paf_old != NULL; paf_old = paf_old->next) {
 			if (paf_old->custom_name && paf_old->custom_name == paf->custom_name) {
-				paf->level = (paf->level += paf_old->level) / 2;
+				paf->level = (paf->level + paf_old->level) / 2;
 				paf->duration += paf_old->duration;
 				paf->modifier += paf_old->modifier;
 				affect_remove_obj(obj, paf_old);
@@ -1744,7 +1759,7 @@ void affect_join_obj(OBJ_DATA *obj, AFFECT_DATA *paf)
 	} else {
 		for (paf_old = obj->affected; paf_old != NULL; paf_old = paf_old->next) {
 			if (!paf_old->custom_name && paf_old->type == paf->type) {
-				paf->level = (paf->level += paf_old->level) / 2;
+				paf->level = (paf->level + paf_old->level) / 2;
 				paf->duration += paf_old->duration;
 				paf->modifier += paf_old->modifier;
 				affect_remove_obj(obj, paf_old);
@@ -1770,7 +1785,7 @@ void affect_join_full_obj(OBJ_DATA *obj, AFFECT_DATA *paf)
 				paf_old->location == paf->location &&
 				paf_old->bitvector == paf->bitvector &&
 				paf_old->bitvector2 == paf->bitvector2) {
-				paf->level = (paf->level += paf_old->level) / 2;
+				paf->level = (paf->level + paf_old->level) / 2;
 				paf->duration += paf_old->duration;
 				paf->modifier += paf_old->modifier;
 				affect_remove_obj(obj, paf_old);
@@ -1783,7 +1798,7 @@ void affect_join_full_obj(OBJ_DATA *obj, AFFECT_DATA *paf)
 				paf_old->location == paf->location &&
 				paf_old->bitvector == paf->bitvector &&
 				paf_old->bitvector2 == paf->bitvector2) {
-				paf->level = (paf->level += paf_old->level) / 2;
+				paf->level = (paf->level + paf_old->level) / 2;
 				paf->duration += paf_old->duration;
 				paf->modifier += paf_old->modifier;
 				affect_remove_obj(obj, paf_old);
@@ -2018,6 +2033,7 @@ void char_to_room(CHAR_DATA *ch, ROOM_INDEX_DATA *pRoomIndex)
         plague.location		= APPLY_STR;
         plague.modifier 	= -5;
         plague.bitvector 	= AFF_PLAGUE;
+        plague.slot			= WEAR_NONE;
 
         for (vch = ch->in_room->people; vch != NULL; vch = vch->next_in_room)
         {
@@ -2307,6 +2323,7 @@ void equip_char(CHAR_DATA *ch, OBJ_DATA *obj, int iWear)
     }
 
     obj->wear_loc	 = iWear;
+    list_addlink(ch->lworn, obj);
 
     /* Wear trigger */
     p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_WEAR, NULL);
@@ -2319,8 +2336,10 @@ void equip_char(CHAR_DATA *ch, OBJ_DATA *obj, int iWear)
 
 
 	    /* put obj's affects on the character */
-	    for (paf = obj->affected; paf != NULL; paf = paf->next)
-		affect_modify(ch, paf, TRUE);
+	    for (paf = obj->affected; paf != NULL; paf = paf->next) {
+			paf->slot = iWear;
+			affect_modify(ch, paf, TRUE);
+		}
 
 	    /* set light in room if it's a light */
 	    if (obj->item_type == ITEM_LIGHT
@@ -2341,17 +2360,17 @@ void equip_char(CHAR_DATA *ch, OBJ_DATA *obj, int iWear)
 	    &&  obj->item_type != ITEM_PILL)
 	    for (spell = obj->spells; spell != NULL; spell = spell->next)
 	    {
-		for (paf = ch->affected; paf != NULL; paf = paf->next)
-		{
-		    if (paf->type == spell->sn)
-			break;
-		}
+			for (paf = ch->affected; paf != NULL; paf = paf->next)
+			{
+				if (paf->type == spell->sn)
+				break;
+			}
 
-		if (paf != NULL && paf->level >= spell->level)
-		    continue;
+			if (paf != NULL && paf->level >= spell->level)
+				continue;
 
-		affect_strip(ch, spell->sn);
-		obj_cast_spell(spell->sn, spell->level + MAGIC_WEAR_SPELL, ch, ch, NULL);
+			affect_strip(ch, spell->sn);
+			obj_cast_spell(spell->sn, spell->level + MAGIC_WEAR_SPELL, ch, ch, obj);
 	    }
     }
 
@@ -2366,6 +2385,8 @@ int unequip_char(CHAR_DATA *ch, OBJ_DATA *obj, bool show)
     AFFECT_DATA *paf = NULL;
     AFFECT_DATA *af;
     int i, loc = obj->wear_loc;
+    int level = 0;
+    int found_loc = WEAR_NONE;
     SPELL_DATA *spell, *spell_tmp;
     OBJ_DATA *obj_tmp;
     bool found;		// @@@NIB : 20070128
@@ -2377,6 +2398,7 @@ int unequip_char(CHAR_DATA *ch, OBJ_DATA *obj, bool show)
     }
 
     obj->wear_loc = WEAR_NONE;
+    list_remlink(ch->lworn, obj);
 
 	// If the item was concealed, don't handle any object affects.
 	if(wear_params[loc][WEAR_PARAM_AFFECTS]) {
@@ -2389,13 +2411,10 @@ int unequip_char(CHAR_DATA *ch, OBJ_DATA *obj, bool show)
 //			affect_check(ch, paf->where, paf->bitvector, paf->bitvector2);
 	    }
 
-	    affect_fix_char(ch);
-
-	    if (obj->item_type == ITEM_LIGHT
-	    &&  obj->value[2] != 0
-	    &&  ch->in_room != NULL
-	    &&  ch->in_room->light > 0)
-		--ch->in_room->light;
+	    if (obj->item_type == ITEM_LIGHT &&
+	    	obj->value[2] != 0 && ch->in_room != NULL &&
+	    	ch->in_room->light > 0)
+			--ch->in_room->light;
 
 	    // Remove spells
 	    if (obj->item_type != ITEM_WAND
@@ -2406,41 +2425,68 @@ int unequip_char(CHAR_DATA *ch, OBJ_DATA *obj, bool show)
 	    &&  obj->item_type != ITEM_PILL)
 	    for (spell = obj->spells; spell != NULL; spell = spell->next)
 	    {
-		for (af = ch->affected; af != NULL; af = af->next)
-		{
-		    if (af->type == spell->sn)
-			break;
-		}
+			int spell_level = spell->level;
 
-		// @@@NIB : 20070128 : this entire block did not account for the
-		//	possibility of multiple spells active for the object.
-		//	Once it found *one* spell, it returned...
-		//	This also bypassed the remove trigger
-		found = FALSE;
-		// If there's another obj with the same spell put that one on
-		for (obj_tmp = ch->carrying; !found && obj_tmp; obj_tmp = obj_tmp->next_content)
-		{
-		    for (spell_tmp = obj_tmp->spells; !found && spell_tmp != NULL; spell_tmp = spell_tmp->next)
-		    {
-			if (spell_tmp->sn == spell->sn && af && obj != obj_tmp
-			&&  obj_tmp->wear_loc != WEAR_NONE)
+			// Find the first affect that matches this spell and is derived from the object
+			for (af = ch->affected; af != NULL; af = af->next)
 			{
-			    af->level = spell_tmp->level;
-			    found = TRUE;
-			}
-		    }
-		}
-
-		if(!found) {
-			if (skill_table[spell->sn].msg_off && show) {
-			    send_to_char(skill_table[spell->sn].msg_off, ch);
-			    send_to_char("\n\r", ch);
+				if (af->type == spell->sn && af->slot == loc)
+					break;
 			}
 
-			affect_strip(ch, spell->sn);
-		}
-		// @@@NIB : 20070128
+			if( !af ) {
+				// This spell was not applied by this object
+				continue;
+			}
+
+			// @@@NIB : 20070128 : this entire block did not account for the
+			//	possibility of multiple spells active for the object.
+			//	Once it found *one* spell, it returned...
+			//	This also bypassed the remove trigger
+			found = FALSE;
+
+
+			// If there's another obj with the same spell put that one on
+			for (obj_tmp = ch->carrying; obj_tmp; obj_tmp = obj_tmp->next_content)
+			{
+				if( obj_tmp->wear_loc != WEAR_NONE && obj != obj_tmp ) {
+					for (spell_tmp = obj_tmp->spells; spell_tmp != NULL; spell_tmp = spell_tmp->next) {
+						if (spell_tmp->sn == spell->sn && spell_tmp->level > level ) {
+							level = spell_tmp->level;	// Keep the maximum
+							found_loc = obj_tmp->wear_loc;
+							found = TRUE;
+						}
+					}
+				}
+			}
+
+			if(!found) {
+				// No other worn object had this spell available
+
+				if( show ) {
+					if (skill_table[spell->sn].msg_off) {
+						send_to_char(skill_table[spell->sn].msg_off, ch);
+						send_to_char("\n\r", ch);
+					}
+				}
+
+				affect_strip(ch, spell->sn);
+			} else if( level > spell_level ) {
+				level -= spell_level;		// Get the difference
+
+				// Update all affects to the current maximum and its slot
+				for(; af; af = af->next ) {
+					af->level += level;
+					af->slot = found_loc;
+				}
+			}
+			// @@@NIB : 20070128
 	    }
+
+	    affect_stripall_wearloc(ch, loc);	// Remove all affects tied to this wear slot
+
+	    affect_fix_char(ch);
+
     }
 
     /* Remove trigger */
@@ -3827,7 +3873,6 @@ bool can_see_room(CHAR_DATA *ch, ROOM_INDEX_DATA *pRoomIndex)
  */
 bool can_see_obj(CHAR_DATA *ch, OBJ_DATA *obj)
 {
-	char buf[MSL];
     if (obj == NULL)
     {
 	bug("can_see_obj, obj was NULL!!!", 0);
@@ -7910,6 +7955,20 @@ bool is_char_busy(CHAR_DATA *ch)
 	if( ch->ranged > 0 ) return TRUE;
 	if( ch->script_wait > 0 ) return TRUE;
 
+
+	return FALSE;
+}
+
+bool obj_has_spell(OBJ_DATA *obj, char *name)
+{
+	SPELL_DATA *spell;
+	int sn = skill_lookup(name);
+
+	if( !obj || sn <= 0 ) return FALSE;
+
+	for(spell = obj->spells; spell; spell = spell->next)
+		if( spell->sn == sn )
+			return TRUE;
 
 	return FALSE;
 }

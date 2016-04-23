@@ -570,7 +570,7 @@ void fwrite_char(CHAR_DATA *ch, FILE *fp)
 	if (!paf->custom_name && (paf->type < 0 || paf->type>= MAX_SKILL))
 	    continue;
 
-	fprintf(fp, "%s '%s' '%s' %3d %3d %3d %3d %3d %10ld %10ld\n",
+	fprintf(fp, "%s '%s' '%s' %3d %3d %3d %3d %3d %10ld %10ld %d\n",
 	    (paf->custom_name?"Affcgn":"Affcg"),
 	    (paf->custom_name?paf->custom_name:skill_table[paf->type].name),
 	    flag_string(affgroup_mobile_flags,paf->group),
@@ -580,7 +580,8 @@ void fwrite_char(CHAR_DATA *ch, FILE *fp)
 	    paf->modifier,
 	    paf->location,
 	    paf->bitvector,
-	    paf->bitvector2);
+	    paf->bitvector2,
+	    paf->slot);
     }
 
     for (cmd = ch->pcdata->commands; cmd != NULL; cmd = cmd->next)
@@ -666,89 +667,84 @@ bool load_char_obj(DESCRIPTOR_DATA *d, char *name)
     #endif
 
     sprintf(strsave, "%s%c/%s", PLAYER_DIR, tolower(name[0]), capitalize(name));
-    if ((fp = fopen(strsave, "r")) != NULL)
-    {
-	int iNest;
+    if ((fp = fopen(strsave, "r")) != NULL) {
+		int iNest;
 
-	for (iNest = 0; iNest < MAX_NEST; iNest++)
-	    rgObjNest[iNest] = NULL;
+		for (iNest = 0; iNest < MAX_NEST; iNest++)
+			rgObjNest[iNest] = NULL;
 
-	found = TRUE;
-	for (; ;)
-	{
-	    char letter;
-	    char *word;
-
-	    letter = fread_letter(fp);
-	    if (letter == '*')
-	    {
-		fread_to_eol(fp);
-		continue;
-	    }
-
-	    if (letter != '#')
-	    {
-		bug("Load_char_obj: # not found.", 0);
-		break;
-	    }
-
-	    word = fread_word(fp);
-	    if (!str_cmp(word, "PLAYER"))
-		fread_char(ch, fp);
-	    else if (!str_cmp(word, "OBJECT") || !str_cmp(word, "O"))
-	    {
-	        obj = fread_obj_new(fp);
-
-		if (obj == NULL)
-		    continue;
-
-		objNestList[obj->nest] = obj;
-		if (obj->locker == TRUE)
+		found = TRUE;
+		for (; ;)
 		{
-		    obj_to_locker(obj, ch);
-		    continue;
+			char letter;
+			char *word;
+
+			letter = fread_letter(fp);
+			if (letter == '*')
+			{
+			fread_to_eol(fp);
+			continue;
+			}
+
+			if (letter != '#')
+			{
+			bug("Load_char_obj: # not found.", 0);
+			break;
+			}
+
+			word = fread_word(fp);
+			if (!str_cmp(word, "PLAYER"))
+				fread_char(ch, fp);
+			else if (!str_cmp(word, "OBJECT") || !str_cmp(word, "O"))
+			{
+				obj = fread_obj_new(fp);
+
+				if (obj == NULL)
+					continue;
+
+				objNestList[obj->nest] = obj;
+				if (obj->locker == TRUE)
+				{
+					obj_to_locker(obj, ch);
+					continue;
+				}
+
+				if (obj->nest == 0) {
+					 obj_to_char(obj, ch);
+
+					 if( obj->wear_loc != WEAR_NONE ) {
+						 list_addlink(ch->lworn, obj);
+					 }
+				} else {
+					OBJ_DATA *container = objNestList[obj->nest - 1];
+
+					if (container->item_type == ITEM_CONTAINER ||
+						container->item_type == ITEM_KEYRING ||
+						container->item_type == ITEM_WEAPON_CONTAINER)
+						obj_to_obj(obj,objNestList[obj->nest - 1]);
+					else {
+						sprintf(buf, "load_char_obj: found obj %s(%ld) in item %s(%ld) which is not a container",
+							obj->short_descr, obj->pIndexData->vnum,
+							container->short_descr, container->pIndexData->vnum);
+						log_string(buf);
+						obj_to_char(obj, ch);
+					}
+				}
+			} else if (!str_cmp(word, "L")) {
+				obj = fread_obj_new(fp);
+				obj_to_locker(obj, ch);
+			} else if (!str_cmp(word, "TOKEN")) {
+				token = fread_token(fp);
+				token_to_char(token, ch);
+			} else if (!str_cmp(word, "END"))
+				break;
+			else {
+				bug("Load_char_obj: bad section.", 0);
+				break;
+			}
 		}
 
-		if (obj->nest == 0)
-		     obj_to_char(obj, ch);
-		else
-		{
-		    OBJ_DATA *container = objNestList[obj->nest - 1];
-
-                    if (container->item_type == ITEM_CONTAINER
-		    ||  container->item_type == ITEM_KEYRING
-		    ||  container->item_type == ITEM_WEAPON_CONTAINER)
-			obj_to_obj(obj,objNestList[obj->nest - 1]);
-		    else
-		    {
-			sprintf(buf, "load_char_obj: found obj %s(%ld) in item %s(%ld) which is not a container",
-			    obj->short_descr, obj->pIndexData->vnum,
-			    container->short_descr, container->pIndexData->vnum);
-			log_string(buf);
-			obj_to_char(obj, ch);
-		    }
-		}
-            }
-	    else if (!str_cmp(word, "L"))
-	    {
-	        obj = fread_obj_new(fp);
-		obj_to_locker(obj, ch);
-	    }
-	    else if (!str_cmp(word, "TOKEN"))
-	    {
-		token = fread_token(fp);
-		token_to_char(token, ch);
-	    }
-	    else if (!str_cmp(word, "END"))
-		break;
-	    else
-	    {
-		bug("Load_char_obj: bad section.", 0);
-		break;
-	    }
-	}
-
-	fclose(fp);
+		fclose(fp);
     }
     fpReserve = fopen(NULL_FILE, "r");
 
@@ -970,27 +966,29 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
                 if (sn < 0)
                     log_string("fread_char: unknown skill.");
                 else
-                    paf->type = sn;
+					paf->type = sn;
 
-		paf->custom_name = NULL;
-		paf->group  = flag_value(affgroup_mobile_flags,fread_word(fp));
-		if(paf->group == NO_FLAG) paf->group = AFFGROUP_MAGICAL;
+				paf->custom_name = NULL;
+				paf->group  = flag_value(affgroup_mobile_flags,fread_word(fp));
+				if(paf->group == NO_FLAG) paf->group = AFFGROUP_MAGICAL;
                 paf->where  = fread_number(fp);
                 paf->level      = fread_number(fp);
                 paf->duration   = fread_number(fp);
                 paf->modifier   = fread_number(fp);
                 paf->location   = fread_number(fp);
                 if(paf->location == APPLY_SKILL) {
-			int sn = skill_lookup(fread_word(fp));
-			if(sn < 0) {
-				paf->location = APPLY_NONE;
-				paf->modifier = 0;
-			} else
-				paf->location += sn;
-		}
+					int sn = skill_lookup(fread_word(fp));
+					if(sn < 0) {
+						paf->location = APPLY_NONE;
+						paf->modifier = 0;
+					} else
+						paf->location += sn;
+				}
                 paf->bitvector  = fread_number(fp);
-		if (ch->version >= 9)
-		    paf->bitvector2 = fread_number(fp);
+				if (ch->version >= 9)
+				    paf->bitvector2 = fread_number(fp);
+				if (ch->version >= VERSION_PLAYER_004)
+					paf->slot = fread_number(fp);
                 paf->next       = ch->affected;
                 ch->affected    = paf;
                 fMatch = TRUE;
@@ -1011,16 +1009,16 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
                 } else
                     paf->custom_name = name;
 
-		paf->type = -1;
-		paf->group  = AFFGROUP_MAGICAL;
+				paf->type = -1;
+				paf->group  = AFFGROUP_MAGICAL;
                 paf->where  = fread_number(fp);
                 paf->level      = fread_number(fp);
                 paf->duration   = fread_number(fp);
                 paf->modifier   = fread_number(fp);
                 paf->location   = fread_number(fp);
                 paf->bitvector  = fread_number(fp);
-		if (ch->version >= 9)
-		    paf->bitvector2 = fread_number(fp);
+				if (ch->version >= 9)
+				    paf->bitvector2 = fread_number(fp);
                 paf->next       = ch->affected;
                 ch->affected    = paf;
                 fMatch = TRUE;
@@ -1041,25 +1039,27 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
                 } else
                     paf->custom_name = name;
 
-		paf->type = -1;
-		paf->group  = flag_value(affgroup_mobile_flags,fread_word(fp));
-		if(paf->group == NO_FLAG) paf->group = AFFGROUP_MAGICAL;
+				paf->type = -1;
+				paf->group  = flag_value(affgroup_mobile_flags,fread_word(fp));
+				if(paf->group == NO_FLAG) paf->group = AFFGROUP_MAGICAL;
                 paf->where  = fread_number(fp);
                 paf->level      = fread_number(fp);
                 paf->duration   = fread_number(fp);
                 paf->modifier   = fread_number(fp);
                 paf->location   = fread_number(fp);
                 if(paf->location == APPLY_SKILL) {
-			int sn = skill_lookup(fread_word(fp));
-			if(sn < 0) {
-				paf->location = APPLY_NONE;
-				paf->modifier = 0;
-			} else
-				paf->location += sn;
-		}
+					int sn = skill_lookup(fread_word(fp));
+					if(sn < 0) {
+						paf->location = APPLY_NONE;
+						paf->modifier = 0;
+					} else
+					paf->location += sn;
+				}
                 paf->bitvector  = fread_number(fp);
-		if (ch->version >= 9)
-		    paf->bitvector2 = fread_number(fp);
+				if (ch->version >= 9)
+				    paf->bitvector2 = fread_number(fp);
+				if (ch->version >= VERSION_PLAYER_004)
+					paf->slot = fread_number(fp);
                 paf->next       = ch->affected;
                 ch->affected    = paf;
                 fMatch = TRUE;
@@ -1813,7 +1813,6 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
 	    {
 			int song;
 			char *temp;
-	        int prac;
 
 			temp = fread_word(fp);
 			song = music_lookup(temp);
@@ -2104,7 +2103,7 @@ void fwrite_obj_new(CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest)
 
 	if(paf->location >= APPLY_SKILL && paf->location < APPLY_SKILL_MAX) {
 		if(!skill_table[paf->location - APPLY_SKILL].name) continue;
-		fprintf(fp, "Affcg '%s' %3d %3d %3d %3d %3d %3d '%s' %10ld\n",
+		fprintf(fp, "Affcg '%s' %3d %3d %3d %3d %3d %3d '%s' %10ld %10ld\n",
 			skill_table[paf->type].name,
 			paf->where,
 			paf->group,
@@ -2113,10 +2112,11 @@ void fwrite_obj_new(CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest)
 			paf->modifier,
 			APPLY_SKILL,
 			skill_table[paf->location - APPLY_SKILL].name,
-			paf->bitvector
+			paf->bitvector,
+			paf->bitvector2
 		);
 	} else {
-		fprintf(fp, "Affcg '%s' %3d %3d %3d %3d %3d %3d %10ld\n",
+		fprintf(fp, "Affcg '%s' %3d %3d %3d %3d %3d %3d %10ld %10ld\n",
 			skill_table[paf->type].name,
 			paf->where,
 			paf->group,
@@ -2124,7 +2124,8 @@ void fwrite_obj_new(CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest)
 			paf->duration,
 			paf->modifier,
 			paf->location,
-			paf->bitvector
+			paf->bitvector,
+			paf->bitvector2
 		);
 	}
     }
@@ -2136,7 +2137,7 @@ void fwrite_obj_new(CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest)
 
 	if(paf->location >= APPLY_SKILL && paf->location < APPLY_SKILL_MAX) {
 		if(!skill_table[paf->location - APPLY_SKILL].name) continue;
-		fprintf(fp, "Affcgn '%s' %3d %3d %3d %3d %3d %3d '%s' %10ld\n",
+		fprintf(fp, "Affcgn '%s' %3d %3d %3d %3d %3d %3d '%s' %10ld %10ld\n",
 			paf->custom_name,
 			paf->where,
 			paf->group,
@@ -2145,10 +2146,11 @@ void fwrite_obj_new(CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest)
 			paf->modifier,
 			APPLY_SKILL,
 			skill_table[paf->location - APPLY_SKILL].name,
-			paf->bitvector
+			paf->bitvector,
+			paf->bitvector2
 		);
 	} else {
-		fprintf(fp, "Affcgn '%s' %3d %3d %3d %3d %3d %3d %10ld\n",
+		fprintf(fp, "Affcgn '%s' %3d %3d %3d %3d %3d %3d %10ld %10ld\n",
 			paf->custom_name,
 			paf->where,
 			paf->group,
@@ -2156,7 +2158,8 @@ void fwrite_obj_new(CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest)
 			paf->duration,
 			paf->modifier,
 			paf->location,
-			paf->bitvector
+			paf->bitvector,
+			paf->bitvector2
 		);
 	}
     }
@@ -2171,7 +2174,7 @@ void fwrite_obj_new(CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest)
 
 	if(paf->location >= APPLY_SKILL && paf->location < APPLY_SKILL_MAX) {
 		if(!skill_table[paf->location - APPLY_SKILL].name) continue;
-		fprintf(fp, "Affrg %3d %3d %3d %3d %3d %3d '%s' %10ld\n",
+		fprintf(fp, "Affrg %3d %3d %3d %3d %3d %3d '%s' %10ld %10ld\n",
 			paf->where,
 			paf->group,
 			paf->level,
@@ -2179,17 +2182,19 @@ void fwrite_obj_new(CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest)
 			paf->modifier,
 			APPLY_SKILL,
 			skill_table[paf->location - APPLY_SKILL].name,
-			paf->bitvector
+			paf->bitvector,
+			paf->bitvector2
 		);
 	} else {
-		fprintf(fp, "Affrg %3d %3d %3d %3d %3d %3d %10ld\n",
+		fprintf(fp, "Affrg %3d %3d %3d %3d %3d %3d %10ld %10ld\n",
 			paf->where,
 			paf->group,
 			paf->level,
 			paf->duration,
 			paf->modifier,
 			paf->location,
-			paf->bitvector
+			paf->bitvector,
+			paf->bitvector2
 		);
 	}
     }
@@ -2369,33 +2374,27 @@ OBJ_DATA *fread_obj_new(FILE *fp)
             {
                 AFFECT_DATA *paf;
 
-		/* if none of these before remove affects on items,
-		 * custom affects
-		if (!affect_new)
-		{
-		    affect_new = TRUE;
-		}
-		*/
-
                 paf = new_affect();
 
                 paf->type = -1;
-
-		paf->where	= fread_number(fp);
-		paf->group	= fread_number(fp);
+				paf->where	= fread_number(fp);
+				paf->group	= fread_number(fp);
                 paf->level      = fread_number(fp);
                 paf->duration   = fread_number(fp);
                 paf->modifier   = fread_number(fp);
                 paf->location   = fread_number(fp);
                 if(paf->location == APPLY_SKILL) {
-			int sn = skill_lookup(fread_word(fp));
-			if(sn < 0) {
-				paf->location = APPLY_NONE;
-				paf->modifier = 0;
-			} else
-				paf->location += sn;
-		}
+					int sn = skill_lookup(fread_word(fp));
+					if(sn < 0) {
+						paf->location = APPLY_NONE;
+						paf->modifier = 0;
+					} else
+					paf->location += sn;
+				}
                 paf->bitvector  = fread_number(fp);
+                if( obj->version >= VERSION_OBJECT_003 )
+					paf->bitvector2 = fread_number(fp);
+
                 paf->next       = obj->affected;
                 obj->affected   = paf;
                 fMatch          = TRUE;
@@ -2430,36 +2429,38 @@ OBJ_DATA *fread_obj_new(FILE *fp)
 
             if (!str_cmp(word,"Affcg"))
             {
-                AFFECT_DATA *paf;
-                int sn;
+				AFFECT_DATA *paf;
+				int sn;
 
-                paf = new_affect();
+				paf = new_affect();
 
-                sn = skill_lookup(fread_word(fp));
-                if (sn < 0)
-                    bug("Fread_obj: unknown skill.",0);
-                else
-                    paf->type = sn;
+				sn = skill_lookup(fread_word(fp));
+				if (sn < 0)
+					bug("Fread_obj: unknown skill.",0);
+				else
+					paf->type = sn;
 
-		paf->where	= fread_number(fp);
-		paf->group	= fread_number(fp);
-                paf->level      = fread_number(fp);
-                paf->duration   = fread_number(fp);
-                paf->modifier   = fread_number(fp);
-                paf->location   = fread_number(fp);
-                if(paf->location == APPLY_SKILL) {
-			int sn = skill_lookup(fread_word(fp));
-			if(sn < 0) {
-				paf->location = APPLY_NONE;
-				paf->modifier = 0;
-			} else
-				paf->location += sn;
-		}
-                paf->bitvector  = fread_number(fp);
-                paf->next       = obj->affected;
-                obj->affected   = paf;
-                fMatch          = TRUE;
-                break;
+				paf->where	= fread_number(fp);
+				paf->group	= fread_number(fp);
+				paf->level      = fread_number(fp);
+				paf->duration   = fread_number(fp);
+				paf->modifier   = fread_number(fp);
+				paf->location   = fread_number(fp);
+				if(paf->location == APPLY_SKILL) {
+					int sn = skill_lookup(fread_word(fp));
+					if(sn < 0) {
+						paf->location = APPLY_NONE;
+						paf->modifier = 0;
+					} else
+						paf->location += sn;
+				}
+				paf->bitvector  = fread_number(fp);
+                if( obj->version >= VERSION_OBJECT_003 )
+					paf->bitvector2 = fread_number(fp);
+				paf->next       = obj->affected;
+				obj->affected   = paf;
+				fMatch          = TRUE;
+				break;
             }
 
             if (!str_cmp(word, "Affcn"))
@@ -2492,39 +2493,41 @@ OBJ_DATA *fread_obj_new(FILE *fp)
 
             if (!str_cmp(word, "Affcgn"))
             {
-                AFFECT_DATA *paf;
-                char *name;
+				AFFECT_DATA *paf;
+				char *name;
 
-                paf = new_affect();
+				paf = new_affect();
 
-                name = create_affect_cname(fread_word(fp));
-                if (!name) {
-                    log_string("fread_char: could not create affect name.");
-                    free_affect(paf);
-                } else {
-			paf->custom_name = name;
+				name = create_affect_cname(fread_word(fp));
+				if (!name) {
+					log_string("fread_char: could not create affect name.");
+					free_affect(paf);
+				} else {
+					paf->custom_name = name;
 
-			paf->type = -1;
-			paf->where  = fread_number(fp);
-			paf->group	= fread_number(fp);
-			paf->level      = fread_number(fp);
-			paf->duration   = fread_number(fp);
-			paf->modifier   = fread_number(fp);
-			paf->location   = fread_number(fp);
-			if(paf->location == APPLY_SKILL) {
-				int sn = skill_lookup(fread_word(fp));
-				if(sn < 0) {
-					paf->location = APPLY_NONE;
-					paf->modifier = 0;
-				} else
-					paf->location += sn;
-			}
-			paf->bitvector  = fread_number(fp);
-			paf->next       = obj->affected;
-			obj->affected    = paf;
-		}
-                fMatch = TRUE;
-                break;
+					paf->type = -1;
+					paf->where  = fread_number(fp);
+					paf->group	= fread_number(fp);
+					paf->level      = fread_number(fp);
+					paf->duration   = fread_number(fp);
+					paf->modifier   = fread_number(fp);
+					paf->location   = fread_number(fp);
+					if(paf->location == APPLY_SKILL) {
+						int sn = skill_lookup(fread_word(fp));
+						if(sn < 0) {
+							paf->location = APPLY_NONE;
+							paf->modifier = 0;
+						} else
+							paf->location += sn;
+					}
+					paf->bitvector  = fread_number(fp);
+					if( obj->version >= VERSION_OBJECT_003 )
+						paf->bitvector2 = fread_number(fp);
+					paf->next       = obj->affected;
+					obj->affected    = paf;
+				}
+				fMatch = TRUE;
+				break;
             }
 	    break;
 
@@ -3396,6 +3399,12 @@ void fix_object(OBJ_DATA *obj)
 		obj->version = VERSION_OBJECT_002;
 	}
 
+	if( obj->version < VERSION_OBJECT_003 ) {
+
+
+		obj->version = VERSION_OBJECT_003;
+	}
+
 }
 
 
@@ -3576,9 +3585,9 @@ void fix_character(CHAR_DATA *ch)
 
     if (ch->version < 2)
     {
-	group_add(ch,"global skills",FALSE);
-	group_add(ch,class_table[ch->pcdata->class_current].base_group,FALSE);
-	ch->version = 2;
+		group_add(ch,"global skills",FALSE);
+		group_add(ch,class_table[ch->pcdata->class_current].base_group,FALSE);
+		ch->version = 2;
     }
 
     /* make sure they have any new skills that have been added */
@@ -3700,6 +3709,13 @@ void fix_character(CHAR_DATA *ch)
 			}
 		}
 		ch->version = VERSION_PLAYER_003;
+	}
+
+	if( ch->version < VERSION_PLAYER_004 ) {
+		// Update all affects from object to include their wear slot
+
+
+		ch->version = VERSION_PLAYER_004;
 	}
 
 }

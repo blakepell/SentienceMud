@@ -236,7 +236,6 @@ ROOM_INDEX_DATA *create_vroom(WILDS_DATA *pWilds,
     ROOM_INDEX_DATA *pRoomIndex;
     WILDS_VLINK *pVLink;
     sh_int door;
-    char buf[MIL];
 
 
 // First check pointer parameters are valid
@@ -350,7 +349,6 @@ bool vroom_has_from_vlinks(ROOM_INDEX_DATA *pRoomIndex)
 
 void destroy_wilds_vroom(ROOM_INDEX_DATA *pRoomIndex)
 {
-	char buf[MIL];
     WILDS_DATA *pWilds;
     ROOM_INDEX_DATA *clone, *next_clone;
 
@@ -2232,6 +2230,7 @@ void char_to_vroom (CHAR_DATA *ch, WILDS_DATA *pWilds, int x, int y)
         if (af->level == 1)
             return;
 
+		plague.slot	= WEAR_NONE;
         plague.where = TO_AFFECTS;
         plague.group = af->group;
         plague.type = gsn_plague;

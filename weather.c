@@ -791,6 +791,7 @@ void storm_affect_char args((CHAR_DATA *ch, int storm_type)) {
 							break;
 						case SECT_DESERT:
               send_to_char("A sand storm forms from the powerful winds!\r\n", ch);
+							af.slot	= WEAR_NONE;
 							af.where	= TO_AFFECTS;
 							af.group	= AFFGROUP_PHYSICAL;
 							af.type 	= gsn_blindness;
@@ -856,6 +857,7 @@ void storm_affect_char args((CHAR_DATA *ch, int storm_type)) {
 							break;
 						case SECT_DESERT:
               send_to_char("A sand storm forms from the powerful winds!\r\n", ch);
+							af.slot	= WEAR_NONE;
 							af.where	= TO_AFFECTS;
 							af.type 	= skill_lookup("blindness");
 							af.level 	= 10;

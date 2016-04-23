@@ -48,7 +48,7 @@
 #define DECLARE_SPELL_FUN( fun )	SPELL_FUN fun
 #define DECLARE_OBJ_FUN( fun )		OBJ_FUN	  fun
 #define DECLARE_ROOM_FUN( fun )		ROOM_FUN  fun
-#define SPELL_FUNC(s)	bool s (int sn, int level, CHAR_DATA *ch, void *vo, int target)
+#define SPELL_FUNC(s)	bool s (int sn, int level, CHAR_DATA *ch, void *vo, int target, int obj_wear_loc)
 
 
 
@@ -176,6 +176,9 @@ struct sound_type {
 #define VERSION_AREA_002	0x01000001
 //	Change #1: Forces the AREA_NEWBIE flag on Alendith
 
+#define VERSION_MOBILE_001	0x01000001
+//  Change #1: Update to affects to include object worn location
+
 #define VERSION_PLAYER_001	0x01000000
 
 #define VERSION_PLAYER_002	0x01000001
@@ -184,16 +187,23 @@ struct sound_type {
 #define VERSION_PLAYER_003	0x01000002
 //  Change #1: If a player's locker rent exists and is expired, forgive it.
 
+#define VERSION_PLAYER_004	0x01000003
+//  Change #1: Update to affects to include object worn location
+
+
 #define VERSION_OBJECT_001	0x01000000
 
 #define VERSION_OBJECT_002	0x01000001
 //	Change #1: Initializes objects to use the perm values for flags manipulated by affects
 
+#define VERSION_OBJECT_003	0x01000002
+//  Change #1: Added bitvector2 to affect output
+
 #define VERSION_AREA		VERSION_AREA_002
 #define VERSION_MOBILE		0x01000000
-#define VERSION_OBJECT		VERSION_OBJECT_002
+#define VERSION_OBJECT		VERSION_OBJECT_003
 #define VERSION_ROOM		0x01000000
-#define VERSION_PLAYER		VERSION_PLAYER_003
+#define VERSION_PLAYER		VERSION_PLAYER_004
 #define VERSION_TOKEN		0x01000000
 #define VERSION_AFFECT		0x01000000
 #define VERSION_SCRIPT		0x02000000
@@ -300,7 +310,7 @@ typedef struct    wilds_terrain    WILDS_TERRAIN;
 /* Functions */
 typedef	void DO_FUN	(CHAR_DATA *ch, char *argument);
 typedef bool SPEC_FUN	(CHAR_DATA *ch);
-typedef bool SPELL_FUN	(int sn, int level, CHAR_DATA *ch, void *vo, int target);
+typedef bool SPELL_FUN	(int sn, int level, CHAR_DATA *ch, void *vo, int target, int obj_wear_loc);
 typedef void OBJ_FUN	(OBJ_DATA *obj, char *argument);
 typedef void ROOM_FUN	(ROOM_INDEX_DATA *room, char *argument);
 typedef bool CHAR_TEST	(CHAR_DATA *ch, CHAR_DATA *ach, CHAR_DATA *bch);	/* NIB : 20070122 : For act_new( ) */
@@ -1304,6 +1314,7 @@ struct	affect_data
     long		bitvector2;
     sh_int 		random;
     char 		*custom_name;
+    sh_int		slot;
 };
 
 /* where definitions */
@@ -1778,6 +1789,9 @@ struct affliction_type {
 				(cc)
 				(dd)
 				(ee) */
+
+#define AFFFLAG_NODISPEL		(A)		// Affect cannot be removed by dispel
+#define AFFFLAG_NOCANCEL		(B)		// Affect cannot be removed by cancellation
 
 /* Sex */
 #define SEX_NEUTRAL		      0
@@ -3337,6 +3351,7 @@ struct	char_data
     int				script_wait;
     long			script_wait_success;
     long			script_wait_failure;
+    long			script_wait_pulse;
 	//CHAR_DATA		*script_wait_mob;
 	//OBJ_DATA		*script_wait_obj;
 	//ROOM_INDEX_DATA	*script_wait_room;
@@ -3583,6 +3598,7 @@ struct	char_data
 
     LLIST *		llocker;
     LLIST *		lcarrying;
+    LLIST *		lworn;
     LLIST *		ltokens;
     LLIST *		levents;
     LLIST *		lquests;	// Eventually, we will have a quest log of sorts
@@ -6655,6 +6671,7 @@ void	affect_strip	args( ( CHAR_DATA *ch, int sn ) );
 void	affect_strip_obj	args( ( OBJ_DATA *obj, int sn ) );
 void	affect_strip_name	args( ( CHAR_DATA *ch, char *name ) );
 void	affect_strip_name_obj	args( ( OBJ_DATA *obj, char *name ) );
+void	affect_stripall_wearloc args( (CHAR_DATA *ch, int wear_loc) );
 bool	is_affected	args( ( CHAR_DATA *ch, int sn ) );
 bool	is_affected_obj	args( ( OBJ_DATA *obj, int sn ) );
 bool	is_affected_name	args( ( CHAR_DATA *ch, char *name ) );
@@ -7190,6 +7207,7 @@ void add_immortal(IMMORTAL_DATA *immortal);
  * Global Constants
  */
 extern	char *	const	dir_name        [];
+int parse_door(char *name);
 extern	const	sh_int	rev_dir         [];
 extern	const	struct	spec_type	spec_table	[];
 
@@ -7349,7 +7367,7 @@ ROOM_INDEX_DATA *wilds_seek_down(register WILDS_DATA *wilds, register int x, reg
 int obj_nest_clones(OBJ_DATA *obj);
 void obj_set_nest_clones(OBJ_DATA *obj, bool add);
 void obj_update_nest_clones(OBJ_DATA *obj);
-void show_room(CHAR_DATA *ch, ROOM_INDEX_DATA *room, bool remote, bool silent);
+void show_room(CHAR_DATA *ch, ROOM_INDEX_DATA *room, bool remote, bool silent, bool automatic);
 
 void log_stringf(const char *fmt,...);
 int interrupt_script( CHAR_DATA *ch, bool silent );
@@ -7443,5 +7461,6 @@ void loot_corpse(CHAR_DATA *ch, OBJ_DATA *corpse);
 
 int music_lookup( char *name);
 bool is_char_busy(CHAR_DATA *ch);
+bool obj_has_spell(OBJ_DATA *obj, char *name);
 
 #endif /* !def __MERC_H__ */
