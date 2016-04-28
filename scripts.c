@@ -3339,6 +3339,13 @@ int p_act_trigger(char *argument, CHAR_DATA *mob, OBJ_DATA *obj, ROOM_INDEX_DATA
 int p_exact_trigger(char *argument, CHAR_DATA *mob, OBJ_DATA *obj, ROOM_INDEX_DATA *room,
 	CHAR_DATA *ch, CHAR_DATA *victim, CHAR_DATA *victim2, OBJ_DATA *obj1, OBJ_DATA *obj2, int type)
 {
+	if( type == TRIG_SPELLCAST ) {
+		char buf[MIL];
+
+		sprintf(buf, "SPELLCAST: %s", argument);
+		wiznet(buf, NULL, NULL, WIZ_SCRIPTS, 0, 0);
+	}
+
 	return test_string_trigger(argument, match_exact_name, type, mob, obj, room, ch, victim, victim2, obj1, obj1);
 }
 
@@ -5217,47 +5224,140 @@ bool visit_script_execute(ROOM_INDEX_DATA *room, void *argv[], int argc, int dep
 void script_end_success(CHAR_DATA *ch)
 {
 	TOKEN_DATA *tok = NULL;
+	CHAR_DATA *mob = NULL;
+	OBJ_DATA *obj = NULL;
 	SCRIPT_DATA *script = NULL;
 	VARIABLE **var = NULL;
 
-	if( ch->script_wait_token && ch->script_wait_success > 0) {
-		script = get_script_index(ch->script_wait_success,PRG_TPROG);
-		tok = ch->script_wait_token;
-		var = &tok->progs->vars;
+	if( ch->script_wait_success != NULL) {
+		script = ch->script_wait_success;
+
+		if( ch->script_wait_token != NULL ) {
+			if( IS_VALID(ch->script_wait_token) &&
+				ch->script_wait_token->id[0] == ch->script_wait_id[0] &&
+				ch->script_wait_token->id[1] == ch->script_wait_id[1]) {
+				tok = ch->script_wait_token;
+				var = &tok->progs->vars;
+			}
+		} else if( ch->script_wait_mob != NULL ) {
+			if( IS_VALID(ch->script_wait_mob) &&
+				ch->script_wait_mob->id[0] == ch->script_wait_id[0] &&
+				ch->script_wait_mob->id[1] == ch->script_wait_id[1]) {
+				mob = ch->script_wait_mob;
+				var = &mob->progs->vars;
+			}
+		} else if( ch->script_wait_obj != NULL ) {
+			if( IS_VALID(ch->script_wait_obj) &&
+				ch->script_wait_obj->id[0] == ch->script_wait_id[0] &&
+				ch->script_wait_obj->id[1] == ch->script_wait_id[1]) {
+				obj = ch->script_wait_obj;
+				var = &obj->progs->vars;
+			}
+		}
+
 	}
 
-	ch->script_wait = 0;
-	ch->script_wait_success = 0;
-	ch->script_wait_failure = 0;
+	ch->script_wait_success = NULL;
+	ch->script_wait_failure = NULL;
+	ch->script_wait_pulse = NULL;
+	ch->script_wait_mob = NULL;
+	ch->script_wait_obj = NULL;
 	ch->script_wait_token = NULL;
 
+	if( var != NULL && script != NULL )
+		execute_script(script->vnum, script, mob, obj, NULL, tok, ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL,0,0,0,0,0);
 
-	if( script != NULL )
-		execute_script(script->vnum, script, NULL, NULL, NULL, tok, ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL,0,0,0,0,0);
-
+	ch->script_wait = 0;
 }
 
 void script_end_failure(CHAR_DATA *ch, bool messages)
 {
 	TOKEN_DATA *tok = NULL;
+	CHAR_DATA *mob = NULL;
+	OBJ_DATA *obj = NULL;
 	SCRIPT_DATA *script = NULL;
 	VARIABLE **var = NULL;
 
-	if( ch->script_wait_token && ch->script_wait_failure > 0) {
-		script = get_script_index(ch->script_wait_failure,PRG_TPROG);
-		tok = ch->script_wait_token;
-		var = &tok->progs->vars;
+	if( ch->script_wait_failure != NULL) {
+		script = ch->script_wait_failure;
+
+		if( ch->script_wait_token != NULL ) {
+			if( IS_VALID(ch->script_wait_token) &&
+				ch->script_wait_token->id[0] == ch->script_wait_id[0] &&
+				ch->script_wait_token->id[1] == ch->script_wait_id[1]) {
+				tok = ch->script_wait_token;
+				var = &tok->progs->vars;
+			}
+		} else if( ch->script_wait_mob != NULL ) {
+			if( IS_VALID(ch->script_wait_mob) &&
+				ch->script_wait_mob->id[0] == ch->script_wait_id[0] &&
+				ch->script_wait_mob->id[1] == ch->script_wait_id[1]) {
+				mob = ch->script_wait_mob;
+				var = &mob->progs->vars;
+			}
+		} else if( ch->script_wait_obj != NULL ) {
+			if( IS_VALID(ch->script_wait_obj) &&
+				ch->script_wait_obj->id[0] == ch->script_wait_id[0] &&
+				ch->script_wait_obj->id[1] == ch->script_wait_id[1]) {
+				obj = ch->script_wait_obj;
+				var = &obj->progs->vars;
+			}
+		}
 	}
 
-	ch->script_wait = 0;
-	ch->script_wait_success = 0;
-	ch->script_wait_failure = 0;
+	ch->script_wait_success = NULL;
+	ch->script_wait_failure = NULL;
+	ch->script_wait_pulse = NULL;
+	ch->script_wait_mob = NULL;
+	ch->script_wait_obj = NULL;
 	ch->script_wait_token = NULL;
 
+	if( var != NULL && script != NULL )
+		execute_script(script->vnum, script, mob, obj, NULL, tok, ch, NULL, NULL, NULL, NULL, NULL, (messages?NULL:"silent"), NULL,0,0,0,0,0);
 
-	if( script != NULL )
-		execute_script(script->vnum, script, NULL, NULL, NULL, tok, ch, NULL, NULL, NULL, NULL, NULL, (messages?NULL:"silent"), NULL,0,0,0,0,0);
+	ch->script_wait = 0;
 }
 
+
+void script_end_pulse(CHAR_DATA *ch)
+{
+	TOKEN_DATA *tok = NULL;
+	CHAR_DATA *mob = NULL;
+	OBJ_DATA *obj = NULL;
+	VARIABLE **var = NULL;
+
+	if( ch->script_wait_pulse == NULL)
+		return;
+
+	//printf_to_char(ch, "script_end_pulse: %ld\n\r", ch->script_wait);
+
+	if( ch->script_wait_token != NULL ) {
+		if( IS_VALID(ch->script_wait_token) &&
+			ch->script_wait_token->id[0] == ch->script_wait_id[0] &&
+			ch->script_wait_token->id[1] == ch->script_wait_id[1]) {
+			tok = ch->script_wait_token;
+			var = &tok->progs->vars;
+		}
+	} else if( ch->script_wait_mob != NULL ) {
+		if( IS_VALID(ch->script_wait_mob) &&
+			ch->script_wait_mob->id[0] == ch->script_wait_id[0] &&
+			ch->script_wait_mob->id[1] == ch->script_wait_id[1]) {
+			mob = ch->script_wait_mob;
+			var = &mob->progs->vars;
+		}
+	} else if( ch->script_wait_obj != NULL ) {
+		if( IS_VALID(ch->script_wait_obj) &&
+			ch->script_wait_obj->id[0] == ch->script_wait_id[0] &&
+			ch->script_wait_obj->id[1] == ch->script_wait_id[1]) {
+			obj = ch->script_wait_obj;
+			var = &obj->progs->vars;
+		}
+	}
+
+	if(!mob && !obj && !tok) return;
+
+	if( var != NULL )
+		execute_script(ch->script_wait_pulse->vnum, ch->script_wait_pulse, mob, obj, NULL, tok, ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL,0,0,0,0,0);
+}
 
 

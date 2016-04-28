@@ -292,6 +292,13 @@ typedef struct list_link_exit_data LLIST_EXIT_DATA;
 typedef struct list_link_skill_data LLIST_SKILL_DATA;
 typedef struct iterator_type ITERATOR;
 
+typedef struct olc_point_category_type POINT_CATEGORY;
+typedef struct olc_point_data OLC_POINT_DATA;
+typedef struct olc_point_boost_data OLC_POINT_BOOST;
+typedef struct olc_point_usage_data OLC_POINT_USAGE;
+typedef struct olc_point_area_data OLC_POINT_AREA;
+
+
 /* VIZZWILDS */
 typedef struct    wilds_vlink      WILDS_VLINK;
 typedef struct    wilds_data       WILDS_DATA;
@@ -526,6 +533,142 @@ struct list_link_skill_data {
 	unsigned long mid[2];
 	unsigned long tid[2];
 };
+
+
+#define OLC_PNT_MOBILE		'M'
+#define OLC_PNT_OBJECT		'O'
+#define OLC_PNT_ROOM		'R'
+#define OLC_PNT_TOKEN		'T'
+
+/*
+Object:
+	obj_cost
+	obj_weight
+	obj_repairs
+	obj_fragility
+	obj_spells
+	obj_spells_def
+	obj_spells_off
+	obj_spells_obj
+	obj_aff_str
+	obj_aff_dex
+	obj_aff_int
+	obj_aff_wis
+	obj_aff_con
+	obj_aff_mana
+	obj_aff_hit
+	obj_aff_move
+	obj_aff_other
+	obj_catalyst		Dormant only.  Active requires special permission
+	obj_extra_low		Low tier extra flags (1 point per flag)
+	obj_extra_mid		Mid tier extra flags (1 point per flag)
+	obj_extra_high		High tier extra flags (1 point per flag)
+
+	obj_armor_pierce	Deviation from calculated armor (% based)
+	obj_armor_bash		Deviation from calculated armor (% based)
+	obj_armor_slash		Deviation from calculated armor (% based)
+	obj_armor_exotic	Deviation from calculated armor (% based)
+	obj_armor_strength	Stronger armor requires more points
+
+	obj_weapon_damage	Deviation from calculated damage
+	obj_weapon_flags	Special weapon flags that we'd like to require points (1 point per flag)
+
+	obj_ranged_damage	Deviation from calculated damage
+	obj_ranged_range	Projectile distance (further distance requires more points)
+
+	obj_furn_heal
+	obj_furn_mana
+	obj_furn_move
+
+	obj_wandstaff_level
+	obj_wandstaff_charge
+
+
+Mobile:
+
+*/
+
+#define OLC_PNTCAT_OBJ_COST				0	//
+#define OLC_PNTCAT_OBJ_WEIGHT			0	//
+#define OLC_PNTCAT_OBJ_REPAIRS			0	//
+#define OLC_PNTCAT_OBJ_FRAGILITY		0	//
+#define OLC_PNTCAT_OBJ_SPELLS			0	//
+#define OLC_PNTCAT_OBJ_SPELLS_DEF		0	//
+#define OLC_PNTCAT_OBJ_SPELLS_OFF		0	//
+#define OLC_PNTCAT_OBJ_SPELLS_OBJ		0	//
+#define OLC_PNTCAT_OBJ_AFF_STR			0	//
+#define OLC_PNTCAT_OBJ_AFF_DEX			0	//
+#define OLC_PNTCAT_OBJ_AFF_INT			0	//
+#define OLC_PNTCAT_OBJ_AFF_WIS			0	//
+#define OLC_PNTCAT_OBJ_AFF_CON			0	//
+#define OLC_PNTCAT_OBJ_AFF_MANA			0	//
+#define OLC_PNTCAT_OBJ_AFF_HIT			0	//
+#define OLC_PNTCAT_OBJ_AFF_MOVE			0	//
+#define OLC_PNTCAT_OBJ_AFF_OTHER		0	//
+#define OLC_PNTCAT_OBJ_CATALYST			0	// Dormant only.  Active requires special permission
+#define OLC_PNTCAT_OBJ_EXTRA_LOW		0	// Low tier extra flags (1 point per flag)
+#define OLC_PNTCAT_OBJ_EXTRA_MID		0	// Mid tier extra flags (1 point per flag)
+#define OLC_PNTCAT_OBJ_EXTRA_HIGH		0	// High tier extra flags (1 point per flag)
+
+#define OLC_PNTCAT_OBJ_ARMOR_PIERCE		0	// Deviation from calculated armor (% based)
+#define OLC_PNTCAT_OBJ_ARMOR_BASH		0	// Deviation from calculated armor (% based)
+#define OLC_PNTCAT_OBJ_ARMOR_SLASH		0	// Deviation from calculated armor (% based)
+#define OLC_PNTCAT_OBJ_ARMOR_EXOTIC		0	// Deviation from calculated armor (% based)
+#define OLC_PNTCAT_OBJ_ARMOR_STRENGTH	0	// Stronger armor requires more points
+
+#define OLC_PNTCAT_OBJ_WEAPON_DAMAGE	0	// Deviation from calculated damage
+#define OLC_PNTCAT_OBJ_WEAPON_FLAGS		0	// Special weapon flags that we'd like to require points (1 point per flag)
+#define OLC_PNTCAT_OBJ_WEAPON_RANGE		0	// Projectile distance (further distance requires more points)
+
+#define OLC_PNTCAT_OBJ_FURN_HEAL		0	//
+#define OLC_PNTCAT_OBJ_FURN_MANA		0	//
+#define OLC_PNTCAT_OBJ_FURN_MOVE		0	//
+
+#define OLC_PNTCAT_OBJ_WANDSTAFF_LEVEL	0	//
+#define OLC_PNTCAT_OBJ_WANDSTAFF_CHARGE	0	//
+
+#define OLC_PNTCAT_OBJ_FOOD_HUNGER		0
+#define OLC_PNTCAT_OBJ_FOOD_FULL		0
+
+#define OLC_PNTCAT_MAX					0
+
+struct olc_point_category_type {
+	char *name;
+	char *description;
+	int category;
+	int type;
+	int subtypes[5];
+};
+
+struct olc_point_boost_data {
+	OLC_POINT_BOOST *next;
+	int category;
+	int usage;
+	int imp;		// Boosted points granted by an IMP or by claiming an area boost
+	int area;		// Boosted points pulled from the area's boosted allotment
+};
+
+struct olc_point_usage_data {
+	OLC_POINT_USAGE *next;
+	int category;
+	int usage;
+};
+
+struct olc_point_data {
+	OLC_POINT_BOOST *boosts;
+	OLC_POINT_USAGE *usage;
+	int budget;
+	int total;
+};
+
+struct olc_point_area_data {
+	OLC_POINT_AREA *next;
+	int category;
+	int claimed;
+	int boost;
+};
+
+
 
 #define SKILL_NAME(sn) (((sn) > 0 && (sn) < MAX_SKILL) ? skill_table[(sn)].name : "")
 
@@ -1714,6 +1857,7 @@ struct affliction_type {
 #define PART_FINS               (O)
 #define PART_WINGS              (P)
 #define PART_TAIL               (Q)
+#define PART_GILLS				(R)
 /* for combat */
 #define PART_CLAWS              (U)
 #define PART_FANGS              (V)
@@ -3349,12 +3493,14 @@ struct	char_data
     OBJ_DATA		*song_instrument;
 
     int				script_wait;
-    long			script_wait_success;
-    long			script_wait_failure;
-    long			script_wait_pulse;
-	//CHAR_DATA		*script_wait_mob;
-	//OBJ_DATA		*script_wait_obj;
-	//ROOM_INDEX_DATA	*script_wait_room;
+    SCRIPT_DATA		*script_wait_success;
+    SCRIPT_DATA		*script_wait_failure;
+    SCRIPT_DATA		*script_wait_pulse;
+    unsigned long	script_wait_id[2];
+
+	CHAR_DATA		*script_wait_mob;
+	OBJ_DATA		*script_wait_obj;
+	ROOM_INDEX_DATA	*script_wait_room;
 	TOKEN_DATA		*script_wait_token;
 
     int			fade;
@@ -3617,6 +3763,8 @@ struct	char_data
     								// 3 = SCRIPTED
 	bool		casting_recovered;	// Flag set if a spell recovery was attempted, regardless if it was successful.
 	char		*casting_failure_message;
+
+	bool		in_damage_function;	// If set, it will prevent damage_new from working on the character
 
 /*
 	struct char_data_stats {
@@ -4165,6 +4313,14 @@ struct	area_data {
 #endif
 
 	LLIST *room_list;
+
+
+	OLC_POINT_BOOST *points;	// Boosted point allotments for the entire area
+								// Can be used with "<editor> boostclaim <type> <points>"
+								// Can be returned with "<editor> boostrefund <type> <points>"
+								//		Can only be returned if resulting point reduction on the bucket doesn't cause the used number to exceed the total.
+								//		Only the imp-boost can do this.
+
 };
 
 struct storm_data
@@ -4779,6 +4935,7 @@ enum trigger_index_enum {
 	TRIG_COMBAT_STYLE,
 	TRIG_DAMAGE,
 	TRIG_DEATH,
+	TRIG_DEATH_PROTECTION,
 	TRIG_DEATH_TIMER,
 	TRIG_DEFENSE,
 	TRIG_DELAY,
@@ -4952,6 +5109,8 @@ struct trigger_type {
 
 #define PROG_NODESTRUCT		(A)		/* Used to indicate the item is already destructing and should not fire any destructions */
 #define PROG_AT			(B)		/* Used to indicate the entity is doing a remote action via at, bars certain scripted actions */
+#define PROG_NODAMAGE	(C)		// The script may not do damage at any stage
+#define PROG_NORAWKILL	(D)		// The script may not do rawkill at any stage
 
 #define PROG_FLAG(x,y)		(((x)->progs) && IS_SET((x)->progs->entity_flags,(y)))
 
@@ -5920,7 +6079,6 @@ extern  IMMORTAL_DATA *immortal_groups[MAX_IMMORTAL_GROUPS];
  * Global variables.
  */
 extern		BOUNTY_DATA	  *	bounty_list;
-extern		CHAR_DATA	  *	char_list;
 extern		CHAR_DATA	  *     casting_list;
 extern		CHAT_ROOM_DATA    *     chat_room_list;
 extern		CHURCH_DATA	  *	church_list;
@@ -5929,7 +6087,6 @@ extern		FILE *			fpReserve;
 extern		HELP_DATA	  *	help_first;
 extern		MAIL_DATA	  *	mail_list;
 extern		NPC_SHIP_DATA	  *	npc_ship_list;
-extern		OBJ_DATA	  *	object_list;
 extern		QUEST_INDEX_DATA  *	quest_index_list;
 extern		SHOP_DATA	  *	shop_first;
 extern		TIME_INFO_DATA		time_info;
@@ -7313,6 +7470,8 @@ extern LLIST *persist_mobs;
 extern LLIST *persist_objs;
 extern LLIST *persist_rooms;
 extern TOKEN_DATA *global_tokens;
+extern LLIST *loaded_chars;
+extern LLIST *loaded_objects;
 
 extern LLIST *conn_players;
 extern LLIST *conn_immortals;

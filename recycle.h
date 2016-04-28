@@ -109,3 +109,7 @@ char	*buf_string args( (BUFFER *buffer) );
 
 HELP_DATA *	new_help	args( ( void ) );
 
+
+OLC_POINT_BOOST *new_olc_point_boost();
+void free_olc_point_boost(OLC_POINT_BOOST *boost);
+

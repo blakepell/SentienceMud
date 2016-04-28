@@ -550,6 +550,17 @@ int main(int argc, char **argv)
 		perror("Could not create 'persist_rooms'");
 		exit(1);
 	}
+	loaded_chars = list_create(FALSE);
+	if(!loaded_chars) {
+		perror("Could not create 'loaded_chars'");
+		exit(1);
+	}
+	loaded_objects = list_create(FALSE);
+	if(!loaded_objects) {
+		perror("Could not create 'loaded_objects'");
+		exit(1);
+	}
+
 
 
     /*
@@ -631,6 +642,8 @@ int main(int argc, char **argv)
 	list_destroy(conn_players);
 	list_destroy(conn_immortals);
 	list_destroy(conn_online);
+	list_destroy(loaded_chars);
+	list_destroy(loaded_objects);
 	list_destroy(persist_mobs);
 	list_destroy(persist_objs);
 	list_destroy(persist_rooms);
@@ -1918,8 +1931,8 @@ void join_world(DESCRIPTOR_DATA * d)
                       ch);
     }
 
-    ch->next = char_list;
-    char_list = ch;
+	list_appendlink(loaded_char, ch);
+
     d->connected = CON_PLAYING;
     reset_char (ch);
 
@@ -2115,8 +2128,8 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 
 				reset_char(ch);
 
-				ch->next = char_list;
-				char_list = ch;
+				list_appendlink(loaded_chars, ch);
+
 				char_to_room(ch, ch->in_room);
 				d->connected = CON_PLAYING;
 				do_function(d->character, &do_look, "");
@@ -2855,8 +2868,7 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 	"Type 'password null <new password>' to fix.\n\r",0);
 	}
 
-	ch->next	= char_list;
-	char_list	= ch;
+	list_appendlink(loaded_chars, ch);
 	d->connected	= CON_PLAYING;
 
 	if (ch->pcdata->old_pwd != NULL)
@@ -3183,71 +3195,60 @@ bool check_parse_name(char *name)
 bool check_reconnect(DESCRIPTOR_DATA *d, char *name, bool fConn)
 {
     CHAR_DATA *ch;
+    ITERATOR cit;
 
-    for (ch = char_list; ch != NULL; ch = ch->next)
+    iterator_start(&cit, loaded_chars);
+    while(( ch = (CHAR_DATA *)iterator_nextdata(&cit)))
     {
-	if (!IS_NPC(ch)
-	&&   (!fConn || ch->desc == NULL)
-	&&   !str_cmp(d->character->name, ch->name))
-	{
-	    if (fConn == FALSE)
-	    {
-		free_string(d->character->pcdata->pwd);
-		d->character->pcdata->pwd = str_dup(ch->pcdata->pwd);
-	    }
-	    else
-	    {
-                CHURCH_DATA *church;
-		CHURCH_PLAYER_DATA *member;
+		if (!IS_NPC(ch) &&
+			(!fConn || ch->desc == NULL) &&
+			!str_cmp(d->character->name, ch->name)) {
+		    if (!fConn) {
+				free_string(d->character->pcdata->pwd);
+				d->character->pcdata->pwd = str_dup(ch->pcdata->pwd);
+			} else {
+				CHURCH_DATA *church;
+				CHURCH_PLAYER_DATA *member;
 
-		if (d->character->pet)
-		{
-                    CHAR_DATA *pet=d->character->pet;
+				if (d->character->pet) {
+					CHAR_DATA *pet=d->character->pet;
 
-                    char_to_room(pet,get_room_index(ROOM_VNUM_LIMBO));
-                    stop_follower(pet,TRUE);
-                    extract_char(pet,TRUE);
+					char_to_room(pet,get_room_index(ROOM_VNUM_LIMBO));
+					stop_follower(pet,TRUE);
+					extract_char(pet,TRUE);
                 }
-		free_char(d->character);
-		d->character = ch;
-		ch->desc	 = d;
-		ch->timer	 = 0;
-		send_to_char(
-		    "Reconnecting. Type replay to see missed tells.\n\r", ch);
-		act("$n has reconnected.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+				free_char(d->character);
+				d->character = ch;
+				ch->desc	 = d;
+				ch->timer	 = 0;
+				send_to_char("Reconnecting. Type replay to see missed tells.\n\r", ch);
+				act("$n has reconnected.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
-		sprintf(log_buf, "%s@%s reconnected.", ch->name, d->host);
-		log_string(log_buf);
-		wiznet("$N has relinked.",
-		    ch,NULL,WIZ_LINKS,0,0);
+				sprintf(log_buf, "%s@%s reconnected.", ch->name, d->host);
+				log_string(log_buf);
+				wiznet("$N has relinked.", ch,NULL,WIZ_LINKS,0,0);
 
-		d->connected = CON_PLAYING;
+				d->connected = CON_PLAYING;
 
-		if (get_eq_char(ch, WEAR_LIGHT) != NULL)
-		{
-		    ch->in_room->light++;
-		}
+				if (get_eq_char(ch, WEAR_LIGHT) != NULL)
+					ch->in_room->light++;
 
-                /* resync char with his church_member both ways
-		   on reconnect */
-		for (church = church_list; church != NULL;
-		      church = church->next)
-		{
-		    if (church == ch->church)
-		    {
-		        for (member = church->people; member != NULL;
-			      member = member->next)
-			{
-			    if (!str_cmp(member->name, ch->name)
-   			    && member->ch == NULL)
-			        member->ch = ch;
-			}
+				/* resync char with his church_member both ways on reconnect */
+				for (church = church_list; church != NULL; church = church->next) {
+					if (church == ch->church) {
+						for (member = church->people; member != NULL; member = member->next) {
+							if (!str_cmp(member->name, ch->name) && member->ch == NULL)
+								member->ch = ch;
+						}
+				    }
+				}
 		    }
+		    iterator_stop(&cit);
+
+			return TRUE;
 		}
-	    }
-	    return TRUE;
-	}
     }
+    iterator_stop(&cit);
 
     return FALSE;
 }
@@ -4338,8 +4339,7 @@ void update_pc_timers(CHAR_DATA *ch)
 		if (ch->script_wait <= 0)
 			script_end_success(ch);
 		else
-		{
-		}
+			script_end_pulse(ch);
 	}
 
 

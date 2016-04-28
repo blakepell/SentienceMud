@@ -854,6 +854,7 @@ void do_at(CHAR_DATA *ch, char *argument)
 	CHAR_DATA *wch;
 	int x = 0;
 	int y = 0;
+	ITERATOR wit;
 
 	argument = one_argument(argument, arg);
 
@@ -896,7 +897,10 @@ void do_at(CHAR_DATA *ch, char *argument)
 	* See if 'ch' still exists before continuing!
 	* Handles 'at XXXX quit' case.
 	*/
-	for (wch = char_list; wch != NULL; wch = wch->next) {
+
+	iterator_start(&wit, loaded_chars);
+	while(( wch = (CHAR_DATA *)iterator_nextdata(&wit)))
+	{
 		if (wch == ch) {
 			char_from_room(ch);
 			if(wilds)
@@ -907,6 +911,7 @@ void do_at(CHAR_DATA *ch, char *argument)
 			break;
 		}
 	}
+	iterator_stop(&wit);
 }
 
 void do_startinvasion(CHAR_DATA *ch, char *argument)
@@ -2366,6 +2371,7 @@ void do_owhere(CHAR_DATA *ch, char *argument)
     OBJ_DATA *in_obj;
     bool found;
     int number = 0, max_found;
+    ITERATOR it;
 
     found = FALSE;
     number = 0;
@@ -2379,45 +2385,38 @@ void do_owhere(CHAR_DATA *ch, char *argument)
 	return;
     }
 
-    for (obj = object_list; obj != NULL; obj = obj->next)
+	iterator_start(&it, loaded_objects);
+	while(( obj = (OBJ_DATA *)iterator_nextdata(&it)))
     {
-        if (!can_see_obj(ch, obj)
-	|| !is_name(argument, obj->name))
+        if (!can_see_obj(ch, obj) || !is_name(argument, obj->name))
             continue;
 
         found = TRUE;
         number++;
 
-        for (in_obj = obj; in_obj->in_obj != NULL; in_obj = in_obj->in_obj)
-            ;
+        for (in_obj = obj; in_obj->in_obj != NULL; in_obj = in_obj->in_obj) ;
 
-        if (in_obj->carried_by != NULL && can_see(ch,in_obj->carried_by)
-	&& in_obj->carried_by->in_room != NULL)
-	{
+        if (in_obj->carried_by != NULL &&
+        	can_see(ch,in_obj->carried_by) &&
+        	in_obj->carried_by->in_room != NULL) {
             sprintf(buf, "{Y%3d){x %s (vnum %ld) is carried by %s [Room %ld]\n\r",
                 number, obj->short_descr,
-		obj->pIndexData->vnum,
-		pers(in_obj->carried_by, ch),
-		in_obj->carried_by->in_room->vnum);
-	}
-        else if (in_obj->in_room != NULL && can_see_room(ch,in_obj->in_room))
-	{
+			obj->pIndexData->vnum,
+			pers(in_obj->carried_by, ch),
+			in_obj->carried_by->in_room->vnum);
+		} else if (in_obj->in_room != NULL && can_see_room(ch,in_obj->in_room)) {
             sprintf(buf, "{Y%3d){x %s (vnum %ld) is in %s [Room %ld]\n\r",
                 number, obj->short_descr,
-		obj->pIndexData->vnum,
-		in_obj->in_room->name,
-	   	in_obj->in_room->vnum);
-	}
-	else if (in_obj->in_mail != NULL)
-	{
+				obj->pIndexData->vnum,
+				in_obj->in_room->name,
+				in_obj->in_room->vnum);
+		} else if (in_obj->in_mail != NULL) {
             sprintf(buf, "{Y%3d){x %s (vnum %ld) is in a mail package\n\r", number,
-	    obj->short_descr, obj->pIndexData->vnum);
-	}
-	else
-	{
+			    obj->short_descr, obj->pIndexData->vnum);
+		} else {
             sprintf(buf, "{Y%3d){x %s (vnum %ld) is somewhere\n\r", number,
-	    obj->short_descr, obj->pIndexData->vnum);
-	}
+			    obj->short_descr, obj->pIndexData->vnum);
+		}
 
         buf[0] = UPPER(buf[0]);
         add_buf(buffer,buf);
@@ -2442,60 +2441,55 @@ void do_mwhere(CHAR_DATA *ch, char *argument)
     CHAR_DATA *victim;
     bool found;
     int count = 0;
+    ITERATOR vit;
 
-    if (argument[0] == '\0')
-    {
-	DESCRIPTOR_DATA *d;
+    if (argument[0] == '\0') {
+		DESCRIPTOR_DATA *d;
 
-	buffer = new_buf();
-	for (d = descriptor_list; d != NULL; d = d->next)
-	{
-	    if (d->character != NULL && d->connected == CON_PLAYING
-	    &&  d->character->in_room != NULL && can_see(ch,d->character)
-	    &&  can_see_room(ch,d->character->in_room))
-	    {
-                if (d->character->in_wilds == NULL)
-                {
+		buffer = new_buf();
+		for (d = descriptor_list; d != NULL; d = d->next) {
+		    if (d->character != NULL && d->connected == CON_PLAYING &&
+		    	d->character->in_room != NULL && can_see(ch,d->character) &&
+		    	can_see_room(ch,d->character->in_room)) {
+                if (d->character->in_wilds == NULL) {
                     /* Victim is in a normal room, so report the vnum.*/
                     victim = d->character;
                     count++;
 
-                      if (d->original != NULL)
-                          sprintf(buf,"{Y%3d){x %s (in the body of %s) is in %s [%ld]\n\r",
-                                  count, d->original->name,victim->short_descr,
-			victim->in_room->name,victim->in_room->vnum);
-		else
-		    sprintf(buf,"{Y%3d){x %s is in %s [%ld]\n\r",
-			count, victim->name,victim->in_room->name,
-			victim->in_room->vnum);
-		add_buf(buffer,buf);
-	    }
-                else
-                {
+					if (d->original != NULL)
+						sprintf(buf,"{Y%3d){x %s (in the body of %s) is in %s [%ld]\n\r",
+							count, d->original->name,victim->short_descr,
+							victim->in_room->name,victim->in_room->vnum);
+					else
+						sprintf(buf,"{Y%3d){x %s is in %s [%ld]\n\r",
+							count, victim->name,victim->in_room->name,
+							victim->in_room->vnum);
+					add_buf(buffer,buf);
+			    } else {
                     /* Victim is in a virtual room, so report the location and position.*/
                     victim = d->character;
                     count++;
 
                     if (d->original != NULL)
                         sprintf(buf,"{Y%3d){x %s (in the body of %s) is in wilds '%s', %s (%ld, %ld)\n\r",
-                                count, d->original->name,victim->short_descr,
-                                victim->in_room->name,
-				victim->in_wilds->name, victim->in_room->x, victim->in_room->y);
+							count, d->original->name,victim->short_descr,
+							victim->in_room->name,
+							victim->in_wilds->name, victim->in_room->x, victim->in_room->y);
                     else
-                        sprintf(buf,"{Y%3d){x %s is in wilds '%s', %s (%ld, %ld)\n\r",
-                                count, victim->name,
-				victim->in_wilds->name,
-			       	victim->in_room->name,
-			       	victim->in_room->x, victim->in_room->y);
+						sprintf(buf,"{Y%3d){x %s is in wilds '%s', %s (%ld, %ld)\n\r",
+							count, victim->name,
+							victim->in_wilds->name,
+							victim->in_room->name,
+							victim->in_room->x, victim->in_room->y);
 
-                    add_buf(buffer,buf);
-                }
-	    }
-	}
+					add_buf(buffer,buf);
+				}
+			}
+		}
 
-        page_to_char(buf_string(buffer),ch);
-	free_buf(buffer);
-	return;
+		page_to_char(buf_string(buffer),ch);
+		free_buf(buffer);
+		return;
     }
 
     /* all the mobs without a room */
@@ -2503,7 +2497,10 @@ void do_mwhere(CHAR_DATA *ch, char *argument)
         buffer = new_buf();
         found=FALSE;
         count=0;
-        for (victim = char_list; victim != NULL; victim = victim->next) {
+
+		iterator_start(&vit, loaded_chars);
+		while(( victim = (CHAR_DATA *)iterator_nextdata(&vit)))
+		{
             if (victim->in_room==NULL) {
                 found = TRUE;
                 count++;
@@ -2513,7 +2510,9 @@ void do_mwhere(CHAR_DATA *ch, char *argument)
                     (long)victim);
                 add_buf(buffer,buf);
             }
-        }
+		}
+		iterator_stop(&vit);
+
         if (found)
             page_to_char(buf_string(buffer),ch);
         else
@@ -2525,24 +2524,26 @@ void do_mwhere(CHAR_DATA *ch, char *argument)
     /* ok - must be a mobname */
     found = FALSE;
     buffer = new_buf();
-    for (victim = char_list; victim != NULL; victim = victim->next)
-    {
-	if (victim->in_room != NULL
-	&&   is_name(argument, victim->name))
+
+	iterator_start(&vit, loaded_chars);
+	while(( victim = (CHAR_DATA *)iterator_nextdata(&vit)))
 	{
-	    found = TRUE;
-	    count++;
-	    sprintf(buf, "{Y%3d){x [%5ld] %-28s [%5ld] %s\n\r", count,
-		IS_NPC(victim) ? victim->pIndexData->vnum : 0,
-		IS_NPC(victim) ? victim->short_descr : victim->name,
-		victim->in_room->vnum,
-		victim->in_room->name);
-	    add_buf(buffer,buf);
+		if (victim->in_room != NULL &&
+			is_name(argument, victim->name)) {
+			found = TRUE;
+			count++;
+			sprintf(buf, "{Y%3d){x [%5ld] %-28s [%5ld] %s\n\r", count,
+			IS_NPC(victim) ? victim->pIndexData->vnum : 0,
+			IS_NPC(victim) ? victim->short_descr : victim->name,
+			victim->in_room->vnum,
+			victim->in_room->name);
+			add_buf(buffer,buf);
+		}
 	}
-    }
+	iterator_stop(&vit);
 
     if (!found)
-	act("You didn't find any $T.", ch, NULL, NULL, NULL, NULL, NULL, argument, TO_CHAR);
+		act("You didn't find any $T.", ch, NULL, NULL, NULL, NULL, NULL, argument, TO_CHAR);
     else
     	page_to_char(buf_string(buffer),ch);
 
@@ -2638,7 +2639,8 @@ void do_shutdown(CHAR_DATA *ch, char *argument)
     char buf[MAX_STRING_LENGTH];
     DESCRIPTOR_DATA *d,*d_next;
     CHAR_DATA *vch, *tch;
-    TOKEN_DATA *token, *token_next;
+    TOKEN_DATA *token;
+    ITERATOR cit, tit;
 
     if( IS_NULLSTR(argument) )
     	sprintf(buf, "Shutdown by %s.", ch->name);
@@ -2652,41 +2654,41 @@ void do_shutdown(CHAR_DATA *ch, char *argument)
     strcat(buf, "\n\r");
     do_function(ch, &do_echo, buf);
 
-
-
     /* remove any PURGE_REBOOT tokens on any characters */
-    for (tch = char_list; tch != NULL; tch = tch->next) {
-	for (token = tch->tokens; token != NULL; token = token_next) {
-	    token_next = token->next;
+	iterator_start(&cit, loaded_chars);
+	while(( tch = (CHAR_DATA *)iterator_nextdata(&cit)))
+	{
+		iterator_start(&tit, tch->ltokens);
+		while(( token = (TOKEN_DATA *)iterator_nextdata(&tit)))
+		{
+			if (IS_SET(token->flags, TOKEN_PURGE_REBOOT)) {
+				sprintf(buf, "char update: token %s(%ld) char %s(%ld) was purged because of reboot",
+					token->name, token->pIndexData->vnum, HANDLE(tch), IS_NPC(tch) ? tch->pIndexData->vnum : 0);
+				log_string(buf);
+				token_from_char(token);
+				free_token(token);
+			}
+		}
 
-	    if (IS_SET(token->flags, TOKEN_PURGE_REBOOT)) {
-		sprintf(buf, "char update: token %s(%ld) char %s(%ld) was purged because of reboot",
-			token->name, token->pIndexData->vnum, HANDLE(tch), IS_NPC(tch) ? tch->pIndexData->vnum :
-			0);
-		log_string(buf);
-		token_from_char(token);
-		free_token(token);
-	    }
+		iterator_stop(&tit);
 	}
-    }
+	iterator_stop(&cit);
 
     merc_down = TRUE;
-    for (d = descriptor_list; d != NULL; d = d_next)
-    {
-	d_next = d->next;
-	vch = d->original ? d->original : d->character;
-	if (vch != NULL) {
-	    /* save their shift */
-	    if (ch->shifted != SHIFTED_NONE)
-	    {
-		shift_char(ch, TRUE);
-		ch->shifted = IS_VAMPIRE(ch) ? SHIFTED_WEREWOLF : SHIFTED_SLAYER;
-	    }
+    for (d = descriptor_list; d != NULL; d = d_next) {
+		d_next = d->next;
+		vch = d->original ? d->original : d->character;
+		if (vch != NULL) {
+		    /* save their shift */
+		    if (ch->shifted != SHIFTED_NONE) {
+				shift_char(ch, TRUE);
+				ch->shifted = IS_VAMPIRE(ch) ? SHIFTED_WEREWOLF : SHIFTED_SLAYER;
+		    }
 
-	    save_char_obj(vch);
-	}
+		    save_char_obj(vch);
+		}
 
-	close_socket(d);
+		close_socket(d);
     }
 
     write_churches_new();
@@ -5756,6 +5758,7 @@ void do_holyaura(CHAR_DATA *ch, char *argument)
 
 void do_olevel(CHAR_DATA *ch, char *argument)
 {
+	ITERATOR it;
     char buf[MAX_INPUT_LENGTH];
     char min[MAX_INPUT_LENGTH];
     char max[MAX_INPUT_LENGTH];
@@ -5764,7 +5767,6 @@ void do_olevel(CHAR_DATA *ch, char *argument)
     BUFFER *buffer;
     OBJ_DATA *obj;
     OBJ_DATA *in_obj;
-    OBJ_DATA *next_obj;
     bool found;
     int number = 0, max_found;
     found = FALSE;
@@ -5783,61 +5785,54 @@ void do_olevel(CHAR_DATA *ch, char *argument)
 	return;
     }
 
-    for (obj = object_list; obj != NULL; obj = obj->next)
+	iterator_start(&it, loaded_objects);
+	while(( obj = (OBJ_DATA *)iterator_nextdata(&it)))
     {
-	    next_obj = obj->next;
-
-	    if (next_obj != NULL
-	    && obj->pIndexData->vnum == next_obj->pIndexData->vnum)
-		    continue;
+//	    if (next_obj != NULL
+//	    && obj->pIndexData->vnum == next_obj->pIndexData->vnum)
+//		    continue;
 
 	    if (obj->level < atoi(min) || obj->level > atoi(max))
 		    continue;
 
-	    if (type[0] != '\0'
-	    && flag_value(type_flags, type) !=
-			    obj->pIndexData->item_type)
+	    if (type[0] != '\0' && flag_value(type_flags, type) != obj->pIndexData->item_type)
 		    continue;
 
-	    if (wear_loc[0] != '\0'
-	    && !IS_SET(obj->wear_flags, flag_value(wear_flags,
-					    wear_loc)))
+	    if (wear_loc[0] != '\0' && !IS_SET(obj->wear_flags, flag_value(wear_flags, wear_loc)))
 		    continue;
 
 	    found = TRUE;
 	    number++;
-	    for (in_obj = obj;
-  	          in_obj->in_obj != NULL;
-		  in_obj = in_obj->in_obj);
+	    for (in_obj = obj; in_obj->in_obj != NULL; in_obj = in_obj->in_obj);
 
-	    if (in_obj->carried_by != NULL
- 	    && can_see(ch,in_obj->carried_by)
-	    && in_obj->carried_by->in_room != NULL)
+	    if (in_obj->carried_by != NULL &&
+	    	can_see(ch,in_obj->carried_by) &&
+	    	in_obj->carried_by->in_room != NULL)
 		    sprintf(buf, "%3d) %s (vnum %ld) is carried by %s [Room %ld]\n\r",
-				    number,
-				    obj->short_descr,
-				    obj->pIndexData->vnum,
-				    pers(in_obj->carried_by, ch),
-				    in_obj->carried_by->in_room->vnum);
-	    else if (in_obj->in_room != NULL
-			    && can_see_room(ch,in_obj->in_room))
+				number,
+				obj->short_descr,
+				obj->pIndexData->vnum,
+				pers(in_obj->carried_by, ch),
+				in_obj->carried_by->in_room->vnum);
+	    else if (in_obj->in_room != NULL && can_see_room(ch,in_obj->in_room))
 		    sprintf(buf, "%3d) %s (vnum %ld) is in %s [Room %ld]\n\r",
-				    number,
-				    obj->short_descr,
-				    obj->pIndexData->vnum,
-				    in_obj->in_room->name,
-				    in_obj->in_room->vnum);
+				number,
+				obj->short_descr,
+				obj->pIndexData->vnum,
+				in_obj->in_room->name,
+				in_obj->in_room->vnum);
 	    else
 		    sprintf(buf, "%3d) %s (vnum %ld) is somewhere\n\r",
-				    number,
-				    obj->short_descr,
-				    obj->pIndexData->vnum);
+				number,
+				obj->short_descr,
+				obj->pIndexData->vnum);
 
 	    buf[0] = UPPER(buf[0]);
 	    add_buf(buffer,buf);
 	    if (number >= max_found)
 		    break;
     }
+    iterator_stop(&it);
 
     if (!found)
 	    send_to_char("Nothing like that in heaven or earth.\n\r", ch);
@@ -5851,9 +5846,12 @@ void do_olevel(CHAR_DATA *ch, char *argument)
 void do_mlevel(CHAR_DATA *ch, char *argument)
 {
 	char buf[MAX_INPUT_LENGTH];
-	BUFFER *buffer;    CHAR_DATA *victim;
+	BUFFER *buffer;
+	CHAR_DATA *victim;
 	bool found;
 	int count = 0;
+	ITERATOR vit;
+
 	if (argument[0] == '\0')
 	{
 		send_to_char("Syntax: mlevel <level>\n\r",ch);
@@ -5861,11 +5859,11 @@ void do_mlevel(CHAR_DATA *ch, char *argument)
 	}
 	found = FALSE;
 	buffer = new_buf();
-	for (victim = char_list; victim != NULL; victim = victim->next)
+	iterator_start(&vit, loaded_chars);
+	while(( victim = (CHAR_DATA *)iterator_nextdata(&vit)))
 	{
-		if (victim->in_room != NULL
-				&&   atoi(argument) == victim->level)
-		{
+		if (victim->in_room != NULL &&
+			atoi(argument) == victim->level) {
 			found = TRUE;
 			count++;
 			sprintf(buf, "%3d) [%5ld] %-28s [%5ld] %s\n\r",
@@ -5879,6 +5877,8 @@ void do_mlevel(CHAR_DATA *ch, char *argument)
 			add_buf(buffer,buf);
 		}
 	}
+	iterator_stop(&vit);
+
 	if (!found)
 		act("You didn't find any mob of level $T.",
 				ch, NULL, NULL, NULL, NULL, NULL, argument, TO_CHAR);

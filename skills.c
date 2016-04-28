@@ -1896,7 +1896,7 @@ SKILL_ENTRY *skill_entry_findname( SKILL_ENTRY *list, char *str )
 
 	while (list) {
 		// Name match, until count predecrements to 0
-		if( is_name(str, skill_entry_name(list)) && !--count )
+		if( !str_prefix(str, skill_entry_name(list)) && !--count )
 			return list;
 
 		list = list->next;

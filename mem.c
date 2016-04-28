@@ -85,6 +85,31 @@ STORM_DATA *storm_data_free;
 COMMAND_DATA *command_free;
 IMMORTAL_DATA *immortal_free;
 SKILL_ENTRY *skill_entry_free;
+OLC_POINT_BOOST *olc_point_boost_free;
+
+OLC_POINT_BOOST *new_olc_point_boost()
+{
+	OLC_POINT_BOOST *boost;
+
+	if( olc_point_boost_free == NULL )
+		boost = alloc_perm(sizeof(OLC_POINT_BOOST));
+	else {
+		boost = olc_point_boost_free;
+		olc_point_boost_free = olc_point_boost_free->next;
+	}
+
+	memset(boost, 0, sizeof(OLC_POINT_BOOST));
+
+	return boost;
+}
+
+void free_olc_point_boost(OLC_POINT_BOOST *boost)
+{
+	boost->next = olc_point_boost_free;
+	olc_point_boost_free = boost;
+}
+
+
 
 SKILL_ENTRY *new_skill_entry()
 {
@@ -550,6 +575,7 @@ CHAR_DATA *new_char( void )
     ch->lclonerooms		= list_create(FALSE);
 
     ch->deathsight_vision = 0;
+    ch->in_damage_function = FALSE;
 
     return ch;
 }
@@ -1338,18 +1364,28 @@ AREA_DATA *new_area( void )
     pArea->land_y	    =   -1;
     pArea->room_list = list_create(FALSE);
 
+    pArea->points		= NULL;
+
     return pArea;
 }
 
 
 void free_area( AREA_DATA *pArea )
 {
+	OLC_POINT_BOOST *boost, *boost_next;
+
     free_string( pArea->name );
     free_string( pArea->file_name );
     free_string( pArea->builders );
     free_string( pArea->credits );
     free_string( pArea->map);
 	list_destroy(pArea->room_list);
+
+	for(boost = pArea->points; boost; boost = boost_next) {
+		boost_next = boost->next;
+
+		free_olc_point_boost(boost);
+	}
 
     pArea->next         =   area_free->next;
     area_free           =   pArea;

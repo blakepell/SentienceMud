@@ -479,6 +479,7 @@ SPELL_FUNC(spell_locate_object)
 	OBJ_DATA *in_obj;
 	bool found;
 	int number = 0, max_found;
+	ITERATOR it;
 
 	if (!target_name)
 		return FALSE;
@@ -489,7 +490,8 @@ SPELL_FUNC(spell_locate_object)
 
 	buffer = new_buf();
 
-	for (obj = object_list; obj; obj = obj->next) {
+	iterator_start(&it, loaded_objects);
+	while(( obj = (OBJ_DATA *)iterator_nextdata(&it))) {
 		if (!can_see_obj(ch, obj) ||
 			!is_name(target_name, obj->name) ||
 			IS_SET(obj->extra_flags, ITEM_NOLOCATE) ||
@@ -527,6 +529,7 @@ SPELL_FUNC(spell_locate_object)
 
 		if (number >= max_found) break;
 	}
+	iterator_stop(&it);
 
 	if (!found)
 		send_to_char("Nothing like that in heaven or earth.\n\r", ch);

@@ -182,18 +182,18 @@ void do_gq(CHAR_DATA *ch, char *argument)
 
     if (!str_cmp(arg, "purge"))
     {
-	CHAR_DATA *mob_next;
+		ITERATOR it;
 
-	for (mob = char_list; mob != NULL; mob = mob_next)
-	{
-	    mob_next = mob->next;
+		iterator_start(&it, loaded_chars);
+		while((mob = (CHAR_DATA *)iterator_nextdata(&it)))
+		{
+		    if (is_global_mob(mob))
+				extract_char(mob, TRUE);
+		}
+		iterator_stop(&it);
 
-	    if (is_global_mob(mob))
-		extract_char(mob, TRUE);
-	}
-
-	send_to_char("All global mobs purged.\n\r", ch);
-	return;
+		send_to_char("All global mobs purged.\n\r", ch);
+		return;
     }
 
     if (!str_cmp(arg, "on"))

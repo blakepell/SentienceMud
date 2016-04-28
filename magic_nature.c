@@ -16,7 +16,8 @@
 
 SPELL_FUNC(spell_call_familiar)
 {
-	CHAR_DATA *victim, *vch_next;
+	CHAR_DATA *victim;
+	ITERATOR it;
 	int lvl;
 
 	if(ch->num_grouped >= 9) {
@@ -24,9 +25,9 @@ SPELL_FUNC(spell_call_familiar)
 		return FALSE;
 	}
 
-	for (victim = char_list; victim; victim = vch_next) {
-		vch_next = victim->next;
-
+	iterator_start(&it, loaded_chars);
+	while(( victim = (CHAR_DATA *)iterator_nextdata(&it)))
+	{
 		if (!IS_NPC(victim) || IS_SET(victim->act, ACT_PROTECTED) ||
 			IS_SET(victim->act, ACT_SENTINEL) ||
 			IS_SET(victim->act, ACT_PRACTICE) ||
@@ -60,6 +61,7 @@ SPELL_FUNC(spell_call_familiar)
 			break;
 		}
 	}
+	iterator_stop(&it);
 
 	if (victim) {
 		if(victim->in_room != ch->in_room) {

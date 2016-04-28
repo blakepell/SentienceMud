@@ -357,6 +357,7 @@ void save_area_new(AREA_DATA *area)
     char buf[MAX_STRING_LENGTH];
     FILE *fp;
     char filename[MSL];
+    OLC_POINT_BOOST *boost;
 
 /*
 	// 20140521 NIB - allowing these to be saved
@@ -431,6 +432,14 @@ void save_area_new(AREA_DATA *area)
     fprintf(fp, "VersScript %d\n",	VERSION_SCRIPT);
     fprintf(fp, "VersWilds %d\n",	VERSION_WILDS);
 
+	for(boost = area->points; boost; boost = boost->next)
+		fprintf(fp, "OlcPointBoost %d %d %d %d\n",
+			boost->category,
+			boost->usage,
+			boost->imp,
+			boost->area);
+
+
     /* Whisp - write this function */
     save_area_trade(fp, area);
 
@@ -447,6 +456,8 @@ void save_area_new(AREA_DATA *area)
     save_objects_new(fp, area);
     save_scripts_new(fp, area);
     save_tokens(fp, area);
+
+
 
 /*    if (str_prefix("Maze-Level", area->name) && str_cmp("Geldoff's Maze", area->name)
     && str_cmp("Netherworld", area->name)
@@ -1896,8 +1907,28 @@ ROOM_INDEX_DATA *read_room_new(FILE *fp, AREA_DATA *area, int recordtype)
 			    rpr->vnum = vnum;
 			    rpr->trig_type = tindex;
 			    rpr->trig_phrase = fread_string(fp);
-			    rpr->trig_number = atoi(rpr->trig_phrase);
-				rpr->numeric = is_number(rpr->trig_phrase);
+			    if( tindex == TRIG_SPELLCAST ) {
+					char buf[MIL];
+					int tsn = skill_lookup(rpr->trig_phrase);
+
+					if( tsn < 0 ) {
+						sprintf(buf, "read_room_new: invalid spell '%s' for TRIG_SPELLCAST", p);
+						bug(buf, 0);
+						free_trigger(rpr);
+						fMatch = TRUE;
+						break;
+					}
+
+					free_string(rpr->trig_phrase);
+					sprintf(buf, "%d", tsn);
+					rpr->trig_phrase = str_dup(buf);
+					rpr->trig_number = tsn;
+					rpr->numeric = TRUE;
+
+				} else {
+			    	rpr->trig_number = atoi(rpr->trig_phrase);
+					rpr->numeric = is_number(rpr->trig_phrase);
+				}
 			    //SET_BIT(room->rprog_flags, rpr->trig_type);
 
 			    if(!room->progs->progs) room->progs->progs = new_prog_bank();
@@ -2097,8 +2128,28 @@ MOB_INDEX_DATA *read_mobile_new(FILE *fp, AREA_DATA *area)
 			    mpr->vnum = vnum;
 			    mpr->trig_type = tindex;
 			    mpr->trig_phrase = fread_string(fp);
-			    mpr->trig_number = atoi(mpr->trig_phrase);
-				mpr->numeric = is_number(mpr->trig_phrase);
+			    if( tindex == TRIG_SPELLCAST ) {
+					char buf[MIL];
+					int tsn = skill_lookup(mpr->trig_phrase);
+
+					if( tsn < 0 ) {
+						sprintf(buf, "read_mob_new: invalid spell '%s' for TRIG_SPELLCAST", p);
+						bug(buf, 0);
+						free_trigger(mpr);
+						fMatch = TRUE;
+						break;
+					}
+
+					free_string(mpr->trig_phrase);
+					sprintf(buf, "%d", tsn);
+					mpr->trig_phrase = str_dup(buf);
+					mpr->trig_number = tsn;
+					mpr->numeric = TRUE;
+
+				} else {
+			    	mpr->trig_number = atoi(mpr->trig_phrase);
+					mpr->numeric = is_number(mpr->trig_phrase);
+				}
 			    //SET_BIT(room->rprog_flags, rpr->trig_type);
 
 			    if(!mob->progs) mob->progs = new_prog_bank();
@@ -2348,6 +2399,28 @@ OBJ_INDEX_DATA *read_object_new(FILE *fp, AREA_DATA *area)
 			    opr->vnum = vnum;
 			    opr->trig_type = tindex;
 			    opr->trig_phrase = fread_string(fp);
+			    if( tindex == TRIG_SPELLCAST ) {
+					char buf[MIL];
+					int tsn = skill_lookup(opr->trig_phrase);
+
+					if( tsn < 0 ) {
+						sprintf(buf, "read_obj_new: invalid spell '%s' for TRIG_SPELLCAST", p);
+						bug(buf, 0);
+						free_trigger(opr);
+						fMatch = TRUE;
+						break;
+					}
+
+					free_string(opr->trig_phrase);
+					sprintf(buf, "%d", tsn);
+					opr->trig_phrase = str_dup(buf);
+					opr->trig_number = tsn;
+					opr->numeric = TRUE;
+
+				} else {
+			    	opr->trig_number = atoi(opr->trig_phrase);
+					opr->numeric = is_number(opr->trig_phrase);
+				}
 			    opr->trig_number = atoi(opr->trig_phrase);
 				opr->numeric = is_number(opr->trig_phrase);
 			    //SET_BIT(room->rprog_flags, rpr->trig_type);
@@ -2989,6 +3062,28 @@ TOKEN_INDEX_DATA *read_token(FILE *fp)
 			    tpr->vnum = vnum;
 			    tpr->trig_type = tindex;
 			    tpr->trig_phrase = fread_string(fp);
+			    if( tindex == TRIG_SPELLCAST ) {
+					char buf[MIL];
+					int tsn = skill_lookup(tpr->trig_phrase);
+
+					if( tsn < 0 ) {
+						sprintf(buf, "read_token: invalid spell '%s' for TRIG_SPELLCAST", p);
+						bug(buf, 0);
+						free_trigger(tpr);
+						fMatch = TRUE;
+						break;
+					}
+
+					free_string(tpr->trig_phrase);
+					sprintf(buf, "%d", tsn);
+					tpr->trig_phrase = str_dup(buf);
+					tpr->trig_number = tsn;
+					tpr->numeric = TRUE;
+
+				} else {
+			    	tpr->trig_number = atoi(tpr->trig_phrase);
+					tpr->numeric = is_number(tpr->trig_phrase);
+				}
 			    tpr->trig_number = atoi(tpr->trig_phrase);
 				tpr->numeric = is_number(tpr->trig_phrase);
 

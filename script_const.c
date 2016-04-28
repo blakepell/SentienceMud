@@ -546,6 +546,7 @@ struct trigger_type trigger_table	[] = {
 {	"combatstyle",			NULL,		TRIGSLOT_COMBATSTYLE,	FALSE, FALSE, FALSE, TRUE	},	// Only on tokens
 {	"damage",				NULL,		TRIGSLOT_DAMAGE,	TRUE,	TRUE,	TRUE,	TRUE	},
 {	"death",				NULL,		TRIGSLOT_REPOP,		TRUE,	FALSE,	TRUE,	TRUE	},
+{	"death_protection",		NULL,		TRIGSLOT_REPOP,		TRUE,	FALSE,	TRUE,	TRUE	},
 {	"death_timer",			NULL,		TRIGSLOT_REPOP,		TRUE,	FALSE,	TRUE,	TRUE	},
 {	"defense",				NULL,		TRIGSLOT_COMBATSTYLE,	TRUE, FALSE, FALSE, TRUE	},	// Only on tokens
 {	"delay",				NULL,		TRIGSLOT_GENERAL,	TRUE,	TRUE,	TRUE,	TRUE	},

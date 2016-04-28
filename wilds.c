@@ -1344,7 +1344,7 @@ void show_vroom_header_to_char(WILDS_TERRAIN *pTerrain, WILDS_DATA *pWilds, int 
 	if (IS_SET(pTerrain->template->room2_flags, ROOM_MULTIPLAY)) {
 		sprintf(buf, "  {W[FREE FOR ALL]");
 		send_to_char(buf, to);
-		linelength -= 13;
+		linelength -= 16;
 	}
 
 	if (IS_SET(pTerrain->template->room_flags, ROOM_HOUSE_UNSOLD)) {

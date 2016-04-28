@@ -860,15 +860,6 @@ void cast_end(CHAR_DATA *ch)
 		return;
 	}
 
-	// If the victim is valid and using a built-in spell, check for spell cast script
-	if( (victim != NULL) && (sn >= 0) &&
-		p_exact_trigger(skill_table[sn].name, victim, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_SPELLCAST) )
-	{
-		deduct_mana(ch,mana);
-		stop_casting(ch, FALSE);
-		return;
-	}
-
 	// TODO: Need to work this into the mix
 	/* Spell trap in the room ? */
 	for (trap = ch->in_room->contents; trap; trap = trap->next_content) {
@@ -959,11 +950,19 @@ void cast_end(CHAR_DATA *ch)
 			return;
 		}
 
+
 		deduct_mana(ch,mana);
 
 		// If casted on a relic puller make the offender PK
 		if (is_pulling_relic(victim) && (type == TAR_CHAR_OFFENSIVE || type == TAR_OBJ_CHAR_OFF))
 			set_pk_timer(ch, victim, PULSE_VIOLENCE * 4);
+
+		// If the victim is valid and using a built-in spell, check for spell cast script
+		if( (victim != NULL) && p_number_trigger(sn, victim, NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_SPELLCAST, NULL) )
+		{
+			stop_casting(ch, FALSE);
+			return;
+		}
 
 		if (target == TARGET_CHAR && victim && IS_AFFECTED2(victim, AFF2_SPELL_DEFLECTION)) {
 			if (check_spell_deflection(ch, victim, sn))

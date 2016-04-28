@@ -245,10 +245,10 @@ char *format_obj_to_char
 args((OBJ_DATA * obj, CHAR_DATA * ch, bool fShort));
 void show_list_to_char
 args((OBJ_DATA * list, CHAR_DATA * ch, bool fShort, bool fShowNothing));
-void show_map_and_description args((CHAR_DATA * ch));
+void show_map_and_description args((CHAR_DATA * ch, ROOM_INDEX_DATA *room));
 void show_char_to_char_0 args((CHAR_DATA * victim, CHAR_DATA * ch));
 void show_char_to_char_1 args((CHAR_DATA * victim, CHAR_DATA * ch));
-void create_map args((CHAR_DATA * ch, char *map));
+void create_map args((CHAR_DATA * ch, ROOM_INDEX_DATA *start_room, char *map));
 void show_char_to_char
 args((CHAR_DATA * list, CHAR_DATA * ch, CHAR_DATA * victim));
 bool check_blind args((CHAR_DATA * ch));
@@ -1547,7 +1547,7 @@ void show_room(CHAR_DATA *ch, ROOM_INDEX_DATA *room, bool remote, bool silent, b
 	if (IS_SET(room->room2_flags, ROOM_MULTIPLAY)) {
 		sprintf(buf, "  {W[FREE FOR ALL]");
 		send_to_char(buf, ch);
-		linelength -= 13;
+		linelength -= 16;
 	}
 
 	if (room->ship != NULL) {
@@ -1722,7 +1722,7 @@ void show_room(CHAR_DATA *ch, ROOM_INDEX_DATA *room, bool remote, bool silent, b
 			if (!IS_SET(ch->comm, COMM_NOMAP) && /*!ON_SHIP(ch) &&*/
 				!IS_SET(room->room_flags, ROOM_NOMAP) &&
 				!IS_SET(room->area->area_flags, AREA_NOMAP))
-				show_map_and_description(ch);
+				show_map_and_description(ch, room);
 			else {
 #endif
 				send_to_char("  ", ch);
@@ -5843,6 +5843,7 @@ void do_scry(CHAR_DATA *ch, char *argument)
 	BUFFER *buffer;
 	bool found = FALSE, local;
 	int count;
+	ITERATOR vit;
 
 	argument = one_argument(argument, arg);
 
@@ -5875,7 +5876,9 @@ void do_scry(CHAR_DATA *ch, char *argument)
 	check_improve(ch,gsn_scry,TRUE,5);
 	buffer = new_buf();
 	count = 0;
-	for (victim = char_list; victim; victim = victim->next) {
+	iterator_start(&vit, loaded_chars);
+	while(( victim = (CHAR_DATA *)iterator_nextdata(&vit)))
+	{
 		if (victim->in_room && victim->in_room->area->open && is_name(arg, victim->name) && can_see(ch, victim) &&
 			IS_NPC(victim) && number_percent() < get_skill(ch, gsn_scry) &&
 			(!local || ch->in_room->area == victim->in_room->area) &&
@@ -5894,6 +5897,7 @@ void do_scry(CHAR_DATA *ch, char *argument)
 			}
 		}
 	}
+	iterator_stop(&vit);
 
 	if (!found)
 		act("You sense no $T in the world.", ch, NULL, NULL, NULL, NULL, NULL, arg, TO_CHAR);
@@ -5904,7 +5908,7 @@ void do_scry(CHAR_DATA *ch, char *argument)
 }
 
 /* MOVED: room/minimap.c */
-void show_map_and_description(CHAR_DATA *ch)
+void show_map_and_description(CHAR_DATA *ch, ROOM_INDEX_DATA *room)
 {
     char *tmp;
     char buf[MAX_STRING_LENGTH];
@@ -5921,11 +5925,11 @@ void show_map_and_description(CHAR_DATA *ch)
 
     buf[0] = '\0';
 
-    create_map(ch, &map[0]);
+    create_map(ch, room, &map[0]);
     /* send_to_char(map, ch); */
     counter = show_map(ch, &buf[0], &map[0], counter, line++);
 
-    tmp = find_desc_for_room(ch->in_room,ch);/* ch->in_room->description; */
+    tmp = find_desc_for_room(room,ch);/* ch->in_room->description; */
     while(*tmp != '\0')
     {
 	if (*tmp != '\r' && *tmp != '\n')
@@ -6016,7 +6020,7 @@ int show_map(CHAR_DATA * ch, char *buf, char *map, int counter, int line)
 
 
 /* MOVED: room/minimap.c */
-void create_map(CHAR_DATA *ch, char *map)
+void create_map(CHAR_DATA *ch, ROOM_INDEX_DATA *start_room, char *map)
 {
     ROOM_INDEX_DATA *room;
     ROOM_INDEX_DATA *last_room;
@@ -6042,7 +6046,7 @@ void create_map(CHAR_DATA *ch, char *map)
     *(map + 10 * y + x) = '@';
 
 /* Before we check the adjacent rooms, keep track of where we came from */
-    last_room = ch->in_room;
+    last_room = start_room;
 
 /* Check north */
     while(last_room->exit[ DIR_NORTH ] != NULL
@@ -6125,7 +6129,7 @@ void create_map(CHAR_DATA *ch, char *map)
     y = 3;
 
     /* work out south */
-    last_room = ch->in_room;
+    last_room = start_room;
 
     while(last_room->exit[ DIR_SOUTH ] != NULL
           && y < 5
@@ -6208,7 +6212,7 @@ void create_map(CHAR_DATA *ch, char *map)
     y = 3;
 
     /* Look east */
-    temp = ch->in_room;
+    temp = start_room;
     x2 = x;
     y2 = y;
 
@@ -6251,7 +6255,7 @@ void create_map(CHAR_DATA *ch, char *map)
     y = 3;
 
     /* Look west */
-    temp = ch->in_room;
+    temp = start_room;
     x2 = x;
     y2 = y;
 

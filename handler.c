@@ -955,6 +955,7 @@ bool is_name (char *str, char *namelist)
 }
 
 
+
 bool is_exact_name(char *str, char *namelist)
 {
     char name[MAX_INPUT_LENGTH];
@@ -2892,27 +2893,7 @@ void extract_obj(OBJ_DATA *obj)
 	extract_obj(obj_content);
     }
 
-    if (object_list == obj)
-	object_list = obj->next;
-    else
-    {
-	OBJ_DATA *prev;
-
-	for (prev = object_list; prev != NULL; prev = prev->next)
-	{
-	    if (prev->next == obj)
-	    {
-		prev->next = obj->next;
-		break;
-	    }
-	}
-
-	if (prev == NULL)
-	{
-	    bug("Extract_obj: obj %d not found.", obj->pIndexData->vnum);
-	    return;
-	}
-    }
+	list_remlink(loaded_objects, obj);
 
 	// Clear the most recent corpse data on the player owner
     if( (obj->item_type == ITEM_CORPSE_PC) && !IS_NULLSTR(obj->owner) )
@@ -2936,7 +2917,9 @@ void extract_char(CHAR_DATA *ch, bool fPull)
 	ROOM_INDEX_DATA *clone, *next_clone;
     CHAR_DATA *wch;
     DESCRIPTOR_DATA *d;
+
     char buf[MAX_STRING_LENGTH];
+    ITERATOR it;
 
     if (ch->in_room == NULL)
     {
@@ -3056,63 +3039,38 @@ void extract_char(CHAR_DATA *ch, bool fPull)
     }
 
     /* modify reply targets and mprog targets */
-    for (wch = char_list; wch != NULL; wch = wch->next)
+    iterator_start(&it, loaded_chars);
+    while((wch = (CHAR_DATA *)iterator_nextdata(&it)))
     {
-	if (wch->reply == ch)
-	    wch->reply = NULL;
+		if (wch->reply == ch)
+			wch->reply = NULL;
 
-	if (IS_NPC(wch) && wch->progs->target == ch)
-	    wch->progs->target = NULL;
+		if (IS_NPC(wch) && wch->progs->target == ch)
+			wch->progs->target = NULL;
     }
+    iterator_stop(&it);
+    list_remlink(loaded_chars, ch);
 
-    if (ch == char_list)
-    {
-       char_list = ch->next;
-    }
-    else
-    {
-	CHAR_DATA *prev;
-
-	for (prev = char_list; prev != NULL; prev = prev->next)
-	{
-	    if (prev->next == ch)
-	    {
-		prev->next = ch->next;
-		break;
-	    }
-	}
-
-	/*
-	if (prev == NULL)
-	{
-	    bug("Extract_char: char not found.", 0);
-	    return;
-	}
-	*/
-    }
 
     if (ch->desc != NULL)
-	ch->desc->character = NULL;
+		ch->desc->character = NULL;
 
     // Go through the world and if anyones hunting char, stop them
     // same for challenge to prevent challenge someone/quit crash bug
-    for (d = descriptor_list; d != NULL; d = d->next)
-    {
-	if (d->character != NULL
-	&& d->character->hunting != NULL
-	&& d->character->hunting == ch)
-	{
-	    send_to_char("You sense your target has vanished somewhere.\n\r", d->character);
-	    d->character->hunting = NULL;
-	}
+    for (d = descriptor_list; d != NULL; d = d->next) {
+		if (d->character != NULL &&
+			d->character->hunting != NULL &&
+			d->character->hunting == ch) {
+			send_to_char("You sense your target has vanished somewhere.\n\r", d->character);
+			d->character->hunting = NULL;
+		}
 
-	if (d->character != NULL
-	&& d->character->challenged != NULL
-	&& d->character->challenged == ch)
-	{
-	    send_to_char("Your challenger has left the game.\n\r", d->character);
-	    d->character->challenged = NULL;
-	}
+		if (d->character != NULL &&
+			d->character->challenged != NULL &&
+			d->character->challenged == ch) {
+			send_to_char("Your challenger has left the game.\n\r", d->character);
+			d->character->challenged = NULL;
+		}
     }
 
     free_char(ch);
@@ -3206,22 +3164,24 @@ CHAR_DATA *find_char_world(CHAR_DATA *ch, char *argument)
     CHAR_DATA *wch;
     int number;
     int count;
+    ITERATOR it;
 
     if (ch && (wch = get_char_room(ch, NULL, argument)) != NULL)
 	return wch;
 
     number = number_argument(argument, arg);
     count  = 0;
-    for (wch = char_list; wch != NULL ; wch = wch->next)
+    iterator_start(&it, loaded_chars);
+    while(( wch = (CHAR_DATA *)iterator_nextdata(&it)))
     {
-	if (wch->in_room == NULL
-	||   !is_name(arg, wch->name))
-	    continue;
-	if (++count == number)
-	    return wch;
+		if (wch->in_room == NULL || !is_name(arg, wch->name))
+	    	continue;
+		if (++count == number)
+			break;
     }
+    iterator_stop(&it);
 
-    return NULL;
+    return wch;
 }
 
 
@@ -3234,22 +3194,26 @@ CHAR_DATA *get_char_world(CHAR_DATA *ch, char *argument)
     CHAR_DATA *wch;
     int number;
     int count;
+    ITERATOR it;
 
     if (ch && (wch = get_char_room(ch, NULL, argument)) != NULL)
-	return wch;
+		return wch;
 
     number = number_argument(argument, arg);
     count  = 0;
-    for (wch = char_list; wch != NULL ; wch = wch->next)
+    iterator_start(&it, loaded_chars);
+    while(( wch = (CHAR_DATA *)iterator_nextdata(&it)))
     {
-	if (wch->in_room == NULL || (ch && !can_see(ch, wch))
-	||   !is_name(arg, wch->name))
-	    continue;
-	if (++count == number)
-	    return wch;
+		if (wch->in_room == NULL ||
+			(ch && !can_see(ch, wch)) ||
+			!is_name(arg, wch->name))
+	    	continue;
+		if (++count == number)
+	    	break;
     }
+    iterator_stop(&it);
 
-    return NULL;
+    return wch;
 }
 
 
@@ -3258,19 +3222,23 @@ CHAR_DATA *get_char_world(CHAR_DATA *ch, char *argument)
  */
 CHAR_DATA *get_char_world_index(CHAR_DATA *ch, MOB_INDEX_DATA *pMobIndex)
 {
-    CHAR_DATA *wch;
+	CHAR_DATA *wch;
+	ITERATOR it;
 
-    for (wch = char_list; wch != NULL ; wch = wch->next)
-    {
-	if (wch->in_room == NULL
-	|| (ch && !can_see(ch, wch))
-	|| wch->pIndexData != pMobIndex)
-	    continue;
+	iterator_start(&it, loaded_chars);
+	while(( wch = (CHAR_DATA *)iterator_nextdata(&it)))
+	{
+		if (wch->in_room == NULL ||
+			(ch && !can_see(ch, wch)) ||
+			!IS_NPC(wch) ||
+			wch->pIndexData != pMobIndex)
+			continue;
 
-	return wch;
+		break;
     }
+    iterator_stop(&it);
 
-    return NULL;
+    return wch;
 }
 
 
@@ -3280,15 +3248,18 @@ CHAR_DATA *get_char_world_index(CHAR_DATA *ch, MOB_INDEX_DATA *pMobIndex)
  */
 OBJ_DATA *get_obj_type(OBJ_INDEX_DATA *pObjIndex)
 {
-    OBJ_DATA *obj;
+    register OBJ_DATA *obj;
+    ITERATOR it;
 
-    for (obj = object_list; obj != NULL; obj = obj->next)
+	iterator_start(&it, loaded_objects);
+	while(( obj = (OBJ_DATA *)iterator_nextdata(&it)))
     {
-	if (obj->pIndexData == pObjIndex)
-	    return obj;
+		if (obj->pIndexData == pObjIndex)
+		    break;
     }
+    iterator_stop(&it);
 
-    return NULL;
+    return obj;
 }
 
 
@@ -3475,22 +3446,26 @@ OBJ_DATA *get_obj_world(CHAR_DATA *ch, char *argument)
     OBJ_DATA *obj;
     int number;
     int count;
+    ITERATOR it;
 
     if (ch && (obj = get_obj_here(ch, NULL, argument)) != NULL)
-	return obj;
+		return obj;
 
     number = number_argument(argument, arg);
     count  = 0;
-    for (obj = object_list; obj != NULL; obj = obj->next)
-    {
-	if ((ch && !can_see_obj(ch, obj))
-	|| !is_name(arg, obj->name))
-	    continue;
-	if (++count == number)
-	    return obj;
-    }
 
-    return NULL;
+    iterator_start(&it, loaded_objects);
+    while(( obj = (OBJ_DATA *)iterator_nextdata(&it)))
+    {
+		if ((ch && !can_see_obj(ch, obj)) ||
+			!is_name(arg, obj->name))
+	    	continue;
+		if (++count == number)
+		    break;
+    }
+    iterator_stop(&it);
+
+    return obj;
 }
 
 
@@ -6053,28 +6028,33 @@ bool can_sacrifice_obj(CHAR_DATA *ch, OBJ_DATA *obj, bool silent)
     return TRUE;
 }
 
-CHAR_DATA* get_player(char *name) {
+CHAR_DATA* get_player(char *name)
+{
+	ITERATOR it;
     CHAR_DATA *ch = NULL;
 
-    for (ch = char_list; ch != NULL; ch = ch->next) {
-      if (!IS_NPC(ch) && !strcmp(ch->name, name)) {
-        break;
-      }
-    }
+	iterator_start(&it, loaded_chars);
+	while(( ch = (CHAR_DATA *)iterator_nextdata(&it)))
+	{
+		if (!IS_NPC(ch) && !strcmp(ch->name, name))
+			break;
+	}
+	iterator_stop(&it);
     return ch;
 }
 
 // get reputation for player
-sh_int  get_player_reputation args( ( int reputation_points ) ) {
-  int i = 0;
-  int reputation_type = 0;
-  while (rating_table[i].name != NULL) {
-    if (reputation_points >= rating_table[i].points) {
-      reputation_type = rating_table[i].type;
-    }
-    i++;
-  }
-  return reputation_type;
+sh_int  get_player_reputation args( ( int reputation_points ) )
+{
+	int i = 0;
+	int reputation_type = 0;
+	while (rating_table[i].name != NULL) {
+		if (reputation_points >= rating_table[i].points) {
+			reputation_type = rating_table[i].type;
+		}
+		i++;
+	}
+	return reputation_type;
 }
 
 int get_coord_distance( int x1, int y1, int x2, int y2 ) {
@@ -7012,39 +6992,55 @@ void visit_rooms(ROOM_INDEX_DATA *room, VISIT_FUNC *func, int depth, void *argv[
 bool char_exists(CHAR_DATA *ch)
 {
 	CHAR_DATA *cur;
+	ITERATOR it;
 
-	for (cur = char_list; cur; cur = cur->next)
-		if(cur == ch) return TRUE;
-
-	return FALSE;
+	iterator_start(&it, loaded_chars);
+	while(( cur = (CHAR_DATA *)iterator_nextdata(&it)))
+		if( cur == ch )
+			break;
+	iterator_stop(&it);
+	return (cur != NULL);
 }
 
 
 CHAR_DATA *idfind_mobile(register unsigned long id1, register unsigned long id2)
 {
 	register CHAR_DATA *ch;
-	for (ch = char_list; ch; ch = ch->next)
+	ITERATOR it;
+
+	iterator_start(&it, loaded_chars);
+	while(( ch = (CHAR_DATA *)iterator_nextdata(&it)))
 		if(ch->id[0] == id1 && ch->id[1] == id2)
-			return ch;
-	return NULL;
+			break;
+	iterator_stop(&it);
+	return ch;
 }
 
 CHAR_DATA *idfind_player(register unsigned long id1, register unsigned long id2)
 {
 	register CHAR_DATA *ch;
-	for (ch = char_list; ch; ch = ch->next)
+	ITERATOR it;
+
+	iterator_start(&it, loaded_chars);
+	while(( ch = (CHAR_DATA *)iterator_nextdata(&it)))
 		if(!IS_NPC(ch) && ch->id[0] == id1 && ch->id[1] == id2)
-			return ch;
-	return NULL;
+			break;
+	iterator_stop(&it);
+	return ch;
 }
 
 OBJ_DATA *idfind_object(unsigned long id1, unsigned long id2)
 {
 	register OBJ_DATA *obj;
-	for (obj = object_list; obj; obj = obj->next)
+	ITERATOR it;
+
+	iterator_start(&it, loaded_objects);
+	while(( obj = (OBJ_DATA *)iterator_nextdata(&it)))
 		if(obj->id[0] == id1 && obj->id[1] == id2)
-			return obj;
-	return NULL;
+			break;
+	iterator_stop(&it);
+
+	return obj;
 }
 
 TOKEN_DATA *idfind_token(register unsigned long id1, register unsigned long id2)

@@ -45,103 +45,97 @@
 void violence_update(void)
 {
 	CHAR_DATA *ch;
-	CHAR_DATA *ch_next;
 	CHAR_DATA *victim;
 	OBJ_DATA *obj, *obj_next;
 	char buf[MSL];
+	ITERATOR ait;
 
-	for (ch = char_list; ch != NULL; ch = ch_next)
+	iterator_start(&ait, loaded_chars);
+	while(( ch = (CHAR_DATA *)iterator_nextdata(&ait)))
 	{
-	ch_next	= ch->next;
-
-		// Regeneration code put here as it is a good pause
-	if (IS_AFFECTED2(ch, AFF2_HEALING_AURA))
-	{
-  		int heal = 0;
-
-		heal = dice(4, 8);
-		ch->hit = UMIN(ch->hit + heal, ch->max_hit);
-			update_pos(ch);
-
-		if (number_percent() == 1)
-		{
-			act("{BThe healing aura around you shimmers.{x",
-	   		ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
-		act("{BThe healing aura around $n shimmers.{x",
-			ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
-		}
-	}
-
-	// Minotaur (and other) regeneration
-	if (IS_AFFECTED(ch, AFF_REGENERATION))
-	{
-		int heal = 0;
-
-		heal = dice(4, 8) + ch->tot_level/6;
-		ch->hit = UMIN(ch->hit + heal, ch->max_hit);
-
-		// For slayers and werewolves, regenerate mana too:
-		if (IS_SHIFTED(ch)) {
-		heal = dice(4, 8) + ch->tot_level/10;
-		ch->mana = UMIN(ch->mana + heal, ch->max_mana);
-
-		heal = dice(4, 8) + ch->tot_level/8;
-		ch->move = UMIN(ch->move + heal, ch->max_move);
-		}
-	}
-
-	// Athletics - fast move regen
-	if (get_skill(ch, gsn_athletics) > 0)
-	{
-		int move_gain = 0;
-
-		move_gain = dice(4, 8) * (get_skill(ch, gsn_athletics)/100);
-		ch->move = UMIN(ch->move + move_gain, ch->max_move);
-		if (number_percent() == 1)
-		check_improve(ch, gsn_athletics, TRUE, 50);
-	}
-
-	if ((victim = ch->fighting) == NULL || ch->in_room == NULL)
-		continue;
-
-	if (IS_AWAKE(ch) && ch->in_room == victim->in_room)
-		multi_hit(ch, victim, TYPE_UNDEFINED);
-	else
-		stop_fighting(ch, FALSE);
-
-	if ((victim = ch->fighting) == NULL)
-		continue;
-
-	check_assist(ch,victim);
-
-	/*
-	 * Prog triggers!
-	 */
-//	if (IS_NPC(ch))	PLAYERS!!!
-//	{
-		p_percent_trigger(ch, NULL, NULL, NULL, victim, NULL, NULL, NULL, NULL, TRIG_FIGHT, NULL);
-		p_hprct_trigger(ch, victim);
-//	}
-
-	for (obj = ch->carrying; obj; obj = obj_next)
-	{
-		obj_next = obj->next_content;
-
-		if (obj->wear_loc != WEAR_NONE)
-		p_percent_trigger(NULL, obj, NULL, NULL, victim, NULL, NULL, NULL, NULL, TRIG_FIGHT, NULL);
-	}
+		if( !IS_VALID(ch) ) continue;
 
 		if (ch->in_room == NULL)
-	{
-		sprintf(buf, "violence_update: ch->in_room was null! %s (%ld)",
-		IS_NPC(ch) ? ch->short_descr : ch->name,
-			IS_NPC(ch) ? ch->pIndexData->vnum : 0);
-		bug(buf, 0);
-		continue;
-	}
+		{
+			sprintf(buf, "violence_update: ch->in_room was null! %s (%ld)",
+				IS_NPC(ch) ? ch->short_descr : ch->name,
+				IS_NPC(ch) ? ch->pIndexData->vnum : 0);
+			bug(buf, 0);
+			continue;
+		}
 
-	p_percent_trigger(NULL, NULL, ch->in_room, NULL, victim, NULL, NULL, NULL, NULL, TRIG_FIGHT, NULL);
+		// Regeneration code put here as it is a good pause
+		if (IS_AFFECTED2(ch, AFF2_HEALING_AURA))
+		{
+			int heal = 0;
+
+			heal = dice(4, 8);
+			ch->hit = UMIN(ch->hit + heal, ch->max_hit);
+			update_pos(ch);
+
+			if (number_percent() == 1) {
+				act("{BThe healing aura around you shimmers.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+				act("{BThe healing aura around $n shimmers.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+			}
+		}
+
+		// Minotaur (and other) regeneration
+		if (IS_AFFECTED(ch, AFF_REGENERATION))
+		{
+			int heal = 0;
+
+			heal = dice(4, 8) + ch->tot_level/6;
+			ch->hit = UMIN(ch->hit + heal, ch->max_hit);
+
+			// For slayers and werewolves, regenerate mana too:
+			if (IS_SHIFTED(ch)) {
+				heal = dice(4, 8) + ch->tot_level/10;
+				ch->mana = UMIN(ch->mana + heal, ch->max_mana);
+
+				heal = dice(4, 8) + ch->tot_level/8;
+				ch->move = UMIN(ch->move + heal, ch->max_move);
+			}
+		}
+
+		// Athletics - fast move regen
+		if (get_skill(ch, gsn_athletics) > 0)
+		{
+			int move_gain = 0;
+
+			move_gain = dice(4, 8) * (get_skill(ch, gsn_athletics)/100);
+			ch->move = UMIN(ch->move + move_gain, ch->max_move);
+			if (number_percent() == 1)
+			check_improve(ch, gsn_athletics, TRUE, 50);
+		}
+
+		if ((victim = ch->fighting) == NULL || ch->in_room == NULL)
+			continue;
+
+		if ((victim = ch->fighting) == NULL)
+			continue;
+
+		if (IS_AWAKE(ch) && ch->in_room == victim->in_room)
+			multi_hit(ch, victim, TYPE_UNDEFINED);
+		else
+			stop_fighting(ch, FALSE);
+
+		check_assist(ch,victim);
+
+		p_percent_trigger(ch, NULL, NULL, NULL, victim, NULL, NULL, NULL, NULL, TRIG_FIGHT, NULL);
+		p_hprct_trigger(ch, victim);
+
+		for (obj = ch->carrying; obj; obj = obj_next)
+		{
+			obj_next = obj->next_content;
+
+			if (obj->wear_loc != WEAR_NONE)
+			p_percent_trigger(NULL, obj, NULL, NULL, victim, NULL, NULL, NULL, NULL, TRIG_FIGHT, NULL);
+		}
+
+		p_percent_trigger(NULL, NULL, ch->in_room, NULL, victim, NULL, NULL, NULL, NULL, TRIG_FIGHT, NULL);
 	}
+	iterator_stop(&ait);
+
 }
 
 
@@ -1115,6 +1109,11 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 	bool immune;
 	bool kill_in_room = FALSE;
 
+	if (victim->in_damage_function) {
+		victim->set_death_type = DEATHTYPE_ALIVE;
+		return FALSE;
+	}
+
 	if (dam < 0) {
 		sprintf(buf, "damage start: negative dam, ch %s, damage %d, dt %d, dam_type %d, victim %s", HANDLE(ch), dam, dt, dam_type, HANDLE(victim));
 		log_string(buf);
@@ -1134,6 +1133,8 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 		victim->set_death_type = DEATHTYPE_ALIVE;
 		return FALSE;
 	}
+
+	victim->in_damage_function = TRUE;
 
 	// sneaking doesn't wear off for rogue->ninja
 	if (IS_AFFECTED(ch, AFF_SNEAK) && !(get_profession(ch, SECOND_SUBCLASS_THIEF) == CLASS_THIEF_NINJA &&
@@ -1205,6 +1206,7 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 		if (!(!IS_NPC(ch) && IS_IMMORTAL(ch)) &&
 			(is_safe(ch, victim, TRUE) || IS_SET(ch->in_room->room_flags, ROOM_SAFE) || IS_SET(victim->in_room->room_flags, ROOM_SAFE))) {
 			victim->set_death_type = DEATHTYPE_ALIVE;
+			victim->in_damage_function = FALSE;
 			return FALSE;
 		}
 
@@ -1258,6 +1260,7 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 	// Dead people can't get hurt except by a higher level imm
 	if ((IS_DEAD(victim) && !victim->fighting) && !(IS_IMMORTAL(ch) && ch->tot_level > victim->tot_level)) {
 		victim->set_death_type = DEATHTYPE_ALIVE;
+		victim->in_damage_function = FALSE;
 		return FALSE;
 	}
 
@@ -1307,6 +1310,7 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 			victim->hit_damage = 0;
 
 			// the damage script should have posted messages if code reaches here.
+			victim->in_damage_function = FALSE;
 			tail_chain();
 			return FALSE;
 		}
@@ -1330,6 +1334,7 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 		victim->set_death_type = DEATHTYPE_ALIVE;
 
 		// do a message for no damage
+		victim->in_damage_function = FALSE;
 		tail_chain();
 		return FALSE;
 	}
@@ -1435,9 +1440,19 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 
 	victim->hit -= dam;
 
-	// Protect imms - Why just imms?
-	if (!IS_NPC(victim) && IS_IMMORTAL(victim) &&  victim->hit < 1)
-		victim->hit = 1;
+	// Check for death protections
+	// Reckonings disable ALL death protections
+	if(victim->hit < 1 && (pre_reckoning > 0 || reckoning_timer == 0)) {
+
+		if (p_percent_trigger(victim,NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_DEATH_PROTECTION, NULL)) {
+			if( victim->hit < 1) victim->hit = 1;	// Allows for the script to heal
+		} else if (p_percent_trigger(NULL, NULL, victim->in_room, NULL, ch, NULL, NULL, NULL, NULL, TRIG_DEATH_PROTECTION, NULL)) {
+			if( victim->hit < 1) victim->hit = 1;
+
+		// Protect imms
+		} else if (!IS_NPC(victim) && IS_IMMORTAL(victim))
+			victim->hit = 1;
+	}
 
 	update_pos(victim);
 
@@ -1580,9 +1595,10 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 			// Autosac corpses
 			if (IS_SET(ch->act, PLR_AUTOSAC) && corpse) {
 				 // Don't autosac corpse w/ treasure OR corpses from ranged attacks
-				if ((corpse->contains && !IS_SET(ch->act2, PLR_SACRIFICE_ALL)) || corpse->in_room != ch->in_room)
+				if ((corpse->contains && !IS_SET(ch->act2, PLR_SACRIFICE_ALL)) || corpse->in_room != ch->in_room) {
+					victim->in_damage_function = FALSE;
 					return TRUE;
-				else
+				} else
 					sacrifice_obj(ch, corpse, "corpse");
 			}
 		}
@@ -1601,12 +1617,18 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 
 			if(!found) p_percent_trigger(ch, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_AFTERKILL, NULL);
 		}
+		victim->in_damage_function = FALSE;
 		return TRUE;
 	}
 
 	victim->set_death_type = DEATHTYPE_ALIVE;
 
-	if (victim == ch) return TRUE;
+	if (victim == ch) {
+		victim->in_damage_function = FALSE;
+		return TRUE;
+	}
+
+	victim->in_damage_function = FALSE;
 
 	// Take care of link dead newbs.
 	if (!IS_NPC(victim) && victim->desc == NULL && victim->tot_level < 31 && !number_range(0, victim->wait)) {
@@ -2711,21 +2733,24 @@ void stop_holdup(CHAR_DATA *ch)
 void stop_fighting(CHAR_DATA *ch, bool fBoth)
 {
 	CHAR_DATA *fch;
+	ITERATOR it;
 
-	for (fch = char_list; fch != NULL; fch = fch->next)
+	iterator_start(&it, loaded_chars);
+	while(( fch = (CHAR_DATA *)iterator_nextdata(&it)))
 	{
-	if (fch == ch || (fBoth && fch->fighting == ch))
-	{
-		if (fch->reverie == -1)
-		fch->reverie = 0;
-		if (fch->fighting != NULL && fch->fighting->reverie == -1)
-		fch->fighting->reverie = 0;
+		if (fch == ch || (fBoth && fch->fighting == ch))
+		{
+			if (fch->reverie == -1)
+				fch->reverie = 0;
+			if (fch->fighting != NULL && fch->fighting->reverie == -1)
+				fch->fighting->reverie = 0;
 
-		fch->fighting = NULL;
-		fch->position = IS_NPC(fch) ? fch->default_pos : POS_STANDING;
-		update_pos(fch);
+			fch->fighting = NULL;
+			fch->position = IS_NPC(fch) ? fch->default_pos : POS_STANDING;
+			update_pos(fch);
+		}
 	}
-	}
+	iterator_stop(&it);
 
 	return;
 }

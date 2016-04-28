@@ -1480,23 +1480,26 @@ void nuke_pets(CHAR_DATA *ch)
 void die_follower(CHAR_DATA *ch)
 {
 	CHAR_DATA *fch;
+	ITERATOR it;
 
 	if (ch->master != NULL)
 	{
-	ch->master->pet = NULL;
-	stop_follower(ch,TRUE);
+		ch->master->pet = NULL;
+		stop_follower(ch,TRUE);
 	}
 
 	stop_grouped(ch);
 
-	for (fch = char_list; fch != NULL; fch = fch->next)
+	iterator_start(&it, loaded_chars);
+	while(( fch = (CHAR_DATA *)iterator_nextdata(&it)))
 	{
-	if (fch->master == ch)
-	stop_follower(fch,TRUE);
+		if (fch->master == ch)
+			stop_follower(fch,TRUE);
 
-	if (fch->leader == ch)
-	add_grouped(fch, fch, TRUE);
+		if (fch->leader == ch)
+			add_grouped(fch, fch, TRUE);
 	}
+	iterator_stop(&it);
 }
 
 
@@ -1605,90 +1608,83 @@ void do_group(CHAR_DATA *ch, char *argument)
 	char buf[MAX_STRING_LENGTH];
 	char arg[MAX_INPUT_LENGTH];
 	CHAR_DATA *victim;
+	ITERATOR it;
 
 	one_argument(argument, arg);
 
 	/* Show group status */
-	if (arg[0] == '\0')
-	{
-	CHAR_DATA *gch;
-	CHAR_DATA *leader;
+	if (arg[0] == '\0') {
+		CHAR_DATA *gch;
+		CHAR_DATA *leader;
 
-	leader = (ch->leader != NULL) ? ch->leader : ch;
-	sprintf(buf, "{Y%s's group is currently formed by:\n\r", pers(leader, ch));
-	send_to_char(buf, ch);
+		leader = (ch->leader != NULL) ? ch->leader : ch;
+		sprintf(buf, "{Y%s's group is currently formed by:\n\r", pers(leader, ch));
+		send_to_char(buf, ch);
 
-	for (gch = char_list; gch != NULL; gch = gch->next)
-	{
-	if (is_same_group(gch, ch) || gch == ch)
-	{
-	char name[MSL];
+		iterator_start(&it, loaded_chars);
+		while(( gch = (CHAR_DATA *)iterator_nextdata(&it)))
+		{
+			if (is_same_group(gch, ch) || gch == ch) {
+				char name[MSL];
 
-	sprintf(name, "%s", pers(gch, ch)) ;
-	name[0] = UPPER(name[0]);
-	sprintf(buf,
-	"{B[{G%3d {Y%-6.6s{B] {G%-15.15s {w%6ld{B/{w%ld {Bhp {w%6ld{B/{w%ld {Bmana {w%6ld{B/{w%ld {Bmv{x\n\r",
-	gch->level,
-	IS_NPC(gch) ? " NPC  " : pc_race_table[gch->race].who_name,
-	name,
-	gch->hit,   gch->max_hit,
-	gch->mana,  gch->max_mana,
-	gch->move,  gch->max_move);
-	send_to_char(buf, ch);
-	}
-	}
-
-	return;
+				sprintf(name, "%s", pers(gch, ch)) ;
+				name[0] = UPPER(name[0]);
+				sprintf(buf,
+					"{B[{G%3d {Y%-6.6s{B] {G%-15.15s {w%6ld{B/{w%ld {Bhp {w%6ld{B/{w%ld {Bmana {w%6ld{B/{w%ld {Bmv{x\n\r",
+					gch->level,
+					IS_NPC(gch) ? " NPC  " : pc_race_table[gch->race].who_name,
+					name,
+					gch->hit,   gch->max_hit,
+					gch->mana,  gch->max_mana,
+					gch->move,  gch->max_move);
+				send_to_char(buf, ch);
+			}
+		}
+		iterator_stop(&it);
+		return;
 	}
 
 	/* Put someone else into your group (or remove them)*/
-	if ((victim = get_char_room(ch, NULL, arg)) == NULL)
-	{
-	send_to_char("They aren't here.\n\r", ch);
-	return;
+	if ((victim = get_char_room(ch, NULL, arg)) == NULL) {
+		send_to_char("They aren't here.\n\r", ch);
+		return;
 	}
 
-	if (ch->master != NULL || (ch->leader != NULL && ch->leader != ch))
-	{
-	send_to_char("But you are following someone else!\n\r", ch);
-	return;
+	if (ch->master != NULL || (ch->leader != NULL && ch->leader != ch)) {
+		send_to_char("But you are following someone else!\n\r", ch);
+		return;
 	}
 
-	if (victim->master != ch && ch != victim)
-	{
-	act_new("$N isn't following you.",ch,victim,NULL,NULL,NULL,NULL,NULL,TO_CHAR,POS_SLEEPING,NULL);
-	return;
+	if (victim->master != ch && ch != victim) {
+		act_new("$N isn't following you.",ch,victim,NULL,NULL,NULL,NULL,NULL,TO_CHAR,POS_SLEEPING,NULL);
+		return;
 	}
 
-	if (IS_AFFECTED(victim,AFF_CHARM))
-	{
-	send_to_char("You can't remove charmed mobs from your group.\n\r",ch);
-	return;
+	if (IS_AFFECTED(victim,AFF_CHARM)) {
+		send_to_char("You can't remove charmed mobs from your group.\n\r",ch);
+		return;
 	}
 
-	if (IS_AFFECTED(ch,AFF_CHARM))
-	{
-	act_new("You like your master too much to leave $m!", ch,victim,NULL,NULL,NULL,NULL,NULL,TO_VICT,POS_SLEEPING,NULL);
-	return;
+	if (IS_AFFECTED(ch,AFF_CHARM)) {
+		act_new("You like your master too much to leave $m!", ch,victim,NULL,NULL,NULL,NULL,NULL,TO_VICT,POS_SLEEPING,NULL);
+		return;
 	}
 
-	if (is_same_group(victim, ch) && ch != victim)
-	{
-	stop_grouped(victim);
-	act_new("$n removes $N from $s group.", ch,victim,NULL,NULL,NULL,NULL,NULL,TO_NOTVICT,POS_RESTING,NULL);
-	act_new("$n removes you from $s group.", ch,victim,NULL,NULL,NULL,NULL,NULL,TO_VICT,POS_SLEEPING,NULL);
-	act_new("You remove $N from your group.", ch,victim,NULL,NULL,NULL,NULL,NULL,TO_CHAR,POS_SLEEPING,NULL);
-	return;
+	if (is_same_group(victim, ch) && ch != victim) {
+		stop_grouped(victim);
+		act_new("$n removes $N from $s group.", ch,victim,NULL,NULL,NULL,NULL,NULL,TO_NOTVICT,POS_RESTING,NULL);
+		act_new("$n removes you from $s group.", ch,victim,NULL,NULL,NULL,NULL,NULL,TO_VICT,POS_SLEEPING,NULL);
+		act_new("You remove $N from your group.", ch,victim,NULL,NULL,NULL,NULL,NULL,TO_CHAR,POS_SLEEPING,NULL);
+		return;
 	}
 
-	if (ch == victim)
-	{
-	send_to_char("That would be pointless.\n\r", ch);
-	return;
+	if (ch == victim) {
+		send_to_char("That would be pointless.\n\r", ch);
+		return;
 	}
 
 	if (!add_grouped(victim, ch,TRUE))
-	return;
+		return;
 
 	act_new("$N joins $n's group.",ch,victim,NULL,NULL,NULL,NULL,NULL,TO_NOTVICT,POS_RESTING,NULL);
 	act_new("You join $n's group.",ch,victim,NULL,NULL,NULL,NULL,NULL,TO_VICT,POS_SLEEPING,NULL);
@@ -1820,38 +1816,35 @@ void do_gtell(CHAR_DATA *ch, char *argument)
 {
 	CHAR_DATA *gch;
 	bool another_person = FALSE;
+	ITERATOR it;
 
-	if (argument[0] == '\0')
-	{
-	send_to_char("Tell your group what?\n\r", ch);
-	return;
+	if (argument[0] == '\0') {
+		send_to_char("Tell your group what?\n\r", ch);
+		return;
 	}
 
-	if (IS_SET(ch->comm, COMM_NOTELL))
-	{
-	send_to_char("Your message didn't get through!\n\r", ch);
-	return;
+	if (IS_SET(ch->comm, COMM_NOTELL)) {
+		send_to_char("Your message didn't get through!\n\r", ch);
+		return;
 	}
 
+	iterator_start(&it, loaded_chars);
+	while(( gch = (CHAR_DATA *)iterator_nextdata(&it)))
+	{
+		if (is_same_group(gch, ch)) {
+			act_new("{C$n tells the group '$t'{x", ch,gch,NULL,NULL,NULL,argument,NULL,TO_VICT,POS_SLEEPING,NULL);
+			if (gch != ch)
+				another_person = TRUE;
+		}
+	}
+	iterator_stop(&it);
 
-	for (gch = char_list; gch != NULL; gch = gch->next)
-	{
-	if (is_same_group(gch, ch))
-	{
-	act_new("{C$n tells the group '$t'{x", ch,gch,NULL,NULL,NULL,argument,NULL,TO_VICT,POS_SLEEPING,NULL);
-	if (gch != ch)
-	another_person = TRUE;
-	}
-	}
-
-	if (another_person)
-	{
-	send_to_char("{CYou tell your group '", ch);
-	send_to_char(argument, ch);
-	send_to_char("'{x\n\r", ch);
-	}
-	else
-	send_to_char("There are no members in your group.\n\r", ch);
+	if (another_person) {
+		send_to_char("{CYou tell your group '", ch);
+		send_to_char(argument, ch);
+		send_to_char("'{x\n\r", ch);
+	} else
+		send_to_char("There are no members in your group.\n\r", ch);
 
 	return;
 }

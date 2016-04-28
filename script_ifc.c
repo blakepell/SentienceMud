@@ -2627,6 +2627,7 @@ DECL_IFC_FUN(ifc_timer)
 		else if(!str_prefix(ARG_STR(1),"resurrect")) *ret = ARG_MOB(0)->resurrect;
 		else if(!str_prefix(ARG_STR(1),"reverie")) *ret = ARG_MOB(0)->reverie;
 		else if(!str_prefix(ARG_STR(1),"scribe")) *ret = ARG_MOB(0)->scribe;
+		else if(!str_prefix(ARG_STR(1),"script")) *ret = ARG_MOB(0)->script_wait;
 		else if(!str_prefix(ARG_STR(1),"timer")) *ret = ARG_MOB(0)->timer;
 		else if(!str_prefix(ARG_STR(1),"trance")) *ret = ARG_MOB(0)->trance;
 		else if(!str_prefix(ARG_STR(1),"wait")) *ret = ARG_MOB(0)->wait;

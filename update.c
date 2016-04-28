@@ -722,199 +722,195 @@ void gain_condition(CHAR_DATA *ch, int iCond, int value)
  */
 void mobile_update(void)
 {
+	ITERATOR it;
     CHAR_DATA *ch;
-    CHAR_DATA *ch_next;
     EXIT_DATA *pexit;
     int door;
     char buf[MSL];
 
-    for (ch = char_list; ch != NULL; ch = ch_next)
+	iterator_start(&it, loaded_chars);
+	while(( ch = (CHAR_DATA *)iterator_nextdata(&it)))
     {
-	ch_next = ch->next;
+		if (ch->in_room == NULL || IS_AFFECTED(ch,AFF_CHARM))
+	    	continue;
 
-	if (ch->in_room == NULL
-	||   IS_AFFECTED(ch,AFF_CHARM))
-	    continue;
+		// Done to allow for TOKEN random type scripts on players, but only if they have tokens!
+		if (!IS_NPC(ch)) {
+		    if(ch->tokens) {
 
-	// Done to allow for TOKEN random type scripts on players, but only if they have tokens!
-	if (!IS_NPC(ch)) {
-	    if(ch->tokens) {
+			p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RANDOM, NULL);
 
+			// Prereckoning
+			if (pre_reckoning > 0 && reckoning_timer > 0)
+			    p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_PRERECKONING, NULL);
+
+			// Reckoning
+			if (!pre_reckoning && reckoning_timer > 0)
+			    p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RECKONING, NULL);
+		    }
+		    continue;
+		}
+
+		if (ch->in_room->area->empty && !IS_SET(ch->act,ACT_UPDATE_ALWAYS))
+			continue;
+
+		// A dirty hack to remove any Death mobs that have been stranded
+		if (ch->pIndexData->vnum == MOB_VNUM_DEATH)	// Replaced the name check to the vnum
+		{
+			CHAR_DATA *vch;
+			CHAR_DATA *vch_next;
+			for (vch = ch->in_room->people; vch != NULL; vch = vch_next)
+			{
+				vch_next = vch->next_in_room;
+				if (vch != ch && !IS_NPC(vch))
+				{
+					send_to_char("{C'Well then.' says Death. 'Looks like that corpse is adequately dead. Cya folks, im outta here.'{x\n\r", vch);
+					send_to_char("Death waves happily.\n\r", vch);
+					send_to_char("{DDeath sinks into the ground and disappears.{x\n\r", vch);
+				}
+			}
+
+			extract_char(ch, TRUE);
+			continue;
+		}
+
+		// Examine call for special procedure
+		if (ch->spec_fun != 0)
+		{
+			if ((*ch->spec_fun)(ch))
+			continue;
+		}
+
+		// Give shop owners gold
+		if (ch->pIndexData->pShop != NULL)
+		{
+			if ((ch->gold * 100 + ch->silver) < ch->pIndexData->wealth)
+			{
+			ch->gold += ch->pIndexData->wealth * number_range(1,20)/5000000;
+			ch->silver += ch->pIndexData->wealth * number_range(1,20)/50000;
+			}
+		}
+
+		// Check mob triggers
+
+		// Delay
+		if (ch->progs->delay > 0)
+		{
+			if (--ch->progs->delay <= 0)
+			{
+			p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_DELAY, NULL);
+			continue;
+			}
+		}
+
+        // Random
 		p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RANDOM, NULL);
 
 		// Prereckoning
-		if (pre_reckoning > 0 && reckoning_timer > 0)
-		    p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_PRERECKONING, NULL);
+		if (pre_reckoning > 0 && reckoning_timer > 0) {
+			p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_PRERECKONING, NULL);
+		}
 
 		// Reckoning
-		if (!pre_reckoning && reckoning_timer > 0)
-		    p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RECKONING, NULL);
-	    }
-	    continue;
-	}
+		if (pre_reckoning == 0 && reckoning_timer > 0) {
+			p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RECKONING, NULL);
+		}
 
-	if (ch->in_room->area->empty && !IS_SET(ch->act,ACT_UPDATE_ALWAYS))
-	    continue;
+		// get rid of crew when they are past their hired date
+		if (ch->belongs_to_ship != NULL
+		&&   !IS_NPC_SHIP(ch->belongs_to_ship)
+		&&   current_time > ch->hired_to)
+			extract_char(ch, TRUE);
 
-	// A dirty hack to remove any Death mobs that have been stranded
-	if (!str_cmp(ch->short_descr, "Death"))
-	{
-            CHAR_DATA *vch;
-	    CHAR_DATA *vch_next;
-	    for (vch = ch->in_room->people; vch != NULL; vch = vch_next)
-            {
-	        vch_next = vch->next_in_room;
-		if (vch != ch && !IS_NPC(vch))
+		// That's all for sleeping / busy monster, and empty zones
+		if (ch->position != POS_STANDING)
+			continue;
+
+		// Ship Quest masters
+		if (IS_SET(ch->act2, ACT2_SHIP_QUESTMASTER) && number_percent() < 5) {
+			AREA_DATA *pArea = NULL;
+
+			for (pArea = area_first; pArea != NULL; pArea = pArea->next) {
+
+			if (pArea->invasion_quest != NULL && ch->in_room != NULL &&
+				ch->in_room->area->place_flags == pArea->place_flags) {
+				sprintf(buf, "We are offering a reward to anyone that can restore order in %s.", pArea->name);
+				do_say(ch, buf);
+			}
+			}
+		}
+
+		// Scavenge
+		if (IS_SET(ch->act, ACT_SCAVENGER)
+		&&   ch->in_room->contents != NULL
+		&&   number_bits(6) == 0)
 		{
-		    send_to_char("{C'Well then.' says Death. 'Looks like that corpse is adequately dead. Cya folks, im outta here.'{x\n\r", vch);
-		    send_to_char("Death waves happily.\n\r", vch);
-		    send_to_char("{DDeath sinks into the ground and disappears.{x\n\r", vch);
+			OBJ_DATA *obj;
+			OBJ_DATA *obj_best;
+			int max;
+
+			max = 1;
+			obj_best = 0;
+			for (obj = ch->in_room->contents; obj; obj = obj->next_content)
+			{
+			if (!can_get_obj(ch, obj, NULL, NULL, TRUE))
+				continue;
+
+			if (CAN_WEAR(obj, ITEM_TAKE)
+			&&   obj->cost > max
+			&&   obj->cost > 0
+			&&   !is_quest_token(obj))
+			{
+				obj_best = obj;
+				max = obj->cost;
+			}
+			}
+
+			if (obj_best != NULL)
+			{
+			obj_from_room(obj_best);
+			obj_to_char(obj_best, ch);
+			act("$n gets $p.", ch, NULL, NULL, obj_best, NULL, NULL, NULL, TO_ROOM);
+			}
 		}
-	    }
 
-	    extract_char(ch, TRUE);
-	    continue;
-	}
-
-	// Examine call for special procedure
-	if (ch->spec_fun != 0)
-	{
-	    if ((*ch->spec_fun)(ch))
-		continue;
-	}
-
-	// Give shop owners gold
-	if (ch->pIndexData->pShop != NULL)
-	{
-	    if ((ch->gold * 100 + ch->silver) < ch->pIndexData->wealth)
-	    {
-		ch->gold += ch->pIndexData->wealth * number_range(1,20)/5000000;
-		ch->silver += ch->pIndexData->wealth * number_range(1,20)/50000;
-	    }
-	}
-
-	// Check mob triggers
-
-	// Delay
-	if (ch->progs->delay > 0)
-	{
-	    if (--ch->progs->delay <= 0)
-	    {
-		p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_DELAY, NULL);
-		continue;
-	    }
-	}
-
-        // Random
-	if (p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RANDOM, NULL)) continue;
-
-	// Prereckoning
-	if (pre_reckoning > 0 && reckoning_timer > 0) {
-	    if(p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_PRERECKONING, NULL))
-	    continue;
-	}
-
-	// Reckoning
-	if (pre_reckoning == 0 && reckoning_timer > 0) {
-	    if (p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RECKONING, NULL))
-		continue;
-	}
-
-	// get rid of crew when they are past their hired date
-	if (ch->belongs_to_ship != NULL
-	&&   !IS_NPC_SHIP(ch->belongs_to_ship)
-	&&   current_time > ch->hired_to)
-	    extract_char(ch, TRUE);
-
-	// That's all for sleeping / busy monster, and empty zones
-	if (ch->position != POS_STANDING)
-	    continue;
-
-	// Ship Quest masters
-	if (IS_SET(ch->act2, ACT2_SHIP_QUESTMASTER) && number_percent() < 5) {
-	    AREA_DATA *pArea = NULL;
-
-	    for (pArea = area_first; pArea != NULL; pArea = pArea->next) {
-
-		if (pArea->invasion_quest != NULL && ch->in_room != NULL &&
-			ch->in_room->area->place_flags == pArea->place_flags) {
-		    sprintf(buf, "We are offering a reward to anyone that can restore order in %s.", pArea->name);
-		    do_say(ch, buf);
-		}
-	    }
-	}
-
-	// Scavenge
-	if (IS_SET(ch->act, ACT_SCAVENGER)
-	&&   ch->in_room->contents != NULL
-	&&   number_bits(6) == 0)
-	{
-	    OBJ_DATA *obj;
-	    OBJ_DATA *obj_best;
-	    int max;
-
-	    max = 1;
-	    obj_best = 0;
-	    for (obj = ch->in_room->contents; obj; obj = obj->next_content)
-	    {
-		if (!can_get_obj(ch, obj, NULL, NULL, TRUE))
-		    continue;
-
-		if (CAN_WEAR(obj, ITEM_TAKE)
-		&&   obj->cost > max
-		&&   obj->cost > 0
-		&&   !is_quest_token(obj))
+		if (ch->in_room == NULL)
 		{
-		    obj_best = obj;
-		    max = obj->cost;
+			sprintf(buf, "mobile_update: ch %s (%ld) had null in_room!",
+				IS_NPC(ch) ? ch->short_descr : ch->name,
+			IS_NPC(ch) ? ch->pIndexData->vnum : 0);
+			bug(buf, 0);
+			continue;
 		}
-	    }
 
-	    if (obj_best != NULL)
-	    {
-		obj_from_room(obj_best);
-		obj_to_char(obj_best, ch);
-		act("$n gets $p.", ch, NULL, NULL, obj_best, NULL, NULL, NULL, TO_ROOM);
-	    }
-	}
+		/* Wander */
 
-        if (ch->in_room == NULL)
-	{
-	    sprintf(buf, "mobile_update: ch %s (%ld) had null in_room!",
-	    	IS_NPC(ch) ? ch->short_descr : ch->name,
-		IS_NPC(ch) ? ch->pIndexData->vnum : 0);
-	    bug(buf, 0);
-	    continue;
-	}
-
-	/* Wander */
-
-	/* Syn - Only do this for mobs that aren't grouped. Obviously
-	   to prevent grouped mobs from wandering off, since wandering
-	   can be done with a mprog, while the reverse cannot be done */
-	if (ch->leader == NULL // Following AND grouped
-	&&  ch->master == NULL // Following only
-	&&  !IS_SET(ch->act, ACT_SENTINEL)
-	&&  number_bits(3) == 0
-	&&  !IS_SET(ch->act, ACT_MOUNT)) {
-	    door = number_range(0, MAX_DIR - 1);
-	    if ((pexit = ch->in_room->exit[door]) != NULL
-	    &&  pexit->u1.to_room != NULL
-	    &&  !IS_SET(pexit->exit_info, EX_CLOSED)
-	    &&  !IS_SET(pexit->u1.to_room->room_flags, ROOM_NO_MOB)
-	    &&  !IS_SET(pexit->u1.to_room->room_flags, ROOM_NO_WANDER)
-	    &&  (!IS_SET(ch->act2, ACT_STAY_LOCALE) ||
-	    	(pexit->u1.to_room->area == ch->in_room->area &&
-	    		(!ch->in_room->locale || !pexit->u1.to_room->locale || ch->in_room->locale == pexit->u1.to_room->locale)))
-	    &&  (IS_SET(ch->act2, ACT2_WILDS_WANDERER) || !pexit->u1.to_room->wilds)
-	    &&  (!IS_SET(ch->act, ACT_STAY_AREA)
-		 || pexit->u1.to_room->area == ch->in_room->area)
-	    &&  (!IS_SET(ch->act, ACT_OUTDOORS)
-		 || !IS_SET(pexit->u1.to_room->room_flags,ROOM_INDOORS))
-	    &&  (!IS_SET(ch->act, ACT_INDOORS)
-		 || IS_SET(pexit->u1.to_room->room_flags,ROOM_INDOORS)))
-		move_char(ch, door, FALSE);
-	}
+		/* Syn - Only do this for mobs that aren't grouped. Obviously
+		   to prevent grouped mobs from wandering off, since wandering
+		   can be done with a mprog, while the reverse cannot be done */
+		if (ch->leader == NULL // Following AND grouped
+		&&  ch->master == NULL // Following only
+		&&  !IS_SET(ch->act, ACT_SENTINEL)
+		&&  number_bits(3) == 0
+		&&  !IS_SET(ch->act, ACT_MOUNT)) {
+			door = number_range(0, MAX_DIR - 1);
+			if ((pexit = ch->in_room->exit[door]) != NULL
+			&&  pexit->u1.to_room != NULL
+			&&  !IS_SET(pexit->exit_info, EX_CLOSED)
+			&&  !IS_SET(pexit->u1.to_room->room_flags, ROOM_NO_MOB)
+			&&  !IS_SET(pexit->u1.to_room->room_flags, ROOM_NO_WANDER)
+			&&  (!IS_SET(ch->act2, ACT_STAY_LOCALE) ||
+				(pexit->u1.to_room->area == ch->in_room->area &&
+					(!ch->in_room->locale || !pexit->u1.to_room->locale || ch->in_room->locale == pexit->u1.to_room->locale)))
+			&&  (IS_SET(ch->act2, ACT2_WILDS_WANDERER) || !pexit->u1.to_room->wilds)
+			&&  (!IS_SET(ch->act, ACT_STAY_AREA)
+			 || pexit->u1.to_room->area == ch->in_room->area)
+			&&  (!IS_SET(ch->act, ACT_OUTDOORS)
+			 || !IS_SET(pexit->u1.to_room->room_flags,ROOM_INDOORS))
+			&&  (!IS_SET(ch->act, ACT_INDOORS)
+			 || IS_SET(pexit->u1.to_room->room_flags,ROOM_INDOORS)))
+			move_char(ch, door, FALSE);
+		}
     }
 }
 
@@ -1398,6 +1394,7 @@ void update_area_trade( void )
 // Update all chars, including mobs
 void char_update(void)
 {
+    ITERATOR it, tit;
     char buf[MSL];
     CHAR_DATA *ch;
     CHAR_DATA *ch_next;
@@ -1411,174 +1408,153 @@ void char_update(void)
     // Update save counter
     save_number++;
     if (save_number > 29)
-	save_number = 0;
+		save_number = 0;
 
-    for (ch = char_list; ch != NULL; ch = ch_next)
+	iterator_start(&it, loaded_chars);
+	while(( ch = (CHAR_DATA *)iterator_nextdata(&it)))
     {
         if (!IS_VALID(ch))
-	{
-            bug("update_char: Trying to work with an invalidated character.\n", 0);
-	    break;
-        }
+        	continue;
 
-	ch_next = ch->next;
-
-	/* check if in_room is null for logging purposes */
-	if (ch->in_room == NULL && IS_NPC(ch))
-	    sprintf(buf, "char_update: null in_room on ch %s (%ld)", ch->short_descr, ch->pIndexData->vnum);
+		/* check if in_room is null for logging purposes */
+		if (ch->in_room == NULL && IS_NPC(ch))
+			sprintf(buf, "char_update: null in_room on ch %s (%ld)", ch->short_descr, ch->pIndexData->vnum);
 
 
         // Characters in social aren't updated
-	if (IS_SOCIAL(ch))
-	    continue;
+		if (IS_SOCIAL(ch))
+		    continue;
 
 	// Update tokens on a character. Remove the one for which the timer has run out.
-	for (token = ch->tokens; token != NULL; token = token_next) {
-	    token_next = token->next;
+		iterator_start(&tit, ch->ltokens);
+		while(( token = (TOKEN_DATA *)iterator_nextdata(&tit)))
+		{
 
-	    if (IS_SET(token->flags, TOKEN_REVERSETIMER)) {
-		++token->timer;
-	    } else if (token->timer > 0) {
-		--token->timer;
-		if (token->timer <= 0) {
-		    sprintf(buf, "char update: token %s(%ld) char %s(%ld) was extracted because of timer",
-			    token->name, token->pIndexData->vnum, HANDLE(ch), IS_NPC(ch) ? ch->pIndexData->vnum :
-			    0);
-		    log_string(buf);
-		    p_percent_trigger(NULL, NULL, NULL, token, NULL, NULL, NULL, NULL, NULL, TRIG_EXPIRE, NULL);
-		    token_from_char(token);
-		    free_token(token);
+	    	if (IS_SET(token->flags, TOKEN_REVERSETIMER)) {
+				++token->timer;
+		    } else if (token->timer > 0) {
+				--token->timer;
+				if (token->timer <= 0) {
+				    sprintf(buf, "char update: token %s(%ld) char %s(%ld) was extracted because of timer",
+					    token->name, token->pIndexData->vnum, HANDLE(ch), IS_NPC(ch) ? ch->pIndexData->vnum : 0);
+				    log_string(buf);
+				    p_percent_trigger(NULL, NULL, NULL, token, NULL, NULL, NULL, NULL, NULL, TRIG_EXPIRE, NULL);
+				    token_from_char(token);
+				    free_token(token);
+				}
+		    }
 		}
-	    }
-	}
 
 
         // Kick out people after they idle long enough
-	if (ch->timer > 30)
+		if (ch->timer > 30)
             ch_quit = ch;
 
-	if (ch->position >= POS_STUNNED)
-	{
+		if (ch->position >= POS_STUNNED) {
             // Stranded mobs are extracted after a while
-            if (0
-	    && IS_NPC(ch)
-            &&  ch->desc == NULL
-	    &&  ch->fighting == NULL
-	    &&  !IS_AFFECTED(ch,AFF_CHARM)
-            &&  ch->leader == NULL
-	    &&  ch->master == NULL
-	    &&  ch->in_room != ch->home_room
-	    &&  !IS_SET(ch->act,ACT_SENTINEL)
-	    &&  number_percent() < 1)
-            {
-		act("$n wanders on home.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
-		if(ch->home_room == NULL) {
-		    extract_char(ch, TRUE);
-		    continue;
-		} else {
-		    char_from_room(ch);
-		    char_to_room(ch, ch->home_room);
-		}
+            if (0 && IS_NPC(ch) && ch->desc == NULL &&
+            	ch->fighting == NULL && !IS_AFFECTED(ch,AFF_CHARM) &&
+            	ch->leader == NULL &&  ch->master == NULL &&
+            	ch->in_room != ch->home_room && !IS_SET(ch->act,ACT_SENTINEL) &&
+            	number_percent() < 1) {
+				act("$n wanders on home.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+				if(ch->home_room == NULL) {
+				    extract_char(ch, TRUE);
+				    continue;
+				} else {
+				    char_from_room(ch);
+				    char_to_room(ch, ch->home_room);
+				}
             }
 
-	    // Regen hit, mana and move.
-	    if (ch->hit < ch->max_hit)
-		ch->hit += hit_gain(ch);
-	    else
-		ch->hit = ch->max_hit;
+		    // Regen hit, mana and move.
+		    if (ch->hit < ch->max_hit)
+				ch->hit += hit_gain(ch);
+		    else
+				ch->hit = ch->max_hit;
 
-	    if (ch->mana < ch->max_mana)
-		ch->mana += mana_gain(ch);
-	    else
-		ch->mana = ch->max_mana;
+		    if (ch->mana < ch->max_mana)
+				ch->mana += mana_gain(ch);
+		    else
+				ch->mana = ch->max_mana;
 
-	    if (ch->move < ch->max_move)
-		ch->move += move_gain(ch);
-	    else
-		ch->move = ch->max_move;
-	}
+		    if (ch->move < ch->max_move)
+				ch->move += move_gain(ch);
+		    else
+				ch->move = ch->max_move;
+		}
 
-	// Random triggers in the wilderness
-	#if 0
-	if (!IS_NPC(ch))
-	{
-	    if (ch->in_room->parent != -1)
-		p_percent_trigger(NULL, NULL, ch->in_room, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RANDOM, NULL);
-	}
-	#endif
 
-	if (ch->position == POS_STUNNED)
-	    update_pos(ch);
+		if (ch->position == POS_STUNNED)
+		    update_pos(ch);
 
         // PCs drown in the water
-	if (!IS_NPC(ch)
-	&&  !IS_AFFECTED(ch, AFF_SWIM)
-	&&  IS_SET(ch->in_room->room_flags, ROOM_UNDERWATER)
-	&&  !IS_IMMORTAL(ch))
-	{
-	    send_to_char("You choke and gag as your lungs fill with water!\n\r", ch);
-	    act("$n thrashes about in the water gasping for air!", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
-	    damage(ch, ch, ch->hit/2, TYPE_UNDEFINED, DAM_DROWNING,FALSE);
-	}
+		if (!IS_NPC(ch) && !IS_AFFECTED(ch, AFF_SWIM) &&
+			!IS_SET(ch->parts, PART_GILLS) && !IS_SET(ch->imm_flags, IMM_WATER) &&
+			IS_SET(ch->in_room->room_flags, ROOM_UNDERWATER) && !IS_IMMORTAL(ch)) {
+			send_to_char("You choke and gag as your lungs fill with water!\n\r", ch);
+			act("$n thrashes about in the water gasping for air!", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+			damage(ch, ch, ch->hit/2, TYPE_UNDEFINED, DAM_DROWNING,FALSE);
+		}
 
-	// Toxin regeneration for siths
-	if (IS_SITH(ch))
-	{
-	    int i;
+		// Toxin regeneration for siths
+		if (IS_SITH(ch))
+		{
+		    int i;
 
-	    for (i = 0; i < MAX_TOXIN; i++)
-		ch->toxin[i] += UMIN(toxin_gain(ch), 100 - ch->toxin[i]);
-	}
+		    for (i = 0; i < MAX_TOXIN; i++)
+				ch->toxin[i] += UMIN(toxin_gain(ch), 100 - ch->toxin[i]);
+		}
 
         // Decrease challenge delay for people.
-	if (!IS_NPC(ch) && ch->pcdata->challenge_delay > 0)
-	    ch->pcdata->challenge_delay--;
+		if (!IS_NPC(ch) && ch->pcdata->challenge_delay > 0)
+		    ch->pcdata->challenge_delay--;
 
-	// Return people from the maze after a while.
-	if (ch->maze_time_left > 0)
-	{
-   	    ch->maze_time_left--;
-	    if (ch->maze_time_left <= 0)
-	    {
-	        send_to_char("{WThe gods have returned you to the mortal realm.{x\n\r", ch);
-		return_from_maze(ch);
-            }
-	}
-
-	// Return from dead
-	if (!IS_NPC(ch) && ch->time_left_death > 0)
-	{
-		bool run_death_timer = TRUE;
-		OBJ_DATA *corpse = ch->pcdata->corpse;
-		ROOM_INDEX_DATA *corpse_room = obj_room(corpse);
-		// Check here, prevent the timer from counting down if the
-		if( p_percent_trigger(ch, NULL, NULL, NULL, ch, ch, NULL, corpse, NULL, TRIG_DEATH_TIMER, NULL) )
-			run_death_timer = FALSE;
-
-		if( run_death_timer && IS_VALID(corpse) && p_percent_trigger(NULL, corpse, NULL, NULL, ch, ch, NULL, corpse, NULL, TRIG_DEATH_TIMER, NULL) )
-			run_death_timer = FALSE;
-
-		if( run_death_timer && corpse_room && p_percent_trigger(NULL, NULL, corpse_room, NULL, ch, ch, NULL, corpse, NULL, TRIG_DEATH_TIMER, NULL) )
-			run_death_timer = FALSE;
-
-		// Perform actions while the player is dead regardless of timer running
-		if( ch->manastore > 0) {
-			// Decay manastore while dead
-			ch->manastore = ch->manastore / 2;
-		}
-
-
-		if( run_death_timer )
+		// Return people from the maze after a while.
+		if (ch->maze_time_left > 0)
 		{
-			ch->time_left_death--;
-
-			if (ch->time_left_death <= 0)
+			ch->maze_time_left--;
+			if (ch->maze_time_left <= 0)
 			{
-				send_to_char("{WThe gods take pity on you and return you to your body.\n\r", ch);
-				resurrect_pc(ch);
+				send_to_char("{WThe gods have returned you to the mortal realm.{x\n\r", ch);
+				return_from_maze(ch);
 			}
 		}
-	}
+
+		// Return from dead
+		if (!IS_NPC(ch) && ch->time_left_death > 0)
+		{
+			bool run_death_timer = TRUE;
+			OBJ_DATA *corpse = ch->pcdata->corpse;
+			ROOM_INDEX_DATA *corpse_room = obj_room(corpse);
+			// Check here, prevent the timer from counting down if the
+			if( p_percent_trigger(ch, NULL, NULL, NULL, ch, ch, NULL, corpse, NULL, TRIG_DEATH_TIMER, NULL) )
+				run_death_timer = FALSE;
+
+			if( run_death_timer && IS_VALID(corpse) && p_percent_trigger(NULL, corpse, NULL, NULL, ch, ch, NULL, corpse, NULL, TRIG_DEATH_TIMER, NULL) )
+				run_death_timer = FALSE;
+
+			if( run_death_timer && corpse_room && p_percent_trigger(NULL, NULL, corpse_room, NULL, ch, ch, NULL, corpse, NULL, TRIG_DEATH_TIMER, NULL) )
+				run_death_timer = FALSE;
+
+			// Perform actions while the player is dead regardless of timer running
+			if( ch->manastore > 0) {
+				// Decay manastore while dead
+				ch->manastore = ch->manastore / 2;
+			}
+
+
+			if( run_death_timer )
+			{
+				ch->time_left_death--;
+
+				if (ch->time_left_death <= 0)
+				{
+					send_to_char("{WThe gods take pity on you and return you to your body.\n\r", ch);
+					resurrect_pc(ch);
+				}
+			}
+		}
 
 	/*
 	if (ch->in_room != NULL
@@ -2196,8 +2172,10 @@ void char_update(void)
 	    damage(ch, ch, 1, TYPE_UNDEFINED, DAM_NONE,FALSE);
     }
 
+
     // Autosave and autoquit. Check that these chars still exist.
-    for (ch = char_list; ch != NULL; ch = ch_next)
+	iterator_start(&it, loaded_chars);
+	while(( ch = (CHAR_DATA *)iterator_nextdata(&it)))
     {
         ch_next = ch->next;
 
@@ -2207,15 +2185,16 @@ void char_update(void)
         if (ch == ch_quit)
             do_function(ch, &do_quit, NULL);
     }
+    iterator_stop(&it);
 }
 
 
 // Update all objs (performance-sensitive)
 void obj_update(void)
 {
-	ITERATOR tit;
+	ITERATOR it, tit;
 	TOKEN_DATA *token;
-	OBJ_DATA *obj, *obj_next;
+	OBJ_DATA *obj;
 	AFFECT_DATA *paf, *paf_next;
 	CHAR_DATA *rch, *rch_next;
 	char *message;
@@ -2226,8 +2205,8 @@ void obj_update(void)
 
 	log_string("Update objects...");
 
-	for (obj = object_list; obj != NULL; obj = obj_next) {
-		obj_next = obj->next;
+	iterator_start(&it, loaded_objects);
+	while(( obj = (OBJ_DATA *)iterator_nextdata(&it))) {
 
 		// Adjust obj affects - except for people in social
 		if (obj->carried_by == NULL || !IS_SOCIAL(obj->carried_by)) {
@@ -2273,7 +2252,18 @@ void obj_update(void)
 			}
 
 			if (!obj->locker)
+			{
+
 				p_percent_trigger(NULL, obj, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RANDOM, NULL);
+
+				// Prereckoning
+				if (pre_reckoning > 0 && reckoning_timer > 0)
+					p_percent_trigger(NULL, obj, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_PRERECKONING, NULL);
+
+				// Reckoning
+				if (!pre_reckoning && reckoning_timer > 0)
+					p_percent_trigger(NULL, obj, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RECKONING, NULL);
+			}
 		}
 
 		// Make sure the object is still there before proceeding
@@ -2440,6 +2430,8 @@ void obj_update(void)
 
 		if (nuke_obj && obj) extract_obj(obj);
 	}
+
+	iterator_stop(&it);
 }
 
 
@@ -2454,7 +2446,6 @@ void obj_update(void)
 void aggr_update(void)
 {
     CHAR_DATA *wch;
-    CHAR_DATA *wch_next;
     CHAR_DATA *ch;
     CHAR_DATA *ch_next;
     CHAR_DATA *vch;
@@ -2463,12 +2454,13 @@ void aggr_update(void)
     OBJ_DATA *obj;
     AFFECT_DATA *paf, *tox, af;
     char buf[MAX_STRING_LENGTH];
+    ITERATOR it;
 
     memset(&af,0,sizeof(af));
 
-    for (wch = char_list; wch != NULL; wch = wch_next)
+    iterator_start(&it, loaded_chars);
+    while(( wch = (CHAR_DATA *)iterator_nextdata(&it)))
     {
-	wch_next = wch->next;
 
 	// if NPC then this is a good place to update casting as aggr_update runs frequently
 	if (IS_NPC(wch))
@@ -2492,6 +2484,8 @@ void aggr_update(void)
 			{
 			    script_end_success(wch);
 			}
+			else
+				script_end_pulse(wch);
 	    }
 
 
@@ -3024,6 +3018,7 @@ void aggr_update(void)
 	    }
 	}
     }
+    iterator_stop(&it);
 }
 
 

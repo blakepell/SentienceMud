@@ -142,153 +142,109 @@ char *spec_name( SPEC_FUN *function)
 bool spec_protector(CHAR_DATA *ch)
 {
     CHAR_DATA *vch,*victim = NULL;
+    ITERATOR it;
 
-    if (!IS_AWAKE(ch) || IS_AFFECTED(ch,AFF_CALM) || ch->in_room == NULL
-    ||  IS_AFFECTED(ch,AFF_CHARM) || ch->fighting != NULL)
+    if (!IS_AWAKE(ch) || IS_AFFECTED(ch,AFF_CALM) || ch->in_room == NULL ||
+    	IS_AFFECTED(ch,AFF_CHARM) || ch->fighting != NULL)
         return FALSE;
 
     /* look for a fight in the room */
-    for (vch = char_list; vch != NULL; vch = vch->next)
+    iterator_start(&it, loaded_chars);
+    while(( vch = (CHAR_DATA *)iterator_nextdata(&it)))
     {
-        /* No attacking self */
-	if (vch == ch)
-	    continue;
-
-	if (vch->fighting != NULL && !IS_IMMORTAL(vch) && !str_cmp(vch->in_room->area->name, "plith") && vch->tot_level > 30 && vch->fighting->tot_level < 30 && IS_NPC(vch->fighting))  /* break it up! */
-	{
-		victim = vch;
-		act("$n gasps.\n\r{C$n says 'Justice must be upheld!'{x",ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
-		act("{W$n draws his sword and kicks his horse into a gallop.{x",ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
-		char_from_room(ch);
-		char_to_room(ch, victim->in_room);
-		stop_fighting(victim, TRUE);
-		act("{W$n gallops in on his mighty steed!{x",ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
-		act("{C$n says 'By the council of Olaria, I Sir Albert Stiener, sentence you to\n\rgaol for the term of your natural life!'{x",ch, victim, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
-		act("$n drags $N away.",ch, victim, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
-
-		act("$n throws you in gaol!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
-
-		char_from_room(victim);
-		char_to_room(victim, get_room_index(11308));
-
-		return TRUE;
-	}
-    }
-
-    return TRUE;
-}
-
-/*
-bool spec_spell_hold(CHAR_DATA *ch)
-{
-    CHAR_DATA *vch = NULL, *victim = NULL;
-
-	if ( spell_hold_timer > 0 )
-	{
-		return FALSE;
-	}
-
-    for (vch = char_list; vch != NULL; vch = vch->next)
-	{
-
+		/* No attacking self */
 		if (vch == ch)
 			continue;
 
-		if ( vch->fighting != NULL && vch->fighting == ch && vch->tot_level > 30 )
+		if (vch->fighting != NULL && !IS_IMMORTAL(vch) && !str_cmp(vch->in_room->area->name, "plith") && vch->tot_level > 30 && vch->fighting->tot_level < 30 && IS_NPC(vch->fighting))  /* break it up! */
 		{
 			victim = vch;
+			act("$n gasps.\n\r{C$n says 'Justice must be upheld!'{x",ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+			act("{W$n draws his sword and kicks his horse into a gallop.{x",ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+			char_from_room(ch);
+			char_to_room(ch, victim->in_room);
+			stop_fighting(victim, TRUE);
+			act("{W$n gallops in on his mighty steed!{x",ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+			act("{C$n says 'By the council of Olaria, I Sir Albert Stiener, sentence you to\n\rgaol for the term of your natural life!'{x",ch, victim, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+			act("$n drags $N away.",ch, victim, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+
+			act("$n throws you in gaol!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
+
+			char_from_room(victim);
+			char_to_room(victim, get_room_index(11308));
+
 			break;
 		}
-	}
+    }
+    iterator_stop(&it);
 
-	if ( victim != NULL )
-	{
-		act("{RA swirling red rift snaps open in the middle of the office!{x", victim, NULL, NULL, TO_CHAR);
-		act("{RA swirling red rift snaps open in the middle of the office!{x", victim, NULL, NULL, TO_ROOM);
-		spell_hold_timer = 40;
-		spell_hold_victim = victim;
-	    //act("Cease your magic at once mageling!", vch, NULL, NULL, TO_CHAR );
-	}
     return TRUE;
 }
-*/
 
 bool spec_patrolman(CHAR_DATA *ch)
 {
-    CHAR_DATA *vch,*victim = NULL;
-    OBJ_DATA *obj;
-    char *message;
-    int count = 0;
+	ITERATOR it;
+	CHAR_DATA *vch,*victim = NULL;
+	OBJ_DATA *obj;
+	char *message;
+	int count = 0;
 
-    if (!IS_AWAKE(ch) || IS_AFFECTED(ch,AFF_CALM) || ch->in_room == NULL
-    ||  IS_AFFECTED(ch,AFF_CHARM) || ch->fighting != NULL)
-        return FALSE;
+	if (!IS_AWAKE(ch) || IS_AFFECTED(ch,AFF_CALM) || ch->in_room == NULL ||
+		IS_AFFECTED(ch,AFF_CHARM) || ch->fighting != NULL)
+		return FALSE;
 
-    /* look for a fight in the room */
-    for (vch = ch->in_room->people; vch != NULL; vch = vch->next_in_room)
-    {
-	if (vch == ch)
-	    continue;
-
-	if (vch->fighting != NULL)  /* break it up! */
+	/* look for a fight in the room */
+	for (vch = ch->in_room->people; vch != NULL; vch = vch->next_in_room)
 	{
-	    if (number_range(0,count) == 0)
-	        victim = (vch->tot_level > vch->fighting->tot_level)
-		    ? vch : vch->fighting;
-	    count++;
+		if (vch == ch)
+			continue;
+
+		if (vch->fighting != NULL)  /* break it up! */
+		{
+			if (number_range(0,count) == 0)
+				victim = (vch->tot_level > vch->fighting->tot_level) ? vch : vch->fighting;
+			count++;
+		}
 	}
-    }
 
-    if (victim == NULL || (IS_NPC(victim) && victim->spec_fun == ch->spec_fun))
-	return FALSE;
+	if (victim == NULL || (IS_NPC(victim) && victim->spec_fun == ch->spec_fun))
+		return FALSE;
 
-    if (((obj = get_eq_char(ch,WEAR_NECK_1)) != NULL
-    &&   obj->pIndexData->vnum == OBJ_VNUM_WHISTLE)
-    ||  ((obj = get_eq_char(ch,WEAR_NECK_2)) != NULL
-    &&   obj->pIndexData->vnum == OBJ_VNUM_WHISTLE))
-    {
-	act("You blow down hard on $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
-	act("$n blows on $p, ***WHEEEEEEEEEEEET***",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
+	if (((obj = get_eq_char(ch,WEAR_NECK_1)) != NULL && obj->pIndexData->vnum == OBJ_VNUM_WHISTLE) ||
+		((obj = get_eq_char(ch,WEAR_NECK_2)) != NULL && obj->pIndexData->vnum == OBJ_VNUM_WHISTLE)) {
+		act("You blow down hard on $p.",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_CHAR);
+		act("$n blows on $p, ***WHEEEEEEEEEEEET***",ch, NULL, NULL,obj, NULL, NULL,NULL,TO_ROOM);
 
-    	for ( vch = char_list; vch != NULL; vch = vch->next )
-    	{
-            if ( vch->in_room == NULL )
-            	continue;
+		iterator_start(&it, loaded_chars);
+		while(( vch = (CHAR_DATA *)iterator_nextdata(&it)))
+		{
+			if ( vch->in_room == NULL )
+				continue;
 
-            if (vch->in_room != ch->in_room
-	    &&  vch->in_room->area == ch->in_room->area)
-            	send_to_char( "You hear a shrill whistling sound.\n\r", vch );
-    	}
-    }
+			if (vch->in_room != ch->in_room && vch->in_room->area == ch->in_room->area)
+				send_to_char( "You hear a shrill whistling sound.\n\r", vch );
+		}
+		iterator_stop(&it);
+	}
 
-    switch (number_range(0,6))
-    {
+	switch (number_range(0,6))
+	{
 	default:	message = NULL;		break;
-	case 0:	message = "$n yells 'All roit! All roit! break it up!'";
-		break;
-	case 1: message =
-		"$n says 'Society's to blame, but what's a bloke to do?'";
-		break;
-	case 2: message =
-		"$n mumbles 'bloody kids will be the death of us all.'";
-		break;
-	case 3: message = "$n shouts 'Stop that! Stop that!' and attacks.";
-		break;
-	case 4: message = "$n pulls out his billy and goes to work.";
-		break;
-	case 5: message =
-		"$n sighs in resignation and proceeds to break up the fight.";
-		break;
-	case 6: message = "$n says 'Settle down, you hooligans!'";
-		break;
-    }
+	case 0:		message = "$n yells 'All roit! All roit! break it up!'"; break;
+	case 1:		message = "$n says 'Society's to blame, but what's a bloke to do?'"; break;
+	case 2:		message = "$n mumbles 'bloody kids will be the death of us all.'"; break;
+	case 3:		message = "$n shouts 'Stop that! Stop that!' and attacks."; break;
+	case 4:		message = "$n pulls out his billy and goes to work."; break;
+	case 5:		message = "$n sighs in resignation and proceeds to break up the fight."; break;
+	case 6:		message = "$n says 'Settle down, you hooligans!'"; break;
+	}
 
-    if (message != NULL)
-	act(message,ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_ALL);
+	if (message != NULL)
+		act(message,ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_ALL);
 
-    multi_hit(ch,victim,TYPE_UNDEFINED);
+	multi_hit(ch,victim,TYPE_UNDEFINED);
 
-    return TRUE;
+	return TRUE;
 }
 
 

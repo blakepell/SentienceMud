@@ -574,20 +574,27 @@ CHAR_DATA *get_char_area( CHAR_DATA *ch, char *argument )
     char arg[MAX_INPUT_LENGTH];
     CHAR_DATA *ach;
     int number,count;
+    ITERATOR it;
+
+    if (ch->in_room == NULL)
+    	return NULL;
 
     if ( (ach = get_char_room( ch, NULL, argument )) != NULL )
-	return ach;
+		return ach;
 
     number = number_argument( argument, arg );
     count = 0;
-    for ( ach = char_list; ach != NULL; ach = ach->next )
+    iterator_start(&it, loaded_chars);
+    while(( ach = (CHAR_DATA *)iterator_nextdata(&it)))
     {
-	if (ach->in_room == NULL || ch->in_room == NULL || ach->in_room->area != ch->in_room->area
-	||  !can_see( ch, ach ) || !is_name( arg, ach->name ))
-	    continue;
-	if (++count == number)
-	    return ach;
+		if (ach->in_room == NULL ||
+			ach->in_room->area != ch->in_room->area ||
+			!can_see( ch, ach ) || !is_name( arg, ach->name ))
+			continue;
+		if (++count == number)
+	    	break;
     }
+    iterator_stop(&it);
 
     return ach;
 }

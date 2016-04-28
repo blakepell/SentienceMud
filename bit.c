@@ -819,6 +819,7 @@ char *part_bit_name(int part_flags)
     if (part_flags & PART_FANGS		) strcat(buf, " fangs");
     if (part_flags & PART_HORNS		) strcat(buf, " horns");
     if (part_flags & PART_SCALES	) strcat(buf, " scales");
+    if (part_flags & PART_GILLS)		strcat(buf, " gills");
 
     return ( buf[0] != '\0' ) ? buf+1 : "none";
 }

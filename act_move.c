@@ -395,11 +395,11 @@ void move_char(CHAR_DATA *ch, int door, bool follow)
 			return;
 		}
 
-		if (in_room->sector_type == SECT_WATER_NOSWIM && !IS_IMMORTAL(ch)) {
+		if (in_room->sector_type == SECT_WATER_NOSWIM && !IS_SET(ch->parts, PART_FINS) && !IS_IMMORTAL(ch)) {
 			if(IS_SET(in_room->room2_flags,ROOM_CITYMOVE))
 				WAIT_STATE(ch, 4);
 			else
-			WAIT_STATE(ch, 8);
+				WAIT_STATE(ch, 8);
 		}
 
 		if ((in_room->sector_type != SECT_WATER_NOSWIM && to_room->sector_type == SECT_WATER_NOSWIM) &&
@@ -415,13 +415,17 @@ void move_char(CHAR_DATA *ch, int door, bool follow)
 		}
 
 		{	/* City-move will reduce movement, if greater, to city movement */
+			// FINS changed NOSWIM to SWIM
 			int m1, m2;
 
 			m1 = UMIN(SECT_MAX-1, in_room->sector_type);
+			if(IS_SET(ch->parts, PART_FINS) && m1 == SECT_WATER_NOSWIM) m1 = SECT_WATER_SWIM;
 			if(IS_SET(in_room->room2_flags,ROOM_CITYMOVE) && movement_loss[m1] > movement_loss[SECT_CITY]) m1 = SECT_CITY;
 
 			m2 = UMIN(SECT_MAX-1, to_room->sector_type);
+			if(IS_SET(ch->parts, PART_FINS) && m2 == SECT_WATER_NOSWIM) m2 = SECT_WATER_SWIM;
 			if(IS_SET(to_room->room2_flags,ROOM_CITYMOVE) && movement_loss[m2] > movement_loss[SECT_CITY]) m2 = SECT_CITY;
+
 
 			/* Average movement between different sector types */
 			move = (movement_loss[m1] + movement_loss[m2]) / 2;

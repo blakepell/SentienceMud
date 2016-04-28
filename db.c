@@ -117,7 +117,6 @@ AREA_DATA *		netherworld_area;
 AREA_DATA *		wilderness_area;
 AUCTION_DATA            auction_info;
 BOUNTY_DATA * 		bounty_list;
-CHAR_DATA *		char_list;
 CHAT_ROOM_DATA *	chat_room_list;
 CHURCH_DATA *		church_first;
 CHURCH_DATA * 		church_list;
@@ -130,7 +129,6 @@ MAIL_DATA *		mail_list;
 NOTE_DATA *		note_free;
 NOTE_DATA *		note_list;
 NPC_SHIP_DATA *		plith_airship;
-OBJ_DATA *		object_list;
 SCRIPT_DATA *mprog_list;
 SCRIPT_DATA *oprog_list;
 SCRIPT_DATA *rprog_list;
@@ -589,6 +587,8 @@ long top_ship_crew;
 long top_vroom;
 long top_waypoint;
 
+LLIST *loaded_chars;
+LLIST *loaded_objects;
 LLIST *persist_mobs;
 LLIST *persist_objs;
 LLIST *persist_rooms;
@@ -1280,6 +1280,14 @@ void room_update(ROOM_INDEX_DATA *room)
 		p_percent_trigger(NULL, NULL, room, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_DELAY, NULL);
 
 	p_percent_trigger(NULL, NULL, room, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RANDOM, NULL);
+
+	// Prereckoning
+	if (pre_reckoning > 0 && reckoning_timer > 0)
+		p_percent_trigger(NULL, NULL, room, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_PRERECKONING, NULL);
+
+	// Reckoning
+	if (!pre_reckoning && reckoning_timer > 0)
+		p_percent_trigger(NULL, NULL, room, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_RECKONING, NULL);
 
 	// Update tokens on room. Remove the one for which the timer has run out.
 	iterator_start(&it, room->ltokens);
@@ -2213,8 +2221,7 @@ CHAR_DATA *create_mobile(MOB_INDEX_DATA *pMobIndex)
     mob->move = pMobIndex->move;
 
     /* link the mob to the world list */
-    mob->next		= char_list;
-    char_list		= mob;
+    list_appendlink(loaded_chars, mob);
 
     /* Animate dead mobs don't add to the list.*/
     pMobIndex->count++;
@@ -2502,8 +2509,7 @@ OBJ_DATA *create_object_noid(OBJ_INDEX_DATA *pObjIndex, int level, bool affects)
     obj->version = VERSION_OBJECT_000;
     obj->locker = FALSE;
 
-    obj->next = object_list;
-    object_list	= obj;
+	list_appendlink(loaded_objects, obj);
     pObjIndex->count++;
 
 
@@ -4043,233 +4049,154 @@ AREA_DATA *get_wilderness_area()
 
 void do_memory(CHAR_DATA *ch, char *argument)
 {
-    char buf[MAX_STRING_LENGTH];
-    int i = 0, i2 = 0, num_pcs = 0;
-    float mb, mbf;
-    CHAR_DATA *fch;
-    ROOM_INDEX_DATA *room;
-    MOB_INDEX_DATA *mob_i;
-    OBJ_INDEX_DATA *obj_i;
-    CHAT_ROOM_DATA *chat;
-    AFFECT_DATA *af;
-    EXIT_DATA *exit;
-    DESCRIPTOR_DATA *d;
-    AREA_DATA *area;
-    /*EXTRA_DESCR_DATA *ed;*/
-    /*RESET_DATA *reset;*/
-    /* VIZZWILDS*/
-    WILDS_DATA *wilds;
-    WILDS_TERRAIN *terrain;
-    WILDS_VLINK *vlink;
+	char buf[MAX_STRING_LENGTH];
+	int i = 0, i2 = 0, num_pcs = 0;
+	float mb, mbf;
+	CHAR_DATA *fch;
+	ROOM_INDEX_DATA *room;
+	MOB_INDEX_DATA *mob_i;
+	OBJ_INDEX_DATA *obj_i;
+	CHAT_ROOM_DATA *chat;
+	AFFECT_DATA *af;
+	EXIT_DATA *exit;
+	DESCRIPTOR_DATA *d;
+	AREA_DATA *area;
+	/*EXTRA_DESCR_DATA *ed;*/
+	/*RESET_DATA *reset;*/
+	/* VIZZWILDS*/
+	WILDS_DATA *wilds;
+	WILDS_TERRAIN *terrain;
+	WILDS_VLINK *vlink;
+	ITERATOR it;
 
-    send_to_char("{YType      Amt        MBytes          FreeAmt    FreeMBytes{x\n\r", ch);
-    send_to_char("{Y----------------------------------------------------------{x\n\r", ch);
-    /* basics */
+	send_to_char("{YType      Amt        MBytes          FreeAmt    FreeMBytes{x\n\r", ch);
+	send_to_char("{Y----------------------------------------------------------{x\n\r", ch);
+	/* basics */
 
-    /* Descriptors */
-    i = 0;
-    for (d = descriptor_free; d != NULL; d = d->next) {
-      i++;
-    }
-    mb = top_descriptor * (float)(sizeof(*d))/1000000;
-    mbf = i * (float)(sizeof(*d))/1000000;
-    sprintf(buf, "Descrp    %-10ld %-15.3f %-10d %-15.3f\n\r",
-        top_descriptor,
-        mb,
-        i,
-        mbf);
-    send_to_char(buf, ch);
+	/* Descriptors */
+	i = 0;
+	for (d = descriptor_free; d != NULL; d = d->next) i++;
+	mb = top_descriptor * (float)(sizeof(*d))/1000000;
+	mbf = i * (float)(sizeof(*d))/1000000;
+	sprintf(buf, "Descrp    %-10ld %-15.3f %-10d %-15.3f\n\r", top_descriptor, mb, i, mbf);
+	send_to_char(buf, ch);
 
-    /* rooms */
-    i = 0;
-    for (room = room_index_free; room != NULL; room = room->next) {
-      i++;
-    }
-    mb = top_room * (float)(sizeof(*room))/1000000;
-    mbf = i * (float)(sizeof(*room))/1000000;
-    sprintf(buf, "Rooms     %-10ld %-15.3f %-10d %-15.3f\n\r",
-        top_room,
-        mb,
-        i,
-        mbf);
-    send_to_char(buf, ch);
+	/* rooms */
+	i = 0;
+	for (room = room_index_free; room != NULL; room = room->next) i++;
+	mb = top_room * (float)(sizeof(*room))/1000000;
+	mbf = i * (float)(sizeof(*room))/1000000;
+	sprintf(buf, "Rooms     %-10ld %-15.3f %-10d %-15.3f\n\r", top_room, mb, i, mbf);
+	send_to_char(buf, ch);
 
-    /* Mobiles */
-    i = 0;  i2 = 0;
-    for (fch = char_list; fch != NULL; fch = fch->next)
-    {
-  if (fch->pcdata != NULL)
-      num_pcs++;
-  else
-    i++;
-    }
-    for (fch = char_free; fch != NULL; fch = fch->next)
-  i2++;
+	/* Mobiles */
+	i = 0;  i2 = 0;
+	iterator_start(&it, loaded_chars);
+	while(( fch = (CHAR_DATA *)iterator_nextdata(&it))) {
+		if (fch->pcdata != NULL)
+			num_pcs++;
+		else
+			i++;
+	}
+	iterator_stop(&it);
+	for (fch = char_free; fch != NULL; fch = fch->next) i2++;
 
-    mb = i * (float)(sizeof(*fch))/1000000;
-    mbf = i2 * (float)(sizeof(*fch))/1000000;
-    sprintf(buf,  "Mobs      %-10d %-15.3f %-10d %-15.3f\n\r",
-        i,
-        mb,
-        i2,
-        mbf);
-    send_to_char(buf ,ch);
+	mb = i * (float)(sizeof(*fch))/1000000;
+	mbf = i2 * (float)(sizeof(*fch))/1000000;
+	sprintf(buf,  "Mobs      %-10d %-15.3f %-10d %-15.3f\n\r", i, mb, i2, mbf);
+	send_to_char(buf ,ch);
 
-    i = 0;
-    for (af = affect_free; af != NULL; af = af->next) {
-      i++;
-    }
-    mb = top_affect * (float)(sizeof(*af))/1000000;
-    mbf = i * (float)(sizeof(*af))/1000000;
-    sprintf(buf, "Affects   %-10ld %-15.3f %-10d %-15.3f\n\r",
-        top_affect,
-        mb,
-        i,
-        mbf);
-    send_to_char(buf, ch);
+	i = 0;
+	for (af = affect_free; af != NULL; af = af->next) i++;
+	mb = top_affect * (float)(sizeof(*af))/1000000;
+	mbf = i * (float)(sizeof(*af))/1000000;
+	sprintf(buf, "Affects   %-10ld %-15.3f %-10d %-15.3f\n\r", top_affect, mb, i, mbf);
+	send_to_char(buf, ch);
 
-    /* areas */
-    i = 0;
-    for (area = area_free; area != NULL; area = area->next) {
-      i++;
-    }
-    mb = top_area * (float)(sizeof(*area))/1000000;
-    mbf = i * (float)(sizeof(*area))/1000000;
-    sprintf(buf, "Areas     %-10ld %-15.3f %-10d %-15.3f\n\r",
-        top_area,
-        mb,
-        i,
-        mbf);
-    send_to_char(buf, ch);
+	/* areas */
+	i = 0;
+	for (area = area_free; area != NULL; area = area->next) i++;
+	mb = top_area * (float)(sizeof(*area))/1000000;
+	mbf = i * (float)(sizeof(*area))/1000000;
+	sprintf(buf, "Areas     %-10ld %-15.3f %-10d %-15.3f\n\r", top_area, mb, i, mbf);
+	send_to_char(buf, ch);
 
 
-    /*
-     * Chat
-     */
-   /* chat rooms */
-    i = 0;
-    for (chat = chat_room_free; chat != NULL; chat = chat->next) {
-      i++;
-    }
-    mb = top_chatroom * (float)(sizeof(*chat))/1000000;
-    mb = i * (float)(sizeof(*chat))/1000000;
-    sprintf(buf, "Chats     %-10ld %-15.3f %-10d %-15.3f\n\r",
-        top_chatroom,
-        mb,
-        i,
-        mbf);
-    send_to_char(buf, ch);
+	/*
+	 * Chat
+	 */
+	/* chat rooms */
+	i = 0;
+	for (chat = chat_room_free; chat != NULL; chat = chat->next) i++;
+	mb = top_chatroom * (float)(sizeof(*chat))/1000000;
+	mb = i * (float)(sizeof(*chat))/1000000;
+	sprintf(buf, "Chats     %-10ld %-15.3f %-10d %-15.3f\n\r", top_chatroom, mb, i, mbf);
+	send_to_char(buf, ch);
 
-    /*
-     * OLC
-     */
+	/*
+	 * OLC
+	 */
 
-    /* mob index */
-    for (mob_i = mob_index_free; mob_i != NULL; mob_i = mob_i->next) {
-      i++;
-    }
-    mb = top_mob_index * (float)(sizeof(*mob_i))/1000000;
-    mbf = i * (float)(sizeof(*mob_i))/1000000;
-    sprintf(buf, "Mobs_indx %-10ld %-15.3f %-10d %-15.3f\n\r",
-        top_mob_index,
-        mb,
-        i,
-        mbf);
-    send_to_char(buf, ch);
+	/* mob index */
+	i = 0;
+	for (mob_i = mob_index_free; mob_i != NULL; mob_i = mob_i->next) i++;
+	mb = top_mob_index * (float)(sizeof(*mob_i))/1000000;
+	mbf = i * (float)(sizeof(*mob_i))/1000000;
+	sprintf(buf, "Mobs_indx %-10ld %-15.3f %-10d %-15.3f\n\r", top_mob_index, mb, i, mbf);
+	send_to_char(buf, ch);
 
-    /* obj index */
-    for (obj_i = obj_index_free; obj_i != NULL; obj_i = obj_i->next) {
-      i++;
-    }
-    mb = top_obj_index * (float)(sizeof(*obj_i))/1000000;
-    mbf = i * (float)(sizeof(*obj_i))/1000000;
-    sprintf(buf, "Obj_indx  %-10ld %-15.3f %-10d %-15.3f\n\r",
-        top_obj_index,
-        mb,
-        i,
-        mbf);
-    send_to_char(buf, ch);
+	/* obj index */
+	i = 0;
+	for (obj_i = obj_index_free; obj_i != NULL; obj_i = obj_i->next) i++;
+	mb = top_obj_index * (float)(sizeof(*obj_i))/1000000;
+	mbf = i * (float)(sizeof(*obj_i))/1000000;
+	sprintf(buf, "Obj_indx  %-10ld %-15.3f %-10d %-15.3f\n\r", top_obj_index, mb, i, mbf);
+	send_to_char(buf, ch);
 
-    /* Exits */
-    i = 0;
-    for (exit = exit_free; exit != NULL; exit = exit->next) {
-      i++;
-    }
-    mb = top_exit * (float)(sizeof(*exit))/1000000;
-    mbf = i * (float)(sizeof(*exit))/1000000;
-    sprintf(buf, "Exits     %-10ld %-15.3f %-10d %-15.3f\n\r",
-        top_exit,
-        mb,
-        i,
-        mbf);
-    send_to_char(buf, ch);
+	/* Exits */
+	i = 0;
+	for (exit = exit_free; exit != NULL; exit = exit->next) i++;
+	mb = top_exit * (float)(sizeof(*exit))/1000000;
+	mbf = i * (float)(sizeof(*exit))/1000000;
+	sprintf(buf, "Exits     %-10ld %-15.3f %-10d %-15.3f\n\r", top_exit, mb, i, mbf);
+	send_to_char(buf, ch);
 
-    /* VIZZWILDS*/
-    /* wilds */
-    for (wilds = wilds_free; wilds != NULL; wilds = wilds->next) {
-      i++;
-    }
-    mb = top_wilds * (float)(sizeof(*wilds))/1000000;
-    mbf = i * (float)(sizeof(*wilds))/1000000;
-    sprintf(buf, "Wilds     %-10ld %-15.3f %-10d %-15.3f\n\r",
-        top_wilds,
-       	mb,
-        i,
-        mbf);
-    send_to_char(buf, ch);
+	/* VIZZWILDS*/
+	/* wilds */
+	i = 0;
+	for (wilds = wilds_free; wilds != NULL; wilds = wilds->next) i++;
+	mb = top_wilds * (float)(sizeof(*wilds))/1000000;
+	mbf = i * (float)(sizeof(*wilds))/1000000;
+	sprintf(buf, "Wilds     %-10ld %-15.3f %-10d %-15.3f\n\r", top_wilds, mb, i, mbf);
+	send_to_char(buf, ch);
 
-    /* wilds terrains */
-    for (terrain = wilds_terrain_free; terrain != NULL; terrain = terrain->next) {
-      i++;
-    }
-    mb = top_wilds_terrain * (float)(sizeof(*terrain))/1000000;
-    mbf = i * (float)(sizeof(*terrain))/1000000;
-    sprintf(buf, "Terrains  %-10ld %-15.3f %-10d %-15.3f\n\r",
-        top_wilds_terrain,
-       	mb,
-        i,
-        mbf);
-    send_to_char(buf, ch);
+	/* wilds terrains */
+	i = 0;
+	for (terrain = wilds_terrain_free; terrain != NULL; terrain = terrain->next) i++;
+	mb = top_wilds_terrain * (float)(sizeof(*terrain))/1000000;
+	mbf = i * (float)(sizeof(*terrain))/1000000;
+	sprintf(buf, "Terrains  %-10ld %-15.3f %-10d %-15.3f\n\r", top_wilds_terrain, mb, i, mbf);
+	send_to_char(buf, ch);
 
-    mb = top_wilds_vroom * (float)(sizeof(*room))/1000000;
-    sprintf(buf, "Vrooms    %-10ld %-15.3f\n\r",
-        top_wilds_vroom, mb);
-    send_to_char(buf, ch);
+	mb = top_wilds_vroom * (float)(sizeof(*room))/1000000;
+	sprintf(buf, "Vrooms    %-10ld %-15.3f\n\r", top_wilds_vroom, mb);
+	send_to_char(buf, ch);
 
-    /* wilds vlinks */
-    for (vlink = wilds_vlink_free; vlink != NULL; vlink = vlink->next) {
-      i++;
-    }
-    mb = top_wilds_vlink * (float)(sizeof(*vlink))/1000000;
-    mbf = i * (float)(sizeof(*vlink))/1000000;
-    sprintf(buf, "VLinks    %-10ld %-15.3f %-10d %-15.3f\n\r",
-        top_wilds_vlink,
-        mb,
-        i,
-        mbf);
-    send_to_char(buf, ch);
+	/* wilds vlinks */
+	i = 0;
+	for (vlink = wilds_vlink_free; vlink != NULL; vlink = vlink->next) i++;
+	mb = top_wilds_vlink * (float)(sizeof(*vlink))/1000000;
+	mbf = i * (float)(sizeof(*vlink))/1000000;
+	sprintf(buf, "VLinks    %-10ld %-15.3f %-10d %-15.3f\n\r", top_wilds_vlink, mb, i, 	mbf);
+	send_to_char(buf, ch);
 
-/*
-    sprintf(buf, "Ship_crew %ld\n\r", top_ship_crew);
-    send_to_char(buf, ch);
+	sprintf(buf, "Strings   %-10d %-15.3f\n\r", nAllocString, (float) sAllocString/1000000);
+	send_to_char(buf, ch);
 
+	send_to_char("{Y----------------------------------------------------------{x\n\r", ch);
 
-    sprintf(buf, "Wayp      %ld\n\r", top_waypoint);
-    send_to_char(buf, ch);
-*/
-
-
-    sprintf(buf, "Strings   %-10d %-15.3f\n\r",
-        nAllocString,
-        (float) sAllocString/1000000);
-    send_to_char(buf, ch);
-
-    send_to_char("{Y----------------------------------------------------------{x\n\r", ch);
-
-    sprintf(buf, "Total     %-10d %-15.3f\n\r",
-        nAllocPerm,
-        (float) sAllocPerm/1000000);
-    send_to_char(buf, ch);
+	sprintf(buf, "Total     %-10d %-15.3f\n\r", nAllocPerm, (float) sAllocPerm/1000000);
+	send_to_char(buf, ch);
 }
 
 /* @@@NIB : 20070123 : does what it says...*/

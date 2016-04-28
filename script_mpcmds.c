@@ -1001,8 +1001,7 @@ SCRIPT_CMD(do_mpat)
 	script_security = sec;
 	if(!remote) REMOVE_BIT(info->mob->progs->entity_flags,PROG_AT);
 
-	// This used to check the char_list, but this is just plain faster!
-	//	if the mob is freed, info->mob will be cleared.
+	// if the mob is freed, info->mob will be cleared.
 	if(info->mob) {
 		char_from_room(info->mob);
 		char_to_room(info->mob, orig);
@@ -7485,3 +7484,148 @@ SCRIPT_CMD(do_mpcrier)
 	crier_announce(buf);
 }
 
+
+
+// scriptwait $PLAYER NUMBER VNUM VNUM[ $ACTOR]
+// - actor can be a $MOBILE, $OBJECT or $TOKEN
+// - scripts must be available for the respective actor type
+SCRIPT_CMD(do_mpscriptwait)
+{
+	SCRIPT_PARAM arg;
+	char *rest;
+	CHAR_DATA *mob = NULL;
+	int wait;
+	long success, failure, pulse;
+	TOKEN_DATA *actor_token = NULL;
+	CHAR_DATA *actor_mob = NULL;
+	OBJ_DATA *actor_obj = NULL;
+	int prog_type;
+
+	if(!info || !info->mob || IS_NULLSTR(argument)) return;
+
+	info->mob->progs->lastreturn = 0;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE) return;
+
+	mob = arg.d.mob;
+
+	if( !mob || IS_NPC(mob) ) return;	// only players
+
+	// Check that the mob is not busy
+	if( is_char_busy( mob ) ) {
+		//send_to_char("script_wait: mob busy\n\r", mob);
+		return;
+	}
+	if( !*rest) return;
+
+	if(!(rest = expand_argument(info,rest,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING: wait = is_number(arg.d.str) ? atoi(arg.d.str) : 0; break;
+	case ENT_NUMBER: wait = arg.d.num; break;
+	default: return;
+	}
+
+	//printf_to_char(mob, "script_wait: wait = %d\n\r", wait);
+
+
+	if( !*rest) return;
+
+	if(!(rest = expand_argument(info,rest,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING: success = is_number(arg.d.str) ? atoi(arg.d.str) : 0; break;
+	case ENT_NUMBER: success = arg.d.num; break;
+	default: return;
+	}
+
+	if( !*rest) return;
+
+	if(!(rest = expand_argument(info,rest,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING: failure = is_number(arg.d.str) ? atoi(arg.d.str) : 0; break;
+	case ENT_NUMBER: failure = arg.d.num; break;
+	default: return;
+	}
+
+	if( !*rest) return;
+
+	if(!(rest = expand_argument(info,rest,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING: pulse = is_number(arg.d.str) ? atoi(arg.d.str) : 0; break;
+	case ENT_NUMBER: pulse = arg.d.num; break;
+	default: return;
+	}
+
+	actor_mob = info->mob;
+	prog_type = PRG_MPROG;
+	if(rest && *rest) {
+		if(!(rest = expand_argument(info,rest,&arg)))
+			return;
+
+		switch(arg.type) {
+		case ENT_MOBILE:
+			actor_mob = arg.d.mob;
+			actor_obj = NULL;
+			actor_token = NULL;
+			prog_type = PRG_MPROG;
+			break;
+
+		case ENT_OBJECT:
+			actor_mob = NULL;
+			actor_obj = arg.d.obj;
+			actor_token = NULL;
+			prog_type = PRG_OPROG;
+			break;
+
+		case ENT_TOKEN:
+			actor_mob = NULL;
+			actor_obj = NULL;
+			actor_token = arg.d.token;
+			prog_type = PRG_TPROG;
+			break;
+
+		}
+	}
+
+	if(!actor_mob && !actor_obj && !actor_token) return;
+
+	if(success < 1 || !get_script_index(success, prog_type)) return;
+	if(failure < 1 || !get_script_index(failure, prog_type)) return;
+	if(pulse > 0 && !get_script_index(pulse, prog_type)) return;
+
+	wait = UMAX(wait, 1);
+
+
+	mob->script_wait = wait;
+	mob->script_wait_mob = actor_mob;
+	mob->script_wait_obj = actor_obj;
+	mob->script_wait_token = actor_token;
+	if( actor_mob ) {
+		mob->script_wait_id[0] = actor_mob->id[0];
+		mob->script_wait_id[1] = actor_mob->id[1];
+	} else if( actor_obj ) {
+		mob->script_wait_id[0] = actor_obj->id[0];
+		mob->script_wait_id[1] = actor_obj->id[1];
+	} else if( actor_token ) {
+		mob->script_wait_id[0] = actor_token->id[0];
+		mob->script_wait_id[1] = actor_token->id[1];
+	}
+	mob->script_wait_success = get_script_index(success, prog_type);
+	mob->script_wait_failure = get_script_index(failure, prog_type);
+	mob->script_wait_pulse = (pulse > 0) ? get_script_index(pulse, prog_type) : NULL;
+
+	//printf_to_char(mob, "script_wait started: %d\n\r", wait);
+
+	// Return how long the command decided
+	info->mob->progs->lastreturn = wait;
+}

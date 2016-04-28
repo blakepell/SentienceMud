@@ -1818,6 +1818,7 @@ void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument);
 
 void script_end_success(CHAR_DATA *ch);
 void script_end_failure(CHAR_DATA *ch, bool messages);
+void script_end_pulse(CHAR_DATA *ch);
 
 
 /* Commands */
@@ -2162,6 +2163,8 @@ SCRIPT_CMD(do_opcondition);
 SCRIPT_CMD(do_rpcondition);
 SCRIPT_CMD(do_tpcondition);
 
+SCRIPT_CMD(do_mpscriptwait);
+SCRIPT_CMD(do_opscriptwait);
 SCRIPT_CMD(do_tpscriptwait);
 SCRIPT_CMD(do_tpcastfailure);
 SCRIPT_CMD(do_tpcastrecover);

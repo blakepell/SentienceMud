@@ -6284,15 +6284,20 @@ SCRIPT_CMD(do_tpcondition)
 	gain_condition(mob, cond, value);
 }
 
-// scriptwait $PLAYER NUMBER VNUM VNUM[ $ACTOR_TOKEN]
+// scriptwait $PLAYER NUMBER VNUM VNUM[ $ACTOR]
+// - actor can be a $MOBILE, $OBJECT or $TOKEN
+// - scripts must be available for the respective actor type
 SCRIPT_CMD(do_tpscriptwait)
 {
 	SCRIPT_PARAM arg;
 	char *rest;
 	CHAR_DATA *mob = NULL;
 	int wait;
-	long success, failure;
-	TOKEN_DATA *actor;
+	long success, failure, pulse;
+	TOKEN_DATA *actor_token = NULL;
+	CHAR_DATA *actor_mob = NULL;
+	OBJ_DATA *actor_obj = NULL;
+	int prog_type;
 
 	if(!info || !info->token || IS_NULLSTR(argument)) return;
 
@@ -6337,11 +6342,6 @@ SCRIPT_CMD(do_tpscriptwait)
 	default: return;
 	}
 
-	if(success < 1 || !get_script_index(success, PRG_TPROG)) return;
-
-	//printf_to_char(mob, "script_wait: success = %ld\n\r", success);
-
-
 	if( !*rest) return;
 
 	if(!(rest = expand_argument(info,rest,&arg)))
@@ -6353,31 +6353,74 @@ SCRIPT_CMD(do_tpscriptwait)
 	default: return;
 	}
 
-	if(failure < 1 || !get_script_index(failure, PRG_TPROG)) return;
+	if( !*rest) return;
 
-	//printf_to_char(mob, "script_wait: failure = %ld\n\r", failure);
+	if(!(rest = expand_argument(info,rest,&arg)))
+		return;
 
+	switch(arg.type) {
+	case ENT_STRING: pulse = is_number(arg.d.str) ? atoi(arg.d.str) : 0; break;
+	case ENT_NUMBER: pulse = arg.d.num; break;
+	default: return;
+	}
 
-	actor = info->token;
+	actor_token = info->token;
+	prog_type = PRG_TPROG;
 	if(rest && *rest) {
 		if(!(rest = expand_argument(info,rest,&arg)))
 			return;
 
-		if( arg.type == ENT_TOKEN && arg.d.token ) {
-			actor = arg.d.token;
+		switch(arg.type) {
+		case ENT_MOBILE:
+			actor_mob = arg.d.mob;
+			actor_obj = NULL;
+			actor_token = NULL;
+			prog_type = PRG_MPROG;
+			break;
+
+		case ENT_OBJECT:
+			actor_mob = NULL;
+			actor_obj = arg.d.obj;
+			actor_token = NULL;
+			prog_type = PRG_OPROG;
+			break;
+
+		case ENT_TOKEN:
+			actor_mob = NULL;
+			actor_obj = NULL;
+			actor_token = arg.d.token;
+			prog_type = PRG_TPROG;
+			break;
 
 		}
 	}
 
-	//printf_to_char(mob, "script_wait: actor = %ld\n\r", actor->pIndexData->vnum);
+	if(!actor_mob && !actor_obj && !actor_token) return;
+
+	if(success < 1 || !get_script_index(success, prog_type)) return;
+	if(failure < 1 || !get_script_index(failure, prog_type)) return;
+	if(pulse > 0 && !get_script_index(pulse, prog_type)) return;
 
 	wait = UMAX(wait, 1);
 
 
 	mob->script_wait = wait;
-	mob->script_wait_token = actor;
-	mob->script_wait_success = success;
-	mob->script_wait_failure = failure;
+	mob->script_wait_mob = actor_mob;
+	mob->script_wait_obj = actor_obj;
+	mob->script_wait_token = actor_token;
+	if( actor_mob ) {
+		mob->script_wait_id[0] = actor_mob->id[0];
+		mob->script_wait_id[1] = actor_mob->id[1];
+	} else if( actor_obj ) {
+		mob->script_wait_id[0] = actor_obj->id[0];
+		mob->script_wait_id[1] = actor_obj->id[1];
+	} else if( actor_token ) {
+		mob->script_wait_id[0] = actor_token->id[0];
+		mob->script_wait_id[1] = actor_token->id[1];
+	}
+	mob->script_wait_success = get_script_index(success, prog_type);
+	mob->script_wait_failure = get_script_index(failure, prog_type);
+	mob->script_wait_pulse = (pulse > 0) ? get_script_index(pulse, prog_type) : NULL;
 
 	//printf_to_char(mob, "script_wait started: %d\n\r", wait);
 
