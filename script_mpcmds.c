@@ -6698,7 +6698,7 @@ SCRIPT_CMD(do_mpstartcombat)
 		return;
 
 	// The victim is fighting someone else in a singleplay room
-	if(victim->fighting != attacker && !IS_SET(attacker->in_room->room2_flags, ROOM_MULTIPLAY))
+	if(victim->fighting != NULL && victim->fighting != attacker && !IS_SET(attacker->in_room->room2_flags, ROOM_MULTIPLAY))
 		return;
 
 	// They are not in the same room

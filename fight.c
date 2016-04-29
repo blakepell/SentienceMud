@@ -447,6 +447,8 @@ void mob_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt)
 	CHAR_DATA *vch;
 	CHAR_DATA *vch_next;
 
+	if (!IS_VALID(ch) || !ch->in_room) return;
+
 	// No attacks ... all is scripted
 	if (ch->pIndexData->attacks < 0)
 		return;
@@ -523,7 +525,7 @@ bool one_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt, bool secondary)
 
 	sn = -1;
 
-	if (victim == ch || !ch || !victim) return FALSE;
+	if (victim == ch || !ch || !victim || !ch->in_room || !victim->in_room) return FALSE;
 
 	if (victim->position == POS_DEAD || ch->in_room != victim->in_room) {
 		victim->set_death_type = DEATHTYPE_ALIVE;
@@ -3785,7 +3787,7 @@ void group_gain(CHAR_DATA *ch, CHAR_DATA *victim)
 			if (ch->leader != NULL && get_skill(ch->leader, gsn_leadership) < number_percent()) {
 				pc_xp *= 1.05;
 			}
-			sprintf(buf, "{BYou receive {C%d {Bexperience points.\n\r{x", xp);
+			sprintf(buf, "{BYou receive {C%d {Bexperience points.\n\r{x", pc_xp);
 			send_to_char(buf, gch);
 			gain_exp(gch, pc_xp);
 		}
