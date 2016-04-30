@@ -38,6 +38,11 @@
 #include "scripts.h"
 #include "wilds.h"
 
+bool is_combatant_valid(CHAR_DATA *ch, long id1, long id2)
+{
+	return IS_VALID(ch) && (ch->id[0] == id1) && (ch->id[1] == id2);
+}
+
 /*
  * Control the fights going on.
  * Called periodically by update_handler.
@@ -49,6 +54,7 @@ void violence_update(void)
 	OBJ_DATA *obj, *obj_next;
 	char buf[MSL];
 	ITERATOR ait;
+	long aid[2], vid[2];
 
 	iterator_start(&ait, loaded_chars);
 	while(( ch = (CHAR_DATA *)iterator_nextdata(&ait)))
@@ -114,10 +120,16 @@ void violence_update(void)
 		if ((victim = ch->fighting) == NULL)
 			continue;
 
+		aid[0] = ch->id[0]; aid[1] = ch->id[1];
+		vid[0] = victim->id[0]; vid[1] = victim->id[1];
+
 		if (IS_AWAKE(ch) && ch->in_room == victim->in_room)
 			multi_hit(ch, victim, TYPE_UNDEFINED);
 		else
 			stop_fighting(ch, FALSE);
+
+		if(!is_combatant_valid(ch, aid[0], aid[1])) continue;
+		if(!is_combatant_valid(victim, vid[0], vid[1])) continue;
 
 		check_assist(ch,victim);
 
@@ -142,6 +154,8 @@ void violence_update(void)
 void check_assist(CHAR_DATA *ch, CHAR_DATA *victim)
 {
 	CHAR_DATA *rch, *rch_next;
+
+	if(!IS_VALID(ch) || !IS_VALID(victim) || ch->in_room == NULL || victim->in_room == NULL) return;
 
 	for (rch = ch->in_room->people; rch != NULL; rch = rch_next)
 	{
@@ -254,6 +268,10 @@ void multi_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt)
 {
 	int chance, rend;
 	bool hand;
+	long aid[2], vid[2];
+
+	aid[0] = ch->id[0]; aid[1] = ch->id[1];
+	vid[0] = victim->id[0]; vid[1] = victim->id[1];
 
 	// Evasion skill: allows you to avoid attacks
 	if (!IS_NPC(victim) && get_skill(victim,gsn_evasion) > 0 &&
@@ -289,17 +307,24 @@ void multi_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt)
 	//send_to_char("Normal", ch);
 	hand = select_weapon(ch);
 	one_hit(ch, victim, dt, hand);
+	if(!is_combatant_valid(ch, aid[0], aid[1])) return;
+
 	if(hand) check_improve(ch,gsn_dual,TRUE,5);
 
 	if (IS_AFFECTED(ch, AFF_SLOW)) return;
 
 	if (ch->fighting != victim) return;
 
+	if(!is_combatant_valid(victim, vid[0], vid[1])) return;
+
 	if (IS_AFFECTED(ch,AFF_HASTE) && dt != gsn_backstab) {
 		hand = select_weapon(ch);
 		one_hit(ch, victim, dt, hand);
+		if(!is_combatant_valid(ch, aid[0], aid[1])) return;
 		if(hand) check_improve(ch,gsn_dual,TRUE,5);
 	}
+
+	if(!is_combatant_valid(victim, vid[0], vid[1])) return;
 
 	if (ch->fighting != victim || dt == gsn_backstab || dt == gsn_circle)
 		return;
@@ -311,9 +336,12 @@ void multi_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt)
 	if (number_percent() < chance) {
 		hand = select_weapon(ch);
 		if (one_hit(ch, victim, dt, hand)) {
+			if(!is_combatant_valid(ch, aid[0], aid[1])) return;
 			check_improve(ch,gsn_second_attack,TRUE,2);
 			if(hand) check_improve(ch,gsn_dual,TRUE,5);
 		}
+
+		if(!is_combatant_valid(victim, vid[0], vid[1])) return;
 
 		if (ch->fighting != victim)
 			return;
@@ -326,9 +354,12 @@ void multi_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt)
 	if (number_percent() < chance) {
 		hand = select_weapon(ch);
 		if (one_hit(ch, victim, dt, hand)) {
+			if(!is_combatant_valid(ch, aid[0], aid[1])) return;
 			check_improve(ch,gsn_third_attack,TRUE,2);
 			if(hand) check_improve(ch,gsn_dual,TRUE,5);
 		}
+
+		if(!is_combatant_valid(victim, vid[0], vid[1])) return;
 
 		if (ch->fighting != victim)
 			return;
@@ -338,21 +369,30 @@ void multi_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt)
 	if (IS_SHIFTED(ch)) {
 		if (number_percent() < get_skill(ch, gsn_shift)) {
 			one_hit(ch, victim, dt, FALSE);
+			if(!is_combatant_valid(ch, aid[0], aid[1])) return;
 			check_improve(ch, gsn_shift, TRUE, 2);
 		} else
 			check_improve(ch, gsn_shift, FALSE, 2);
 
+		if(!is_combatant_valid(victim, vid[0], vid[1])) return;
+
 		if (number_percent() < get_skill(ch, gsn_shift)) {
 			one_hit(ch, victim, dt, FALSE);
+			if(!is_combatant_valid(ch, aid[0], aid[1])) return;
 			check_improve(ch, gsn_shift, TRUE, 2);
 		} else
 			check_improve(ch, gsn_shift, FALSE, 2);
 
+		if(!is_combatant_valid(victim, vid[0], vid[1])) return;
+
 		if (number_percent() < get_skill(ch, gsn_shift)) {
 			one_hit(ch, victim, dt, FALSE);
+			if(!is_combatant_valid(ch, aid[0], aid[1])) return;
 			check_improve(ch, gsn_shift, TRUE, 2);
 		} else
 			check_improve(ch, gsn_shift, FALSE, 2);
+
+		if(!is_combatant_valid(victim, vid[0], vid[1])) return;
 	}
 
 	// better chance of 4th attack for marauder->destroyer
@@ -368,9 +408,12 @@ void multi_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt)
 	if (number_percent() < chance) {
 		hand = select_weapon(ch);
 		if (one_hit(ch, victim, dt, hand)) {
+			if(!is_combatant_valid(ch, aid[0], aid[1])) return;
 			check_improve(ch,gsn_fourth_attack,TRUE,2);
 			if(hand) check_improve(ch,gsn_dual,TRUE,5);
 		}
+
+		if(!is_combatant_valid(victim, vid[0], vid[1])) return;
 
 		if (ch->fighting != victim)
 			return;
@@ -383,9 +426,12 @@ void multi_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt)
 	if (number_percent() < chance) {
 		hand = select_weapon(ch);
 		if (one_hit(ch, victim, dt, hand)) {
+			if(!is_combatant_valid(ch, aid[0], aid[1])) return;
 			check_improve(ch,gsn_titanic_attack,TRUE,2);
 			if(hand) check_improve(ch,gsn_dual,TRUE,5);
 		}
+
+		if(!is_combatant_valid(victim, vid[0], vid[1])) return;
 
 		if (ch->fighting != victim)
 			return;
@@ -394,8 +440,12 @@ void multi_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt)
 	chance = get_skill(ch,gsn_dual);
 	if (get_eq_char(ch, WEAR_SECONDARY) && chance > 0) {
 		if (number_percent() < (2*chance/3 + 33)) {
-			if (one_hit(ch, victim, dt, select_weapon(ch)))
+			if (one_hit(ch, victim, dt, select_weapon(ch))) {
+				if(!is_combatant_valid(ch, aid[0], aid[1])) return;
 				check_improve(ch,gsn_dual,TRUE,3);
+			}
+
+			if(!is_combatant_valid(victim, vid[0], vid[1])) return;
 
 			if (ch->fighting != victim)
 				return;
