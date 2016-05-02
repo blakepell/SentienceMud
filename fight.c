@@ -494,6 +494,7 @@ void multi_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt)
 void mob_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt)
 {
 	int attacks;
+	long aid[2];
 	CHAR_DATA *vch;
 	CHAR_DATA *vch_next;
 
@@ -522,16 +523,23 @@ void mob_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt)
 	if (ch->fighting != victim || dt == gsn_backstab || dt == gsn_circle)
 		attacks = 1;
 
+	aid[0] = ch->id[0];	aid[1] = ch->id[1];
+
 	for (attacks = UMAX(1, attacks); attacks != 0; attacks--) {
 		one_hit(ch, victim, dt, FALSE);
-	// Area attack also hits all others in the room who are fighting the mob
-	if (IS_SET(ch->off_flags, OFF_AREA_ATTACK) && number_percent() <= 75)
-		for (vch = ch->in_room->people; vch != NULL; vch = vch_next) {
-			vch_next = vch->next_in_room;
-			if (vch != victim && vch->fighting == ch)
-				one_hit(ch, vch, dt, FALSE);
-		}
+		if( !is_combatant_valid(ch, aid[0], aid[1]) ) return;
+		// Area attack also hits all others in the room who are fighting the mob
+		if (IS_SET(ch->off_flags, OFF_AREA_ATTACK) && number_percent() <= 75)
+			for (vch = ch->in_room->people; vch != NULL; vch = vch_next) {
+				vch_next = vch->next_in_room;
+				if (vch != victim && vch->fighting == ch) {
+					one_hit(ch, vch, dt, FALSE);
+					if( !is_combatant_valid(ch, aid[0], aid[1]) ) return;
+				}
+			}
 	}
+
+	if( !is_combatant_valid(ch, aid[0], aid[1]) ) return;
 
 	if (ch->wait > 0)
 		return;
@@ -3262,7 +3270,7 @@ void death_cry( CHAR_DATA *ch, bool has_head, bool messages )
 
 		was_in_room = ch->in_room;
 
-		if (was_in_room) {
+		if (!was_in_room) {
 			bug("death_cry, was_in_room was NULL!!",0);
 			return;
 		}
