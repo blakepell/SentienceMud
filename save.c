@@ -1683,7 +1683,7 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
 	    if (!str_cmp(word, "Room"))
 	    {
 		ch->in_room = get_room_index(fread_number(fp));
-		if ((ch->in_room == NULL) || (ch->tot_level < 150 && !ch->in_room->area->open))
+		if ((ch->in_room == NULL) /*|| (ch->tot_level < 150 && !ch->in_room->area->open)*/)
 		    ch->in_room = get_room_index(11001);
 		fMatch = TRUE;
 		break;
