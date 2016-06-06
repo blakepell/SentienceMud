@@ -856,8 +856,10 @@ bool one_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt, bool secondary)
 
 
 	// Damage boost for globals
+	// Disabling boost for NPCs, this is player only - Tieryo
+	if (!IS_NPC(ch)){
 	if (boost_table[BOOST_DAMAGE].boost != 100) dam = (dam * boost_table[BOOST_DAMAGE].boost)/100;
-
+};
 	// deduct movement
 	if (!IS_NPC(ch)) deduct_move(ch, 1);
 
@@ -6153,7 +6155,7 @@ void do_kick(CHAR_DATA *ch, char *argument)
 		return;
 	}
 
-	if (!(victim = ch->fighting) && !(victim = get_char_room(ch, NULL, argument))) {
+	if (!(victim == ch->fighting) && !(victim == get_char_room(ch, NULL, argument))) {
 		send_to_char("Kick whom?\n\r", ch);
 		return;
 	}

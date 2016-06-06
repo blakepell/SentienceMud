@@ -677,7 +677,7 @@ void boot_db(void)
     auction_info.gold_held	= 0;
     auction_info.silver_held	= 0;
 
-    logAll = TRUE; /*setting this on for now*/
+//    logAll = TRUE; /*setting this on for now*/
 
     /*
      * Set time and weather.

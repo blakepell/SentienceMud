@@ -322,7 +322,7 @@ const	struct	cmd_type	cmd_table	[] =
     { "church",		do_church,	POS_DEAD,	0,  LOG_NORMAL, 1 },
     { "clear",		do_clear,	POS_DEAD,	0,  LOG_NORMAL, 1 },
     { "convert",	do_convert,	POS_STANDING,	0,  LOG_NORMAL, 1 },
-    { "ct",		do_chtalk,	POS_DEAD,	0,  LOG_NORMAL, 1 },
+    { "ct",		do_chtalk,	POS_DEAD,	0,  LOG_NEVER, 1 },
     { "disembark",	do_disembark, 	POS_STANDING,	0,  LOG_NORMAL, 1 },
     { "dismount",	do_dismount,	POS_FIGHTING,	0,  LOG_NORMAL, 1 },
     { "enter", 		do_enter, 	POS_STANDING,	0,  LOG_NORMAL, 1 },
@@ -859,6 +859,7 @@ void interpret( CHAR_DATA *ch, char *argument )
     // Questions which people must answer before they can go on with life!
 
     // Remove yourself from a church?
+    // Disabled pneuma/dp loss for now - Tieryo
     if (ch->remove_question)
     {
 	if (!str_prefix(command, "yes"))
@@ -870,8 +871,8 @@ void interpret( CHAR_DATA *ch, char *argument )
 		    act("{Y[You have removed yourself.]{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		    sprintf(buf, "{Y[%s has quit %s]{x\n\r", ch->remove_question->name, ch->church->name);
 		    gecho( buf );
-		    ch->pneuma = 0;
-		    ch->deitypoints = 0;
+//		    ch->pneuma = 0;
+//		    ch->deitypoints = 0;
 		    extract_church( ch->church );
 		    ch->remove_question = NULL;
 		    sprintf( buf, "%s has quit.", ch->name );
@@ -884,8 +885,8 @@ void interpret( CHAR_DATA *ch, char *argument )
 		    gecho( buf );
 		    sprintf( buf, "%s has quit.", ch->name );
 		    append_church_log( ch->church, ch->name );
-		    ch->pneuma = 0;
-		    ch->deitypoints = 0;
+//		    ch->pneuma = 0;
+//		    ch->deitypoints = 0;
 		    remove_member(ch->remove_question);
 		    ch->remove_question = NULL;
 		}

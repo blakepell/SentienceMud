@@ -532,7 +532,7 @@ void do_chrem(CHAR_DATA *ch, char *argument)
 	    "{RWarning: {xIf you leave this church you will be shunned by the gods.\n\r",
 		 ch);
 	    send_to_char(
-	    "You will lose ALL deity points and ALL pneuma.\n\r", ch);
+	    "You will NOT lose all deity points and ALL pneuma.\n\r", ch);
 	    send_to_char("{YAre you sure you want to do this?{x\n\r", ch);
 	    ch->remove_question = member;
 	}
@@ -598,10 +598,10 @@ void remove_member(CHURCH_PLAYER_DATA * member)
 	free_string(member->ch->church_name);
 
 	member->ch->church_member = NULL;
+        list_remlink(member->church->online_players, member->ch);
     }
 
-   	list_remlink(member->church->online_players, member->ch);
-   	list_remlink(member->church->roster, member->ch->name);
+   	list_remlink(member->church->roster, member->name);
 
     free_church_player(member);
 }

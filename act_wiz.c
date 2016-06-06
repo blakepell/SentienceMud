@@ -7190,7 +7190,7 @@ void do_remcommand(CHAR_DATA *ch, char *argument)
     free_command(cmd);
 }
 
-
+/* Adjusted boost to allow for up to 7 days (10080 minutes) - Tieryo */
 void do_boost(CHAR_DATA *ch, char *argument)
 {
     char buf[MSL];
@@ -7207,7 +7207,7 @@ void do_boost(CHAR_DATA *ch, char *argument)
     argument = one_argument(argument, arg3);
 
     if (arg[0] == '\0' || arg2[0] == '\0') {
-	send_to_char("Syntax:  boost <field> <#mins (1-45 or off)> [percent]\n\rFields: experience damage qp pneuma\n\r", ch);
+	send_to_char("Syntax:  boost <field> <#mins (1-10080 or off)> [percent]\n\rFields: experience damage qp pneuma\n\r", ch);
 	return;
     }
 
@@ -7221,11 +7221,11 @@ void do_boost(CHAR_DATA *ch, char *argument)
 	return;
     }
 
-    if ((mins = atoi(arg2)) < 1 || mins > 45) {
+    if ((mins = atoi(arg2)) < 1 || mins > 10080) {
 	if (!str_cmp(arg2, "off"))
 	    mins = 0;
 	else {
-	    send_to_char("Invalid #mins.\n\rMust be 1-45 minutes, or off.\n\r", ch);
+	    send_to_char("Invalid #mins.\n\rMust be 1-10080 minutes, or off.\n\r", ch);
 	    return;
 	}
     }

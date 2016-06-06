@@ -1919,6 +1919,8 @@ bool change_exit(CHAR_DATA *ch, char *argument, int door)
 
     if (!str_cmp(command, "room"))
     {
+	EXIT_DATA *pExit;
+	
 	if (arg[0] == '\0' || !is_number(arg))
 	{
 	    send_to_char("Syntax:  [direction] room [vnum]\n\r", ch);
@@ -1938,8 +1940,10 @@ bool change_exit(CHAR_DATA *ch, char *argument, int door)
 	    return FALSE;
 	}
 
+        pExit		= new_exit();
 	pRoom->exit[door]->u1.to_room = get_room_index(value);
 	pRoom->exit[door]->orig_door = door;
+	pExit->from_room = pRoom;
 
 	send_to_char("One-way link established.\n\r", ch);
 	return TRUE;

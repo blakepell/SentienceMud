@@ -332,7 +332,8 @@ void do_strike(CHAR_DATA *ch, char *argument)
 	return;
     }
 
-    if (obj_struck->item_type != ITEM_WEAPON && obj_struck->item_type != ITEM_ARMOR)
+    /* Allow hammers to be used for instruments as well - Tieryo*/
+    if (obj_struck->item_type != ITEM_WEAPON && obj_struck->item_type != ITEM_ARMOR && obj_struck->item_type != ITEM_INSTRUMENT)
     {
 	send_to_char("This item can only be used on weapons and armour.\n\r", ch);
 	return;
