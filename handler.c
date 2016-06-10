@@ -7790,7 +7790,7 @@ bool area_has_read_access(CHAR_DATA *ch, AREA_DATA *area)
 {
 	if(IS_NPC(ch)) return false;
 
-	if(!IS_IMMORTAL(ch)) return false;
+//	if(!IS_IMMORTAL(ch)) return false;
 
 	if(IS_BUILDER(ch, area)) return true;
 

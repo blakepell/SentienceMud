@@ -6155,7 +6155,7 @@ void do_kick(CHAR_DATA *ch, char *argument)
 		return;
 	}
 
-	if (!(victim == ch->fighting) && !(victim == get_char_room(ch, NULL, argument))) {
+	if (!(victim = ch->fighting) && !(victim = get_char_room(ch, NULL, argument))) {
 		send_to_char("Kick whom?\n\r", ch);
 		return;
 	}
