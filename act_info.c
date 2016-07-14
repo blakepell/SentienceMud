@@ -88,55 +88,72 @@ char *const where_name[] = {
     "{W<lodged in leg>       {x",
     "{G<entangled>           {x",
     "{D<concealed from view> {x",
-    "{M<floating nearby>     {x"
+    "{M<floating nearby>     {x",
+    "{C<tattooed on arm>     {x",
+    "{C<tattooed on arm>     {x",
+    "{C<tattooed on leg>     {x",
+    "{C<tattooed on leg>     {x",
+    "{C<tattooed on shoulder>{x",
+    "{C<tattooed on shoulder>{x",
+    "{C<tattooed on back>    {x",
+
 };
 
 /* MOVED: equip.c */
 int wear_params[MAX_WEAR][7] = {
 /*	seen,		autoeq		remove		shifted		affects		uneq_death	always_remove */
-	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		TRUE },
-	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE },
-	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE },
-	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE },
-	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE },
-	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE },
-	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE },
-	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE },
-	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE },
-	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE },
-	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE },
-	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE },
-	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE },
-	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE },
-	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE },
-	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE },
-	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE },
-	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE },
-	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE },
-	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE },
-	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE },
-	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE },
-	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE },
-	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE },
-	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE },
-	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE },
-	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE },
-	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE },
-	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE },
-	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE },
-	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE },
-	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE },
-	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE },
-	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE },
-	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE },
-	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE },
-	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE },
-	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE },
-	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE },
-	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE },
-	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE },
-	{ FALSE,	FALSE,		TRUE,		FALSE,		FALSE,		TRUE,		TRUE },
-	{ TRUE,		FALSE,		TRUE,		TRUE,		FALSE,		FALSE,		TRUE }
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		TRUE },  // Light
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Finger
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Finger
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Neck
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Neck
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Torso
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Head
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Legs
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Feet
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Hands
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Arms
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Shield
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Body
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Waist
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Wrist
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Wrist
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Wield
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Held
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Secondary
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Ring Finger
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Back
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Shoulders
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Ankle
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Ankle
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Ear
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Ear
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Eyes
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Face
+	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE }, // Head Tattoo
+	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE }, // Body Tattoo
+	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE }, // Arm Tattoo
+	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE }, // Arm Tattoo
+	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE }, // Leg Tattoo
+	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE }, // Leg Tattoo
+	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE }, // Loged in Head
+	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE }, // Loged in Body
+	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE }, // Lodged in Arm
+	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE }, // Lodged in Arm
+	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE }, // Lodged in Leg
+	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE }, // Lodged in Leg
+	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE }, // Entangled
+	{ FALSE,	FALSE,		TRUE,		FALSE,		FALSE,		TRUE,		TRUE },  // Concealed
+	{ TRUE,		FALSE,		TRUE,		TRUE,		FALSE,		FALSE,		TRUE },  // Floating
+        { TRUE,         FALSE,          FALSE,          FALSE,          TRUE,           FALSE,          FALSE }, // Arm Tattoo
+        { TRUE,         FALSE,          FALSE,          FALSE,          TRUE,           FALSE,          FALSE }, // Arm Tattoo
+        { TRUE,         FALSE,          FALSE,          FALSE,          TRUE,           FALSE,          FALSE }, // Leg Tattoo
+        { TRUE,         FALSE,          FALSE,          FALSE,          TRUE,           FALSE,          FALSE }, // Leg Tattoo
+        { TRUE,         FALSE,          FALSE,          FALSE,          TRUE,           FALSE,          FALSE }, // Shoulder Tattoo
+        { TRUE,         FALSE,          FALSE,          FALSE,          TRUE,           FALSE,          FALSE }, // Shoulder Tattoo
+        { TRUE,         FALSE,          FALSE,          FALSE,          TRUE,           FALSE,          FALSE }  // BACK Tattoo
+
+
 };
 
 /* MOVED: equip.c */
@@ -184,6 +201,14 @@ int wear_concealed[] = {
 	WEAR_NONE,
 	WEAR_NONE,
 	WEAR_NONE,
+        WEAR_ARMS,
+        WEAR_ARMS,
+        WEAR_LEGS,
+        WEAR_LEGS,
+        WEAR_NONE,
+        WEAR_NONE,
+        WEAR_NONE,
+
 };
 
 /* MOVED: equip.c
@@ -198,7 +223,10 @@ int wear_view_order[] = {
 	WEAR_BODY,
 	WEAR_TATTOO_TORSO,
 	WEAR_BACK,
+	WEAR_TATTOO_BACK,
 	WEAR_SHOULDER,
+	WEAR_TATTOO_SHOULDER_L,
+	WEAR_TATTOO_SHOULDER_R,
 	WEAR_HEAD,
 	WEAR_TATTOO_HEAD,
 	WEAR_FACE,
@@ -206,14 +234,18 @@ int wear_view_order[] = {
 	WEAR_EAR_L,
 	WEAR_EAR_R,
 	WEAR_ARMS,
-	WEAR_TATTOO_ARM_L,
-	WEAR_TATTOO_ARM_R,
+	WEAR_TATTOO_UPPER_ARM_L,
+	WEAR_TATTOO_LOWER_ARM_L,
+	WEAR_TATTOO_UPPER_ARM_R,
+	WEAR_TATTOO_LOWER_ARM_R,
 	WEAR_WRIST_L,
 	WEAR_WRIST_R,
 	WEAR_HANDS,
 	WEAR_LEGS,
-	WEAR_TATTOO_LEG_L,
-	WEAR_TATTOO_LEG_R,
+	WEAR_TATTOO_UPPER_LEG_L,
+	WEAR_TATTOO_LOWER_LEG_L,
+	WEAR_TATTOO_UPPER_LEG_R,
+	WEAR_TATTOO_LOWER_LEG_R,
 	WEAR_ANKLE_L,
 	WEAR_ANKLE_R,
 	WEAR_FEET,

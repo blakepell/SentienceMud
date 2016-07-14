@@ -1502,22 +1502,49 @@ char *expand_entity_mobile(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->type = ENT_OBJECT;
 		arg->d.obj = get_eq_char(arg->d.mob,WEAR_TATTOO_TORSO);
 		break;
-	case ENTITY_MOB_EQ_TATTOO_ARM1:
+	case ENTITY_MOB_EQ_TATTOO_UPPER_ARM1:
 		arg->type = ENT_OBJECT;
-		arg->d.obj = get_eq_char(arg->d.mob,WEAR_TATTOO_ARM_L);
+		arg->d.obj = get_eq_char(arg->d.mob,WEAR_TATTOO_UPPER_ARM_L);
 		break;
-	case ENTITY_MOB_EQ_TATTOO_ARM2:
+	case ENTITY_MOB_EQ_TATTOO_UPPER_ARM2:
 		arg->type = ENT_OBJECT;
-		arg->d.obj = get_eq_char(arg->d.mob,WEAR_TATTOO_ARM_R);
+		arg->d.obj = get_eq_char(arg->d.mob,WEAR_TATTOO_UPPER_ARM_R);
 		break;
-	case ENTITY_MOB_EQ_TATTOO_LEG1:
+	case ENTITY_MOB_EQ_TATTOO_UPPER_LEG1:
 		arg->type = ENT_OBJECT;
-		arg->d.obj = get_eq_char(arg->d.mob,WEAR_TATTOO_LEG_L);
+		arg->d.obj = get_eq_char(arg->d.mob,WEAR_TATTOO_UPPER_LEG_L);
 		break;
-	case ENTITY_MOB_EQ_TATTOO_LEG2:
+	case ENTITY_MOB_EQ_TATTOO_UPPER_LEG2:
 		arg->type = ENT_OBJECT;
-		arg->d.obj = get_eq_char(arg->d.mob,WEAR_TATTOO_LEG_R);
+		arg->d.obj = get_eq_char(arg->d.mob,WEAR_TATTOO_UPPER_LEG_R);
 		break;
+        case ENTITY_MOB_EQ_TATTOO_LOWER_ARM1:
+                arg->type = ENT_OBJECT;
+                arg->d.obj = get_eq_char(arg->d.mob,WEAR_TATTOO_LOWER_ARM_L);
+                break;
+        case ENTITY_MOB_EQ_TATTOO_LOWER_ARM2:
+                arg->type = ENT_OBJECT;
+                arg->d.obj = get_eq_char(arg->d.mob,WEAR_TATTOO_LOWER_ARM_R);
+                break;
+        case ENTITY_MOB_EQ_TATTOO_LOWER_LEG1:
+                arg->type = ENT_OBJECT;
+                arg->d.obj = get_eq_char(arg->d.mob,WEAR_TATTOO_LOWER_LEG_L);
+                break;
+        case ENTITY_MOB_EQ_TATTOO_LOWER_LEG2:
+                arg->type = ENT_OBJECT;
+                arg->d.obj = get_eq_char(arg->d.mob,WEAR_TATTOO_LOWER_LEG_R);
+                break;
+        case ENTITY_MOB_EQ_TATTOO_SHOULDER1:
+                arg->type = ENT_OBJECT;
+                arg->d.obj = get_eq_char(arg->d.mob,WEAR_TATTOO_SHOULDER_L);
+                break;
+        case ENTITY_MOB_EQ_TATTOO_SHOULDER2:
+                arg->type = ENT_OBJECT;
+                arg->d.obj = get_eq_char(arg->d.mob,WEAR_TATTOO_SHOULDER_R);
+                break;
+	case ENTITY_MOB_EQ_TATTOO_BACK:
+		arg->type = ENT_OBJECT;
+		arg->d.obj = get_eq_char(arg->d.mob,WEAR_TATTOO_BACK);
 	case ENTITY_MOB_EQ_LODGED_HEAD:
 		arg->type = ENT_OBJECT;
 		arg->d.obj = get_eq_char(arg->d.mob,WEAR_LODGED_HEAD);
@@ -1747,11 +1774,18 @@ char *expand_entity_mobile_id(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 	case ENTITY_MOB_EQ_FACE:
 	case ENTITY_MOB_EQ_TATTOO_HEAD:
 	case ENTITY_MOB_EQ_TATTOO_TORSO:
-	case ENTITY_MOB_EQ_TATTOO_ARM1:
-	case ENTITY_MOB_EQ_TATTOO_ARM2:
-	case ENTITY_MOB_EQ_TATTOO_LEG1:
-	case ENTITY_MOB_EQ_TATTOO_LEG2:
-	case ENTITY_MOB_EQ_LODGED_HEAD:
+	case ENTITY_MOB_EQ_TATTOO_UPPER_ARM1:
+	case ENTITY_MOB_EQ_TATTOO_UPPER_ARM2:
+	case ENTITY_MOB_EQ_TATTOO_UPPER_LEG1:
+	case ENTITY_MOB_EQ_TATTOO_UPPER_LEG2:
+	case ENTITY_MOB_EQ_TATTOO_BACK:
+        case ENTITY_MOB_EQ_TATTOO_LOWER_ARM1:
+        case ENTITY_MOB_EQ_TATTOO_LOWER_ARM2:
+        case ENTITY_MOB_EQ_TATTOO_LOWER_LEG1:
+        case ENTITY_MOB_EQ_TATTOO_LOWER_LEG2:
+        case ENTITY_MOB_EQ_TATTOO_SHOULDER1:
+        case ENTITY_MOB_EQ_TATTOO_SHOULDER2:
+        case ENTITY_MOB_EQ_LODGED_HEAD:
 	case ENTITY_MOB_EQ_LODGED_TORSO:
 	case ENTITY_MOB_EQ_LODGED_ARM1:
 	case ENTITY_MOB_EQ_LODGED_ARM2:
