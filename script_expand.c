@@ -1655,6 +1655,10 @@ char *expand_entity_mobile_id(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->type = ENT_STRING;
 		arg->d.str = (char*)&str_empty[0];
 		break;
+	case ENTITY_MOB_FULLDESC:
+		arg->type = ENT_STRING;
+		arg->d.str = (char*)&str_empty[0];
+		break;
 	case ENTITY_MOB_SEX:
 		arg->type = ENT_STRING;
 		arg->d.str = (char*)male_female[0];
@@ -1876,6 +1880,10 @@ char *expand_entity_object(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 	case ENTITY_OBJ_LONG:
 		arg->type = ENT_STRING;
 		arg->d.str = arg->d.obj ? arg->d.obj->description : &str_empty[0];
+		break;
+	case ENTITY_OBJ_FULLDESC:
+		arg->type = ENT_STRING;
+		arg->d.str = arg->d.obj ? arg->d.obj->full_description : &str_empty[0];
 		break;
 	case ENTITY_OBJ_CONTAINER:
 		arg->d.obj = arg->d.obj ? arg->d.obj->in_obj : NULL;

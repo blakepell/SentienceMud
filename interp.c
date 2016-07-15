@@ -421,7 +421,7 @@ const	struct	cmd_type	cmd_table	[] =
     { "shutdow",	do_shutdow,	POS_DEAD,	ML,  LOG_NORMAL, 0 },
     { "shutdown",	do_shutdown,	POS_DEAD,	ML,  LOG_ALWAYS, 0 },
     { "slay",		do_slay,	POS_DEAD,	L3,  LOG_ALWAYS, 1 },
-//    { "snoop",		do_snoop,	POS_DEAD,	L1,  LOG_ALWAYS, 1 },
+    { "snoop",		do_snoop,	POS_DEAD,	L1,  LOG_ALWAYS, 1 },
     { "sockets",        do_sockets,	POS_DEAD,       L2,  LOG_ALWAYS, 1 },
     { "staff",		do_staff,	POS_DEAD,	ML,  LOG_ALWAYS, 1 },
     { "startinvasion",     do_startinvasion,  POS_DEAD,       L2,  LOG_ALWAYS, 1 },
