@@ -6036,7 +6036,7 @@ CHAR_DATA* get_player(char *name)
 	iterator_start(&it, loaded_chars);
 	while(( ch = (CHAR_DATA *)iterator_nextdata(&it)))
 	{
-		if (!IS_NPC(ch) && !strcmp(ch->name, name))
+		if (!IS_NPC(ch) && !str_cmp(ch->name, name))
 			break;
 	}
 	iterator_stop(&it);
