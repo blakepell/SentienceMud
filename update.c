@@ -1721,7 +1721,7 @@ void char_update(void)
 		OBJ_DATA *obj_next;
 		int i;
 
-		challenger = create_mobile(get_mob_index(MOB_VNUM_DARK_WRAITH));
+		challenger = create_mobile(get_mob_index(MOB_VNUM_DARK_WRAITH), FALSE);
 
 		// Now to make challenger look like a version of the player.
 		sprintf(buf, challenger->short_descr, ch->name);

@@ -1465,7 +1465,7 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
 
 		vnum = fread_number(fp);
 
-		mount = create_mobile(get_mob_index(vnum));
+		mount = create_mobile(get_mob_index(vnum), FALSE);
 		ch->mount = mount;
 		mount->rider = ch;
 		ch->riding = TRUE;

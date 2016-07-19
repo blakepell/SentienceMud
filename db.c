@@ -1482,7 +1482,7 @@ void reset_room(ROOM_INDEX_DATA *pRoom)
 	    if (count >= pReset->arg4)
 		break;
 
-	    pMob = create_mobile(pMobIndex);
+	    pMob = create_mobile(pMobIndex, FALSE);
 
             /*
              * Some more hard coding.
@@ -1740,7 +1740,7 @@ void chance_create_mob(ROOM_INDEX_DATA *pRoom, MOB_INDEX_DATA *pMobIndex, int ch
 
     if (number_percent() <= chance)
     {
-	pMobile = create_mobile(pMobIndex);
+	pMobile = create_mobile(pMobIndex, FALSE);
 	if (obj)
 	    obj_to_char(obj, pMobile);
 	char_to_room(pMobile, pRoom);
@@ -1749,7 +1749,7 @@ void chance_create_mob(ROOM_INDEX_DATA *pRoom, MOB_INDEX_DATA *pMobIndex, int ch
 
 
 /* Create a mobile from a mob index template.*/
-CHAR_DATA *create_mobile(MOB_INDEX_DATA *pMobIndex)
+CHAR_DATA *create_mobile(MOB_INDEX_DATA *pMobIndex, bool persistLoad)
 {
     CHAR_DATA *mob;
     AFFECT_DATA af;
@@ -1913,6 +1913,8 @@ CHAR_DATA *create_mobile(MOB_INDEX_DATA *pMobIndex)
 
     mob->perm_stat[STAT_STR] += mob->size - SIZE_MEDIUM;
     mob->perm_stat[STAT_CON] += (mob->size - SIZE_MEDIUM) / 2;
+
+	if (!persistLoad){
 
     memset(&af,0,sizeof(af));
 	af.slot	= WEAR_NONE;	// None of the subsequent affects are from worn objects
@@ -2215,6 +2217,7 @@ CHAR_DATA *create_mobile(MOB_INDEX_DATA *pMobIndex)
 	af.bitvector2 = AFF2_STONE_SKIN;
 	affect_to_char(mob,&af);
     }
+	}
     mob->position = mob->start_pos;
 
     mob->max_move = pMobIndex->move;
@@ -2249,7 +2252,7 @@ CHAR_DATA *clone_mobile(CHAR_DATA *parent)
     if (parent == NULL || !IS_NPC(parent))
 		return NULL;
 
-	clone = create_mobile(parent->pIndexData);
+	clone = create_mobile(parent->pIndexData, FALSE);
 	if(!clone)
 		return NULL;
 
@@ -6275,7 +6278,7 @@ CHAR_DATA *persist_load_mobile(FILE *fp)
 	if( !index )
 		return NULL;
 
-	ch = create_mobile(index);
+	ch = create_mobile(index, TRUE);
 	if( !ch )
 		return NULL;
 	ch->version = VERSION_MOBILE_000;

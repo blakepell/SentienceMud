@@ -75,7 +75,7 @@ SPELL_FUNC(spell_animate_dead)
 		vnum = CORPSE_MOBILE(obj) ? CORPSE_MOBILE(obj) : obj->orig_vnum;
 
 		index = get_mob_index(vnum);
-		victim = create_mobile(index);
+		victim = create_mobile(index, FALSE);
 
 		// Do the animate trigger now so that information that might be needed for PREANIMATE is available.
 		if( p_percent_trigger( victim, NULL, NULL, NULL, ch, victim, NULL, obj, NULL, TRIG_ANIMATE, NULL) )
@@ -427,7 +427,7 @@ SPELL_FUNC(spell_raise_dead)
 		} else {
 			bool keep_mob = TRUE;
 
-			victim = create_mobile(get_mob_index(obj->orig_vnum));
+			victim = create_mobile(get_mob_index(obj->orig_vnum), FALSE);
 
 			// Take newly created NPCs items off
 			for (in = victim->carrying; in != NULL; in = in_next) {

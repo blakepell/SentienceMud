@@ -82,7 +82,7 @@ INVASION_QUEST* create_invasion_quest(AREA_DATA *pArea, int max_level, long p_le
 
 
     // create leader
-    leader = create_mobile(get_mob_index(leader_vnum));
+    leader = create_mobile(get_mob_index(leader_vnum), FALSE);
     leader->invasion_quest = quest;
     quest->leader = leader;
 
@@ -105,7 +105,7 @@ INVASION_QUEST* create_invasion_quest(AREA_DATA *pArea, int max_level, long p_le
     // place mobs
     for (i = 0; i < number; i++) {
       CHAR_DATA *mob; 
-    	mob = create_mobile(get_mob_index(mob_vnum));
+    	mob = create_mobile(get_mob_index(mob_vnum), FALSE);
 
 			while(TRUE) {
 				vnum = number_range(pArea->min_vnum, pArea->max_vnum);

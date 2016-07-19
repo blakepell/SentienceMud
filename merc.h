@@ -6464,7 +6464,7 @@ void	boot_db		args( ( void ) );
 void	area_update	args( ( bool fBoot ) );
 void    check_objects   args( ( void ) );
 void    check_mobs      args( ( void ) );
-CD *	create_mobile	args( ( MOB_INDEX_DATA *pMobIndex ) );
+CD *	create_mobile	args( ( MOB_INDEX_DATA *pMobIndex, bool persistLoad ) );
 CD *	clone_mobile	args( ( CHAR_DATA *parent ) );
 OD *	create_object_noid	args( ( OBJ_INDEX_DATA *pObjIndex, int level, bool affects ) );
 OD *	create_object	args( ( OBJ_INDEX_DATA *pObjIndex, int level, bool affects ) );

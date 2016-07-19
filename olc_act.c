@@ -2629,7 +2629,7 @@ REDIT(redit_mreset)
     /*
      * Create the mobile.
      */
-    newmob = create_mobile(pMobIndex);
+    newmob = create_mobile(pMobIndex, FALSE);
     char_to_room(newmob, pRoom);
 //    if (HAS_TRIGGER_MOB(newmob, TRIG_REPOP))
 	p_percent_trigger(newmob, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_REPOP, NULL);

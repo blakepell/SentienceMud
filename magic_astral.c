@@ -232,7 +232,7 @@ SPELL_FUNC(spell_reflection)
 		return FALSE;
 	}
 
-	reflection = create_mobile(get_mob_index(MOB_VNUM_REFLECTION));
+	reflection = create_mobile(get_mob_index(MOB_VNUM_REFLECTION), FALSE);
 
 	free_string(reflection->short_descr);
 	reflection->short_descr = str_dup(buf);

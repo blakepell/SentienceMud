@@ -3759,7 +3759,7 @@ void death_mob_echo(CHAR_DATA *victim)
 	send_to_char("{C'This really is pointless, how many times more am I going to have to take you back?' says Death.{x\n\r", victim);
 	}
 
-	death_mob = create_mobile(get_mob_index(MOB_VNUM_DEATH));
+	death_mob = create_mobile(get_mob_index(MOB_VNUM_DEATH), FALSE);
 	char_to_room(death_mob, victim->in_room);
 
 	act("Death taps $n's corpse three times with his scythe.", victim, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
@@ -7518,7 +7518,7 @@ CHAR_DATA* create_player_hunter(long vnum, CHAR_DATA *target)
 {
 	CHAR_DATA *challenger;
 
-	challenger = create_mobile( get_mob_index( vnum ) );
+	challenger = create_mobile( get_mob_index( vnum ), FALSE );
 		challenger->target_name = target->name;
 
 		return challenger;

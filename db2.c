@@ -166,7 +166,7 @@ void global_reset( void )
 	    && gq_mob->count + 1 > 50 )
 		continue;
 
-	    ch = create_mobile(get_mob_index(gq_mob->vnum));
+	    ch = create_mobile(get_mob_index(gq_mob->vnum), FALSE);
 	    if ( gq_mob->obj != 0 )
 	    {
 		obj = create_object( get_obj_index( gq_mob->obj ),

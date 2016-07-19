@@ -3074,7 +3074,7 @@ void do_mload(CHAR_DATA *ch, char *argument)
         pMobIndex->vnum);
     act(buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
-    victim = create_mobile(pMobIndex);
+    victim = create_mobile(pMobIndex, FALSE);
 
     if (ch->in_wilds == NULL)
         char_to_room(victim, ch->in_room);

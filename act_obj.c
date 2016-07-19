@@ -4929,7 +4929,7 @@ void do_buy(CHAR_DATA *ch, char *argument)
 	}
 
 	deduct_cost(ch,cost);
-	pet = create_mobile(pet->pIndexData);
+	pet = create_mobile(pet->pIndexData, FALSE);
 	SET_BIT(pet->act, ACT_PET);
 	SET_BIT(pet->affected_by, AFF_CHARM);
 	pet->comm = COMM_NOTELL|COMM_NOCHANNELS;

@@ -1681,7 +1681,7 @@ SCRIPT_CMD(do_rpmload)
 		return;
 	}
 
-	victim = create_mobile(pMobIndex);
+	victim = create_mobile(pMobIndex, FALSE);
 	char_to_room(victim, info->room);
 	if(rest && *rest) variables_set_mobile(info->var,rest,victim);
 	p_percent_trigger(victim, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_REPOP, NULL);

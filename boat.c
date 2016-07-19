@@ -133,7 +133,7 @@ NPC_SHIP_DATA *create_npc_sailing_boat( long vnum )
 	    bug("Couldn't find vnum for creating the crew in ship_crew_data.", 0);
 	    break;
         }
-   	pMobChar = create_mobile(pMob);
+   	pMobChar = create_mobile(pMob, FALSE);
 	char_to_crew(pMobChar, npc_ship->ship);
     }
 
@@ -141,7 +141,7 @@ NPC_SHIP_DATA *create_npc_sailing_boat( long vnum )
     /* Create captain and put him at the helm*/
     if ((pMob = npc_ship->pShipData->captain) != NULL)
     {
-    	pMobChar = create_mobile(pMob);
+    	pMobChar = create_mobile(pMob, FALSE);
     	char_to_crew(pMobChar, npc_ship->ship);
 
 	/* Give pirate a fancy name */
@@ -903,7 +903,7 @@ void load_sailing_boats()
 	  crew_counter = fread_number(fp);
 	  for ( count2 = 0; count2 < crew_counter; count2++ )
 	  {
-	    crew = create_mobile( get_mob_index( fread_number(fp) ));
+	    crew = create_mobile( get_mob_index( fread_number(fp) ), FALSE);
 	    crew->hired_to = fread_number(fp);
 	    char_to_crew( crew, pShipData);
 	  }

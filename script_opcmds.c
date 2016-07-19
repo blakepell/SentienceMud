@@ -835,7 +835,7 @@ SCRIPT_CMD(do_opcast)
 		}
 	}
 
-	proxy = create_mobile(get_mob_index(MOB_VNUM_OBJCASTER));
+	proxy = create_mobile(get_mob_index(MOB_VNUM_OBJCASTER), FALSE);
 	char_to_room(proxy, room);
 
 	proxy->level = info->obj->level;
@@ -1918,7 +1918,7 @@ SCRIPT_CMD(do_opmload)
 		return;
 	}
 
-	victim = create_mobile(pMobIndex);
+	victim = create_mobile(pMobIndex, FALSE);
 	char_to_room(victim, obj_room(info->obj));
 	if(rest && *rest) variables_set_mobile(info->var,rest,victim);
 	p_percent_trigger(victim, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_REPOP, NULL);

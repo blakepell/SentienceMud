@@ -1156,7 +1156,7 @@ void obj_cast(int sn, int level, OBJ_DATA *obj, ROOM_INDEX_DATA *room, char *arg
     int target = TARGET_NONE;
     char buf[MSL];
 
-    ch = create_mobile(get_mob_index(MOB_VNUM_OBJCASTER));
+    ch = create_mobile(get_mob_index(MOB_VNUM_OBJCASTER), FALSE);
     char_to_room(ch, room);
 
     ch->level = obj->level;
