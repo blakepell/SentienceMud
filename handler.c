@@ -4297,6 +4297,11 @@ void resurrect_pc(CHAR_DATA *ch)
     /*FREE DEATH ITEMS HERE IF ANY */
 
 	affect_fix_char(ch);
+    
+    /* Reset form and parts - Fixes issue 33 on gitlab repo - Tieryo 07/22/2016 */
+    ch->form = race_table[ch->race].form;
+    ch->parts = race_table[ch->race].parts & ~ch->lostparts;
+    ch->lostparts	= 0;	// Restore anything lost
 
     if (IS_SAGE(ch))
 		SET_BIT(ch->affected_by, AFF_DETECT_HIDDEN);
