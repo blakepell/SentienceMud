@@ -4300,7 +4300,7 @@ void resurrect_pc(CHAR_DATA *ch)
     
     /* Reset form and parts - Fixes issue 33 on gitlab repo - Tieryo 07/22/2016 */
     ch->form = race_table[ch->race].form;
-    ch->parts = race_table[ch->race].parts & ~ch->lostparts;
+    ch->parts = race_table[ch->race].parts;
     ch->lostparts	= 0;	// Restore anything lost
 
     if (IS_SAGE(ch))
