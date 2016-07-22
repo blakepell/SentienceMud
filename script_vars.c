@@ -1,3 +1,10 @@
+/***************************************************************************
+ *                                                                         *
+ *    Scripting engine rebuilt by Michael Kurtz (Nibelung)                 *
+ *    Used with permission.                                                *
+ *                                                                         *
+ **************************************************************************/
+
 #include "merc.h"
 #include "db.h"
 #include "scripts.h"

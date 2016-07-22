@@ -2,6 +2,13 @@
  * Yes, Rogel, you can gloat all you want. You win, this is cleaner, though not by a whole lot.
  */
 
+/***************************************************************************
+ *                                                                         *
+ *    Scripting engine rebuilt by Michael Kurtz (Nibelung)                 *
+ *    Used with permission.                                                *
+ *                                                                         *
+ **************************************************************************/
+
 #ifndef __IMC2CFG_H__
 #define __IMC2CFG_H__
 

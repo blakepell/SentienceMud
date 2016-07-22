@@ -1,3 +1,10 @@
+/***************************************************************************
+ *                                                                         *
+ *    Scripting engine rebuilt by Michael Kurtz (Nibelung)                 *
+ *    Used with permission.                                                *
+ *                                                                         *
+ **************************************************************************/
+
 #include <sys/types.h>
 #include <sys/time.h>
 #include <stdio.h>

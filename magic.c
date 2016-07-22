@@ -24,6 +24,14 @@
 *	By using this code, you have agreed to follow the terms of the	   *
 *	ROM license, in the file Rom24/doc/rom.license			   *
 ***************************************************************************/
+
+/***************************************************************************
+ *                                                                         *
+ *    Scripting engine rebuilt by Michael Kurtz (Nibelung)                 *
+ *    Used with permission.                                                *
+ *                                                                         *
+ **************************************************************************/
+
 // Note from Whisp
 // In the spells, theres a segregated level modifier. If a level is above 9000, its an object and should be permanent
 // so it subtracts this from the level so 9100 is lvl 100 with a permanent duration.

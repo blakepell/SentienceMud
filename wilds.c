@@ -7,6 +7,14 @@
  * v1.x - Load only wilds. The "just get something working" version.
  * v0.x - Initial alphas. Unstable and buggy. Testing concepts.
  */
+
+/***************************************************************************
+ *                                                                         *
+ *    Scripting engine rebuilt by Michael Kurtz (Nibelung)                 *
+ *    Used with permission.                                                *
+ *                                                                         *
+ **************************************************************************/
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

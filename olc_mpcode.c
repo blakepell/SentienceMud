@@ -1,6 +1,13 @@
 /* The following code is based on ILAB OLC by Jason Dinkel */
 /* Mobprogram code by Lordrom for Nevermore Mud */
 
+/***************************************************************************
+ *                                                                         *
+ *    Scripting engine rebuilt by Michael Kurtz (Nibelung)                 *
+ *    Used with permission.                                                *
+ *                                                                         *
+ **************************************************************************/
+
 #include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>

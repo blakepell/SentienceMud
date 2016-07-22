@@ -17,6 +17,13 @@
  implementing a system like below with such functions. -Jason Dinkel
  */
 
+/***************************************************************************
+ *                                                                         *
+ *    Scripting engine rebuilt by Michael Kurtz (Nibelung)                 *
+ *    Used with permission.                                                *
+ *                                                                         *
+ **************************************************************************/
+
 #include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>

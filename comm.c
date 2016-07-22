@@ -28,6 +28,13 @@
 *	ROM license, in the file Rom24/doc/rom.license			   *
 ***************************************************************************/
 
+/***************************************************************************
+ *                                                                         *
+ *    Scripting engine rebuilt by Michael Kurtz (Nibelung)                 *
+ *    Used with permission.                                                *
+ *                                                                         *
+ **************************************************************************/
+
 /*
  * This file contains all of the OS-dependent stuff:
  *   startup, signals, BSD sockets for tcp/ip, i/o, timing.

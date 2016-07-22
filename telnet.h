@@ -5,6 +5,13 @@
  * specifies the terms and conditions for redistribution.
  */
 
+/***************************************************************************
+ *                                                                         *
+ *    Scripting engine rebuilt by Michael Kurtz (Nibelung)                 *
+ *    Used with permission.                                                *
+ *                                                                         *
+ **************************************************************************/
+
 /*
  * Definitions for the TELNET protocol.
  */

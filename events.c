@@ -1,3 +1,10 @@
+/***************************************************************************
+ *                                                                         *
+ *    Scripting engine rebuilt by Michael Kurtz (Nibelung)                 *
+ *    Used with permission.                                                *
+ *                                                                         *
+ **************************************************************************/
+
 /* Event system is based on code courtesy of Kyndig from MudMagic */
 #include <sys/types.h>
 #include <sys/time.h>

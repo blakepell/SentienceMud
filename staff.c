@@ -1,5 +1,13 @@
 /* This file contains most of the functions associated with the in-game staff
    management system. All source copyright Anton Ouzilov, 2007. */
+
+/***************************************************************************
+ *                                                                         *
+ *    Scripting engine rebuilt by Michael Kurtz (Nibelung)                 *
+ *    Used with permission.                                                *
+ *                                                                         *
+ **************************************************************************/
+
 #include "merc.h"
 #include "tables.h"
 #include "olc.h"

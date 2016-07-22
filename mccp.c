@@ -19,6 +19,13 @@
  *						--Jouster, 10/11/2000
  */
 
+/***************************************************************************
+ *                                                                         *
+ *    Scripting engine rebuilt by Michael Kurtz (Nibelung)                 *
+ *    Used with permission.                                                *
+ *                                                                         *
+ **************************************************************************/
+
 #include <sys/types.h>
 #include <sys/time.h>
 #include <ctype.h>

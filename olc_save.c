@@ -1,5 +1,13 @@
 /* OLC Save - Modular + More Efficient Version
    Copyright Anton Ouzilov, 2004-2005 */
+
+/***************************************************************************
+ *                                                                         *
+ *    Scripting engine rebuilt by Michael Kurtz (Nibelung)                 *
+ *    Used with permission.                                                *
+ *                                                                         *
+ **************************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

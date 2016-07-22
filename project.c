@@ -1,6 +1,14 @@
 /* This file contains the OLC act commands as well as various other functions
    associated with the project management system. All source copyright Anton Ouzilov,
    2007. */
+
+/***************************************************************************
+ *                                                                         *
+ *    Scripting engine rebuilt by Michael Kurtz (Nibelung)                 *
+ *    Used with permission.                                                *
+ *                                                                         *
+ **************************************************************************/
+
 #include <sys/types.h>
 #include <ctype.h>
 #include <stdio.h>

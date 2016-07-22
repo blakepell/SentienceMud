@@ -26,6 +26,13 @@
  * $FreeBSD: src/lib/libmd/sha256.h,v 1.1 2005/03/09 19:23:04 cperciva Exp $
  */
 
+/***************************************************************************
+ *                                                                         *
+ *    Scripting engine rebuilt by Michael Kurtz (Nibelung)                 *
+ *    Used with permission.                                                *
+ *                                                                         *
+ **************************************************************************/
+
 #ifndef _SHA256_H_
 #define _SHA256_H_
 

@@ -8,6 +8,13 @@
  * License terms are available in the imc2freedom.license file.
  */
 
+/***************************************************************************
+ *                                                                         *
+ *    Scripting engine rebuilt by Michael Kurtz (Nibelung)                 *
+ *    Used with permission.                                                *
+ *                                                                         *
+ **************************************************************************/
+
 #ifndef __IMC2_H__
 #define __IMC2_H__
 

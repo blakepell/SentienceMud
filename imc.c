@@ -11,6 +11,14 @@
  * License terms are available in the imc2freedom.license file.
  */
 
+
+/***************************************************************************
+ *                                                                         *
+ *    Scripting engine rebuilt by Michael Kurtz (Nibelung)                 *
+ *    Used with permission.                                                *
+ *                                                                         *
+ **************************************************************************/
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>

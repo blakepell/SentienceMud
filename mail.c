@@ -2,6 +2,13 @@
    Copyright 2004 Anton Ouzilov
 */
 
+/***************************************************************************
+ *                                                                         *
+ *    Scripting engine rebuilt by Michael Kurtz (Nibelung)                 *
+ *    Used with permission.                                                *
+ *                                                                         *
+ **************************************************************************/
+
 #include <sys/types.h>
 #include <stdio.h>
 #include <string.h>
