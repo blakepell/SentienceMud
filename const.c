@@ -4499,7 +4499,7 @@ const struct group_type group_table [MAX_GROUP] =
     */
     {
 	"global skills",	{ 0, 0, 0, 0 },
-	{ "scrolls", "staves", "wands", "hand to hand", "single weapon style", NULL }
+	{ "scrolls", "staves", "wands", "hand to hand", "single weapon style", "lore", NULL }
     },
 
     {
