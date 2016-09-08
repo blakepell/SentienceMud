@@ -23,9 +23,9 @@ typedef struct descriptor_data descriptor_t;
  ******************************************************************************/
 
 /* You may replace the '^' with another character if you wish, eg '&' or '@'. */
-/*
+
 #define COLOUR_CHAR '^'
-*/
+
 
 /* Change this to 'false' if colour codes are off by default (see README.TXT) */
 #define COLOUR_ON_BY_DEFAULT true
