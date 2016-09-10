@@ -124,35 +124,26 @@ SPELL_FUNC(spell_improved_invisibility)
 
 SPELL_FUNC(spell_continual_light)
 {
-	OBJ_DATA *light;
-	char *obj_name;
+        OBJ_DATA *obj;
 
-	obj_name = (char *) vo;
+	obj = (OBJ_DATA *) vo;
 
-	if (obj_name && obj_name[0]) {
-		OBJ_DATA *obj;
-
-		if (!(obj = get_obj_carry(ch, obj_name, ch))) {
-			send_to_char("You're not carrying that item.\n\r", ch);
-			return FALSE;
-		} else {
-			if (IS_SET(obj->extra_flags, ITEM_GLOW)) {
-				act("$p is already glowing.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
-				return FALSE;
-			}
-
-			act("$p starts glowing with a bright light.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
-			act("$n's $p starts glowing with a bright light.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
-			SET_BIT(obj->extra_flags, ITEM_GLOW);
-			return TRUE;
-		}
+	//makes sometihng glow
+	if (IS_SET(obj->extra_flags, ITEM_GLOW)) {
+		act("$p is already glowing.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+		return FALSE;
 	}
 
+	act("$p starts glowing with a bright light.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+	act("$n's $p starts glowing with a bright light.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
+	SET_BIT(obj->extra_flags, ITEM_GLOW);
+	return TRUE;
+/* will re-enable later (AO)
 	light = create_object(get_obj_index(OBJ_VNUM_LIGHT_BALL), 0, TRUE);
 	obj_to_room(light, ch->in_room);
 	act("$n twiddles $s thumbs and $p appears.",   ch, NULL, NULL, light, NULL, NULL, NULL, TO_ROOM);
 	act("You twiddle your thumbs and $p appears.", ch, NULL, NULL, light, NULL, NULL, NULL, TO_CHAR);
-	return TRUE;
+	return TRUE;  */
 }
 
 

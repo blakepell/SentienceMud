@@ -2938,7 +2938,7 @@ const struct skill_type	skill_table [MAX_SKILL]	=
 	}, {
 		"continual light",
 		{ 6, 4, 31, 6 }, { 2, 3, 2, 2},
-		spell_continual_light, TAR_IGNORE, POS_STANDING, &gsn_continual_light,
+		spell_continual_light, TAR_OBJ_INV, POS_STANDING, &gsn_continual_light,
 		-1, 7, 6,
 		"", "!Continual Light!", "", "",
 		{ { CATALYST_NONE, 0 },{ CATALYST_NONE, 0 },{ CATALYST_NONE, 0 } }

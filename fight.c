@@ -5984,12 +5984,12 @@ void do_flee(CHAR_DATA *ch, char *argument)
 	interrupt_script(ch->pursuit_by, FALSE);
 		move_char(ch->pursuit_by, door, FALSE);
 		one_hit(ch->pursuit_by, ch, TYPE_HIT, FALSE);
-		check_improve(ch, gsn_pursuit, TRUE, 3);
+		check_improve(ch, gsn_pursuit, TRUE, 1);
 	}
 	else
 	{
 		act("$N foils your pursuit!", ch->pursuit_by, ch, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
-		check_improve(ch->pursuit_by, gsn_pursuit, FALSE, 3);
+		check_improve(ch->pursuit_by, gsn_pursuit, FALSE, 1);
 	}
 	}
 
@@ -6162,8 +6162,8 @@ void do_kick(CHAR_DATA *ch, char *argument)
 		return;
 	}
 	
-        if (victim = get_char_room(ch, NULL, argument)) {
-                if (victim = ch->fighting == NULL) {
+        if ((victim = get_char_room(ch, NULL, argument)) == NULL) {
+                if ((victim = ch->fighting) == NULL) {
 			send_to_char("Kick whom?\n\r", ch);
 			return;
                 }
