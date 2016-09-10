@@ -5229,6 +5229,7 @@ void do_kill(CHAR_DATA *ch, char *argument)
 		return;
 	}
 
+	/*COMMENT TO LEARN GIT*/
 	if (victim == ch) {
 		send_to_char("You hit yourself. Ouch!\n\r", ch);
 		return;
