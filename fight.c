@@ -6161,10 +6161,12 @@ void do_kick(CHAR_DATA *ch, char *argument)
 		send_to_char("You can't kick while riding!\n\r", ch);
 		return;
 	}
-
-	if (!(victim = ch->fighting) && !(victim = get_char_room(ch, NULL, argument))) {
-		send_to_char("Kick whom?\n\r", ch);
-		return;
+	
+        if (victim = get_char_room(ch, NULL, argument)) {
+                if (victim = ch->fighting == NULL) {
+			send_to_char("Kick whom?\n\r", ch);
+			return;
+                }
 	}
 
 	if (victim == ch) {
