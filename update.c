@@ -884,9 +884,9 @@ void mobile_update(void)
 
 			if (obj_best != NULL)
 			{
+			act("$n gets $p.", ch, NULL, NULL, obj_best, NULL, NULL, NULL, TO_ROOM);
 			obj_from_room(obj_best);
 			obj_to_char(obj_best, ch);
-			act("$n gets $p.", ch, NULL, NULL, obj_best, NULL, NULL, NULL, TO_ROOM);
 			}
 		}
 

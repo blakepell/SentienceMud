@@ -3428,32 +3428,14 @@ void set_mob_hitdice(MOB_INDEX_DATA *pMob)
     int hitDiceType;
     int hitNumDice;
 
-    if (pMob->level < 30)
+    if (pMob->level < 10)
 	hp_per_level = 10;
     else
-    if (pMob->level < 60)
-	hp_per_level = 35;
-    else
-    if (pMob->level < 90)
-	hp_per_level = 55;
-    else
-    if (pMob->level < 120)
-	hp_per_level = 85;
-    else
-    if (pMob->level < 200)
-	hp_per_level = 150;
-    else
-    if (pMob->level < 300)
-	hp_per_level = 475;
-    else
-    if (pMob->level < 400)
-	hp_per_level = 400;
-    else
-	hp_per_level = pMob->level;
+    	hp_per_level = pMob->level;
 
-    hitBonus = (hp_per_level) * (pMob->level / 2);
-    hitNumDice = pMob->level;
-    hitDiceType = hp_per_level * 13/10;
+    hitBonus = ((hp_per_level) * (pMob->level / 2));
+    hitNumDice = pMob->level * 0.8;
+    hitDiceType = hp_per_level;
     pMob->hit[DICE_NUMBER] = hitNumDice;
     pMob->hit[DICE_TYPE]   = hitDiceType;
     pMob->hit[DICE_BONUS]  = hitBonus;
@@ -3465,8 +3447,8 @@ void set_mob_damdice(MOB_INDEX_DATA *pMobIndex)
     int num;
     int type;
 
-    num = (int) (pMobIndex->level + 20) / 10;
-    type = (int) (pMobIndex->level + 20) / 4;
+    num = (int) (pMobIndex->level + 8) / 10;
+    type = (int) (pMobIndex->level + 8) / 4;
 
     num = UMAX(1, num);
     type = UMAX(8, type);
