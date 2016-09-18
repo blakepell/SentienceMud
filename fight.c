@@ -1333,6 +1333,15 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 		return FALSE;
 	}
 
+	/* mobs automatically flee in terror if there is too large a level difference */
+        if (IS_NPC(victim) && !IS_NPC(ch) && abs(ch->tot_level - victim->tot_level > 90) && number_percent() < 75) {
+		char buf[MAX_STRING_LENGTH];
+		sprintf(buf, "%s balks with fear at the sight of your approach!\n\r", victim->short_descr);
+		send_to_char(buf,ch);
+		do_function (victim, &do_flee, ""); 
+		return FALSE;
+	}
+
 	// Armor and weapons decay with use
 	for (vObj = victim->carrying; vObj; vObj = vObj->next_content)
 		if (vObj->wear_loc != WEAR_NONE && (!IS_SET(vObj->extra_flags, ITEM_BLESS || number_percent() < 33))) {
@@ -1707,7 +1716,7 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 
 	// Wimpy - Mobiles
 	if (IS_NPC(victim) && dam > 0 && victim->wait < PULSE_VIOLENCE / 2 &&
-		((IS_SET(victim->act, ACT_WIMPY) && !number_bits(2) && victim->hit < victim->max_hit / 5) ||
+		((IS_SET(victim->act, ACT_WIMPY)  /* && !number_bits(2) */ && victim->hit < victim->max_hit / 3) ||
 		(IS_AFFECTED(victim, AFF_CHARM) && victim->master && victim->master->in_room != victim->in_room)))
 		do_function(victim, &do_flee, "");
 
