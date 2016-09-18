@@ -233,7 +233,7 @@ ROOM_INDEX_DATA *find_location(CHAR_DATA *ch, char *arg)
 	return victim->in_room;
 
     if ((obj = get_obj_world(ch, arg)) != NULL)
-	return obj->in_room;
+		return obj_room(obj);
 
     return NULL;
 }
@@ -4297,7 +4297,7 @@ void resurrect_pc(CHAR_DATA *ch)
     /*FREE DEATH ITEMS HERE IF ANY */
 
 	affect_fix_char(ch);
-    
+
     /* Reset form and parts - Fixes issue 33 on gitlab repo - Tieryo 07/22/2016 */
     ch->form = race_table[ch->race].form;
     ch->parts = race_table[ch->race].parts;
