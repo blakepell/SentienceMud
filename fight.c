@@ -1333,6 +1333,15 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 		return FALSE;
 	}
 
+	/* mobs automatically flee in terror if there is too large a level difference */
+        if (IS_NPC(victim) && !IS_NPC(ch) && abs(ch->tot_level - victim->tot_level > 90) && number_percent() < 75) {
+		char buf[MAX_STRING_LENGTH];
+		sprintf(buf, "%s balks with fear at the sight of your approach!\n\r", victim->short_descr);
+		send_to_char(buf,ch);
+		do_function (victim, &do_flee, ""); 
+		return FALSE;
+	}
+
 	// Armor and weapons decay with use
 	for (vObj = victim->carrying; vObj; vObj = vObj->next_content)
 		if (vObj->wear_loc != WEAR_NONE && (!IS_SET(vObj->extra_flags, ITEM_BLESS || number_percent() < 33))) {
@@ -1707,7 +1716,7 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 
 	// Wimpy - Mobiles
 	if (IS_NPC(victim) && dam > 0 && victim->wait < PULSE_VIOLENCE / 2 &&
-		((IS_SET(victim->act, ACT_WIMPY) && !number_bits(2) && victim->hit < victim->max_hit / 5) ||
+		((IS_SET(victim->act, ACT_WIMPY)  /* && !number_bits(2) */ && victim->hit < victim->max_hit / 3) ||
 		(IS_AFFECTED(victim, AFF_CHARM) && victim->master && victim->master->in_room != victim->in_room)))
 		do_function(victim, &do_flee, "");
 
@@ -5984,12 +5993,12 @@ void do_flee(CHAR_DATA *ch, char *argument)
 	interrupt_script(ch->pursuit_by, FALSE);
 		move_char(ch->pursuit_by, door, FALSE);
 		one_hit(ch->pursuit_by, ch, TYPE_HIT, FALSE);
-		check_improve(ch, gsn_pursuit, TRUE, 3);
+		check_improve(ch, gsn_pursuit, TRUE, 1);
 	}
 	else
 	{
 		act("$N foils your pursuit!", ch->pursuit_by, ch, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
-		check_improve(ch->pursuit_by, gsn_pursuit, FALSE, 3);
+		check_improve(ch->pursuit_by, gsn_pursuit, FALSE, 1);
 	}
 	}
 
@@ -6161,10 +6170,12 @@ void do_kick(CHAR_DATA *ch, char *argument)
 		send_to_char("You can't kick while riding!\n\r", ch);
 		return;
 	}
-
-	if (!(victim = ch->fighting) && !(victim = get_char_room(ch, NULL, argument))) {
-		send_to_char("Kick whom?\n\r", ch);
-		return;
+	
+        if ((victim = get_char_room(ch, NULL, argument)) == NULL) {
+                if ((victim = ch->fighting) == NULL) {
+			send_to_char("Kick whom?\n\r", ch);
+			return;
+                }
 	}
 
 	if (victim == ch) {

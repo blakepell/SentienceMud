@@ -6170,7 +6170,7 @@ void do_skull(CHAR_DATA *ch, char *argument)
 	{
 	    act(corpse_info_table[corpse].skull_fail, ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 	    act(corpse_info_table[corpse].skull_fail_other, ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
-	    check_improve(ch, gsn_skull, FALSE, 6);
+	    check_improve(ch, gsn_skull, FALSE, 1);
 //	    SET_BIT(obj->extra_flags, ITEM_NOSKULL);
 	    REMOVE_BIT(CORPSE_PARTS(obj),PART_HEAD);
 	    REMOVE_BIT(CORPSE_PARTS(obj),PART_BRAINS);
@@ -6256,7 +6256,7 @@ void do_skull(CHAR_DATA *ch, char *argument)
 	sprintf(buf, corpse_info_table[corpse].skull_success_other, obj->owner);
 	act(buf, ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	obj_to_char(skull, ch);
-	check_improve(ch, gsn_skull, TRUE, 6);
+	check_improve(ch, gsn_skull, TRUE, 1);
     }
     else
         act("There's no $t here.", ch, NULL, NULL, NULL, NULL, arg, NULL, TO_CHAR);
