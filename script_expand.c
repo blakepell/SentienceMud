@@ -1123,6 +1123,16 @@ char *expand_entity_church(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->type = ENT_MOBILE;
 		arg->d.mob = ( arg->d.church ) ? get_player(arg->d.church->founder) : NULL;
 		break;
+
+	case ENTITY_CHURCH_FOUNDER_NAME:
+		arg->type = ENT_STRING;
+		if( arg->d.church && arg->d.church->founder && arg->d.church->founder[0] ) {
+			strcpy(arg->buf, arg->d.church->founder);
+			arg->d.str = arg->buf;
+		} else
+			arg->d.str = &str_empty[0];
+		break;
+
 	case ENTITY_CHURCH_MOTD:
 		arg->type = ENT_STRING;
 		if( arg->d.church && arg->d.church->motd && arg->d.church->motd[0] && (IS_SET(arg->d.church->settings, CHURCH_PUBLIC_MOTD) || script_security >= MAX_SCRIPT_SECURITY)) {
