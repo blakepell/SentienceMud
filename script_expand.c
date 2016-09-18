@@ -4041,7 +4041,7 @@ char *expand_argument_entity(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		case ENT_SKILLINFO:	next = expand_entity_skillinfo(info,str,arg); break;
 		case ENT_CONN:		next = expand_entity_conn(info,str,arg); break;
 		case ENT_WILDS:		next = expand_entity_wilds(info,str,arg); break;
-		case ENT_CHURCH:	next = expand_entity_wilds(info,str,arg); break;
+		case ENT_CHURCH:	next = expand_entity_church(info,str,arg); break;
 		case ENT_EXTRADESC:	next = expand_entity_extradesc(info,str,arg); break;
 		case ENT_AFFECT:	next = expand_entity_affect(info,str,arg); break;
 		case ENT_SONG:		next = expand_entity_song(info,str,arg); break;
