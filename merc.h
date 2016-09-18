@@ -904,6 +904,7 @@ struct global_data
     unsigned long next_token_uid[4];	/* next read: [0:1], next write: [2:3] */
     unsigned long next_vroom_uid[4];
     long	next_church_uid;
+    bool	imc_autoconnect;
 };
 
 struct bounty_data

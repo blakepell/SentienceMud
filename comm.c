@@ -643,7 +643,7 @@ int main(int argc, char **argv)
     sprintf(log_buf, "Sentience is up on port %d.", port);
     log_string(log_buf);
     #ifdef IMC
-    imc_startup( FALSE, -1, FALSE );
+    imc_startup( FALSE, -1, gconfig.imc_autoconnect );
     #endif
     game_loop_unix(control);
 	list_destroy(conn_players);

@@ -77,6 +77,7 @@ int gconfig_read (void)
     gconfig.next_vroom_uid[0] = 1;	gconfig.next_vroom_uid[1] = 0;
 
     gconfig.next_church_uid = 1;
+    gconfig.imc_autoconnect = FALSE;
 
     for(;;)
     {
@@ -116,6 +117,13 @@ int gconfig_read (void)
 					return(0); /* Success*/
 				}
 	            break;
+	        case 'I':
+            	if(!str_cmp(word,"IMCAutoConnect")) {
+					gconfig.imc_autoconnect = TRUE;
+					fMatch = TRUE;
+					break;
+				}
+	        	break;
 
             case 'N':
             	if(!str_cmp(word,"NextMobUID")) {
@@ -203,6 +211,7 @@ int gconfig_write(void)
     if(newlock) fprintf(fp, "Newlock\n");
     if(wizlock) fprintf(fp, "Wizlock\n");
     if(is_test_port) fprintf(fp, "Testport\n");
+    if(gconfig.imc_autoconnect) fprintf(fp, "IMCAutoConnect\n");
 
     fprintf(fp, "END\n");
     fclose(fp);
