@@ -584,6 +584,8 @@ CHAR_DATA *new_char( void )
     ch->deathsight_vision = 0;
     ch->in_damage_function = FALSE;
 
+    ch->checkpoint = NULL;
+
     return ch;
 }
 
@@ -699,6 +701,8 @@ void free_char( CHAR_DATA *ch )
 
     ch->events = NULL;
     ch->id[0] = ch->id[1] = 0;
+
+    ch->checkpoint = NULL;
 
 	if( ch->persist ) persist_removemobile(ch);
 

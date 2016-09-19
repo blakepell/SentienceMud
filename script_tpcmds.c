@@ -32,6 +32,7 @@ const struct script_cmd_type token_cmd_table[] = {
 	{ "castfailure",		do_tpcastfailure,		FALSE	},
 	{ "castrecover",		do_tpcastrecover,		FALSE	},
 	{ "chargebank",			do_tpchargebank,		FALSE	},
+	{ "checkpoint",			do_tpcheckpoint,		FALSE	},
 	{ "cloneroom",			do_tpcloneroom,			TRUE	},
 	{ "condition",			do_tpcondition,			FALSE	},
 	{ "crier",				do_tpcrier,				FALSE	},
@@ -6951,4 +6952,50 @@ SCRIPT_CMD(do_tpcrier)
 
 	crier_announce(buf);
 }
+
+// Syntax:	checkpoint $PLAYER $ROOM
+// 			checkpoint $PLAYER VNUM
+//			checkpoint $PLAYER none|clear|reset
+//
+// Sets the checkpoint of the $PLAYER to the destination or clears it.
+// - When a checkpoint is set, it will override what location is saved to the pfile.
+// - When setting a checkpoint via VNUM and an invalid vnum is given, it will clear the checkpoint.
+SCRIPT_CMD(do_tpcheckpoint)
+{
+	char *rest;
+	SCRIPT_PARAM arg;
+    CHAR_DATA *mob;
+
+	if(!info || !info->token || IS_NULLSTR(argument)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+	mob = arg.d.mob;
+	if(IS_NPC(mob)) return;
+
+	if(!(rest = expand_argument(info,rest,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING:
+		if( !str_cmp(arg.d.str, "none") ||
+			!str_cmp(arg.d.str, "clear") ||
+			!str_cmp(arg.d.str, "reset") )
+			mob->checkpoint = NULL;
+		break;
+	case ENT_NUMBER:
+		if( arg.d.num > 0 )
+			mob->checkpoint = get_room_index(arg.d.num);
+		break;
+	case ENT_ROOM:
+		if( arg.d.room != NULL )
+			mob->checkpoint = arg.d.room;
+		break;
+	}
+}
+
+
 

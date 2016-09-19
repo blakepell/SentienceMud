@@ -3432,6 +3432,7 @@ struct	char_data
     ROOM_INDEX_DATA *	in_room;
     ROOM_INDEX_DATA *	was_in_room;
     WILDS_DATA *was_in_wilds;
+	ROOM_INDEX_DATA *	checkpoint;
 
     /* VIZZWILDS */
     CHAR_DATA *        prev_in_wilds;

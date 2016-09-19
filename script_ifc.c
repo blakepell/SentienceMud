@@ -4222,3 +4222,10 @@ DECL_IFC_FUN(ifc_hasspell)
 	return TRUE;
 }
 
+// hascheckpoint $PLAYER
+// - checks whether the player's checkpoint has been set.
+DECL_IFC_FUN(ifc_hascheckpoint)
+{
+	*ret = VALID_PLAYER(0) ? (ARG_MOB(0)->checkpoint != NULL) : FALSE;
+	return TRUE;
+}

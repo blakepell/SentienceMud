@@ -1640,6 +1640,10 @@ char *expand_entity_mobile(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->type = ENT_PLLIST_OBJ;
 		arg->d.blist = arg->d.mob ? arg->d.mob->lworn : NULL;
 		break;
+	case ENTITY_MOB_CHECKPOINT:
+		arg->type = ENT_ROOM;
+		arg->d.room = (arg->d.mob && !IS_NPC(arg->d.mob)) ? arg->d.mob->checkpoint : NULL;
+		break;
 	default: return NULL;
 	}
 
@@ -1864,6 +1868,10 @@ char *expand_entity_mobile_id(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 	case ENTITY_MOB_WORN:
 		arg->type = ENT_PLLIST_OBJ;
 		arg->d.blist = NULL;
+		break;
+	case ENTITY_MOB_CHECKPOINT:
+		arg->type = ENT_ROOM;
+		arg->d.room = NULL;
 		break;
 
 	default: return NULL;
