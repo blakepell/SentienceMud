@@ -614,7 +614,7 @@ struct trigger_type trigger_table	[] = {
 {	"predrink",				NULL,		TRIGSLOT_GENERAL,	TRUE,	TRUE,	TRUE,	TRUE	},
 {	"predrop",				NULL,		TRIGSLOT_GENERAL,	FALSE,	TRUE,	FALSE,	TRUE	},
 {	"preeat",				NULL,		TRIGSLOT_GENERAL,	TRUE,	TRUE,	TRUE,	TRUE	},
-{	"preenter",				NULL,		TRIGSLOT_MOVE,		FALSE,	FALSE,	TRUE,	TRUE	},
+{	"preenter",				NULL,		TRIGSLOT_MOVE,		FALSE,	TRUE,	TRUE,	TRUE	},
 {	"preflee",				NULL,		TRIGSLOT_GENERAL,	TRUE,	FALSE,	FALSE,	TRUE	},
 {	"preget",				NULL,		TRIGSLOT_GENERAL,	FALSE,	TRUE,	FALSE,	TRUE	},
 {	"prehide",				NULL,		TRIGSLOT_GENERAL,	TRUE,	TRUE,	FALSE,	TRUE	},
