@@ -1164,6 +1164,7 @@ IFCHECK_DATA ifcheck_table[] = {
 	{ "pkloss",				IFC_ANY,	"E",	TRUE,	ifc_pkloss,				"ifcheck pkloss" },
 	{ "pkratio",			IFC_ANY,	"E",	TRUE,	ifc_pkratio,			"ifcheck pkratio" },
 	{ "pkwins",				IFC_ANY,	"E",	TRUE,	ifc_pkwins,				"ifcheck pkwins" },
+	{ "playerexists",		IFC_ANY,	"S",	TRUE,	ifc_playerexists,		"ifcheck playerexists" },
 	{ "players",			IFC_ANY,	"E",	TRUE,	ifc_players,			"ifcheck players" },
 	{ "pneuma",				IFC_ANY,	"E",	TRUE,	ifc_pneuma,				"ifcheck pneuma" },
 	{ "portal",				IFC_ANY,	"ES",	FALSE,	ifc_portal,				"ifcheck portal" },

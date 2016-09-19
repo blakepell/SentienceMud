@@ -4222,3 +4222,11 @@ DECL_IFC_FUN(ifc_hasspell)
 	return TRUE;
 }
 
+// playerexists STRING
+// - checks if the string is a player name
+DECL_IFC_FUN(ifc_playerexists)
+{
+	*ret = ISARG_STR(0) && player_exists(ARG_STR(0));
+	return TRUE;
+}
+
