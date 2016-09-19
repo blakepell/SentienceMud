@@ -2203,6 +2203,10 @@ SCRIPT_CMD(do_tpremspell);
 SCRIPT_CMD(do_tpalteraffect);
 SCRIPT_CMD(do_tpcrier);
 
+SCRIPT_CMD(do_mpsaveplayer);
+SCRIPT_CMD(do_opsaveplayer);
+SCRIPT_CMD(do_rpsaveplayer);
+SCRIPT_CMD(do_tpsaveplayer);
 
 #include "tables.h"
 

@@ -62,6 +62,7 @@ const struct script_cmd_type room_cmd_table[] = {
 	{ "remember",			do_rpremember,		FALSE	},
 	{ "remove",				do_rpremove,		FALSE	},
 	{ "resetdice",			do_rpresetdice,		TRUE	},
+	{ "saveplayer",			do_rpsaveplayer,		FALSE	},
 	{ "settimer",			do_rpsettimer,		FALSE	},
 	{ "showroom",			do_rpshowroom,		FALSE	},
 	{ "skill",				do_rpskill,						TRUE	},
@@ -5968,3 +5969,28 @@ SCRIPT_CMD(do_rpcrier)
 
 	crier_announce(buf);
 }
+
+// Syntax: saveplayer $PLAYER
+SCRIPT_CMD(do_rpsaveplayer)
+{
+	char *rest;
+	SCRIPT_PARAM arg;
+    CHAR_DATA *mob;
+
+	if(!info || !info->room || IS_NULLSTR(argument)) return;
+
+	info->room->progs->lastreturn = 0;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+	mob = arg.d.mob;
+	if(IS_NPC(mob)) return;
+
+	save_char_obj(mob);
+
+	info->room->progs->lastreturn = 1;
+}
+

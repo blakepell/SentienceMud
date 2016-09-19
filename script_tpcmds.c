@@ -75,6 +75,7 @@ const struct script_cmd_type token_cmd_table[] = {
 	{ "remove",				do_tpremove,			FALSE	},
 	{ "remspell",			do_tpremspell,			TRUE	},
 	{ "resetdice",			do_tpresetdice,			TRUE	},
+	{ "saveplayer",			do_tpsaveplayer,		FALSE	},
 	{ "scriptwait",			do_tpscriptwait,		TRUE	},
 	{ "settimer",			do_tpsettimer,			FALSE	},
 	{ "showroom",			do_tpshowroom,			TRUE	},
@@ -6952,3 +6953,27 @@ SCRIPT_CMD(do_tpcrier)
 	crier_announce(buf);
 }
 
+
+// Syntax: saveplayer $PLAYER
+SCRIPT_CMD(do_tpsaveplayer)
+{
+	char *rest;
+	SCRIPT_PARAM arg;
+    CHAR_DATA *mob;
+
+	if(!info || !info->token || IS_NULLSTR(argument)) return;
+
+	info->token->progs->lastreturn = 0;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+	mob = arg.d.mob;
+	if(IS_NPC(mob)) return;
+
+	save_char_obj(mob);
+
+	info->token->progs->lastreturn = 1;
+}

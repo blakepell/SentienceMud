@@ -87,6 +87,7 @@ const struct script_cmd_type mob_cmd_table[] = {
 	{ "remember",			do_mpremember,			FALSE	},
 	{ "remove",				do_mpremove,			FALSE	},
 	{ "resetdice",			do_mpresetdice,			TRUE	},
+	{ "saveplayer",			do_mpsaveplayer,		FALSE	},
 	{ "selfdestruct",		do_mpselfdestruct,		FALSE	},
 	{ "settimer",			do_mpsettimer,			FALSE	},
 	{ "showroom",			do_mpshowroom,			TRUE	},
@@ -7635,4 +7636,28 @@ SCRIPT_CMD(do_mpscriptwait)
 
 	// Return how long the command decided
 	info->mob->progs->lastreturn = wait;
+}
+
+// Syntax: saveplayer $PLAYER
+SCRIPT_CMD(do_mpsaveplayer)
+{
+	char *rest;
+	SCRIPT_PARAM arg;
+    CHAR_DATA *mob;
+
+	if(!info || !info->mob || IS_NULLSTR(argument)) return;
+
+	info->mob->progs->lastreturn = 0;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+	mob = arg.d.mob;
+	if(IS_NPC(mob)) return;
+
+	save_char_obj(mob);
+
+	info->mob->progs->lastreturn = 1;
 }

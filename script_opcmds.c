@@ -64,6 +64,7 @@ const struct script_cmd_type obj_cmd_table[] = {
 	{ "remember",			do_opremember,		FALSE	},
 	{ "remove",				do_opremove,		FALSE	},
 	{ "resetdice",			do_opresetdice,		TRUE	},
+	{ "saveplayer",			do_opsaveplayer,		FALSE	},
 	{ "scriptwait",			do_opscriptwait,		TRUE	},
 	{ "selfdestruct",		do_opselfdestruct,	FALSE	},
 	{ "settimer",			do_opsettimer,		FALSE	},
@@ -6468,3 +6469,28 @@ SCRIPT_CMD(do_opscriptwait)
 	// Return how long the command decided
 	info->obj->progs->lastreturn = wait;
 }
+
+// Syntax: saveplayer $PLAYER
+SCRIPT_CMD(do_opsaveplayer)
+{
+	char *rest;
+	SCRIPT_PARAM arg;
+    CHAR_DATA *mob;
+
+	if(!info || !info->obj || IS_NULLSTR(argument)) return;
+
+	info->obj->progs->lastreturn = 0;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+	mob = arg.d.mob;
+	if(IS_NPC(mob)) return;
+
+	save_char_obj(mob);
+
+	info->obj->progs->lastreturn = 1;
+}
+
