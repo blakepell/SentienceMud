@@ -39,6 +39,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "merc.h"
+#include "olc.h"
 #include "interp.h"
 #include "recycle.h"
 #include "tables.h"
@@ -2807,6 +2808,12 @@ void do_switch(CHAR_DATA *ch, char *argument)
     if (ch->desc->original != NULL)
     {
 	send_to_char("You are already switched.\n\r", ch);
+	return;
+    }
+
+    if( ch->desc->editor != ED_NONE )
+    {
+	send_to_char("You are currently in OLC.  Please exit before switching.\n\r", ch);
 	return;
     }
 

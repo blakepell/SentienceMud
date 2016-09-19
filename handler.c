@@ -233,7 +233,7 @@ ROOM_INDEX_DATA *find_location(CHAR_DATA *ch, char *arg)
 	return victim->in_room;
 
     if ((obj = get_obj_world(ch, arg)) != NULL)
-	return obj->in_room;
+		return obj_room(obj);
 
     return NULL;
 }

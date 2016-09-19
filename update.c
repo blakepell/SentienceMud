@@ -2215,6 +2215,12 @@ void obj_update(void)
 	iterator_start(&it, loaded_objects);
 	while(( obj = (OBJ_DATA *)iterator_nextdata(&it))) {
 
+		// Objects in the rift will not update.
+		ROOM_INDEX_DATA *cur_room = obj_room(obj);
+		if( cur_room != NULL && cur_room->area->area_who == AREA_CHAT )
+			continue;
+
+
 		// Adjust obj affects - except for people in social
 		if (obj->carried_by == NULL || !IS_SOCIAL(obj->carried_by)) {
 			for (paf = obj->affected; paf != NULL; paf = paf_next) {
