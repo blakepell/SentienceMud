@@ -2516,7 +2516,7 @@ void do_hide(CHAR_DATA *ch, char *argument)
 					return;
 				}
 
-				if( (container = get_obj_here(ch, ch->in_room, argument)) == NULL )
+				if( (container = get_obj_inv(ch, ch->in_room, argument)) == NULL )
 				{
 					act("You don't have that item.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 					return;

@@ -3301,15 +3301,14 @@ OBJ_DATA *get_obj_list(CHAR_DATA *ch, char *argument, OBJ_DATA *list)
  */
 OBJ_DATA *get_obj_list_number(CHAR_DATA *ch, char *argument, int *nth, OBJ_DATA *list)
 {
-    char arg[MAX_INPUT_LENGTH];
     OBJ_DATA *obj;
     int number = *nth;
 
     for (obj = list; obj != NULL; obj = obj->next_content)
     {
 		if (can_see_obj(ch, obj) && (
-				(((obj->ship != NULL) && (!str_cmp(arg, obj->ship->ship_name)))) ||
-				is_name(arg, obj->name)))
+				(((obj->ship != NULL) && (!str_cmp(argument, obj->ship->ship_name)))) ||
+				is_name(argument, obj->name)))
 		{
 			if (--number < 1)
 				return obj;
