@@ -4995,6 +4995,7 @@ void persist_removeobject(register OBJ_DATA *obj)
 
 void persist_removeroom(register ROOM_INDEX_DATA *room)
 {
+	if( IS_SET(room->room2_flags, ROOM_FORCE_PERSIST) ) return;
 	list_remlink(persist_rooms, room);
 	room->persist = FALSE;
 }

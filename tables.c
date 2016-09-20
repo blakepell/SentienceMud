@@ -1103,6 +1103,7 @@ const struct flag_type room2_flags[] =
     {	"no_floor",		ROOM_NOFLOOR,	TRUE	},
     {	"clone_persist",		ROOM_CLONE_PERSIST,	TRUE	},
     {	"always_update",		ROOM_ALWAYS_UPDATE,	TRUE	},
+    {	"force_persist",		ROOM_FORCE_PERSIST,	FALSE	},	// Added for making a room stay persist unless removed by internal means.
     {	NULL,			0,			0	}
 
 };

@@ -53,6 +53,9 @@ void add_church_to_list(CHURCH_DATA *church, CHURCH_DATA *list);
 bool is_excommunicated(CHAR_DATA *ch);
 void get_church_id(CHURCH_DATA *church);
 void variable_dynamic_fix_church(CHURCH_DATA *church);
+bool church_add_treasure_room(CHAR_DATA *ch, CHURCH_DATA *church, char *argument);
+bool church_remove_treasure_room(CHAR_DATA *ch, CHURCH_DATA *church, char *argument);
+
 
 /* Church commands */
 const struct church_command_type church_command_table[] =
@@ -3199,9 +3202,11 @@ void show_church_info(CHURCH_DATA *church, CHAR_DATA *ch)
 {
     BUFFER *buffer;
     CHURCH_PLAYER_DATA *member;
+    ROOM_INDEX_DATA *treasure_room;
     char buf[MSL];
     char buf2[MSL];
     int i;
+    ITERATOR it;
 
     buffer = new_buf();
 
@@ -3267,6 +3272,24 @@ void show_church_info(CHURCH_DATA *church, CHAR_DATA *ch)
 	    "none" : get_room_index(church->recall_point.id[0])->name);
     add_buf(buffer, buf);
 
+	if( list_size(church->treasure_rooms) > 0 )
+	{
+		add_buf(buffer, "{YTreasure Rooms:{x\n\r");
+		i = 0;
+		iterator_start(&it, church->treasure_rooms);
+		while((treasure_room = (ROOM_INDEX_DATA *)iterator_nextdata(&it)) != NULL)
+		{
+			if( treasure_room->wilds )
+				sprintf(buf, " {Y[{x%2d{Y]: {W%s{x @ < {W%ld{x, {W%ld{x >\n\r", i,
+					treasure_room->wilds->name, treasure_room->x, treasure_room->y);
+			else
+				sprintf(buf, " {Y[{x%2d{Y]: {x({W%ld{x) {G%s{x\n\r", i, treasure_room->vnum, treasure_room->name);
+		    add_buf(buffer, buf);
+		    i++;
+		}
+
+		iterator_stop(&it);
+	}
 /*
     sprintf(buf, "{YTreasure Room:{x %ld - %s\n\r",
         church->treasure_room,
@@ -3344,35 +3367,35 @@ void do_churchset(CHAR_DATA *ch, char *argument)
 
     if ((church = ch->church) == NULL)
     {
-	send_to_char("You aren't even in a church.\n\r", ch);
-	return;
+		send_to_char("You aren't even in a church.\n\r", ch);
+		return;
     }
 
     argument = one_argument(argument, arg);
 
     if (arg[0] == '\0')
     {
-	send_to_char("Syntax: church set <field>\n\r"
+		send_to_char("Syntax: church set <field>\n\r"
 	             "For fields see \"help church\"", ch);
-	return;
+		return;
     }
 
     /* find value to toggle */
     if ((value = flag_value(church_flags, arg)) == NO_FLAG)
     {
-	send_to_char("There is no such setting. See \"help church\" for available settings.\n\r", ch);
-	return;
+		send_to_char("There is no such setting. See \"help church\" for available settings.\n\r", ch);
+		return;
     }
 
     if (IS_SET(church->settings, value))
     {
-	REMOVE_BIT(church->settings, value);
-	send_to_char("Setting toggled OFF.\n\r", ch);
+		REMOVE_BIT(church->settings, value);
+		send_to_char("Setting toggled OFF.\n\r", ch);
     }
     else
     {
-	SET_BIT(church->settings, value);
-	send_to_char("Setting toggled ON.\n\r", ch);
+		SET_BIT(church->settings, value);
+		send_to_char("Setting toggled ON.\n\r", ch);
     }
 }
 
@@ -3455,53 +3478,57 @@ void do_chconvert(CHAR_DATA *ch, char *argument)
 
 void do_chdonate(CHAR_DATA *ch, char *argument)
 {
-#if 1
-    send_to_char("Donation is disabled for the time being.\n\r", ch);
-#else
     OBJ_DATA *obj;
     ROOM_INDEX_DATA *room;
+    ITERATOR it;
 
     if (ch->church == NULL)
     {
         send_to_char("You aren't in a church!\n\r", ch);
-	return;
+		return;
     }
 
     if (!list_size(ch->church->treasure_rooms))
     {
     	send_to_char("Your church doesn't have a treasure room.\n\r", ch);
-	return;
+		return;
     }
 
     if ((obj = get_obj_carry(ch, argument, ch)) == NULL)
     {
-	send_to_char("You don't have that object.\n\r", ch);
-	return;
-    }
-
-    if (count_items_list_nest(room->contents) > MAX_CHURCH_TREASURE)
-    {
-    	send_to_char("Your church temple treasure room is quite full already.\n\r", ch);
-	return;
+		send_to_char("You don't have that object.\n\r", ch);
+		return;
     }
 
     if (obj->timer > 0 || IS_SET(obj->extra2_flags, ITEM_NO_DONATE))
     {
     	act("You cannot donate $p.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
-	return;
+		return;
     }
 
     if (!can_drop_obj(ch, obj, TRUE) || IS_SET(obj->extra2_flags, ITEM_KEPT))
     {
     	send_to_char("It's stuck to you.\n\r", ch);
-	return;
+		return;
     }
 
-    act("You toss $p into the air and it disappears into a swirling vortex.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
-    act("$n tosses $p into the air and it disappears into a swirling vortex.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
-    obj_from_char(obj);
-    obj_to_room(obj, room);
-#endif
+    iterator_start(&it, ch->church->treasure_rooms);
+    while((room = (ROOM_INDEX_DATA *)iterator_nextdata(&it)) != NULL)
+    {
+		if (count_items_list_nest(room->contents) < MAX_CHURCH_TREASURE)
+			break;
+	}
+	iterator_stop(&it);
+
+	if( room )
+	{
+		act("You toss $p into the air and it disappears into a swirling vortex.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+		act("$n tosses $p into the air and it disappears into a swirling vortex.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
+		obj_from_char(obj);
+		obj_to_room(obj, room);
+	}
+	else
+		send_to_char("Your church temple treasure room is quite full already.\n\r", ch);
 }
 
 
@@ -3931,3 +3958,208 @@ bool is_excommunicated(CHAR_DATA *ch)
 
     return IS_SET(ch->church_member->flags, CHURCH_PLAYER_EXCOMMUNICATED);
 }
+
+const char *usage_add_treasure_room = \
+	"{xUsage: church treasureadd <vnum>\n\r" \
+	"{x       church treasureadd <wilderness id> <x> <y> {W[NYI]{x\n\r";
+
+const char *usage_remove_treasure_room = \
+	"{xUsage: church treasureremove <index>\n\r";
+
+bool church_add_treasure_room(CHAR_DATA *ch, CHURCH_DATA *church, char *argument)
+{
+	char arg1[MIL];
+	char arg2[MIL];
+	char arg3[MIL];
+	long vnum, x = -1, y = -1;
+	ROOM_INDEX_DATA *room;
+	ITERATOR it;
+	bool found;
+	bool is_wilds = FALSE;
+
+	if( argument[0] == '\0' )
+	{
+		send_to_char(usage_add_treasure_room, ch);
+		return FALSE;
+	}
+
+	argument = one_argument(argument, arg1);
+	argument = one_argument(argument, arg2);
+	argument = one_argument(argument, arg3);
+	if( !is_number(arg1) )
+	{
+		send_to_char(usage_add_treasure_room, ch);
+		return FALSE;
+	}
+
+	if( arg2[0] != '\0' )
+	{
+		if( !is_number(arg2) || !is_number(arg3) )
+		{
+			send_to_char(usage_add_treasure_room, ch);
+			return FALSE;
+		}
+		x = atoi(arg2);
+		y = atoi(arg3);
+
+		is_wilds = TRUE;
+	}
+
+
+	vnum = atoi(arg1);
+	if( vnum < 1 )
+	{
+		send_to_char(usage_add_treasure_room, ch);
+		return FALSE;
+	}
+
+	if (is_wilds)
+	{
+		WILDS_DATA *wilds = get_wilds_from_uid(NULL, vnum);
+
+		if( !wilds )
+		{
+			send_to_char("No such wilderness.\n\r", ch);
+			return FALSE;
+		}
+
+		if( x < 0 || x >= wilds->map_size_x ||
+			y < 0 || y >= wilds->map_size_y )
+		{
+			send_to_char("Location is outside the bounds of that wilderness map.\n\r", ch);
+			return FALSE;
+		}
+
+		found = FALSE;
+		iterator_start(&it, church->treasure_rooms);
+		while((room = (ROOM_INDEX_DATA *)iterator_nextdata(&it)) != NULL)
+		{
+			if( IS_SET(room->room2_flags, ROOM_VIRTUAL_ROOM) && room->wilds == wilds && room->x == x && room->y == y )
+			{
+				found = TRUE;
+				break;
+			}
+		}
+		iterator_stop(&it);
+
+		if( found )
+		{
+			send_to_char("That room is already a treasure room in that church.\n\r", ch);
+			return FALSE;
+		}
+
+		room = get_wilds_vroom(wilds, x, y);
+
+		if( !room )
+			room = create_wilds_vroom(wilds, x, y);
+		if( !room )
+		{
+			send_to_char("Something is wrong.  Could not spawn wilderness room for treasure room.\n\r", ch);
+			return FALSE;
+		}
+	}
+	else
+	{
+		found = FALSE;
+		iterator_start(&it, church->treasure_rooms);
+		while((room = (ROOM_INDEX_DATA *)iterator_nextdata(&it)) != NULL)
+		{
+			if( !IS_SET(room->room2_flags, ROOM_VIRTUAL_ROOM) && room->vnum == vnum )
+			{
+				found = TRUE;
+				break;
+			}
+		}
+		iterator_stop(&it);
+
+		if( found )
+		{
+			send_to_char("That room is already a treasure room in that church.\n\r", ch);
+			return FALSE;
+		}
+
+		room = get_room_index(vnum);
+		if( !room )
+		{
+			printf_to_char(ch, "Room %ld not found.\n\r", vnum);
+			return FALSE;
+		}
+	}
+
+	if( !list_appendlink(church->treasure_rooms, room) ) {
+		bug("Failed to add church treasure room due to memory issues with 'list_appendlink'.", 0);
+		send_to_char("Failed to add church treasure room due to memory issues with 'list_appendlink'.\n\r", ch);
+		return FALSE;
+	}
+
+	persist_addroom(room);
+	SET_BIT(room->room2_flags, ROOM_FORCE_PERSIST);
+	send_to_char("Treasure room added.\n\r", ch);
+	return TRUE;
+}
+
+bool church_remove_treasure_room(CHAR_DATA *ch, CHURCH_DATA *church, char *argument)
+{
+	char arg1[MIL];
+	int index;
+	ROOM_INDEX_DATA *treasure_room;
+	CHURCH_DATA *other_church;
+	bool found;
+
+	if( argument[0] == '\0' )
+	{
+		send_to_char(usage_remove_treasure_room, ch);
+		return FALSE;
+	}
+
+	argument = one_argument(argument, arg1);
+	if( !is_number(arg1) )
+	{
+		send_to_char(usage_remove_treasure_room, ch);
+		return FALSE;
+	}
+
+	index = atoi(arg1);
+	if( index < 0 || index >= list_size(church->treasure_rooms) )
+	{
+		send_to_char("Invalid index for treasure room.\n\r", ch);
+		return FALSE;
+	}
+
+	treasure_room = (ROOM_INDEX_DATA *)list_nthdata(church->treasure_rooms, index);
+	if( !treasure_room )
+	{
+		send_to_char("Invalid index for treasure room.\n\r", ch);
+		return FALSE;
+	}
+
+	list_remlink(church->treasure_rooms, treasure_room);
+
+	// Check that the room is NOT a treasure room for the OTHER churches
+	found = FALSE;
+	for (other_church = church_list; other_church != NULL; other_church = other_church->next)
+	{
+		if( church != other_church && is_treasure_room(other_church, treasure_room))
+		{
+			found = TRUE;
+			break;
+		}
+	}
+
+	// This room isn't used by any church, remove persistance
+	if( !found )
+	{
+		REMOVE_BIT(treasure_room->room2_flags, ROOM_FORCE_PERSIST);
+		persist_removeroom(treasure_room);
+
+		// If treasure room is a wilderness and empty, purge it
+		if( IS_SET(treasure_room->room2_flags, ROOM_VIRTUAL_ROOM) &&
+			!treasure_room->persist &&
+			!treasure_room->people && !treasure_room->contents )
+			destroy_wilds_vroom(treasure_room);
+	}
+
+	send_to_char("Treasure room removed.\n\r", ch);
+	return TRUE;
+}
+

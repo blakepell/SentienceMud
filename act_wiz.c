@@ -52,6 +52,8 @@ extern void affect_fix_char(CHAR_DATA *ch);
 extern bool newlock;
 extern bool wizlock;
 extern bool is_test_port;
+bool church_add_treasure_room(CHAR_DATA *ch, CHURCH_DATA *church, char *argument);
+bool church_remove_treasure_room(CHAR_DATA *ch, CHURCH_DATA *church, char *argument);
 
 
 int gconfig_read (void)
@@ -4344,17 +4346,18 @@ void do_chset(CHAR_DATA *ch, char *argument)
     char arg2[MAX_INPUT_LENGTH];
     char arg3[MAX_INPUT_LENGTH];
     char buf[MAX_STRING_LENGTH];
+    char *argument2_save;
 
     argument = one_argument_norm(argument, arg );
-    argument = one_argument_norm(argument, arg2);
+    argument2_save = argument = one_argument_norm(argument, arg2);
     argument = one_argument_norm(argument, arg3);
 
     if (arg[0] == '\0' || arg2[0] == '\0' || arg3[0] == '\0')
     {
 	send_to_char("Set church <no.> <field> <value>\n\r", ch);
 	send_to_char("Fields: name founder pneuma dp gold\n\r", ch);
-	send_to_char("        max size align recall treasure\n\r", ch);
-	send_to_char("        flag key\n\r", ch);
+	send_to_char("        max size align recall treasureadd\n\r", ch);
+	send_to_char("        treasureremove flag key\n\r", ch);
 	return;
     }
 
@@ -4562,6 +4565,18 @@ void do_chset(CHAR_DATA *ch, char *argument)
 	church->key = atol(arg3);
 	return;
     }
+
+    if (!str_cmp(arg2, "treasureadd") )
+    {
+		church_add_treasure_room( ch, church, argument2_save );
+		return;
+	}
+
+    if (!str_cmp(arg2, "treasureremove") )
+    {
+		church_remove_treasure_room( ch, church, argument2_save );
+		return;
+	}
 /*
     if (!str_cmp(arg2, "treasure"))
     {

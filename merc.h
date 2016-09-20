@@ -2591,6 +2591,7 @@ enum {
 #define ROOM_NOFLOOR		(S)	/* The room requires you to be flying, on non-takable furniture or floating furniture */
 #define ROOM_CLONE_PERSIST	(T)	/* Set on rooms that can be cloned.  If set, allows clone rooms to be made persistant */
 #define ROOM_ALWAYS_UPDATE	(Z)	/* Allows the room to perform scripting even if the area is empty */
+#define ROOM_FORCE_PERSIST	(aa)
 
 #define ENVIRON_NONE		0	// Special case to indicate the clone room is free floating
 #define ENVIRON_ROOM		1
