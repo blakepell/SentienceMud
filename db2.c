@@ -517,7 +517,7 @@ ROOM_INDEX_DATA *get_random_room_area( CHAR_DATA *ch, AREA_DATA *area )
 int strlen_no_colors( const char *str )
 {
     int count;
-    int i;
+    int i,j;
 
     if ( str == NULL )
         return 0;
@@ -525,6 +525,28 @@ int strlen_no_colors( const char *str )
     count = 0;
     for ( i = 0; str[i] != '\0'; i++ )
     {
+
+        if (str[i] == '^' )
+        {
+                if (str[i+1] == '[' )
+                {
+                        for ( j = 0; str[j] != ']'; j++ )
+                        {
+                        i++;
+                        continue;
+                        }
+                        //Ugly hack, just adding one more character.
+                        i++;
+                        continue;
+                }
+                else
+                {
+                        i++;
+                        continue;
+                }
+        }
+
+
 	if (str[i] == '{' )
 	{
 	    i++;
@@ -547,6 +569,13 @@ char *nocolor( const char *string )
     for (i = 0, n = 0; string[i] != '\0'; i++, n++) {
 	while (string[i] == '{')
 	    i+= 2;
+        while (string[i] == '^')
+        {
+                if (string[i+1] == '[')
+                        i+= 7;
+                else
+                        i+= 2;
+        }
 
         buf[n] = string[i];
     }
