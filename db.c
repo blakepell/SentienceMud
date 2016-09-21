@@ -867,11 +867,6 @@ void boot_db(void)
     fix_vlinks();
     log_string("Doing variable_index_fix");
     variable_index_fix();
-    log_string("Loading persistance");
-    if(!persist_load()) {
-		perror("Persistance");
-	    exit(1);
-	}
     log_string("Doing variable_fix");
     variable_fix_global();
     log_string("Doing fix_mobprogs");
@@ -882,6 +877,12 @@ void boot_db(void)
     fix_roomprogs();
     log_string("Doing fix_tokenprogs");
     fix_tokenprogs();
+
+    log_string("Loading persistance");
+    if(!persist_load()) {
+		perror("Persistance");
+	    exit(1);
+	}
 
     log_string("Opening churches, new format");
     read_churches_new();
