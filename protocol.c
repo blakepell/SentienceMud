@@ -2615,29 +2615,29 @@ static void SendMSSP( descriptor_t *apDescriptor )
       { "UPTIME" ,            FUNCTION_CALL( GetMSSP_Uptime ) }, 
 
       /* Generic */
-      { "CRAWL DELAY",        "-1" },
+      { "CRAWL DELAY",        "24" },
 /*
-      { "HOSTNAME",           "" },
-      { "PORT",               "" },
-      { "CODEBASE",           "" },
-      { "CONTACT",            "" },
-      { "CREATED",            "" },
+      { "HOSTNAME",           "sentience.megacosm.net" },
+      { "PORT",               "9009" },
+      { "CODEBASE",           "ROM 2.4b6" },
+      { "CONTACT",            "tieryo@sentiencemud.net" },
+      { "CREATED",            "2000" },
       { "ICON",               "" },
       { "IP",                 "" },
-      { "LANGUAGE",           "" },
-      { "LOCATION",           "" },
+      { "LANGUAGE",           "English" },
+      { "LOCATION",           "United States" },
       { "MINIMUM AGE",        "" },
-      { "WEBSITE",            "" },
+      { "WEBSITE",            "https://sentiencemud.net" },
 */
       /* Categorisation */
 /*
       { "FAMILY",             "" },
-      { "GENRE",              "" },
-      { "GAMEPLAY",           "" },
-      { "STATUS",             "" },
-      { "GAMESYSTEM",         "" },
-      { "INTERMUD",           "" },
-      { "SUBGENRE",           "" },
+      { "GENRE",              "Fantasy" },
+      { "GAMEPLAY",           "Adventure, Hack and Slash, Player versus Player, Player versus Environment" },
+      { "STATUS",             "Live" },
+      { "GAMESYSTEM",         "Custom" },
+      { "INTERMUD",           "IMC2" },
+      { "SUBGENRE",           "None" },
 */
       /* World */
 /*
@@ -2676,7 +2676,7 @@ static void SendMSSP( descriptor_t *apDescriptor )
 */
       /* Hiring */
 /*
-      { "HIRING BUILDERS",    "0" },
+      { "HIRING BUILDERS",    "1" },
       { "HIRING CODERS",      "0" },
 */
       /* Extended variables */
@@ -2693,19 +2693,19 @@ static void SendMSSP( descriptor_t *apDescriptor )
       /* Game */
 /*
       { "ADULT MATERIAL",     "0" },
-      { "MULTICLASSING",      "0" },
-      { "NEWBIE FRIENDLY",    "0" },
+      { "MULTICLASSING",      "1" },
+      { "NEWBIE FRIENDLY",    "1" },
       { "PLAYER CITIES",      "0" },
-      { "PLAYER CLANS",       "0" },
+      { "PLAYER CLANS",       "1" },
       { "PLAYER CRAFTING",    "0" },
       { "PLAYER GUILDS",      "0" },
       { "EQUIPMENT SYSTEM",   "" },
       { "MULTIPLAYING",       "" },
-      { "PLAYERKILLING",      "" },
-      { "QUEST SYSTEM",       "" },
-      { "ROLEPLAYING",        "" },
-      { "TRAINING SYSTEM",    "" },
-      { "WORLD ORIGINALITY",  "" },
+      { "PLAYERKILLING",      "1" },
+      { "QUEST SYSTEM",       "1" },
+      { "ROLEPLAYING",        "1" },
+      { "TRAINING SYSTEM",    "1" },
+      { "WORLD ORIGINALITY",  "1" },
 */
       /* Protocols */
 /*
