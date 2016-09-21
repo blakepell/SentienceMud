@@ -1339,7 +1339,6 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 		sprintf(buf, "%s balks with fear at the sight of your approach!\n\r", victim->short_descr);
 		send_to_char(buf,ch);
 		do_function (victim, &do_flee, ""); 
-		return FALSE;
 	}
 
 	// Armor and weapons decay with use
@@ -5890,7 +5889,7 @@ void do_flee(CHAR_DATA *ch, char *argument)
 	if (IS_NULLSTR(argument))
 	{
 		// ok, so let's try to find a valid direction to flee to...
-		for (attempt = 0; attempt < 10; attempt++)
+		for (attempt = 0; attempt < 50; attempt++)
 		{
 			EXIT_DATA *pexit;
 
