@@ -525,6 +525,16 @@ int strlen_no_colors( const char *str )
     count = 0;
     for ( i = 0; str[i] != '\0'; i++ )
     {
+
+        if (str[i] == '^' )
+        {
+		i++;
+                if (str[i] == '[' )
+			i += 5;
+                continue;
+        }
+
+
 	if (str[i] == '{' )
 	{
 	    i++;
@@ -547,6 +557,13 @@ char *nocolor( const char *string )
     for (i = 0, n = 0; string[i] != '\0'; i++, n++) {
 	while (string[i] == '{')
 	    i+= 2;
+        while (string[i] == '^')
+        {
+                if (string[i+1] == '[')
+                        i+= 6;
+                else
+                        i+= 2;
+        }
 
         buf[n] = string[i];
     }
