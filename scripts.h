@@ -2204,6 +2204,12 @@ SCRIPT_CMD(do_tpalteraffect);
 SCRIPT_CMD(do_tpcrier);
 
 
+SCRIPT_CMD(do_mpfixaffects)
+SCRIPT_CMD(do_opfixaffects)
+SCRIPT_CMD(do_rpfixaffects)
+SCRIPT_CMD(do_tpfixaffects)
+
+
 #include "tables.h"
 
 #endif /* !__SCRIPTS_H__ */

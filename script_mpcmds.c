@@ -59,6 +59,7 @@ const struct script_cmd_type mob_cmd_table[] = {
 	{ "echoleadat",			do_mpecholeadat,		FALSE	},
 	{ "echonotvict",		do_mpechonotvict,		FALSE	},
 	{ "echoroom",			do_mpechoroom,			FALSE	},
+	{ "fixaffects",			do_mpfixaffects,			FALSE	},
 	{ "flee",				do_mpflee,			FALSE	},
 	{ "force",				do_mpforce,			FALSE	},
 	{ "forget",				do_mpforget,			FALSE	},
@@ -4429,6 +4430,8 @@ SCRIPT_CMD(do_mpaltermob)
 	else if(!str_cmp(field,"acslash"))	ptr = (int*)&mob->armor[AC_SLASH];
 	else if(!str_cmp(field,"act"))		ptr = (int*)&mob->act;
 	else if(!str_cmp(field,"act2"))		ptr = (int*)&mob->act2;
+	else if(!str_cmp(field,"affect"))	ptr = (int*)&mob->affected_by;
+	else if(!str_cmp(field,"affect2"))	ptr = (int*)&mob->affected_by2;
 	else if(!str_cmp(field,"alignment"))	ptr = (int*)&mob->alignment;
 	else if(!str_cmp(field,"bashed"))	ptr = (int*)&mob->bashed;
 	else if(!str_cmp(field,"bind"))		ptr = (int*)&mob->bind;
@@ -7635,4 +7638,21 @@ SCRIPT_CMD(do_mpscriptwait)
 
 	// Return how long the command decided
 	info->mob->progs->lastreturn = wait;
+}
+
+// Syntax: FIXAFFECTS $MOBILE
+SCRIPT_CMD(do_mpfixaffects)
+{
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->mob || IS_NULLSTR(argument)) return;
+
+	if(!expand_argument(info,argument,&arg))
+		return;
+
+	if(arg.type != ENT_MOBILE) return;
+
+	if(arg.d.mob == NULL) return;
+
+	affect_fix_char(arg.d.mob);
 }
