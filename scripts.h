@@ -1674,6 +1674,7 @@ DECL_OPC_FUN(opc_tokenother);
 
 
 /* General */
+long script_flag_value( const struct flag_type *flag_table, char *argument);
 char *ifcheck_get_value(SCRIPT_VARINFO *info,IFCHECK_DATA *ifc,char *text,int *ret,bool *valid);
 int execute_script(long pvnum, SCRIPT_DATA *script, CHAR_DATA *mob, OBJ_DATA *obj,
 	ROOM_INDEX_DATA *room, TOKEN_DATA *token, CHAR_DATA *ch,

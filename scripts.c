@@ -27,6 +27,7 @@ ROOM_INDEX_DATA room_pointer_vlink;
 ROOM_INDEX_DATA room_pointer_environment;
 
 bool opc_skip_block(SCRIPT_CB *block,int level,bool endblock);
+bool is_stat( const struct flag_type *flag_table );
 
 char *	const	dir_name_phrase	[]		=
 {
@@ -5368,3 +5369,49 @@ void script_end_pulse(CHAR_DATA *ch)
 }
 
 
+long script_flag_value( const struct flag_type *flag_table, char *argument)
+{
+    char word[MAX_INPUT_LENGTH];
+    long bit;
+    long marked = 0;
+    int flag;
+    bool found = FALSE;
+
+    if ( flag_table == NULL ) return NO_FLAG;
+
+    if ( is_stat( flag_table ) )
+    {
+		one_argument( argument, word );
+
+	    for (flag = 0; flag_table[flag].name != NULL; flag++)
+	    {
+			if (LOWER(word[0]) == LOWER(flag_table[flag].name[0]) &&
+				!str_prefix(word,flag_table[flag].name))
+	    		return flag_table[flag].bit;
+    	}
+
+	    return NO_FLAG;
+    }
+
+    /*
+     * Accept multiple flags.
+     */
+    for (; ;)
+    {
+        argument = one_argument( argument, word );
+
+        if ( word[0] == '\0' )
+	    break;
+
+        if ( ( bit = flag_lookup( word, flag_table ) ) != 0 )
+        {
+            SET_BIT( marked, bit );
+            found = TRUE;
+        }
+    }
+
+    if ( found )
+	return marked;
+    else
+	return NO_FLAG;
+}
