@@ -999,20 +999,20 @@ void do_spells(CHAR_DATA *ch, char *argument)
 
 				// Don't have it yet
 				if( level < 0 )
-					sprintf(buf, " %3d     %3d    %3d      {%c%-26s    {xN/A\n\r", i, -level, skill_table[skill].min_mana, color, name);
+					sprintf(buf, " %3d     %3d    %3d      {%c%-26s    {xN/A\n\r", i, -level, skill_table[entry->sn].min_mana, color, name);
 				else {
 					rating = skill + mod;
 					rating = URANGE(0,rating,100);
 
 					if( rating >= 100 ) {	// MASTER
 						if( mod )
-							sprintf(buf, " %3d     %3d     %3d       {%c%-26s    {MMaster {W(%+d%%){x\n\r", i, level, skill_table[skill].min_mana, color, name, mod);
+							sprintf(buf, " %3d     %3d     %3d       {%c%-26s    {MMaster {W(%+d%%){x\n\r", i, level, skill_table[entry->sn].min_mana, color, name, mod);
 						else
-							sprintf(buf, " %3d     %3d     %3d       {%c%-26s    {MMaster{x\n\r", i, level, skill_table[skill].min_mana, color, name);
+							sprintf(buf, " %3d     %3d     %3d       {%c%-26s    {MMaster{x\n\r", i, level, skill_table[entry->sn].min_mana, color, name);
 					} else if( mod )
-						sprintf(buf, " %3d     %3d     %3d       {%c%-26s    {G%d%% {W(%+d%%){x\n\r", i, level, skill_table[skill].min_mana, color, name, rating, mod);
+						sprintf(buf, " %3d     %3d     %3d       {%c%-26s    {G%d%% {W(%+d%%){x\n\r", i, level, skill_table[entry->sn].min_mana, color, name, rating, mod);
 					else
-						sprintf(buf, " %3d     %3d     %3d       {%c%-26s    {G%d%%{x\n\r", i, level, skill_table[skill].min_mana,  color, name, rating);
+						sprintf(buf, " %3d     %3d     %3d       {%c%-26s    {G%d%%{x\n\r", i, level, skill_table[entry->sn].min_mana,  color, name, rating);
 				}
 
 				add_buf(buffer,buf);
