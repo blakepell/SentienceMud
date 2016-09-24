@@ -947,7 +947,7 @@ bool one_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt, bool secondary)
 
 			case 7:
 				//send_to_char("Custom\n\r", victim);
-				if( p_percent_trigger( victim, NULL, NULL, NULL, ch, NULL, NULL, wield, NULL, TRIG_DEFENSE, NULL) ) set_fighting(ch,victim);  return FALSE;
+				if( p_percent_trigger( victim, NULL, NULL, NULL, ch, NULL, NULL, wield, NULL, TRIG_DEFENSE, NULL) ) return FALSE;
 				break;
 			}
 
