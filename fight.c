@@ -947,7 +947,7 @@ bool one_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt, bool secondary)
 
 			case 7:
 				//send_to_char("Custom\n\r", victim);
-				if( p_percent_trigger( victim, NULL, NULL, NULL, ch, NULL, NULL, wield, NULL, TRIG_DEFENSE, NULL) ) return FALSE;
+				if( p_percent_trigger( victim, NULL, NULL, NULL, ch, NULL, NULL, wield, NULL, TRIG_DEFENSE, NULL) ) set_fighting(ch,victim);  return FALSE;
 				break;
 			}
 
@@ -1333,14 +1333,6 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 		return FALSE;
 	}
 
-	/* mobs automatically flee in terror if there is too large a level difference */
-        if (IS_NPC(victim) && !IS_NPC(ch) && abs(ch->tot_level - victim->tot_level > 90) && number_percent() < 75) {
-		char buf[MAX_STRING_LENGTH];
-		sprintf(buf, "%s balks with fear at the sight of your approach!\n\r", victim->short_descr);
-		send_to_char(buf,ch);
-		do_function (victim, &do_flee, ""); 
-	}
-
 	// Armor and weapons decay with use
 	for (vObj = victim->carrying; vObj; vObj = vObj->next_content)
 		if (vObj->wear_loc != WEAR_NONE && (!IS_SET(vObj->extra_flags, ITEM_BLESS || number_percent() < 33))) {
@@ -1711,6 +1703,16 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 	if (!IS_NPC(victim) && victim->desc == NULL && victim->tot_level < 31 && !number_range(0, victim->wait)) {
 		do_function(victim, &do_recall, "");
 		return TRUE;
+	}
+	
+	/* 
+	 * mobs automatically flee in terror if there is too large a level difference 
+	 * */
+        if (IS_NPC(victim) && !IS_NPC(ch) && abs(ch->tot_level - victim->tot_level > 90) && number_percent() < 75) {
+		char buf[MAX_STRING_LENGTH];
+		sprintf(buf, "%s balks with fear at the sight of your approach!\n\r", victim->short_descr);
+		send_to_char(buf,ch);
+		do_function (victim, &do_flee, ""); 
 	}
 
 	// Wimpy - Mobiles
@@ -4254,7 +4256,7 @@ void do_circle(CHAR_DATA *ch, char *argument)
 
 	decept = get_skill(victim, gsn_deception);
 
-	if (number_percent() < circle && number_percent() > (3 * decept / 4)) {
+	if (number_percent() < circle && number_percent() > (decept / 10)) {
 		act("{Y$n circles around behind you.{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
 		act("{YYou circle around $N.{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		act("{Y$n circles around behind $N.{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
@@ -5437,13 +5439,13 @@ void do_backstab(CHAR_DATA *ch, char *argument)
 	dam = 0;
 	if (number_percent() < skill || (skill >= 2 && !IS_AWAKE(victim))) {
 		if (!IS_NPC(victim))
-			dam = victim->max_hit;
+			dam = victim->max_hit * 3/2;
 		else if (victim->tot_level < 200)
-			dam = victim->max_hit/2;
+			dam = victim->max_hit;
 		else
 			dam = victim->max_hit/10;
 
-		if (ch->tot_level < victim->tot_level) dam = (dam * ch->tot_level)/victim->tot_level;
+		if (ch->tot_level < victim->tot_level) dam = (dam * ch->tot_level)/(victim->tot_level/2);
 
 		dam += 3 * dice(wield->value[1], wield->value[2]);
 		dam = UMIN(dam, 1500+number_range(50,100));
@@ -5900,9 +5902,11 @@ void do_flee(CHAR_DATA *ch, char *argument)
 			{
 				plogf("fight.c, do_flee(): char is fleeing from a static room.");
 				// Check if door is a valid exit for this char
-				if (!(pexit = was_in->exit[door]) || (!pexit->u1.to_room && pexit->wilds.wilds_uid == 0) ||
-					(IS_SET(pexit->exit_info, EX_CLOSED) && !IS_AFFECTED(ch, AFF_PASS_DOOR)) ||
-					number_range(0,ch->daze) != 0 || (IS_NPC(ch) && IS_SET(pexit->u1.to_room->room_flags, ROOM_NO_MOB)))
+				if (!(pexit = was_in->exit[door]) 
+					|| (!pexit->u1.to_room && pexit->wilds.wilds_uid == 0) 
+					|| (IS_SET(pexit->exit_info, EX_CLOSED) && !IS_AFFECTED(ch, AFF_PASS_DOOR)) 
+					|| number_range(0,ch->daze) != 0 
+					|| (IS_NPC(ch) && (IS_SET(pexit->u1.to_room->room_flags, ROOM_NO_MOB) || IS_SET(pexit->u1.to_room->room_flags, ROOM_SAFE))))
 					continue;
 			}
 			else
@@ -6191,7 +6195,7 @@ void do_kick(CHAR_DATA *ch, char *argument)
 	if (skill > number_percent()) {
 		int dam = 0;
 
-		dam += number_range(ch->tot_level, ch->tot_level + 10);
+		dam += 2*number_range(ch->tot_level, ch->tot_level + 10);
 
 		if (get_skill(ch,gsn_martial_arts) > 0) {
 			dam += (int) dam * (get_skill(ch,gsn_martial_arts) / 100);
