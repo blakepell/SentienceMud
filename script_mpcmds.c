@@ -4479,8 +4479,8 @@ SCRIPT_CMD(do_mpaltermob)
 	else if(!str_cmp(field,"acslash"))	ptr = (int*)&mob->armor[AC_SLASH];
 	else if(!str_cmp(field,"act"))		{ ptr = (int*)&mob->act; flags = IS_NPC(mob) ? act_flags : plr_flags; }
 	else if(!str_cmp(field,"act2"))		{ ptr = (int*)&mob->act2; flags = IS_NPC(mob) ? act2_flags : plr2_flags; }
-	else if(!str_cmp(field,"affect"))	ptr = (int*)&mob->affected_by;
-	else if(!str_cmp(field,"affect2"))	ptr = (int*)&mob->affected_by2;
+	else if(!str_cmp(field,"affect"))	{ ptr = (int*)&mob->affected_by; flags = affect_flags; }
+	else if(!str_cmp(field,"affect2"))	{ ptr = (int*)&mob->affected_by2; flags = affect2_flags; }
 	else if(!str_cmp(field,"alignment"))	ptr = (int*)&mob->alignment;
 	else if(!str_cmp(field,"bashed"))	ptr = (int*)&mob->bashed;
 	else if(!str_cmp(field,"bind"))		ptr = (int*)&mob->bind;
