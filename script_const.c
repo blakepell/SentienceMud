@@ -402,6 +402,7 @@ ENT_FIELD entity_church[] = {
 	{"size",		ENTITY_CHURCH_SIZE,			ENT_STRING	},
 	{"flag",		ENTITY_CHURCH_FLAG,			ENT_STRING	},
 	{"founder",		ENTITY_CHURCH_FOUNDER,		ENT_MOBILE	},
+	{"founder_name",ENTITY_CHURCH_FOUNDER_NAME,	ENT_STRING	},
 	{"motd",		ENTITY_CHURCH_MOTD,			ENT_STRING	},
 	{"rules",		ENTITY_CHURCH_RULES,		ENT_STRING	},
 	{"info",		ENTITY_CHURCH_INFO,			ENT_STRING	},
