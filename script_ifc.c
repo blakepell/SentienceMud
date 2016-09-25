@@ -3380,7 +3380,7 @@ DECL_IFC_FUN(ifc_testtokenspell)
 		if(!ARG_TOK(0)->pIndexData->value[TOKVAL_SPELL_RATING])
 			*ret = (number_percent() < ARG_TOK(0)->value[TOKVAL_SPELL_RATING]);
 		else
-			*ret = (number_range(0,ARG_TOK(0)->pIndexData->value[TOKVAL_SPELL_RATING]-1) < ARG_TOK(0)->value[TOKVAL_SPELL_RATING]);
+			*ret = (number_range(0,(ARG_TOK(0)->pIndexData->value[TOKVAL_SPELL_RATING]*100)-1) < ARG_TOK(0)->value[TOKVAL_SPELL_RATING]);
 		return TRUE;
 	}
 

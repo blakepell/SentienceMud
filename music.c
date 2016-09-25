@@ -115,7 +115,6 @@ void do_play(CHAR_DATA *ch, char *argument)
 			iterator_start(&it, entry->token->pIndexData->progs[TRIGSLOT_SPELL]);
 			while(( prg = (PROG_LIST *)iterator_nextdata(&it))) {
 				if(is_trigger_type(prg->trig_type,TRIG_SPELL)) {
-					mana = atoi(prg->trig_phrase);
 					script = prg->script;
 					break;
 				}
@@ -129,6 +128,7 @@ void do_play(CHAR_DATA *ch, char *argument)
 			return;
 		}
 
+		mana = entry->token->value[TOKVAL_SPELL_MANA];
 		if ((ch->mana + ch->manastore) < mana) {
 			send_to_char("You don't have enough mana.\n\r", ch);
 			return;

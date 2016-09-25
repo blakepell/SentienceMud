@@ -44,6 +44,10 @@
 #include "tables.h"
 #include "db.h"
 
+#define MAX_SKILL_LEARNABLE	75
+#define MAX_SKILL_TRAINABLE	90
+
+void list_skill_entries(CHAR_DATA *ch, char *argument, bool show_skills, bool show_spells, bool hide_learned);
 
 void do_multi(CHAR_DATA *ch, char *argument)
 {
@@ -552,6 +556,7 @@ bool can_choose_subclass(CHAR_DATA *ch, int subclass)
 // Train a stat
 void do_train(CHAR_DATA *ch, char *argument)
 {
+	char arg[MIL];
     char buf[MAX_STRING_LENGTH];
     CHAR_DATA *mob;
     AFFECT_DATA *af;
@@ -565,306 +570,305 @@ void do_train(CHAR_DATA *ch, char *argument)
     int mod_hit;
     int mod_mana;
     int mod_move;
-    int sn;
+    int rating;
+    char *name;
+    SKILL_ENTRY *entry;
 
     if (IS_NPC(ch))
-	return;
+		return;
 
-    // Train up a skill for a ridiculous cost
-    if ((str_cmp(argument, "str")
-	 && str_cmp(argument, "wis")
-	 && str_cmp(argument, "int")
-	 && str_cmp(argument, "dex")
-	 && str_cmp(argument, "wis")
-	 && str_cmp(argument, "con")
-	 && str_cmp(argument, "hp")
-	 && str_cmp(argument, "mana")
-	 && str_cmp(argument, "move")) &&
-	(sn = skill_lookup(argument)) > 0)
+	argument = one_argument(argument, arg);
 
-    {
-	for (mob = ch->in_room->people; mob != NULL; mob = mob->next_in_room)
-	{
-	    if (IS_NPC(mob) && (mob->pIndexData->vnum == VNUM_QUESTOR_1
-            ||  mob->pIndexData->vnum == VNUM_QUESTOR_2))
-		break;
-	}
+	if( arg[0] == '\0') {
+		sprintf(buf, "You have %d training sessions.\n\r", ch->train);
+		send_to_char(buf, ch);
+		return;
+	} else if(!str_cmp(arg, "skill")) {
+		for (mob = ch->in_room->people; mob != NULL; mob = mob->next_in_room)
+		{
+			if (IS_NPC(mob) && (mob->pIndexData->vnum == VNUM_QUESTOR_1
+				||  mob->pIndexData->vnum == VNUM_QUESTOR_2))
+			break;
+		}
 
-        if (mob == NULL)
-	{
-	    send_to_char("There is nobody here to help you do that.\n\r", ch);
-	    return;
-	}
+		if (mob == NULL)
+		{
+			send_to_char("There is nobody here to help you do that.\n\r", ch);
+			return;
+		}
 
-	if (ch->tot_level < 2 * MAX_CLASS_LEVEL + 1)
-	{
-	    sprintf(buf, "%s, you must be of at least the third class to do this.", pers(ch, mob));
-	    do_say(mob, buf);
-	    return;
-	}
+		if (ch->tot_level < 2 * MAX_CLASS_LEVEL + 1)
+		{
+			sprintf(buf, "%s, you must be of at least the third class to do this.", pers(ch, mob));
+			do_say(mob, buf);
+			return;
+		}
 
-	if (get_skill(ch, sn) == 0)
-	{
-	    sprintf(buf, "You know nothing of that skill, %s!\n\r", pers(ch, mob));
-	    do_say(mob, buf);
-	    return;
-	}
-	else
-	if (get_skill(ch, sn) < 75)
-	{
-	    sprintf(buf, "You must come back when you have studied this skill to the utmost through mundane means, %s.\n\r",
-	        pers(ch, mob));
-	    do_say(mob, buf);
-	    return;
-	}
-	else
-        if (get_skill(ch, sn) >= 90)
-	{
-	    sprintf(buf, "Even I can't help your mastery of %s past this point, %s.",
-	        skill_table[sn].name, pers(ch, mob));
-	    do_say(mob, buf);
-	    return;
-	}
+		entry = skill_entry_findname(ch->sorted_skills, argument);
+		if( !entry )
+		{
+			sprintf(buf, "You know nothing of that skill, %s!\n\r", pers(ch, mob));
+			do_say(mob, buf);
+			return;
+		}
 
-	cost = ((get_skill(ch, sn)) * 3)/20;
-	if (cost <= ch->train)
-	{
-	    ch->train -= cost;
-	    act("$n trains $t with $N.", ch, mob, NULL, NULL, NULL, skill_table[sn].name, NULL, TO_ROOM);
-	    act("You train $t with $N.", ch, mob, NULL, NULL, NULL, skill_table[sn].name, NULL, TO_CHAR);
-	    act("{YYou feel your mastery of $t soaring to new heights!{x", ch, NULL, NULL, NULL, NULL, skill_table[sn].name, NULL, TO_CHAR);
-	    ch->pcdata->learned[sn]++;
-	}
-	else
-	{
-	    sprintf(buf, "It would take %d trains to train that skill, %s.", cost, pers(ch, mob));
-	    do_say(mob, buf);
-	}
+		if( entry->token )
+		{
+		    if(p_percent_trigger(NULL, NULL, NULL, entry->token, ch, mob, NULL, NULL, NULL, TRIG_PRETRAINTOKEN, NULL))
+		    {
+				send_to_char("There is nobody here to help you do that.\n\r", ch);
+				return;
+			}
 
-	return;
-    }
+			if( entry->token->value[TOKVAL_SPELL_LEARN] < 1 )
+			{
+				send_to_char("There is nobody here to help you do that.\n\r", ch);
+				return;
+			}
+		}
 
-    for (mob = ch->in_room->people; mob; mob = mob->next_in_room)
-    {
-	if (IS_NPC(mob) && IS_SET(mob->act, ACT_TRAIN))
-	    break;
-    }
+		name = skill_entry_name(entry);
+		rating = skill_entry_rating(ch, entry);
+		if( rating < MAX_SKILL_LEARNABLE )
+		{
+			sprintf(buf, "You must come back when you have studied this skill to the utmost through mundane means, %s.\n\r", pers(ch, mob));
+			do_say(mob, buf);
+			return;
+		}
 
-    if (mob == NULL)
-    {
-	send_to_char("You can't do that here.\n\r", ch);
-	return;
-    }
+        if (rating >= MAX_SKILL_TRAINABLE)
+		{
+			sprintf(buf, "Even I can't help your mastery of %s past this point, %s.", name, pers(ch, mob));
+			do_say(mob, buf);
+			return;
+		}
 
-    if(p_percent_trigger(mob, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_PRETRAIN, NULL))
-	return;
+		cost = 3 * rating / 20;
+		if (cost <= ch->train)
+		{
+			ch->train -= cost;
+			act("$n trains $t with $N.", ch, mob, NULL, NULL, NULL, name, NULL, TO_ROOM);
+			act("You train $t with $N.", ch, mob, NULL, NULL, NULL, name, NULL, TO_CHAR);
+			act("{YYou feel your mastery of $t soaring to new heights!{x", ch, NULL, NULL, NULL, NULL, name, NULL, TO_CHAR);
 
-    if (argument[0] == '\0')
-    {
-	sprintf(buf, "You have %d training sessions.\n\r", ch->train);
-	send_to_char(buf, ch);
-    }
+			if( entry->token ) {
+				if( entry->token->pIndexData->value[TOKVAL_SPELL_RATING] > 0 )
+					entry->token->value[TOKVAL_SPELL_RATING] += entry->token->pIndexData->value[TOKVAL_SPELL_RATING];
+				else
+					entry->token->value[TOKVAL_SPELL_RATING]++;
+			} else
+				ch->pcdata->learned[entry->sn]++;
+		}
+		else
+		{
+			sprintf(buf, "It would take %d trains to train that skill, %s.", cost, pers(ch, mob));
+			do_say(mob, buf);
+		}
+	} else {
+		for (mob = ch->in_room->people; mob; mob = mob->next_in_room)
+		{
+			if (IS_NPC(mob) && IS_SET(mob->act, ACT_TRAIN))
+				break;
+		}
 
-    cost = 1;
+		if (mob == NULL)
+		{
+			send_to_char("You can't do that here.\n\r", ch);
+			return;
+		}
 
-    mod_hit = 0;
-    mod_mana = 0;
-    mod_move = 0;
+	    if(p_percent_trigger(mob, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_PRETRAIN, arg))
+			return;
 
-    max_hit = pc_race_table[ch->race].max_vital_stats[MAX_HIT];
-    max_mana = pc_race_table[ch->race].max_vital_stats[MAX_MANA];
-    max_move = pc_race_table[ch->race].max_vital_stats[MAX_MOVE];
+		cost = 1;
 
-    for (obj = ch->carrying; obj != NULL; obj = obj->next_content)
-    {
-	if (obj->wear_loc != WEAR_NONE)
-	{
-	    for (af = obj->affected; af != NULL; af = af->next)
+		mod_hit = 0;
+		mod_mana = 0;
+		mod_move = 0;
+
+		max_hit = pc_race_table[ch->race].max_vital_stats[MAX_HIT];
+		max_mana = pc_race_table[ch->race].max_vital_stats[MAX_MANA];
+		max_move = pc_race_table[ch->race].max_vital_stats[MAX_MOVE];
+
+		for (obj = ch->carrying; obj != NULL; obj = obj->next_content)
+		{
+			if (obj->wear_loc != WEAR_NONE)
+			{
+				for (af = obj->affected; af != NULL; af = af->next)
+				{
+					if (af->location == APPLY_HIT)
+						mod_hit += af->modifier;
+					if (af->location == APPLY_MANA)
+						mod_mana += af->modifier;
+					if (af->location == APPLY_MOVE)
+						mod_move += af->modifier;
+				}
+			}
+		}
+
+		max_hit += mod_hit;
+		max_mana += mod_mana;
+		mod_move += mod_move;
+
+		if (!str_cmp(argument, "str"))
+		{
+			if (class_table[ch->pcdata->class_current].attr_prime == STAT_STR || ch->pcdata->class_mage != -1)
+				cost    = 1;
+			stat        = STAT_STR;
+			pOutput     = "strength";
+		}
+
+		else if (!str_cmp(argument, "int"))
+		{
+			if (class_table[ch->pcdata->class_current].attr_prime == STAT_INT || ch->pcdata->class_mage != -1)
+				cost    = 1;
+			stat	    = STAT_INT;
+			pOutput     = "intelligence";
+		}
+
+		else if (!str_cmp(argument, "wis"))
+		{
+			if (class_table[ch->pcdata->class_current].attr_prime == STAT_WIS || ch->pcdata->class_cleric != -1)
+				cost    = 1;
+			stat	    = STAT_WIS;
+			pOutput     = "wisdom";
+		}
+
+		else if (!str_cmp(argument, "dex"))
+		{
+			if (class_table[ch->pcdata->class_current].attr_prime == STAT_DEX || ch->pcdata->class_thief != -1)
+				cost    = 1;
+			stat  	    = STAT_DEX;
+			pOutput     = "dexterity";
+		}
+
+		else if (!str_cmp(argument, "con"))
+		{
+			if (class_table[ch->pcdata->class_current].attr_prime == STAT_CON)
+				cost    = 1;
+			stat	    = STAT_CON;
+			pOutput     = "constitution";
+		}
+	    else if (!str_cmp(argument, "hp"))
+		    cost = 1;
+
+	    else if (!str_cmp(argument, "mana"))
+		    cost = 1;
+
+	    else if (!str_cmp(argument, "move"))
+		    cost = 1;
+
+	    else
 	    {
-		if (af->location == APPLY_HIT)
-		    mod_hit += af->modifier;
-		if (af->location == APPLY_MANA)
-		    mod_mana += af->modifier;
-		if (af->location == APPLY_MOVE)
-		    mod_move += af->modifier;
+			strcpy(buf, "You can train:");
+			if (ch->perm_stat[STAT_STR] < get_max_train(ch,STAT_STR))	strcat(buf, " str");
+			if (ch->perm_stat[STAT_INT] < get_max_train(ch,STAT_INT))	strcat(buf, " int");
+			if (ch->perm_stat[STAT_WIS] < get_max_train(ch,STAT_WIS))	strcat(buf, " wis");
+			if (ch->perm_stat[STAT_DEX] < get_max_train(ch,STAT_DEX))	strcat(buf, " dex");
+			if (ch->perm_stat[STAT_CON] < get_max_train(ch,STAT_CON))	strcat(buf, " con");
+			if (ch->max_hit < max_hit)									strcat(buf, " hp");
+			if (ch->max_mana < max_mana)								strcat(buf, " mana");
+        	if (ch->max_move < max_move)								strcat(buf, " move");
+
+			if (buf[strlen(buf)-1] != ':')
+			{
+			    strcat(buf, ".\n\r");
+			    send_to_char(buf, ch);
+			}
+			else
+			{
+			    act("You have nothing left to train.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+			}
+
+			return;
 	    }
-	}
-    }
 
-    max_hit += mod_hit;
-    max_mana += mod_mana;
-    mod_move += mod_move;
 
-    if (!str_cmp(argument, "str"))
-    {
-	if (class_table[ch->pcdata->class_current].attr_prime == STAT_STR
-	|| ch->pcdata->class_mage != -1)
-	    cost    = 1;
-	stat        = STAT_STR;
-	pOutput     = "strength";
-    }
+		if (!str_cmp("hp",argument))
+		{
+			if (cost > ch->train)
+			{
+				send_to_char("You don't have enough training sessions.\n\r", ch);
+				return;
+			}
 
-    else if (!str_cmp(argument, "int"))
-    {
-	if (class_table[ch->pcdata->class_current].attr_prime == STAT_INT
-	|| ch->pcdata->class_mage != -1)
-	    cost    = 1;
-	stat	    = STAT_INT;
-	pOutput     = "intelligence";
-    }
+			if (ch->max_hit >= max_hit) {
+				send_to_char("Your body can't get any tougher.\n\r", ch);
+				return;
+			}
 
-    else if (!str_cmp(argument, "wis"))
-    {
-	if (class_table[ch->pcdata->class_current].attr_prime == STAT_WIS
-	|| ch->pcdata->class_cleric != -1)
-	    cost    = 1;
-	stat	    = STAT_WIS;
-	pOutput     = "wisdom";
-    }
+			ch->train -= cost;
+			ch->pcdata->perm_hit += 10;
+			ch->max_hit += 10;
+			ch->hit += 10;
+			act("Your health increases!",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_CHAR);
+			act("$n's health increases!",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
+			return;
+		}
 
-    else if (!str_cmp(argument, "dex"))
-    {
-	if (class_table[ch->pcdata->class_current].attr_prime == STAT_DEX
-	|| ch->pcdata->class_thief != -1)
-	    cost    = 1;
-	stat  	    = STAT_DEX;
-	pOutput     = "dexterity";
-    }
+		if (!str_cmp("mana",argument))
+		{
+			if (cost > ch->train)
+			{
+				send_to_char("You don't have enough training sessions.\n\r", ch);
+				return;
+			}
 
-    else if (!str_cmp(argument, "con"))
-    {
-	if (class_table[ch->pcdata->class_current].attr_prime == STAT_CON)
-	    cost    = 1;
-	stat	    = STAT_CON;
-	pOutput     = "constitution";
-    }
+			if (ch->max_mana >= max_mana) {
+				send_to_char("Your body can't get any tougher.\n\r", ch);
+				return;
+			}
 
-    else if (!str_cmp(argument, "hp"))
-	    cost = 1;
+			ch->train -= cost;
+			ch->pcdata->perm_mana += 10;
+			ch->max_mana += 10;
+			ch->mana +=10;
+			act("Your mana increases!",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_CHAR);
+			act("$n's mana increases!",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
 
-    else if (!str_cmp(argument, "mana"))
-	    cost = 1;
+			return;
+		}
 
-    else if (!str_cmp(argument, "move"))
-	    cost = 1;
+		if (!str_cmp("move",argument))
+		{
+			if (cost > ch->train)
+			{
+				send_to_char("You don't have enough training sessions.\n\r", ch);
+				return;
+			}
 
-    else
-    {
-	strcpy(buf, "You can train:");
-	if (ch->perm_stat[STAT_STR] < get_max_train(ch,STAT_STR))
-	    strcat(buf, " str");
-	if (ch->perm_stat[STAT_INT] < get_max_train(ch,STAT_INT))
-	    strcat(buf, " int");
-	if (ch->perm_stat[STAT_WIS] < get_max_train(ch,STAT_WIS))
-	    strcat(buf, " wis");
-	if (ch->perm_stat[STAT_DEX] < get_max_train(ch,STAT_DEX))
-	    strcat(buf, " dex");
-	if (ch->perm_stat[STAT_CON] < get_max_train(ch,STAT_CON))
-	    strcat(buf, " con");
-	if (ch->max_hit < max_hit)
-	    strcat(buf, " hp");
-	if (ch->max_mana < max_mana)
-	    strcat(buf, " mana");
-        if (ch->max_move < max_move)
-	    strcat(buf, " move");
+			if (ch->max_move >= max_move) {
+				send_to_char("Your body can't get any more durable.\n\r", ch);
+				return;
+			}
 
-	if (buf[strlen(buf)-1] != ':')
-	{
-	    strcat(buf, ".\n\r");
-	    send_to_char(buf, ch);
-	}
-	else
-	{
-	    act("You have nothing left to train.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
-	}
+			ch->train -= cost;
+			ch->pcdata->perm_move += 10;
+			ch->max_move += 10;
+			ch->move += 10;
+			act("Your stamina increases!",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_CHAR);
+			act("$n's stamina increases!",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
+			return;
+		}
 
-	return;
-    }
+		if (ch->perm_stat[stat]  >= get_max_train(ch,stat))
+		{
+			act("Your $T is already at maximum.", ch, NULL, NULL, NULL, NULL, NULL, pOutput, TO_CHAR);
+			return;
+		}
 
-    if (!str_cmp("hp",argument))
-    {
-    	if (cost > ch->train)
-    	{
-       	    send_to_char("You don't have enough training sessions.\n\r", ch);
-            return;
-        }
-
-     	if (ch->max_hit >= max_hit) {
-	        send_to_char("Your body can't get any tougher.\n\r", ch);
-	        return;
-        }
+		if (cost > ch->train)
+		{
+			send_to_char("You don't have enough training sessions.\n\r", ch);
+			return;
+		}
 
 		ch->train -= cost;
-        ch->pcdata->perm_hit += 10;
-        ch->max_hit += 10;
-        ch->hit += 10;
-        act("Your health increases!",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_CHAR);
-        act("$n's health increases!",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
-        return;
-    }
+		add_perm_stat(ch, stat, 1);
 
-    if (!str_cmp("mana",argument))
-    {
-        if (cost > ch->train)
-        {
-            send_to_char("You don't have enough training sessions.\n\r", ch);
-            return;
-        }
-
-	if (ch->max_mana >= max_mana) {
-	    send_to_char("Your body can't get any tougher.\n\r", ch);
-	    return;
+		act("Your $T increases!", ch, NULL, NULL, NULL, NULL, NULL, pOutput, TO_CHAR);
+		act("$n's $T increases!", ch, NULL, NULL, NULL, NULL, NULL, pOutput, TO_ROOM);
 	}
-
-	ch->train -= cost;
-        ch->pcdata->perm_mana += 10;
-        ch->max_mana += 10;
-        ch->mana +=10;
-        act("Your mana increases!",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_CHAR);
-        act("$n's mana increases!",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
-
-	return;
-    }
-
-    if (!str_cmp("move",argument))
-    {
-        if (cost > ch->train)
-        {
-            send_to_char("You don't have enough training sessions.\n\r", ch);
-            return;
-        }
-
-	if (ch->max_move >= max_move) {
-	    send_to_char("Your body can't get any more durable.\n\r", ch);
-	    return;
-	}
-
-	ch->train -= cost;
-        ch->pcdata->perm_move += 10;
-        ch->max_move += 10;
-        ch->move += 10;
-        act("Your stamina increases!",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_CHAR);
-        act("$n's stamina increases!",ch,NULL,NULL, NULL, NULL, NULL, NULL,TO_ROOM);
-        return;
-    }
-
-    if (ch->perm_stat[stat]  >= get_max_train(ch,stat))
-    {
-	act("Your $T is already at maximum.", ch, NULL, NULL, NULL, NULL, NULL, pOutput, TO_CHAR);
-	return;
-    }
-
-    if (cost > ch->train)
-    {
-	send_to_char("You don't have enough training sessions.\n\r", ch);
-	return;
-    }
-
-    ch->train		-= cost;
-
-	add_perm_stat(ch, stat, 1);
-    act("Your $T increases!", ch, NULL, NULL, NULL, NULL, NULL, pOutput, TO_CHAR);
-    act("$n's $T increases!", ch, NULL, NULL, NULL, NULL, NULL, pOutput, TO_ROOM);
 }
 
 
@@ -945,8 +949,7 @@ void do_convert(CHAR_DATA *ch, char *argument)
     send_to_char("Syntax:  convert <practices|trains>\n\r", ch);
 }
 
-
-void do_spells(CHAR_DATA *ch, char *argument)
+void list_skill_entries(CHAR_DATA *ch, char *argument, bool show_skills, bool show_spells, bool hide_learned)
 {
 	BUFFER *buffer;
 
@@ -955,7 +958,7 @@ void do_spells(CHAR_DATA *ch, char *argument)
 	char arg[MSL];
 	int i;
 	char color, *name;
-	int skill, rating, mod, level;
+	int skill, rating, mod, level, mana;
 	SKILL_ENTRY *entry;
 
 	if (ch == NULL) {
@@ -968,51 +971,92 @@ void do_spells(CHAR_DATA *ch, char *argument)
 	argument = one_argument( argument, arg );
 
 	buffer = new_buf();
-	add_buf(buffer, "\n\r{B [ {w# {B] [ {wLvl{B ] [ {wMana{B ]  [ {wSpell Name{B ]                 [ {w%{B ]{x\n\r");
+	if( show_spells )
+		add_buf(buffer, "\n\r{B [ {w# {B] [ {wMana{B ]  [ {wName{B ]                       [ {w%{B ]{x\n\r");
+	else
+		add_buf(buffer, "\n\r{B [ {w# {B] [ {wName{B ]                       [ {w%{B ]{x\n\r");
+
 	i = 1;
 
 	// Show spells people lost
  	if (!str_cmp(arg, "negated")) {
-		for(entry = ch->sorted_spells; entry; entry = entry->next) {
+		for(entry = ch->sorted_skills; entry; entry = entry->next) {
+			if( !show_skills && !entry->isspell ) continue;
+			if( !show_spells && entry->isspell ) continue;
+
 			rating = skill_entry_rating(ch, entry);
 
 			if(rating < 0) {
 				color = ( IS_IMMORTAL(ch) && IS_VALID(entry->token) ) ? 'G' : 'Y';
 
-				sprintf(buf, " %3d     ---       {%c%-26s    {D%d%%{x\n\r", i++, color, skill_entry_name(entry), -rating);
+				if( show_spells )
+					sprintf(buf, " %3d     ---      {%c%-26s    {D%d%%{x\n\r", i++, color, skill_entry_name(entry), -rating);
+				else
+					sprintf(buf, " %3d     {%c%-26s    {D%d%%{x\n\r", i++, color, skill_entry_name(entry), -rating);
 				add_buf(buffer,buf);
 				found = TRUE;
 			}
 		}
 	} else {
-		for(entry = ch->sorted_spells; entry; entry = entry->next) {
+		char min_mana[MIL];
+		for(entry = ch->sorted_skills; entry; entry = entry->next) {
+			if( !show_skills && !entry->isspell ) continue;
+			if( !show_spells && entry->isspell ) continue;
+
 			skill = skill_entry_rating(ch, entry);
 			mod = skill_entry_mod(ch, entry);
 			level = skill_entry_level(ch, entry);	// Negate level implies they do not know it yet.
 			name = skill_entry_name(entry);
+			mana = skill_entry_mana(ch, entry);
 
 			if( skill < 1 ) continue;
+
+			if( hide_learned && skill >= MAX_SKILL_LEARNABLE) continue;
 
 			if( !arg[0] || !str_prefix(arg, name) ) {
 
 				color = ( IS_IMMORTAL(ch) && IS_VALID(entry->token) ) ? 'G' : 'Y';
 
 				// Don't have it yet
-				if( level < 0 )
-					sprintf(buf, " %3d     %3d    %3d      {%c%-26s    {xN/A\n\r", i, -level, skill_table[skill].min_mana, color, name);
-				else {
-					rating = skill + mod;
-					rating = URANGE(0,rating,100);
-
-					if( rating >= 100 ) {	// MASTER
-						if( mod )
-							sprintf(buf, " %3d     %3d     %3d       {%c%-26s    {MMaster {W(%+d%%){x\n\r", i, level, skill_table[skill].min_mana, color, name, mod);
-						else
-							sprintf(buf, " %3d     %3d     %3d       {%c%-26s    {MMaster{x\n\r", i, level, skill_table[skill].min_mana, color, name);
-					} else if( mod )
-						sprintf(buf, " %3d     %3d     %3d       {%c%-26s    {G%d%% {W(%+d%%){x\n\r", i, level, skill_table[skill].min_mana, color, name, rating, mod);
+				if( show_spells ) {
+					if( mana > 0 )
+						sprintf(min_mana, "%3d", mana);
 					else
-						sprintf(buf, " %3d     %3d     %3d       {%c%-26s    {G%d%%{x\n\r", i, level, skill_table[skill].min_mana,  color, name, rating);
+						strcpy(min_mana, "---");
+
+					if( level < 0 )
+						sprintf(buf, " %3d     %-8s {%c%-26s    {xUnlocks at {W%d{x.\n\r", i, min_mana, color, name, -level);
+					else {
+						rating = skill + mod;
+						rating = URANGE(0,rating,100);
+
+						if( rating >= 100 ) {	// MASTER
+							if( mod )
+								sprintf(buf, " %3d     %-8s {%c%-26s    {MMaster {W(%+d%%){x\n\r", i, min_mana, color, name, mod);
+							else
+								sprintf(buf, " %3d     %-8s {%c%-26s    {MMaster{x\n\r", i, min_mana, color, name);
+						} else if( mod )
+							sprintf(buf, " %3d     %-8s {%c%-26s    {G%d%% {W(%+d%%){x\n\r", i, min_mana, color, name, rating, mod);
+						else
+							sprintf(buf, " %3d     %-8s {%c%-26s    {G%d%%{x\n\r", i, min_mana,  color, name, rating);
+					}
+				} else {
+					if( level < 0 )
+						sprintf(buf, " %3d     {%c%-26s    {xUnlocks at {W%d{x\n\r", i, color, name, -level);
+					else {
+						rating = skill + mod;
+						rating = URANGE(0,rating,100);
+
+						if( rating >= 100 ) {	// MASTER
+							if( mod )
+								sprintf(buf, " %3d     {%c%-26s    {MMaster {W(%+d%%){x\n\r", i, color, name, mod);
+							else
+								sprintf(buf, " %3d     {%c%-26s    {MMaster{x\n\r", i, color, name);
+						} else if( mod )
+							sprintf(buf, " %3d     {%c%-26s    {G%d%% {W(%+d%%){x\n\r", i, color, name, rating, mod);
+						else
+							sprintf(buf, " %3d     {%c%-26s    {G%d%%{x\n\r", i, color, name, rating);
+					}
 				}
 
 				add_buf(buffer,buf);
@@ -1023,96 +1067,32 @@ void do_spells(CHAR_DATA *ch, char *argument)
 		}
 	}
 
-	if (!found)
-		send_to_char("No spells found.\n\r", ch );
+	if (!found) {
+		if( show_skills ) {
+			if( show_spells )
+				send_to_char("No skills/spells found.\n\r", ch );
+			else
+				send_to_char("No skills found.\n\r", ch );
+		} else if( show_spells )
+			send_to_char("No spells found.\n\r", ch );
+		else
+			send_to_char("No abilities found.\n\r", ch );
+	}
 	else
 		page_to_char(buf_string(buffer),ch);
 	free_buf(buffer);
 }
 
 
+void do_spells(CHAR_DATA *ch, char *argument)
+{
+	list_skill_entries(ch, argument, FALSE, TRUE, FALSE);
+}
+
+
 void do_skills(CHAR_DATA *ch, char *argument)
 {
-	BUFFER *buffer;
-
-	bool found = FALSE;
-	char buf[MAX_STRING_LENGTH];
-	char arg[MSL];
-	int i;
-	char color, *name;
-	int skill, rating, mod, level;
-	SKILL_ENTRY *entry;
-
-	if (ch == NULL) {
-		bug("do_skills: NULL ch pointer.", 0);
-		return;
-	}
-
-	if (IS_NPC(ch)) return;
-
-	argument = one_argument( argument, arg );
-
-	buffer = new_buf();
-	add_buf(buffer, "\n\r{B [ {w# {B] [ {wLvl{B ]   [ {wSkill Name{B ]                 [ {w%{B ]{x\n\r");
-	i = 1;
-
-	// Show skills people lost
- 	if (!str_cmp(arg, "negated")) {
-		for(entry = ch->sorted_skills; entry; entry = entry->next) {
-			rating = skill_entry_rating(ch, entry);
-
-			if(rating < 0) {
-				color = ( IS_IMMORTAL(ch) && IS_VALID(entry->token) ) ? 'G' : 'Y';
-
-				sprintf(buf, " %3d     ---       {%c%-26s    {D%d%%{x\n\r", i++, color, skill_entry_name(entry), -rating);
-				add_buf(buffer,buf);
-				found = TRUE;
-			}
-		}
-	} else {
-		for(entry = ch->sorted_skills; entry; entry = entry->next) {
-			skill = skill_entry_rating(ch, entry);
-			mod = skill_entry_mod(ch, entry);
-			level = skill_entry_level(ch, entry);	// Negate level implies they do not know it yet.
-			name = skill_entry_name(entry);
-
-			if( skill < 1 ) continue;
-
-			if( !arg[0] || !str_prefix(arg, name) ) {
-
-				color = ( IS_IMMORTAL(ch) && IS_VALID(entry->token) ) ? 'G' : 'Y';
-
-				// Don't have it yet
-				if( level < 0 )
-					sprintf(buf, " %3d     %3d       {%c%-26s    {xN/A\n\r", i, -level, color, name);
-				else {
-					rating = skill + mod;
-					rating = URANGE(0,rating,100);
-
-					if( rating >= 100 ) {	// MASTER
-						if( mod )
-							sprintf(buf, " %3d     %3d       {%c%-26s    {MMaster {W(%+d%%){x\n\r", i, level, color, name, mod);
-						else
-							sprintf(buf, " %3d     %3d       {%c%-26s    {MMaster{x\n\r", i, level, color, name);
-					} else if( mod )
-						sprintf(buf, " %3d     %3d       {%c%-26s    {G%d%% {W(%+d%%){x\n\r", i, level, color, name, rating, mod);
-					else
-						sprintf(buf, " %3d     %3d       {%c%-26s    {G%d%%{x\n\r", i, level, color, name, rating);
-				}
-
-				add_buf(buffer,buf);
-				i++;
-				found = TRUE;
-			}
-
-		}
-	}
-
-	if (!found)
-		send_to_char("No skills found.\n\r", ch );
-	else
-		page_to_char(buf_string(buffer),ch);
-	free_buf(buffer);
+	list_skill_entries(ch, argument, TRUE, FALSE, FALSE);
 }
 
 
@@ -1257,14 +1237,19 @@ void group_add( CHAR_DATA *ch, const char *name, bool deduct)
 		if (ch->pcdata->learned[sn] <= 0) { /* i.e. not known */
 			ch->pcdata->learned[sn] = 1;
 
-			if( skill_table[sn].spell_fun == spell_null ) {
-				if( skill_entry_findsn( ch->sorted_skills, sn) == NULL)
+			if( skill_entry_findsn( ch->sorted_skills, sn) == NULL)
+				skill_entry_addskill(ch, sn, NULL);
+
+			if( skill_entry_findsn( ch->sorted_skills, sn) == NULL)
+			{
+				if( skill_table[sn].spell_fun == spell_null ) {
 					skill_entry_addskill(ch, sn, NULL);
-			} else {
-				if( skill_entry_findsn( ch->sorted_spells, sn) == NULL)
+				} else {
 					skill_entry_addspell(ch, sn, NULL);
+				}
 			}
 		}
+
 
 		return;
     }
@@ -1313,8 +1298,9 @@ void do_practice( CHAR_DATA *ch, char *argument )
 	char buf[MAX_STRING_LENGTH];
 	char arg[MSL];
 	int sn;
-	int this_class;
+	int learn;
 	CHAR_DATA *mob;
+	SKILL_ENTRY *entry;
 
 	if (IS_NPC(ch))
 		return;
@@ -1322,7 +1308,7 @@ void do_practice( CHAR_DATA *ch, char *argument )
 	argument = one_argument( argument, arg );
 
 	if (!arg[0]) {
-		do_function(ch, &do_skills, "");
+		list_skill_entries(ch, "", TRUE, TRUE, TRUE);
 		send_to_char("\n\r", ch);
 		return;
 	}
@@ -1337,6 +1323,112 @@ void do_practice( CHAR_DATA *ch, char *argument )
 		return;
 	}
 
+	entry = skill_entry_findname(ch->sorted_skills, arg);
+	if( !entry )
+	{
+		send_to_char("You can't practice that.\n\r", ch);
+		return;
+	}
+
+	learn = skill_entry_learn(ch, entry);
+	if( learn < 1 )
+	{
+		send_to_char("You can't practice that.\n\r", ch);
+		return;
+	}
+
+	if (ch->practice <= 0) {
+		send_to_char("You have no practice sessions left.\n\r", ch);
+		return;
+	}
+
+	if( entry->token )
+	{
+		int amount;
+		// Token ability
+
+		// $VICTIM: allows you to check who is teaching.. are they allowed to teach it?
+		if(p_percent_trigger(NULL, NULL, NULL, entry->token, ch, mob, NULL, NULL, NULL, TRIG_PREPRACTICETOKEN, NULL))
+		{
+			send_to_char("You can't practice that.\n\r", ch);
+			return;
+		}
+
+		// TODO: add ability for PREPRACTICE on mob for tokens.. will require adding a TOKEN argument to triggers and script execution
+
+		amount = token_skill_rating(entry->token);
+		if( amount >= MAX_SKILL_LEARNABLE )
+		{
+			sprintf(buf, "There is nothing more that you can learn about %s here.\n\r", entry->token->name);
+			send_to_char(buf, ch);
+		}
+		else
+		{
+			--ch->practice;
+			ch->tempstore[0] = learn;
+			p_percent_trigger(NULL, NULL, NULL, entry->token, ch, mob, NULL, NULL, NULL, TRIG_PRACTICETOKEN, NULL);
+			learn = ch->tempstore[0];
+			if( learn < 1 ) learn = 1;	// At this point, it should be a minimum of 1 skill rating
+
+			amount += learn;
+			if( amount > MAX_SKILL_LEARNABLE) amount = MAX_SKILL_LEARNABLE;
+
+			if( entry->token->pIndexData->value[TOKVAL_SPELL_RATING] > 0 )
+				entry->token->value[TOKVAL_SPELL_RATING] = amount * entry->token->pIndexData->value[TOKVAL_SPELL_RATING];
+			else
+				entry->token->value[TOKVAL_SPELL_RATING] = amount;
+
+
+			if (amount < MAX_SKILL_LEARNABLE) {
+				act("You practice $T.", ch, NULL, NULL, NULL, NULL, NULL, entry->token->name, TO_CHAR);
+				act("$n practices $T.", ch, NULL, NULL, NULL, NULL, NULL, entry->token->name, TO_ROOM);
+			} else {
+				act("{WYou are now learned at $T.{x", ch, NULL, NULL, NULL, NULL, NULL, entry->token->name, TO_CHAR);
+				act("{W$n is now learned at $T.{x", ch, NULL, NULL, NULL, NULL, NULL, entry->token->name, TO_ROOM);
+			}
+		}
+	}
+	else
+	{
+		// Standard ability
+		sn = entry->sn;
+		if( !can_practice(ch, sn) )
+		{
+			send_to_char("You can't practice that.\n\r", ch);
+			return;
+		}
+
+		if(p_percent_trigger(mob, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_PREPRACTICE, skill_table[sn].name))
+		{
+			send_to_char("You can't practice that.\n\r", ch);
+			return;
+		}
+
+		if (ch->pcdata->learned[sn] >= MAX_SKILL_LEARNABLE) {
+			sprintf(buf, "There is nothing more that you can learn about %s here.\n\r", skill_table[sn].name);
+			send_to_char(buf, ch);
+		} else {
+			--ch->practice;
+			ch->tempstore[0] = learn;
+			p_percent_trigger(ch, NULL, NULL, NULL, ch, mob, NULL, NULL, NULL, TRIG_PRACTICE, skill_table[sn].name);
+			learn = ch->tempstore[0];
+			if( learn < 1 ) learn = 1;	// At this point, it should be a minimum of 1 skill rating
+
+			ch->pcdata->learned[sn] += learn;
+
+			if (ch->pcdata->learned[sn] < MAX_SKILL_LEARNABLE) {
+				act("You practice $T.", ch, NULL, NULL, NULL, NULL, NULL, skill_table[sn].name, TO_CHAR);
+				act("$n practices $T.", ch, NULL, NULL, NULL, NULL, NULL, skill_table[sn].name, TO_ROOM);
+			} else {
+				ch->pcdata->learned[sn] = MAX_SKILL_LEARNABLE;
+				act("{WYou are now learned at $T.{x", ch, NULL, NULL, NULL, NULL, NULL, skill_table[sn].name, TO_CHAR);
+				act("{W$n is now learned at $T.{x", ch, NULL, NULL, NULL, NULL, NULL, skill_table[sn].name, TO_ROOM);
+			}
+		}
+
+	}
+
+#if 0
 	sn = find_spell(ch, arg);
 
 	if (sn <= 0 || !can_practice( ch, sn )) {
@@ -1373,6 +1465,7 @@ void do_practice( CHAR_DATA *ch, char *argument )
 			act("{W$n is now learned at $T.{x", ch, NULL, NULL, NULL, NULL, NULL, skill_table[sn].name, TO_ROOM);
 		}
 	}
+#endif
 }
 
 void do_rehearse( CHAR_DATA *ch, char *argument )
@@ -1839,7 +1932,7 @@ int skill_entry_compare (SKILL_ENTRY *a, SKILL_ENTRY *b)
 	return cmp;
 }
 
-void skill_entry_insert (SKILL_ENTRY **list, int sn, int song, TOKEN_DATA *token)
+void skill_entry_insert (SKILL_ENTRY **list, int sn, int song, TOKEN_DATA *token, bool isspell)
 {
 	SKILL_ENTRY *cur, *prev, *entry;
 
@@ -1849,6 +1942,7 @@ void skill_entry_insert (SKILL_ENTRY **list, int sn, int song, TOKEN_DATA *token
 	entry->sn = sn;
 	entry->token = token;
 	entry->song = song;
+	entry->isspell = isspell;
 
 	cur = *list;
 	prev = NULL;
@@ -1868,16 +1962,17 @@ void skill_entry_insert (SKILL_ENTRY **list, int sn, int song, TOKEN_DATA *token
 	entry->next = cur;
 }
 
-void skill_entry_remove (SKILL_ENTRY **list, int sn, int song, TOKEN_DATA *token)
+void skill_entry_remove (SKILL_ENTRY **list, int sn, int song, TOKEN_DATA *token, bool isspell)
 {
 	SKILL_ENTRY *cur, *prev;
 
 	cur = *list;
 	prev = NULL;
 	while(cur) {
-		if ( (IS_VALID(token) && (cur->token == token)) ||
+		if ( ((IS_VALID(token) && (cur->token == token)) ||
 			(sn > 0 && (cur->sn == sn)) ||
-			((song >= 0) && (cur->song == song))) {
+			((song >= 0) && (cur->song == song))) &&
+			(cur->isspell == isspell)) {
 
 			if(prev)
 				prev->next = cur->next;
@@ -1954,7 +2049,7 @@ void skill_entry_addskill (CHAR_DATA *ch, int sn, TOKEN_DATA *token)
 */
 	if( !sn && (!token || token->type != TOKEN_SKILL)) return;
 
-	skill_entry_insert( &ch->sorted_skills, sn, -1, token );
+	skill_entry_insert( &ch->sorted_skills, sn, -1, token, FALSE );
 }
 
 void skill_entry_addspell (CHAR_DATA *ch, int sn, TOKEN_DATA *token)
@@ -1963,7 +2058,7 @@ void skill_entry_addspell (CHAR_DATA *ch, int sn, TOKEN_DATA *token)
 
 	if( !sn && (!token || token->type != TOKEN_SPELL)) return;
 
-	skill_entry_insert( &ch->sorted_spells, sn, -1, token );
+	skill_entry_insert( &ch->sorted_skills, sn, -1, token, TRUE );
 }
 
 void skill_entry_addsong (CHAR_DATA *ch, int song, TOKEN_DATA *token)
@@ -1972,7 +2067,7 @@ void skill_entry_addsong (CHAR_DATA *ch, int song, TOKEN_DATA *token)
 
 	if( song < 0 && (!token || token->type != TOKEN_SONG)) return;
 
-	skill_entry_insert( &ch->sorted_songs, 0, song, token );
+	skill_entry_insert( &ch->sorted_songs, 0, song, token, FALSE );
 }
 
 void skill_entry_removeskill (CHAR_DATA *ch, int sn, TOKEN_DATA *token)
@@ -1981,7 +2076,7 @@ void skill_entry_removeskill (CHAR_DATA *ch, int sn, TOKEN_DATA *token)
 
 	if( !sn && (!token || token->type != TOKEN_SKILL)) return;
 
-	skill_entry_remove( &ch->sorted_skills, sn, -1, token );
+	skill_entry_remove( &ch->sorted_skills, sn, -1, token, FALSE );
 }
 
 void skill_entry_removespell (CHAR_DATA *ch, int sn, TOKEN_DATA *token)
@@ -1990,7 +2085,7 @@ void skill_entry_removespell (CHAR_DATA *ch, int sn, TOKEN_DATA *token)
 
 	if( !sn && (!token || token->type != TOKEN_SPELL)) return;
 
-	skill_entry_remove( &ch->sorted_spells, sn, -1, token );
+	skill_entry_remove( &ch->sorted_skills, sn, -1, token, TRUE );
 }
 
 void skill_entry_removesong (CHAR_DATA *ch, int song, TOKEN_DATA *token)
@@ -1999,10 +2094,10 @@ void skill_entry_removesong (CHAR_DATA *ch, int song, TOKEN_DATA *token)
 
 	if( song < 0 && (!token || token->type != TOKEN_SONG)) return;
 
-	skill_entry_remove( &ch->sorted_songs, 0, song, token );
+	skill_entry_remove( &ch->sorted_songs, 0, song, token, FALSE );
 }
 
-int token_skill_rating( CHAR_DATA *ch, TOKEN_DATA *token)
+int token_skill_rating( TOKEN_DATA *token)
 {
 	int percent;
 
@@ -2013,17 +2108,26 @@ int token_skill_rating( CHAR_DATA *ch, TOKEN_DATA *token)
 
 	// Value 0
 	if(token->pIndexData->value[TOKVAL_SPELL_RATING] > 0)
-		percent = 100 * token->value[TOKVAL_SPELL_RATING] / token->pIndexData->value[TOKVAL_SPELL_RATING];
+		percent = token->value[TOKVAL_SPELL_RATING] / token->pIndexData->value[TOKVAL_SPELL_RATING];
 	else
 		percent = token->value[TOKVAL_SPELL_RATING];
 
 	return percent;
 }
 
+int token_skill_mana(TOKEN_DATA *token)
+{
+	// Make sure the tokens are skill/spell tokens
+	if( token->type != TOKEN_SPELL || token->pIndexData->type != TOKEN_SPELL)
+		return 0;
+
+	return token->value[TOKVAL_SPELL_MANA];
+}
+
 int skill_entry_rating (CHAR_DATA *ch, SKILL_ENTRY *entry)
 {
 	if( IS_VALID(entry->token) ) {
-		return token_skill_rating(ch, entry->token);
+		return token_skill_rating(entry->token);
 	} else if( entry->sn > 0) {
 		if( IS_NPC(ch) ) {
 			if ((skill_table[entry->sn].race != -1 && ch->race != skill_table[entry->sn].race) || ch->tot_level < 10)
@@ -2077,3 +2181,34 @@ int skill_entry_level (CHAR_DATA *ch, SKILL_ENTRY *entry)
 		return 0;
 }
 
+int skill_entry_mana (CHAR_DATA *ch, SKILL_ENTRY *entry)
+{
+	if( IS_VALID(entry->token) ) {
+		return token_skill_mana(entry->token);
+	} else if( entry->sn >= 0) {
+		return skill_table[entry->sn].min_mana;
+	} else if( entry->song >= 0) {
+		return music_table[entry->song].mana;
+	} else
+		return 0;
+}
+
+int skill_entry_learn (CHAR_DATA *ch, SKILL_ENTRY *entry)
+{
+	int amount = 0;
+
+	if( IS_VALID(entry->token) ) {
+		amount = entry->token->value[TOKVAL_SPELL_LEARN];
+	} else if(entry->sn >= 0) {
+		int this_class = get_this_class(ch, entry->sn);
+		amount = (skill_table[entry->sn].rating[this_class] == 0 ?
+			10 :
+			skill_table[entry->sn].rating[this_class]);
+	}
+
+	if(amount > 1)
+		return int_app[get_curr_stat(ch, STAT_INT)].learn / amount;
+
+	else
+		return 0;
+}

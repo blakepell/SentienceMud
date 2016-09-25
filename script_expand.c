@@ -2698,7 +2698,7 @@ char *expand_entity_skillinfo(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->type = ENT_NUMBER;
 		if( arg->d.sk.m ) {
 			if( arg->d.sk.t )
-				arg->d.num = token_skill_rating(arg->d.sk.m, arg->d.sk.t);
+				arg->d.num = token_skill_rating(arg->d.sk.t);
 			else
 				arg->d.num = get_skill(arg->d.sk.m,arg->d.sk.sn);
 		} else

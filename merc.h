@@ -354,6 +354,8 @@ typedef struct location_type {
 
 typedef struct skill_entry_type {
 	struct skill_entry_type *next;
+	bool scripted;		// Whether it's given by a script
+	bool isspell;		// Whether this is a spell;
 	sh_int sn;			// Skill Number
 	sh_int song;		// Song Number
 	TOKEN_DATA *token;	// Skill/Spell Token, NULL if this is a built-in skill
@@ -3257,7 +3259,8 @@ struct token_index_data
 #define TOKVAL_SPELL_DIFFICULTY	1
 #define TOKVAL_SPELL_TARGET	2
 #define TOKVAL_SPELL_POSITION	3
-
+#define TOKVAL_SPELL_MANA	4
+#define TOKVAL_SPELL_LEARN	5
 
 struct token_data
 {
@@ -3752,7 +3755,7 @@ struct	char_data
 
 	// Sorted skills and spells (merging skills and tokens)
 	SKILL_ENTRY *sorted_skills;
-	SKILL_ENTRY *sorted_spells;
+//	SKILL_ENTRY *sorted_spells;
 	SKILL_ENTRY *sorted_songs;
 
 	LOCATION		recall;
@@ -4992,6 +4995,8 @@ enum trigger_index_enum {
 	TRIG_MOON,
 	TRIG_MOUNT,
 	TRIG_OPEN,
+	TRIG_PRACTICE,
+	TRIG_PRACTICETOKEN,
 	TRIG_PREANIMATE,
 	TRIG_PREASSIST,
 	TRIG_PREBITE,
@@ -5012,6 +5017,7 @@ enum trigger_index_enum {
 	TRIG_PREPRACTICE,
 	TRIG_PREPRACTICEOTHER,
 	TRIG_PREPRACTICETHAT,
+	TRIG_PREPRACTICETOKEN,
 	TRIG_PREPUT,
 	TRIG_PRERECALL,
 	TRIG_PRERECKONING,
@@ -5026,6 +5032,7 @@ enum trigger_index_enum {
 	TRIG_PRESPELL,
 	TRIG_PRESTAND,
 	TRIG_PRETRAIN,
+	TRIG_PRETRAINTOKEN,
 	TRIG_PREWAKE,
 	TRIG_PREWEAR,
 	TRIG_PULL,
@@ -7572,11 +7579,14 @@ void skill_entry_addsong (CHAR_DATA *ch, int song, TOKEN_DATA *token);
 void skill_entry_removeskill (CHAR_DATA *ch, int sn, TOKEN_DATA *token);
 void skill_entry_removespell (CHAR_DATA *ch, int sn, TOKEN_DATA *token);
 void skill_entry_removesong (CHAR_DATA *ch, int song, TOKEN_DATA *token);
-int token_skill_rating( CHAR_DATA *ch, TOKEN_DATA *token);
+int token_skill_rating( TOKEN_DATA *token);
+int token_skill_mana( TOKEN_DATA *token);
 int skill_entry_rating (CHAR_DATA *ch, SKILL_ENTRY *entry);
 int skill_entry_mod(CHAR_DATA *ch, SKILL_ENTRY *entry);
 int skill_entry_level (CHAR_DATA *ch, SKILL_ENTRY *entry);
-
+int skill_entry_mana (CHAR_DATA *ch, SKILL_ENTRY *entry);
+int skill_entry_learn (CHAR_DATA *ch, SKILL_ENTRY *entry);
+char *skill_entry_name (SKILL_ENTRY *entry);
 
 void persist_addmobile(CHAR_DATA *mob);
 void persist_addobject(OBJ_DATA *obj);
@@ -7613,19 +7623,6 @@ bool list_isvalid(LLIST *lp);
 
 AREA_DATA *get_area_data args ((long anum));
 AREA_DATA *get_area_from_uid args ((long uid));
-
-char *skill_entry_name (SKILL_ENTRY *entry);
-int skill_entry_compare (SKILL_ENTRY *a, SKILL_ENTRY *b);
-void skill_entry_insert (SKILL_ENTRY **list, int sn, int song, TOKEN_DATA *token);
-void skill_entry_remove (SKILL_ENTRY **list, int sn, int song, TOKEN_DATA *token);
-SKILL_ENTRY *skill_entry_findname( SKILL_ENTRY *list, char *str );
-SKILL_ENTRY *skill_entry_findsn( SKILL_ENTRY *list, int sn );
-SKILL_ENTRY *skill_entry_findtoken( SKILL_ENTRY *list, TOKEN_DATA *token );
-void skill_entry_addskill (CHAR_DATA *ch, int sn, TOKEN_DATA *token);
-void skill_entry_addspell (CHAR_DATA *ch, int sn, TOKEN_DATA *token);
-void skill_entry_removeskill (CHAR_DATA *ch, int sn, TOKEN_DATA *token);
-void skill_entry_removespell (CHAR_DATA *ch, int sn, TOKEN_DATA *token);
-int token_skill_rating( CHAR_DATA *ch, TOKEN_DATA *token);
 
 void sacrifice_obj(CHAR_DATA *ch, OBJ_DATA *obj, char *name);
 void give_money(CHAR_DATA *ch, OBJ_DATA *container, int gold, int silver, bool indent);
