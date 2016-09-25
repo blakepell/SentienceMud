@@ -1354,7 +1354,11 @@ void do_practice( CHAR_DATA *ch, char *argument )
 			return;
 		}
 
-		// TODO: add ability for PREPRACTICE on mob for tokens.. will require adding a TOKEN argument to triggers and script execution
+		if(p_percent_token_trigger(mob, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, entry->token, TRIG_PREPRACTICE, NULL))
+		{
+			send_to_char("You can't practice that.\n\r", ch);
+			return;
+		}
 
 		amount = token_skill_rating(entry->token);
 		if( amount >= MAX_SKILL_LEARNABLE )
