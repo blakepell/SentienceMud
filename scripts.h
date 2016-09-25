@@ -141,7 +141,7 @@ enum ifcheck_enum {
 	CHK_GROUPSTR,CHK_GROUPWIS,CHK_GRPSIZE,
 
 	/* H */
-	CHK_HANDSFULL,CHK_HAS,CHK_HASCATALYST,CHK_HASENVIRONMENT,CHK_HASPROMPT,CHK_HASQUEUE,
+	CHK_HANDSFULL,CHK_HAS,CHK_HASCATALYST,CHK_HASCHECKPOINT,CHK_HASENVIRONMENT,CHK_HASPROMPT,CHK_HASQUEUE,
 	CHK_HASSHIP,CHK_HASSPELL,CHK_HASSUBCLASS,
 	CHK_HASTARGET,CHK_HASTOKEN,
 	CHK_HASVLINK,CHK_HEALREGEN,CHK_HITDAMAGE,CHK_HITDAMCLASS,CHK_HITDAMTYPE,CHK_HITSKILLTYPE,
@@ -655,6 +655,7 @@ enum entity_mobile_enum {
 	ENTITY_MOB_INSTRUMENT,
 	ENTITY_MOB_WORN,
 	ENTITY_MOB_NEXT,
+	ENTITY_MOB_CHECKPOINT,
 };
 
 enum entity_object_enum {
@@ -1347,6 +1348,7 @@ DECL_IFC_FUN(ifc_grpsize);
 DECL_IFC_FUN(ifc_handsfull);
 DECL_IFC_FUN(ifc_has);
 DECL_IFC_FUN(ifc_hascatalyst);
+DECL_IFC_FUN(ifc_hascheckpoint);
 DECL_IFC_FUN(ifc_hasenvironment);
 DECL_IFC_FUN(ifc_hasprompt);
 DECL_IFC_FUN(ifc_hasqueue);
@@ -2207,6 +2209,11 @@ SCRIPT_CMD(do_mpsaveplayer);
 SCRIPT_CMD(do_opsaveplayer);
 SCRIPT_CMD(do_rpsaveplayer);
 SCRIPT_CMD(do_tpsaveplayer);
+
+SCRIPT_CMD(do_mpcheckpoint);
+SCRIPT_CMD(do_opcheckpoint);
+SCRIPT_CMD(do_rpcheckpoint);
+SCRIPT_CMD(do_tpcheckpoint);
 
 #include "tables.h"
 

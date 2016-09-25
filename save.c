@@ -308,8 +308,17 @@ void fwrite_char(CHAR_DATA *ch, FILE *fp)
     if (IS_IMMORTAL(ch))
 	fprintf(fp, "LastInquiryRead %ld\n", (long int)ch->pcdata->last_project_inquiry);
 
-	if(!ch->in_room)
-		fprintf (fp, "Room %ld\n", (long int)3001);
+	if( ch->checkpoint ) {
+		if( ch->checkpoint->wilds )
+			fprintf (fp, "Vroom %ld %ld %ld %ld\n",
+				ch->checkpoint->x, ch->checkpoint->y, ch->checkpoint->wilds->pArea->uid, ch->checkpoint->wilds->uid);
+		else if(ch->checkpoint->source)
+			fprintf(fp,"CloneRoom %ld %ld %ld\n",
+				ch->checkpoint->source->vnum, ch->checkpoint->id[0], ch->checkpoint->id[1]);
+		else
+			fprintf(fp,"Room %ld\n", ch->checkpoint->vnum);
+	} else if(!ch->in_room)
+		fprintf (fp, "Room %ld\n", (long int)ROOM_VNUM_TEMPLE);
 	else if(ch->in_wilds) {
 		fprintf (fp, "Vroom %ld %ld %ld %ld\n",
 			ch->in_room->x, ch->in_room->y, ch->in_wilds->pArea->uid, ch->in_wilds->uid);

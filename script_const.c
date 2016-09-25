@@ -264,6 +264,7 @@ ENT_FIELD entity_mobile[] = {
 	{"target",			ENTITY_MOB_TARGET,			ENT_MOBILE	},
 	{"tokens",			ENTITY_MOB_TOKENS,			ENT_OLLIST_TOK	},
 	{"worn",			ENTITY_MOB_WORN,			ENT_PLLIST_OBJ },
+	{"checkpoint",		ENTITY_MOB_CHECKPOINT,		ENT_ROOM	},
 	{NULL,				0,							ENT_UNKNOWN	}
 };
 
@@ -993,6 +994,7 @@ IFCHECK_DATA ifcheck_table[] = {
 	{ "handsfull",			IFC_ANY,	"E",	FALSE,	ifc_handsfull,			"ifcheck handsfull" },
 	{ "has",				IFC_ANY,	"ES",	FALSE,	ifc_has,				"ifcheck has" },
 	{ "hascatalyst",		IFC_ANY,	"ES",	TRUE,	ifc_hascatalyst,		"ifcheck hascatalyst" },
+	{ "hascheckpoint",		IFC_ANY,	"ES",	TRUE,	ifc_hascheckpoint,		"ifcheck hascheckpoint" },
 	{ "hasenviroment",		IFC_ANY,	"ES",	TRUE,	ifc_hasenvironment,		"ifcheck hasenvironment" },
 	{ "hasprompt",			IFC_ANY,	"E",	FALSE,	ifc_hasprompt,			"ifcheck hasprompt" },
 	{ "hasqueue",			IFC_ANY,	"E",	FALSE,	ifc_hasqueue,			"ifcheck hasqueue" },

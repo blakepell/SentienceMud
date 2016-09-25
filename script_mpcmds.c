@@ -37,6 +37,7 @@ const struct script_cmd_type mob_cmd_table[] = {
 	{ "cast",				do_mpcast,			FALSE	},
 	{ "chargebank",			do_mpchargebank,		FALSE	},
 	{ "chargemoney",		do_mpchargemoney,		FALSE	},
+	{ "checkpoint",			do_mpcheckpoint,		FALSE	},
 	{ "cloneroom",			do_mpcloneroom,			TRUE	},
 	{ "condition",			do_mpcondition,			FALSE	},
 	{ "damage",				do_mpdamage,			FALSE	},
@@ -7660,4 +7661,68 @@ SCRIPT_CMD(do_mpsaveplayer)
 	save_char_obj(mob);
 
 	info->mob->progs->lastreturn = 1;
+
+	if(!(rest = expand_argument(info,rest,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING:
+		if( !str_cmp(arg.d.str, "none") ||
+			!str_cmp(arg.d.str, "clear") ||
+			!str_cmp(arg.d.str, "reset") )
+			mob->checkpoint = NULL;
+		break;
+	case ENT_NUMBER:
+		if( arg.d.num > 0 )
+			mob->checkpoint = get_room_index(arg.d.num);
+		break;
+	case ENT_ROOM:
+		if( arg.d.room != NULL )
+			mob->checkpoint = arg.d.room;
+		break;
+	}
+}
+
+// Syntax:	checkpoint $PLAYER $ROOM
+// 			checkpoint $PLAYER VNUM
+//			checkpoint $PLAYER none|clear|reset
+//
+// Sets the checkpoint of the $PLAYER to the destination or clears it.
+// - When a checkpoint is set, it will override what location is saved to the pfile.
+// - When setting a checkpoint via VNUM and an invalid vnum is given, it will clear the checkpoint.
+SCRIPT_CMD(do_mpcheckpoint)
+{
+	char *rest;
+	SCRIPT_PARAM arg;
+    CHAR_DATA *mob;
+
+	if(!info || !info->mob || IS_NULLSTR(argument)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+	mob = arg.d.mob;
+	if(IS_NPC(mob)) return;
+
+	if(!(rest = expand_argument(info,rest,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING:
+		if( !str_cmp(arg.d.str, "none") ||
+			!str_cmp(arg.d.str, "clear") ||
+			!str_cmp(arg.d.str, "reset") )
+			mob->checkpoint = NULL;
+		break;
+	case ENT_NUMBER:
+		if( arg.d.num > 0 )
+			mob->checkpoint = get_room_index(arg.d.num);
+		break;
+	case ENT_ROOM:
+		if( arg.d.room != NULL )
+			mob->checkpoint = arg.d.room;
+		break;
+	}
 }
