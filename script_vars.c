@@ -1638,7 +1638,11 @@ void variable_fix(pVARIABLE var)
 	LLIST_AREA_DATA *larea;
 	LLIST_WILDS_DATA *lwilds;
 
-	if(var->type == VAR_CLONE_ROOM) {	// Dynamic
+	if(fBootDb && var->type == VAR_ROOM) {	// Fix room variables on boot...
+		if(var->_.i > 0) {
+			var->_.r = get_room_index(var->_.i);
+		}
+	} else if(var->type == VAR_CLONE_ROOM) {	// Dynamic
 		if(var->_.cr.r && (room = get_clone_room(var->_.cr.r, var->_.cr.a, var->_.cr.b)) ) {
 			var->_.r = room;
 			var->type = VAR_ROOM;

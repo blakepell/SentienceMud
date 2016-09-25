@@ -47,7 +47,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/resource.h>
-
+#include "protocol.h"
 
 #define args( list )			list
 #define DECLARE_DO_FUN( fun )		DO_FUN    fun
@@ -1105,6 +1105,7 @@ struct	descriptor_data
     char *		showstr_head;
     char *		showstr_point;
     long                bits;           /* MSP, MXP, etc. */
+    protocol_t *	pProtocol;
 
     /* mccp: support data */
     z_stream *          out_compress;
