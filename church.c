@@ -3893,7 +3893,7 @@ bool vnum_in_treasure_room(CHURCH_DATA *church, long vnum)
 	iterator_start(&rit, church->treasure_rooms);
 	while( (treasure_room = (ROOM_INDEX_DATA *)iterator_nextdata(&rit)) && !obj) {
 		iterator_start(&oit, treasure_room->lcontents);
-		while( (obj = (OBJ_DATA *)iterator_nextdata(&rit))) {
+		while( (obj = (OBJ_DATA *)iterator_nextdata(&oit))) {
 			if( obj->pIndexData->vnum == vnum )
 				break;
 		}
