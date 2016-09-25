@@ -937,6 +937,11 @@ char *expand_entity_primary(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->type = ENT_GAME;
 		break;
 
+	case ENTITY_TOKEN:
+		arg->type = ENT_TOKEN;
+		arg->d.token = info->tok;
+		break;
+
 	case ENTITY_REGISTER1:
 	case ENTITY_REGISTER2:
 	case ENTITY_REGISTER3:

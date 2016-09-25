@@ -67,6 +67,7 @@ ENT_FIELD entity_primary[] = {
 	{"prior",	ENTITY_PRIOR,		ENT_PRIOR	},
 	{"game",	ENTITY_GAME,		ENT_GAME	},
 	{"null",	ENTITY_NULL,		ENT_NULL	},
+	{"token",	ENTITY_TOKEN,		ENT_TOKEN	},
 	{"register1",	ENTITY_REGISTER1,	ENT_NUMBER	},
 	{"register2",	ENTITY_REGISTER2,	ENT_NUMBER	},
 	{"register3",	ENTITY_REGISTER3,	ENT_NUMBER	},
