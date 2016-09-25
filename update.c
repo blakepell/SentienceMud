@@ -485,8 +485,8 @@ int mana_gain(CHAR_DATA *ch)
     }
     else
     {
-	gain = (get_curr_stat(ch,STAT_WIS)
-	      + get_curr_stat(ch,STAT_INT) + ch->tot_level) / 2;
+	gain = get_curr_stat(ch,STAT_WIS)
+	      + get_curr_stat(ch,STAT_INT) + ch->tot_level;
 	number = number_percent();
 
 	if (number < get_skill(ch,gsn_meditation))

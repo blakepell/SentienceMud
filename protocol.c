@@ -2079,7 +2079,7 @@ static void PerformSubnegotiation( descriptor_t *apDescriptor, char aCmd, char *
                   }
                }
             }
-            else if ( MatchString(pClientName, "EMACS-RINZAI") )
+            else if ( MatchString(pClientName, "EMACS-RINZAI") || MatchString(pClientName, "MUDRAMMER") )
             {
                /* We know for certain that this client has support */
                pProtocol->pVariables[eMSDP_XTERM_256_COLORS]->ValueInt = 1;
@@ -2616,29 +2616,29 @@ static void SendMSSP( descriptor_t *apDescriptor )
 
       /* Generic */
       { "CRAWL DELAY",        "24" },
-/*
+
       { "HOSTNAME",           "sentience.megacosm.net" },
       { "PORT",               "9009" },
       { "CODEBASE",           "ROM 2.4b6" },
       { "CONTACT",            "tieryo@sentiencemud.net" },
       { "CREATED",            "2000" },
-      { "ICON",               "" },
-      { "IP",                 "" },
+//      { "ICON",               "" },
+//      { "IP",                 "" },
       { "LANGUAGE",           "English" },
       { "LOCATION",           "United States" },
-      { "MINIMUM AGE",        "" },
+//      { "MINIMUM AGE",        "" },
       { "WEBSITE",            "https://sentiencemud.net" },
-*/
+
       /* Categorisation */
-/*
-      { "FAMILY",             "" },
+
+//      { "FAMILY",             "" },
       { "GENRE",              "Fantasy" },
       { "GAMEPLAY",           "Adventure, Hack and Slash, Player versus Player, Player versus Environment" },
       { "STATUS",             "Live" },
       { "GAMESYSTEM",         "Custom" },
       { "INTERMUD",           "IMC2" },
       { "SUBGENRE",           "None" },
-*/
+
       /* World */
 /*
       { "AREAS",              "0" },
@@ -2652,7 +2652,7 @@ static void SendMSSP( descriptor_t *apDescriptor )
       { "SKILLS",             "0" },
 */
       /* Protocols */
-/*
+
       { "ANSI",               "1" },
       { "GMCP",               "0" },
 #ifdef USING_MCCP
@@ -2668,17 +2668,17 @@ static void SendMSSP( descriptor_t *apDescriptor )
       { "UTF-8",              "1" },
       { "VT100",              "0" },
       { "XTERM 256 COLORS",   "1" },
-*/
+
       /* Commercial */
 /*
       { "PAY TO PLAY",        "0" },
       { "PAY FOR PERKS",      "0" },
 */
       /* Hiring */
-/*
+
       { "HIRING BUILDERS",    "1" },
       { "HIRING CODERS",      "0" },
-*/
+
       /* Extended variables */
 
       /* World */
@@ -2691,7 +2691,7 @@ static void SendMSSP( descriptor_t *apDescriptor )
       { "RESETS",             "0" },
 */
       /* Game */
-/*
+
       { "ADULT MATERIAL",     "0" },
       { "MULTICLASSING",      "1" },
       { "NEWBIE FRIENDLY",    "1" },
@@ -2706,13 +2706,13 @@ static void SendMSSP( descriptor_t *apDescriptor )
       { "ROLEPLAYING",        "1" },
       { "TRAINING SYSTEM",    "1" },
       { "WORLD ORIGINALITY",  "1" },
-*/
+
       /* Protocols */
-/*
+
       { "ATCP",               "1" },
       { "SSL",                "0" },
       { "ZMP",                "0" },
-*/
+
       { NULL, NULL } /* This must always be last. */
    };
 
