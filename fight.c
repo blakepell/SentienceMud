@@ -46,7 +46,7 @@
 #include "wilds.h"
 
 #define MAX_BACKSTAB_DAMAGE 15000
-#define MAX_FLEE_ATTEMPTS 30
+#define MAX_FLEE_ATTEMPTS 10 
 
 bool is_combatant_valid(CHAR_DATA *ch, long id1, long id2)
 {
@@ -135,8 +135,12 @@ void violence_update(void)
 
 		if (IS_AWAKE(ch) && ch->in_room == victim->in_room)
 			multi_hit(ch, victim, TYPE_UNDEFINED);
-		else
-			stop_fighting(ch, FALSE);
+
+		if (ch->in_room != victim->in_room) {
+			stop_fighting(ch, TRUE);
+			continue;
+		}
+	
 
 		if(!is_combatant_valid(ch, aid[0], aid[1])) continue;
 		if(!is_combatant_valid(victim, vid[0], vid[1])) continue;
@@ -1733,6 +1737,10 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 	if (!IS_NPC(victim) && victim->hit > 0 && victim->hit <= victim->wimpy &&
 		victim->wait < PULSE_VIOLENCE / 2 && victim->paralyzed <= 0 && !IS_AFFECTED2(victim, AFF2_PARALYSIS) && !IS_AFFECTED2(victim, AFF2_IMMOBILE))
 		do_function (victim, &do_flee, "");
+
+	/* if fled successfully, return false so it doesn't keep position at fighting AO 092516 */
+	if (victim->in_room != ch->in_room)
+		return FALSE;
 
 	tail_chain();
 	return TRUE;
@@ -4479,7 +4487,7 @@ void do_intimidate(CHAR_DATA *ch, char *argument)
 		p_percent_trigger(ch,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_INTIMIDATE, "pretest"))
 		return;
 
-	chance /= 3;
+	//chance /= 3;
 	chance += ch->tot_level - victim->tot_level;
 
 	chance += (get_curr_stat(ch, STAT_STR) - get_curr_stat(victim, STAT_STR));
@@ -5452,7 +5460,7 @@ void do_backstab(CHAR_DATA *ch, char *argument)
 	dam = 0;
 	if (number_percent() < skill || (skill >= 2 && !IS_AWAKE(victim))) {
 		if (!IS_NPC(victim))
-			dam = victim->max_hit*5/2;
+			dam = victim->max_hit*3/2;
 		else if (victim->tot_level < 200)
 			dam = 2*victim->max_hit;
 		else
@@ -5957,6 +5965,7 @@ void do_flee(CHAR_DATA *ch, char *argument)
 
 	sprintf(buf, "{RYou flee to the %s!{x\n\r", dir_name[door]);
 	send_to_char(buf, ch);
+	stop_fighting(ch, TRUE);
 
 /* 05-29-2006 Syn - Disabling this for now. I originally added this because Nopraptor reported
    a bug of flee <direction> sending you elsewhere than the stated direction, causing him to get
@@ -5987,8 +5996,6 @@ void do_flee(CHAR_DATA *ch, char *argument)
 		act("You sense something approaching from the $t.", ch, NULL, NULL, NULL, NULL, dir_name[rev_dir[door]], NULL, TO_CHAR);
 		hunt_char(ch->fighting, ch);
 	}
-
-	stop_fighting(ch, TRUE);
 
 	if (flee_lag)
 		WAIT_STATE(ch, PULSE_VIOLENCE/5);
