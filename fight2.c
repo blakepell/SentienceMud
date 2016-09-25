@@ -50,7 +50,7 @@ void do_smite(CHAR_DATA *ch, char *argument)
 		}
 	}
 
-	if (IS_GOOD(ch) && !IS_SET(wield->extra_flags, ITEM_BLESS)) {
+	if (IS_GOOD(ch) && !IS_SET(wield->extra_flags, ITEM_BLESS) && !IS_SET(wield->extra_flags, ITEM_HOLY)) {
 		act("$p is not a holy weapon.", ch, NULL, NULL, wield, NULL, NULL, NULL, TO_CHAR);
 		return;
 	}
@@ -65,10 +65,12 @@ void do_smite(CHAR_DATA *ch, char *argument)
 		return;
 	}
 
-	if ((IS_EVIL(ch) && victim->alignment < 300) || (IS_GOOD(ch) && victim->alignment > -300) || (ch->alignment == 0 && victim->alignment != 0)) {
+	/* AO 092516 - commenting out, I think this will make the skill more useful given its other restrictions
+	if ((IS_EVIL(ch) && victim->alignment > 300) || (IS_GOOD(ch) && victim->alignment < -300) || (ch->alignment == 0 && victim->alignment != 0)) {
 		act("$N is not a creature you can smite.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		return;
 	}
+	*/
 
 	if (victim->hit > victim->max_hit/4) {
 		act("$N is still too strong for you to smite.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
