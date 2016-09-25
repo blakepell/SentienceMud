@@ -865,13 +865,9 @@ void boot_db(void)
     fix_rooms();
     log_string("Doing fix_vlinks");
     fix_vlinks();
-    log_string("Loading persistance");
-    if(!persist_load()) {
-		perror("Persistance");
-	    exit(1);
-	}
-    log_string("Doing variable_fix");
+    log_string("Doing variable_index_fix");
     variable_index_fix();
+    log_string("Doing variable_fix");
     variable_fix_global();
     log_string("Doing fix_mobprogs");
     fix_mobprogs();
@@ -881,6 +877,12 @@ void boot_db(void)
     fix_roomprogs();
     log_string("Doing fix_tokenprogs");
     fix_tokenprogs();
+
+    log_string("Loading persistance");
+    if(!persist_load()) {
+		perror("Persistance");
+	    exit(1);
+	}
 
     log_string("Opening churches, new format");
     read_churches_new();
@@ -5409,11 +5411,11 @@ void persist_save_exit(FILE *fp, EXIT_DATA *ex)
 {
 	LOCATION loc;
 
-	fprintf(fp, "#EXIT %s\n", dir_name[ex->orig_door]);
-
 	// Skip wilderness exits
 	if( IS_SET(ex->exit_info, EX_VLINK) )
 		return;
+
+	fprintf(fp, "#EXIT %s\n", dir_name[ex->orig_door]);
 
 	if( ex->u1.to_room ) {
 		location_from_room(&loc, ex->u1.to_room);
@@ -5553,7 +5555,7 @@ void persist_save_room(FILE *fp, ROOM_INDEX_DATA *room)
 
 	// Save Exits
 	for( i=0; i < 10; i++)
-		if(room->exit[i])
+		if( room->exit[i] )
 			persist_save_exit(fp,room->exit[i]);
 
 	// Save Variables
@@ -6731,15 +6733,16 @@ EXIT_DATA *persist_load_exit(FILE *fp)
 	if( !ex ) return NULL;
 
 	ex->orig_door = parse_direction(fread_word(fp));
+	log_stringf("%s: ex->orig_door = %d", __FUNCTION__, ex->orig_door);
 
 	for (;;) {
 		word = feof(fp) ? "#-EXIT" : fread_word(fp);
 		fMatch = FALSE;
 
+		log_stringf("%s: %s", __FUNCTION__, word);
+
 		if (!str_cmp(word, "#-EXIT"))
 			break;
-
-		log_stringf("%s: %s", __FUNCTION__, word);
 
 		switch (UPPER(word[0])) {
 			case '*':
@@ -6853,10 +6856,6 @@ EXIT_DATA *persist_load_exit(FILE *fp)
 			fread_to_eol(fp);
 	}
 
-	// Forces it to be a VLINK exit if going to a wilderness room
-	if( ex->wilds.wilds_uid > 0 )
-		SET_BIT(ex->exit_info, EX_VLINK);
-
 	log_string("persist_load: #-EXIT");
 
 	return ex;
@@ -6954,10 +6953,10 @@ ROOM_INDEX_DATA *persist_load_room(FILE *fp, char rtype)
 		word = feof(fp) ? "#-ROOM" : fread_word(fp);
 		fMatch = FALSE;
 
+		log_stringf("%s: %s", __FUNCTION__, word);
+
 		if (!str_cmp(word, "#-ROOM"))
 			break;
-
-		log_stringf("%s: %s", __FUNCTION__, word);
 
 		switch (UPPER(word[0])) {
 			case '*':
@@ -6975,6 +6974,7 @@ ROOM_INDEX_DATA *persist_load_room(FILE *fp, char rtype)
 						if( room->exit[ex->orig_door] )
 							free_exit(room->exit[ex->orig_door]);
 
+						ex->from_room = room;
 						room->exit[ex->orig_door] = ex;
 					} else
 						good = FALSE;
