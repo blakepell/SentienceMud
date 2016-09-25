@@ -1456,7 +1456,7 @@ bool process_output(DESCRIPTOR_DATA *d, bool fPrompt)
 	ch = d->character;
 
         /* battle prompt */
-        if ((victim = ch->fighting) != NULL && can_see(ch,victim))
+        if ((victim = ch->fighting) != NULL && can_see(ch,victim) && ch->in_room == victim->in_room)
         {
             int percent;
             char wound[100];
