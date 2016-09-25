@@ -6408,9 +6408,6 @@ void brew_end(CHAR_DATA *ch, sh_int sn)
 
     potion = create_object(get_obj_index(OBJ_VNUM_POTION), 1, FALSE);
 
-    free_string(potion->name);
-    potion->name = str_dup("potion");
-
     sprintf(buf, potion->short_descr, potion_name);
 
     free_string(potion->short_descr);
@@ -6440,6 +6437,9 @@ void brew_end(CHAR_DATA *ch, sh_int sn)
 	    potion->value[5] = 3;
     }
 
+    free_string(potion->name);
+    potion->name = short_to_name(potion_name);
+    strcat(potion->name, " potion");
     obj_to_char(potion, ch);
 }
 
@@ -6770,9 +6770,6 @@ void scribe_end(CHAR_DATA *ch, sh_int sn, sh_int sn2, sh_int sn3)
 
     scroll = create_object(get_obj_index(OBJ_VNUM_SCROLL), 1, FALSE);
 
-    free_string(scroll->name);
-    scroll->name = str_dup("scroll");
-
     sprintf(buf, scroll->short_descr, scroll_name);
 
     free_string(scroll->short_descr);
@@ -6839,6 +6836,9 @@ void scribe_end(CHAR_DATA *ch, sh_int sn, sh_int sn2, sh_int sn3)
 	scroll->spells = spell;
     }
 
+    free_string(scroll->name);
+    scroll->name = short_to_name(scroll_name);
+    strcat(scroll->name, " scroll");
     obj_to_char(scroll, ch);
 }
 
