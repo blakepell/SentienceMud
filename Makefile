@@ -93,6 +93,7 @@ C_FILES = \
 	olc_mpcode.c \
 	olc_save.c \
 	project.c \
+	protocol.c \
 	quest.c \
 	save.c \
 	scan.c \
@@ -194,6 +195,7 @@ O_FILES = \
 	$(OBJDIR)/olc_mpcode.o \
 	$(OBJDIR)/olc_save.o \
 	$(OBJDIR)/project.o \
+	$(OBJDIR)/protocol.o \
 	$(OBJDIR)/quest.o \
 	$(OBJDIR)/save.o \
 	$(OBJDIR)/scan.o \
