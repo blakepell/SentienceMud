@@ -49,6 +49,7 @@ const struct script_cmd_type token_cmd_table[] = {
 	{ "echoleadat",			do_tpecholeadat,		FALSE	},
 	{ "echonotvict",		do_tpechonotvict,		FALSE	},
 	{ "echoroom",			do_tpechoroom,			FALSE	},
+	{ "fixaffects",			do_tpfixaffects,			FALSE	},
 	{ "force",				do_tpforce,				FALSE	},
 	{ "forget",				do_tpforget,			FALSE	},
 	{ "gdamage",			do_tpgdamage,			FALSE	},
@@ -3459,6 +3460,8 @@ SCRIPT_CMD(do_tpaltermob)
 	else if(!str_cmp(field,"acslash"))	ptr = (int*)&mob->armor[AC_SLASH];
 	else if(!str_cmp(field,"act"))		{ ptr = (int*)&mob->act; flags = IS_NPC(mob) ? act_flags : plr_flags; }
 	else if(!str_cmp(field,"act2"))		{ ptr = (int*)&mob->act2; flags = IS_NPC(mob) ? act2_flags : plr2_flags; }
+	else if(!str_cmp(field,"affect"))	ptr = (int*)&mob->affected_by;
+	else if(!str_cmp(field,"affect2"))	ptr = (int*)&mob->affected_by2;
 	else if(!str_cmp(field,"alignment"))	ptr = (int*)&mob->alignment;
 	else if(!str_cmp(field,"bashed"))	ptr = (int*)&mob->bashed;
 	else if(!str_cmp(field,"bind"))		ptr = (int*)&mob->bind;
@@ -7104,3 +7107,20 @@ SCRIPT_CMD(do_tpcrier)
 	crier_announce(buf);
 }
 
+
+// Syntax: FIXAFFECTS $MOBILE
+SCRIPT_CMD(do_tpfixaffects)
+{
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token || IS_NULLSTR(argument)) return;
+
+	if(!expand_argument(info,argument,&arg))
+		return;
+
+	if(arg.type != ENT_MOBILE) return;
+
+	if(arg.d.mob == NULL) return;
+
+	affect_fix_char(arg.d.mob);
+}
