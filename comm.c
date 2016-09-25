@@ -905,6 +905,8 @@ void game_loop_unix(int control)
 	   if (d->incomm[0] != '\0')
 	   {
 	       d->fcommand	= TRUE;
+		if(d->pProtocol != NULL)
+		    d->pProtocol->WriteOOB = 0;
 	       stop_idling(d->character);
 
 	       /* OLC */
@@ -1080,6 +1082,7 @@ void init_descriptor(int control)
     dnew->pString	= NULL;			/* OLC */
     dnew->editor	= 0;			/* OLC */
     dnew->outbuf	= alloc_mem(dnew->outsize);
+    dnew->pProtocol	= ProtocolCreate();
 
     size = sizeof(sock);
     if (getpeername(desc, (struct sockaddr *) &sock, &size) < 0)
@@ -1128,6 +1131,7 @@ void init_descriptor(int control)
      */
     dnew->next			= descriptor_list;
     descriptor_list		= dnew;
+    ProtocolNegotiate(dnew);
 
     /*
      * Send the greeting.
@@ -1216,6 +1220,7 @@ void close_socket(DESCRIPTOR_DATA *dclose)
         free_mem(dclose->out_compress, sizeof(z_stream));
     }
 
+    ProtocolDestroy(dclose->pProtocol);
 
     close(dclose->descriptor);
     free_descriptor(dclose);
@@ -1227,13 +1232,18 @@ bool read_from_descriptor(DESCRIPTOR_DATA *d)
 {
     int iStart;
 
+    static char read_buf[MAX_PROTOCOL_BUFFER];
+    read_buf[0] = '\0';
+
     /* Hold horses if pending command already. */
     if (d->incomm[0] != '\0')
 	return TRUE;
 
     /* Check for overflow. */
-    iStart = strlen(d->inbuf);
-    if (iStart >= sizeof(d->inbuf) - 10)
+//    iStart = strlen(d->inbuf);
+//    if (iStart >= sizeof(d->inbuf) - 10)
+    iStart = 0;
+    if(strlen(d->inbuf) >= sizeof(d->inbuf) - 10)
     {
 	sprintf(log_buf, "%s input overflow!", d->host);
 	log_string(log_buf);
@@ -1246,13 +1256,22 @@ bool read_from_descriptor(DESCRIPTOR_DATA *d)
     for (; ;)
     {
 	int nRead;
-
+/*
 	nRead = read(d->descriptor, d->inbuf + iStart,
 	    sizeof(d->inbuf) - 10 - iStart);
 	if (nRead > 0)
 	{
 	    iStart += nRead;
 	    if (d->inbuf[iStart-1] == '\n' || d->inbuf[iStart-1] == '\r')
+		break;
+	}
+*/
+	nRead = read( d->descriptor, read_buf + iStart,
+	    sizeof(read_buf) - 10 - iStart );
+	if ( nRead > 0 )
+	{
+	    iStart += nRead;
+	    if ( read_buf[iStart-1] == '\n' || read_buf[iStart-1] == '\r' )
 		break;
 	}
 	else if (nRead == 0)
@@ -1269,7 +1288,9 @@ bool read_from_descriptor(DESCRIPTOR_DATA *d)
 	}
     }
 
-    d->inbuf[iStart] = '\0';
+//    d->inbuf[iStart] = '\0';
+    read_buf[iStart] = '\0';
+    ProtocolInput(d,read_buf,iStart,d->inbuf);
     return TRUE;
 }
 
@@ -1419,7 +1440,9 @@ bool process_output(DESCRIPTOR_DATA *d, bool fPrompt)
     /*
      * Bust a prompt.
      */
-    if (!merc_down)
+    if(d->pProtocol->WriteOOB)
+	;
+    else if (!merc_down)
     {
 	if (d->showstr_point)
 	    write_to_buffer(d, "[Hit Return to continue]\n\r", 0);
@@ -1433,7 +1456,7 @@ bool process_output(DESCRIPTOR_DATA *d, bool fPrompt)
 	ch = d->character;
 
         /* battle prompt */
-        if ((victim = ch->fighting) != NULL && can_see(ch,victim))
+        if ((victim = ch->fighting) != NULL && can_see(ch,victim) && ch->in_room == victim->in_room)
         {
             int percent;
             char wound[100];
@@ -1827,6 +1850,9 @@ void bust_a_prompt(CHAR_DATA *ch)
  */
 void write_to_buffer(DESCRIPTOR_DATA *d, const char *txt, int length)
 {
+    txt = ProtocolOutput(d,txt,&length);
+    if (d->pProtocol->WriteOOB > 0)
+        --d->pProtocol->WriteOOB;
     /*
      * Find length in case caller didn't.
      */
@@ -1836,7 +1862,8 @@ void write_to_buffer(DESCRIPTOR_DATA *d, const char *txt, int length)
     /*
      * Initial \n\r if needed.
      */
-    if (d->outtop == 0 && !d->fcommand)
+//    if (d->outtop == 0 && !d->fcommand)
+    if (d->outtop == 0 && !d->fcommand && !d->pProtocol->WriteOOB)
     {
 	d->outbuf[0]	= '\n';
 	d->outbuf[1]	= '\r';
@@ -2117,7 +2144,8 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 		{
 			if (port != PORT_SYN) {
 				write_to_buffer(d, "Password: ", 0);
-				write_to_buffer(d, echo_off_str, 0);
+//				write_to_buffer(d, echo_off_str, 0);
+				ProtocolNoEcho(d,true);
 				d->connected = CON_GET_OLD_PASSWORD;
 			}
 
@@ -2189,7 +2217,8 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 	}
 }
 
-	write_to_buffer(d, echo_on_str, 0);
+//	write_to_buffer(d, echo_on_str, 0);
+	ProtocolNoEcho(d,false);
 
 	if (check_playing(d,ch->name))
 	return;
@@ -2271,7 +2300,8 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 
 	send_to_char("\n\r\n\r{Y***{x {RThank you. Please remember to never give your password to anybody.{Y *** {x\n\r\n\r", ch);
 	save_char_obj(d->character);
-	write_to_buffer(d, echo_on_str, 0);
+//	write_to_buffer(d, echo_on_str, 0);
+	ProtocolNoEcho(d,false);
 
 	if (IS_IMMORTAL(ch))
 	{
@@ -2333,8 +2363,10 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 	switch (*argument)
 	{
 	case 'y': case 'Y':
-	sprintf(buf, "\n\rEnter a password for %s: %s",
-	ch->name, echo_off_str);
+//	sprintf(buf, "\n\rEnter a password for %s: %s",
+//	ch->name, echo_off_str);
+	ProtocolNoEcho(d, true);
+	sprintf(buf, "\n\rEnter a password for %s: ", ch->name);
 	write_to_buffer(d, buf, 0);
 	d->connected = CON_GET_NEW_PASSWORD;
 	break;
@@ -2382,7 +2414,8 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 	return;
 	}
 
-	write_to_buffer(d, echo_on_str, 0);
+//	write_to_buffer(d, echo_on_str, 0);
+	ProtocolNoEcho(d,false);
 
 	write_to_buffer(d, "\n\rPlease enter a valid e-mail address at which we can reach you in case you lose your password.\n\r"
 	"It will not be distributed to any third parties or abused in any way.\n\r", 0);
@@ -2997,6 +3030,7 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 	}
 
 	act("$n has entered the game.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+        MXPSendTag(d,"<VERSION>");
 	for (d2 = descriptor_list; d2 != NULL; d2 = d2->next)
 	{
 	if (d2->connected == CON_PLAYING
@@ -3236,6 +3270,7 @@ bool check_reconnect(DESCRIPTOR_DATA *d, char *name, bool fConn)
 				wiznet("$N has relinked.", ch,NULL,WIZ_LINKS,0,0);
 
 				d->connected = CON_PLAYING;
+				MXPSendTag(d,"<VERSION>");
 
 				if (get_eq_char(ch, WEAR_LIGHT) != NULL)
 					ch->in_room->light++;
