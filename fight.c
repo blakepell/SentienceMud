@@ -45,6 +45,9 @@
 #include "scripts.h"
 #include "wilds.h"
 
+#define MAX_BACKSTAB_DAMAGE 15000
+#define MAX_FLEE_ATTEMPTS 30
+
 bool is_combatant_valid(CHAR_DATA *ch, long id1, long id2)
 {
 	return IS_VALID(ch) && (ch->id[0] == id1) && (ch->id[1] == id2);
@@ -5384,7 +5387,7 @@ void do_backstab(CHAR_DATA *ch, char *argument)
 		return;
 	}
 
-	if (victim->position > POS_SLEEPING && (victim->hit < (2 * victim->max_hit / 3))) {
+	if (victim->position > POS_SLEEPING && (victim->hit < (3 * victim->max_hit / 4))) {
 		act("$N is hurt and suspicious ... you can't sneak up.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		WAIT_STATE(ch, skill_table[gsn_backstab].beats);
 		return;
@@ -5439,16 +5442,16 @@ void do_backstab(CHAR_DATA *ch, char *argument)
 	dam = 0;
 	if (number_percent() < skill || (skill >= 2 && !IS_AWAKE(victim))) {
 		if (!IS_NPC(victim))
-			dam = victim->max_hit * 3/2;
+			dam = victim->max_hit*5/2;
 		else if (victim->tot_level < 200)
-			dam = victim->max_hit;
+			dam = 2*victim->max_hit;
 		else
 			dam = victim->max_hit/10;
 
 		if (ch->tot_level < victim->tot_level) dam = (dam * ch->tot_level)/(victim->tot_level/2);
 
 		dam += 3 * dice(wield->value[1], wield->value[2]);
-		dam = UMIN(dam, 1500+number_range(50,100));
+		dam = UMIN(dam, MAX_BACKSTAB_DAMAGE);
 
 		victim->hit_damage = dam;
 
@@ -5891,7 +5894,7 @@ void do_flee(CHAR_DATA *ch, char *argument)
 	if (IS_NULLSTR(argument))
 	{
 		// ok, so let's try to find a valid direction to flee to...
-		for (attempt = 0; attempt < 50; attempt++)
+		for (attempt = 0; attempt < MAX_FLEE_ATTEMPTS; attempt++)
 		{
 			EXIT_DATA *pexit;
 
@@ -6195,7 +6198,7 @@ void do_kick(CHAR_DATA *ch, char *argument)
 	if (skill > number_percent()) {
 		int dam = 0;
 
-		dam += 2*number_range(ch->tot_level, ch->tot_level + 10);
+		dam += 5*number_range(ch->tot_level, ch->tot_level + 10);
 
 		if (get_skill(ch,gsn_martial_arts) > 0) {
 			dam += (int) dam * (get_skill(ch,gsn_martial_arts) / 100);
