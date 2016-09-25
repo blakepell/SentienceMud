@@ -39,6 +39,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "merc.h"
+#include "olc.h"
 #include "interp.h"
 #include "recycle.h"
 #include "tables.h"
@@ -1037,7 +1038,7 @@ void do_goto(CHAR_DATA *ch, char *argument)
     {
 	if (get_trust(rch) >= ch->invis_level)
 	{
-	    if (ch->pcdata != NULL && ch->pcdata->immortal->bamfout[0] != '\0')
+	    if (ch->pcdata != NULL && ch->pcdata->immortal != NULL &&  ch->pcdata->immortal->bamfout[0] != '\0')
 		act("$t",ch,rch, NULL, NULL, NULL,ch->pcdata->immortal->bamfout, NULL,TO_VICT);
 	    else
 		act("$n leaves in a swirling mist.",ch,rch, NULL, NULL, NULL, NULL, NULL,TO_VICT);
@@ -1064,7 +1065,7 @@ void do_goto(CHAR_DATA *ch, char *argument)
     {
         if (ch != rch && get_trust(rch) >= ch->invis_level)
         {
-            if (ch->pcdata != NULL && ch->pcdata->immortal->bamfin[0] != '\0')
+            if (ch->pcdata != NULL && ch->pcdata->immortal != NULL && ch->pcdata->immortal->bamfin[0] != '\0')
                 act("$t",ch,rch, NULL, NULL, NULL,ch->pcdata->immortal->bamfin, NULL,TO_VICT);
             else
                 act("$n appears in a swirling mist.",ch,rch, NULL, NULL, NULL, NULL, NULL,TO_VICT);
@@ -2807,6 +2808,12 @@ void do_switch(CHAR_DATA *ch, char *argument)
     if (ch->desc->original != NULL)
     {
 	send_to_char("You are already switched.\n\r", ch);
+	return;
+    }
+
+    if( ch->desc->editor != ED_NONE )
+    {
+	send_to_char("You are currently in OLC.  Please exit before switching.\n\r", ch);
 	return;
     }
 

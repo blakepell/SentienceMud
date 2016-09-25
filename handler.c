@@ -233,7 +233,7 @@ ROOM_INDEX_DATA *find_location(CHAR_DATA *ch, char *arg)
 	return victim->in_room;
 
     if ((obj = get_obj_world(ch, arg)) != NULL)
-	return obj->in_room;
+		return obj_room(obj);
 
     return NULL;
 }
@@ -4297,7 +4297,7 @@ void resurrect_pc(CHAR_DATA *ch)
     /*FREE DEATH ITEMS HERE IF ANY */
 
 	affect_fix_char(ch);
-    
+
     /* Reset form and parts - Fixes issue 33 on gitlab repo - Tieryo 07/22/2016 */
     ch->form = race_table[ch->race].form;
     ch->parts = race_table[ch->race].parts;
@@ -5725,6 +5725,9 @@ bool can_get_obj(CHAR_DATA *ch, OBJ_DATA *obj, OBJ_DATA *container, MAIL_DATA *m
 
     if (ch->carry_number + get_obj_number(obj) > can_carry_n(ch))
 	MSG(act("$p: you can't carry that many items.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR))
+	
+    if (get_carry_weight(ch) + get_obj_weight(obj) > can_carry_w(ch))
+	MSG(act("$p: you can't carry that much weight.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR))
 
     if (IS_SET(obj->extra2_flags, ITEM_SINGULAR)
     &&  get_obj_vnum_carry(ch, obj->pIndexData->vnum, ch) != NULL)

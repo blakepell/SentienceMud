@@ -113,7 +113,7 @@ const	struct	cmd_type	cmd_table	[] =
     { "sit",		do_sit,		POS_SLEEPING,    0,  LOG_NORMAL, 1 },
     { "stand",		do_stand,	POS_SLEEPING,	 0,  LOG_NORMAL, 1 },
     { "stat",		do_stat,	POS_DEAD,	L5,  LOG_NORMAL, 1 },
-    { "tell",		do_tell,	POS_RESTING,     0,  LOG_NEVER,  1 },
+    { "tell",		do_tell,	POS_SLEEPING,    0,  LOG_NEVER,  1 },
     { "tells",		do_tells,	POS_SLEEPING,    0,  LOG_NORMAL, 1 },
     { "turn",           do_turn,	POS_SLEEPING,    0,  LOG_NORMAL, 1 },
     { "unlock",         do_unlock,      POS_RESTING,     0,  LOG_NORMAL, 1 },

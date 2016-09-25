@@ -4686,7 +4686,7 @@ const struct group_type group_table [MAX_GROUP] =
     	"ranger skills", { 4, 4, 8, 8 },
 	{ "survey", "vision", "call familiar", "wilderness spear style",
 	  "shield and weapon style", "infuse", "trackless step", "archery",
-	  "bow", "crossbow", NULL },
+	  "bow", "crossbow", "hunt", NULL },
     },
 
     /* Highwayman - master of thieving */
