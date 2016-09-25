@@ -45,6 +45,9 @@
 #include "scripts.h"
 #include "wilds.h"
 
+#define MAX_BACKSTAB_DAMAGE 15000
+#define MAX_FLEE_ATTEMPTS 30
+
 bool is_combatant_valid(CHAR_DATA *ch, long id1, long id2)
 {
 	return IS_VALID(ch) && (ch->id[0] == id1) && (ch->id[1] == id2);
@@ -306,10 +309,15 @@ void multi_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt)
 		return;
 	}
 
+	/* AO 092516 start a fight. This is to make sure defenses trigger combat. */
+        if (ch->fighting != victim)
+		set_fighting(ch,victim);
+
 	if (IS_NPC(ch)) {
 		mob_hit(ch, victim, dt);
 		return;
 	}
+
 
 	//send_to_char("Normal", ch);
 	hand = select_weapon(ch);
@@ -1333,15 +1341,6 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 		return FALSE;
 	}
 
-	/* mobs automatically flee in terror if there is too large a level difference */
-        if (IS_NPC(victim) && !IS_NPC(ch) && abs(ch->tot_level - victim->tot_level > 90) && number_percent() < 75) {
-		char buf[MAX_STRING_LENGTH];
-		sprintf(buf, "%s balks with fear at the sight of your approach!\n\r", victim->short_descr);
-		send_to_char(buf,ch);
-		do_function (victim, &do_flee, ""); 
-		return FALSE;
-	}
-
 	// Armor and weapons decay with use
 	for (vObj = victim->carrying; vObj; vObj = vObj->next_content)
 		if (vObj->wear_loc != WEAR_NONE && (!IS_SET(vObj->extra_flags, ITEM_BLESS || number_percent() < 33))) {
@@ -1712,6 +1711,16 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 	if (!IS_NPC(victim) && victim->desc == NULL && victim->tot_level < 31 && !number_range(0, victim->wait)) {
 		do_function(victim, &do_recall, "");
 		return TRUE;
+	}
+	
+	/* 
+	 * mobs automatically flee in terror if there is too large a level difference 
+	 * */
+        if (IS_NPC(victim) && !IS_NPC(ch) && abs(ch->tot_level - victim->tot_level > 90) && number_percent() < 75) {
+		char buf[MAX_STRING_LENGTH];
+		sprintf(buf, "%s balks with fear at the sight of your approach!\n\r", victim->short_descr);
+		send_to_char(buf,ch);
+		do_function (victim, &do_flee, ""); 
 	}
 
 	// Wimpy - Mobiles
@@ -2788,6 +2797,9 @@ bool set_fighting(CHAR_DATA *ch, CHAR_DATA *victim)
 			DAZE_STATE(ch, 12);
 		}
 	}
+
+	/* AO 092516 Make sure to initiate combat on a successful defense. Hackish but oh well. */
+	damage_new(ch,victim,NULL,0,0,0,FALSE);
 
 	p_percent_trigger(victim, NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_START_COMBAT, NULL);
 	p_percent_trigger(ch, NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_START_COMBAT, NULL);
@@ -4255,7 +4267,7 @@ void do_circle(CHAR_DATA *ch, char *argument)
 
 	decept = get_skill(victim, gsn_deception);
 
-	if (number_percent() < circle && number_percent() > (3 * decept / 4)) {
+	if (number_percent() < circle && number_percent() > (decept / 10)) {
 		act("{Y$n circles around behind you.{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
 		act("{YYou circle around $N.{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		act("{Y$n circles around behind $N.{x", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
@@ -4551,7 +4563,7 @@ void do_bash(CHAR_DATA *ch, char *argument)
 		case SIZE_TINY: chance = 0; break;
 		case SIZE_SMALL: chance /= 2; break;
 		case SIZE_MEDIUM: break;
-		case SIZE_LARGE: chance *= 1.2; break;
+		case SIZE_LARGE: chance *= .2; break;
 		case SIZE_HUGE: chance *= 2; break;
 		case SIZE_GIANT: chance *= 5; break;
 		}
@@ -4746,12 +4758,14 @@ void do_bash(CHAR_DATA *ch, char *argument)
 		act("$n slams into you...", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
 		act("$n slams into $N...", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
 
-		dam = get_skill(ch, gsn_bash);
+		dam = (10 + get_skill(ch, gsn_bash))*4*log10(ch->tot_level);
 		if (ch->size > victim->size) dam *= (ch->size - victim->size);
 		if (ch->size < victim->size) dam /= (victim->size - ch->size);
 
+		/* AO 092516 stupid
 		if (ch->tot_level > victim->tot_level) dam += ch->tot_level - victim->tot_level;
 		if (ch->tot_level < victim->tot_level) dam -= victim->tot_level - ch->tot_level;
+		*/
 
 		if (get_skill(ch, gsn_martial_arts) > 0) {
 			dam += (dam * get_skill(ch, gsn_martial_arts))/100;
@@ -5383,7 +5397,7 @@ void do_backstab(CHAR_DATA *ch, char *argument)
 		return;
 	}
 
-	if (victim->position > POS_SLEEPING && (victim->hit < (2 * victim->max_hit / 3))) {
+	if (victim->position > POS_SLEEPING && (victim->hit < (3 * victim->max_hit / 4))) {
 		act("$N is hurt and suspicious ... you can't sneak up.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		WAIT_STATE(ch, skill_table[gsn_backstab].beats);
 		return;
@@ -5438,16 +5452,16 @@ void do_backstab(CHAR_DATA *ch, char *argument)
 	dam = 0;
 	if (number_percent() < skill || (skill >= 2 && !IS_AWAKE(victim))) {
 		if (!IS_NPC(victim))
-			dam = victim->max_hit;
+			dam = victim->max_hit*5/2;
 		else if (victim->tot_level < 200)
-			dam = victim->max_hit/2;
+			dam = 2*victim->max_hit;
 		else
 			dam = victim->max_hit/10;
 
-		if (ch->tot_level < victim->tot_level) dam = (dam * ch->tot_level)/victim->tot_level;
+		if (ch->tot_level < victim->tot_level) dam = (dam * ch->tot_level)/(victim->tot_level/2);
 
 		dam += 3 * dice(wield->value[1], wield->value[2]);
-		dam = UMIN(dam, 1500+number_range(50,100));
+		dam = UMIN(dam, MAX_BACKSTAB_DAMAGE);
 
 		victim->hit_damage = dam;
 
@@ -5890,7 +5904,7 @@ void do_flee(CHAR_DATA *ch, char *argument)
 	if (IS_NULLSTR(argument))
 	{
 		// ok, so let's try to find a valid direction to flee to...
-		for (attempt = 0; attempt < 10; attempt++)
+		for (attempt = 0; attempt < MAX_FLEE_ATTEMPTS; attempt++)
 		{
 			EXIT_DATA *pexit;
 
@@ -5901,9 +5915,11 @@ void do_flee(CHAR_DATA *ch, char *argument)
 			{
 				plogf("fight.c, do_flee(): char is fleeing from a static room.");
 				// Check if door is a valid exit for this char
-				if (!(pexit = was_in->exit[door]) || (!pexit->u1.to_room && pexit->wilds.wilds_uid == 0) ||
-					(IS_SET(pexit->exit_info, EX_CLOSED) && !IS_AFFECTED(ch, AFF_PASS_DOOR)) ||
-					number_range(0,ch->daze) != 0 || (IS_NPC(ch) && IS_SET(pexit->u1.to_room->room_flags, ROOM_NO_MOB)))
+				if (!(pexit = was_in->exit[door]) 
+					|| (!pexit->u1.to_room && pexit->wilds.wilds_uid == 0) 
+					|| (IS_SET(pexit->exit_info, EX_CLOSED) && !IS_AFFECTED(ch, AFF_PASS_DOOR)) 
+					|| number_range(0,ch->daze) != 0 
+					|| (IS_NPC(ch) && (IS_SET(pexit->u1.to_room->room_flags, ROOM_NO_MOB) || IS_SET(pexit->u1.to_room->room_flags, ROOM_SAFE))))
 					continue;
 			}
 			else
@@ -6192,7 +6208,7 @@ void do_kick(CHAR_DATA *ch, char *argument)
 	if (skill > number_percent()) {
 		int dam = 0;
 
-		dam += number_range(ch->tot_level, ch->tot_level + 10);
+		dam += 5*number_range(ch->tot_level, ch->tot_level + 10);
 
 		if (get_skill(ch,gsn_martial_arts) > 0) {
 			dam += (int) dam * (get_skill(ch,gsn_martial_arts) / 100);
