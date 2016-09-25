@@ -309,10 +309,15 @@ void multi_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt)
 		return;
 	}
 
+	/* AO 092516 start a fight. This is to make sure defenses trigger combat. */
+        if (ch->fighting != victim)
+		set_fighting(ch,victim);
+
 	if (IS_NPC(ch)) {
 		mob_hit(ch, victim, dt);
 		return;
 	}
+
 
 	//send_to_char("Normal", ch);
 	hand = select_weapon(ch);
@@ -2793,6 +2798,9 @@ bool set_fighting(CHAR_DATA *ch, CHAR_DATA *victim)
 		}
 	}
 
+	/* AO 092516 Make sure to initiate combat on a successful defense. Hackish but oh well. */
+	damage_new(ch,victim,NULL,0,0,0,FALSE);
+
 	p_percent_trigger(victim, NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_START_COMBAT, NULL);
 	p_percent_trigger(ch, NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_START_COMBAT, NULL);
 
@@ -4555,7 +4563,7 @@ void do_bash(CHAR_DATA *ch, char *argument)
 		case SIZE_TINY: chance = 0; break;
 		case SIZE_SMALL: chance /= 2; break;
 		case SIZE_MEDIUM: break;
-		case SIZE_LARGE: chance *= 1.2; break;
+		case SIZE_LARGE: chance *= .2; break;
 		case SIZE_HUGE: chance *= 2; break;
 		case SIZE_GIANT: chance *= 5; break;
 		}
@@ -4750,12 +4758,14 @@ void do_bash(CHAR_DATA *ch, char *argument)
 		act("$n slams into you...", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
 		act("$n slams into $N...", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
 
-		dam = get_skill(ch, gsn_bash);
+		dam = (10 + get_skill(ch, gsn_bash))*4*log10(ch->tot_level);
 		if (ch->size > victim->size) dam *= (ch->size - victim->size);
 		if (ch->size < victim->size) dam /= (victim->size - ch->size);
 
+		/* AO 092516 stupid
 		if (ch->tot_level > victim->tot_level) dam += ch->tot_level - victim->tot_level;
 		if (ch->tot_level < victim->tot_level) dam -= victim->tot_level - ch->tot_level;
+		*/
 
 		if (get_skill(ch, gsn_martial_arts) > 0) {
 			dam += (dam * get_skill(ch, gsn_martial_arts))/100;
