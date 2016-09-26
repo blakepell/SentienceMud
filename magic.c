@@ -560,8 +560,8 @@ void do_cast(CHAR_DATA *ch, char *argument)
 	// This will allow for seamless addition of spells so that names of builtin skills/spells do not thwart spell tokens.
 	// A sideaffect of this change allows for funny spells.. like 'dodge' or 'trackless step' since skills and spells
 	// are kept seperate.
-	spell = skill_entry_findname(ch->sorted_spells, arg1);
-	if( !spell ) {
+	spell = skill_entry_findname(ch->sorted_skills, arg1);
+	if( !spell || !spell->isspell ) {
 		send_to_char("You don't know any spells by that name.\n\r", ch);
 		return;
 	}
@@ -573,7 +573,6 @@ void do_cast(CHAR_DATA *ch, char *argument)
 			iterator_start(&it, spell->token->pIndexData->progs[TRIGSLOT_SPELL]);
 			while(( prg = (PROG_LIST *)iterator_nextdata(&it))) {
 				if(is_trigger_type(prg->trig_type,TRIG_SPELL)) {
-					mana = atoi(prg->trig_phrase);
 					script = prg->script;
 					break;
 				}
@@ -593,6 +592,7 @@ void do_cast(CHAR_DATA *ch, char *argument)
 			return;
 		}
 
+		mana = spell->token->value[TOKVAL_SPELL_MANA];
 		if ((ch->mana + ch->manastore) < mana) {
 			send_to_char("You don't have enough mana.\n\r", ch);
 			return;
@@ -623,7 +623,7 @@ void do_cast(CHAR_DATA *ch, char *argument)
 				ch->cast_successful = MAGICCAST_ROOMBLOCK;
 			} else {
 				if (ch->cast_token->pIndexData->value[TOKVAL_SPELL_RATING] > 0) {
-					if (number_range(0,ch->cast_token->pIndexData->value[TOKVAL_SPELL_RATING]) > ch->cast_token->value[TOKVAL_SPELL_RATING])
+					if (number_range(0,(ch->cast_token->pIndexData->value[TOKVAL_SPELL_RATING] * 100) - 1) > ch->cast_token->value[TOKVAL_SPELL_RATING])
 						ch->cast_successful = MAGICCAST_FAILURE;
 				} else {
 					if (number_percent() > ch->cast_token->value[TOKVAL_SPELL_RATING])
@@ -927,10 +927,10 @@ void cast_end(CHAR_DATA *ch)
 		id[1] = token->id[1];
 		if (target == TARGET_CHAR && victim && IS_AFFECTED2(victim, AFF2_SPELL_DEFLECTION)) {
 			if (check_spell_deflection_token(ch, victim, token, script,ch->cast_target_name)) {
-				execute_script(script->vnum, script, NULL, NULL, NULL, token, ch, NULL, NULL, victim, NULL, NULL,ch->cast_target_name,NULL,0,0,0,0,0);
+				execute_script(script->vnum, script, NULL, NULL, NULL, token, ch, NULL, NULL, victim, NULL, NULL, NULL,ch->cast_target_name,NULL,0,0,0,0,0);
 			}
 		} else {
-			execute_script(script->vnum, script, NULL, NULL, NULL, token, ch, (target == TARGET_OBJ)?obj:NULL, NULL, (target == TARGET_CHAR)?victim:NULL, NULL,NULL,ch->cast_target_name,NULL,0,0,0,0,0);
+			execute_script(script->vnum, script, NULL, NULL, NULL, token, ch, (target == TARGET_OBJ)?obj:NULL, NULL, (target == TARGET_CHAR)?victim:NULL, NULL,NULL, NULL,ch->cast_target_name,NULL,0,0,0,0,0);
 		}
 
 		// Only bother with the token if it is valid and the SAME token as before the casting

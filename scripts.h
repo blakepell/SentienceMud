@@ -489,6 +489,7 @@ enum entity_primary_enum {
 	ENTITY_GAME,
 	ENTITY_HELP,
 	ENTITY_NULL,
+	ENTITY_TOKEN,
 	ENTITY_REGISTER1,
 	ENTITY_REGISTER2,
 	ENTITY_REGISTER3,
@@ -1681,7 +1682,8 @@ long script_flag_value( const struct flag_type *flag_table, char *argument);
 char *ifcheck_get_value(SCRIPT_VARINFO *info,IFCHECK_DATA *ifc,char *text,int *ret,bool *valid);
 int execute_script(long pvnum, SCRIPT_DATA *script, CHAR_DATA *mob, OBJ_DATA *obj,
 	ROOM_INDEX_DATA *room, TOKEN_DATA *token, CHAR_DATA *ch,
-	OBJ_DATA *obj1,OBJ_DATA *obj2,CHAR_DATA *vch,CHAR_DATA *vch2,CHAR_DATA *rch, char *phrase, char *trigger,
+	OBJ_DATA *obj1,OBJ_DATA *obj2,CHAR_DATA *vch,CHAR_DATA *vch2,CHAR_DATA *rch,
+	TOKEN_DATA *tok, char *phrase, char *trigger,
 	int number1, int number2, int number3, int number4, int number5);
 void get_level_damage(int level, int *num, int *type, bool fRemort, bool fTwo);
 CHAR_DATA *get_random_char(CHAR_DATA *mob, OBJ_DATA *obj, ROOM_INDEX_DATA *room, TOKEN_DATA *token);

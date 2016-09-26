@@ -937,6 +937,11 @@ char *expand_entity_primary(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->type = ENT_GAME;
 		break;
 
+	case ENTITY_TOKEN:
+		arg->type = ENT_TOKEN;
+		arg->d.token = info->tok;
+		break;
+
 	case ENTITY_REGISTER1:
 	case ENTITY_REGISTER2:
 	case ENTITY_REGISTER3:
@@ -2716,7 +2721,7 @@ char *expand_entity_skillinfo(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->type = ENT_NUMBER;
 		if( arg->d.sk.m ) {
 			if( arg->d.sk.t )
-				arg->d.num = token_skill_rating(arg->d.sk.m, arg->d.sk.t);
+				arg->d.num = token_skill_rating(arg->d.sk.t);
 			else
 				arg->d.num = get_skill(arg->d.sk.m,arg->d.sk.sn);
 		} else
