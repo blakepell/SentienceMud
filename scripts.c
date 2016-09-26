@@ -4648,6 +4648,15 @@ void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument)
 			break;
 		}
 
+	// Format: EXPAND <string>
+	} else if(!str_cmp(buf,"EXPAND")) {
+		char tmp[MSL*2], *p;
+
+		if( arg.type != ENT_STRING ) return;
+
+		expand_string(info, arg.d.str, tmp);
+		variables_set_string(vars,name,tmp,FALSE);
+
 	// Format: ARGREMOVE <word index>
 	// Format: ARGREMOVE <word to remove>
 	} else if(!str_cmp(buf,"ARGREMOVE")) {
