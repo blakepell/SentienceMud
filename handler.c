@@ -2924,7 +2924,6 @@ void extract_char(CHAR_DATA *ch, bool fPull)
 	ROOM_INDEX_DATA *clone, *next_clone;
     CHAR_DATA *wch;
     DESCRIPTOR_DATA *d;
-
     char buf[MAX_STRING_LENGTH];
     ITERATOR it;
 
@@ -3022,7 +3021,8 @@ void extract_char(CHAR_DATA *ch, bool fPull)
     {
 	GQ_MOB_DATA *gq_mob;
 
-	--ch->pIndexData->count;
+	if(!IS_SET(ch->act, ACT_ANIMATED))
+		--ch->pIndexData->count;
 
 	/* for NPCs and global quests. */
 	for (gq_mob = global_quest.mobs; gq_mob != NULL; gq_mob = gq_mob->next)
