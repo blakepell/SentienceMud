@@ -3870,7 +3870,7 @@ const struct skill_type	skill_table [MAX_SKILL]	=
 		"pick lock",
 		{ 31, 31, 7, 31 }, { 8, 8, 4, 8},
 		spell_null, TAR_IGNORE, POS_STANDING, &gsn_pick_lock,
-		-1, 0, 12,
+		-1, 0, 3,
 		"", "!Pick!", "", "",
 		{ { CATALYST_NONE, 0 },{ CATALYST_NONE, 0 },{ CATALYST_NONE, 0 } }
 	}, {

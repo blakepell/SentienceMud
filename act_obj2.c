@@ -608,19 +608,21 @@ void do_combine(CHAR_DATA *ch, char *argument)
 {
     char arg[MSL];
     char arg2[MSL];
-    char buf[MSL];
-    int chance;
+    int chance, roll;
     int charges;
     OBJ_DATA *obj1 = NULL;
     OBJ_DATA *obj2 = NULL;
-    int number_spells;
     bool scrolls = FALSE;
     bool potions = FALSE;
+    bool maximize = TRUE;
+    bool destroy = FALSE;
+    SPELL_DATA *spell1, *spell2;
+	SPELL_DATA *max_spell1, *max_spell2;
 
-    if ((chance = get_skill(ch, gsn_combine)) == 0)
+    if ((chance = get_skill(ch, gsn_combine)) < 1)
     {
-	send_to_char("Leave that to the alchemists.\n\r", ch);
-	return;
+		send_to_char("Leave that to the alchemists.\n\r", ch);
+		return;
     }
 
     argument = one_argument(argument, arg);
@@ -628,21 +630,21 @@ void do_combine(CHAR_DATA *ch, char *argument)
 
     if (arg[0] == '\0' || arg2[0] == '\0')
     {
-	send_to_char("Syntax: combine <item1> <item2>\n\r", ch);
-	return;
+		send_to_char("Syntax: combine <item1> <item2>\n\r", ch);
+		return;
     }
 
     /* setup objects*/
     if ((obj1 = get_obj_list(ch, arg, ch->carrying)) == NULL)
     {
-	act("You aren't carrying any $t.", ch, NULL, NULL, NULL, NULL, arg, NULL, TO_CHAR);
-	return;
+		act("You aren't carrying any $t.", ch, NULL, NULL, NULL, NULL, arg, NULL, TO_CHAR);
+		return;
     }
 
     if ((obj2 = get_obj_list(ch, arg2, ch->carrying)) == NULL)
     {
-	act("You aren't carrying any $t.", ch, NULL, NULL, NULL, NULL, arg2, NULL, TO_CHAR);
-	return;
+		act("You aren't carrying any $t.", ch, NULL, NULL, NULL, NULL, arg2, NULL, TO_CHAR);
+		return;
     }
 
     /* make sure our objects are the right item types */
@@ -661,91 +663,163 @@ void do_combine(CHAR_DATA *ch, char *argument)
 
     if (scrolls)
     {
-	if (obj2->item_type != ITEM_SCROLL)
-	{
-	    act("$p and $P are not the same type of item.", ch, NULL, NULL, obj1, obj2, NULL, NULL, TO_CHAR);
-	    return;
-	}
+		if (obj2->item_type != ITEM_SCROLL)
+		{
+			act("$p and $P are not the same type of item.", ch, NULL, NULL, obj1, obj2, NULL, NULL, TO_CHAR);
+			return;
+		}
     }
 
     if (potions)
     {
-	if (obj2->item_type != ITEM_POTION)
-	{
-	    act("$p and $P are not the same type of item.", ch, NULL, NULL, obj1, obj2, NULL, NULL, TO_CHAR);
-	    return;
-	}
+		if (obj2->item_type != ITEM_POTION)
+		{
+			act("$p and $P are not the same type of item.", ch, NULL, NULL, obj1, obj2, NULL, NULL, TO_CHAR);
+			return;
+		}
     }
 
     if (obj1 == obj2)
     {
-	send_to_char("You can't defy the laws of physics.\n\r", ch);
-	return;
+		send_to_char("You can't defy the laws of physics.\n\r", ch);
+		return;
     }
 
-    if (obj1->value[1] != obj2->value[1]
-    ||  obj1->value[2] != obj2->value[2]
-    ||  obj1->value[3] != obj2->value[3]
-    ||  obj1->value[4] != obj2->value[4])
+    roll = number_percent();
+    if( roll > (chance + 7) )
+		destroy = TRUE;
+	else if( roll > chance )
+		maximize = FALSE;
+
+	// Check they have spells
+    if (!obj1->spells)
     {
-	send_to_char("You can only combine items which have the same spells.\n\r", ch);
-	return;
-    }
+	    act("$p does not contain any magic.", ch, NULL, NULL, obj1, NULL, NULL, NULL, TO_CHAR);
+	    return;
+	}
 
-    number_spells = 0;
-    if (obj1->value[1] > 0)
-	number_spells++;
-    if (obj1->value[2] > 0)
-	number_spells++;
-    if (obj1->value[3] > 0)
-	number_spells++;
-    if (obj1->value[4] > 0)
-	number_spells++;
-
-    if (obj2->value[1] > 0)
-	number_spells++;
-    if (obj2->value[2] > 0)
-	number_spells++;
-    if (obj2->value[3] > 0)
-	number_spells++;
-    if (obj2->value[4] > 0)
-	number_spells++;
-
-    if (number_spells == 0)
+    if (!obj2->spells)
     {
-	send_to_char("Neither of those items contain any type of magic.\n\r", ch);
-	return;
-    }
+	    act("$p does not contain any magic.", ch, NULL, NULL, obj2, NULL, NULL, NULL, TO_CHAR);
+	    return;
+	}
+
+	// Mark all spells as not having been used
+	for (spell1 = obj1->spells; spell1; spell1 = spell1->next)
+		spell1->repop = 0;
+
+	for (spell2 = obj2->spells; spell2; spell2 = spell2->next)
+		spell2->repop = FALSE;
+
+	if (maximize)
+	{
+		// Pair up the spells by type and level, keeping the strongest of each type paired up.
+		do
+		{
+			// Find the current maximum level of the unassigned spells
+			max_spell1 = NULL;
+			for (spell1 = obj1->spells; spell1; spell1 = spell1->next)
+			{
+				if( spell1->level > 0 && !spell1->repop &&
+					(!max_spell1 || spell1->level > max_spell1->level) )
+					max_spell1 = spell1;
+			}
+
+			if( max_spell1 ) {
+				// Find the corresponding spell in obj2
+
+				max_spell2 = NULL;
+				for (spell2 = obj2->spells; spell2; spell2 = spell2->next)
+				{
+					if (max_spell1->sn == spell2->sn && spell2->level > 0 && !spell2->repop &&
+						(!max_spell2 || spell2->level > max_spell2->level) )
+						max_spell2 = spell2;
+				}
+
+				if( !max_spell2 )
+				{
+					send_to_char("You can only combine items which have the same spells.\n\r", ch);
+					return;
+				}
+
+				max_spell1->repop = max_spell2->level;
+				max_spell2->repop = TRUE;
+			}
+		}
+		while(max_spell1 != NULL);
+	}
+	else
+	{
+		// Non-maximize, pairs up spells by type, ignoring respective levels.
+		for (spell1 = obj1->spells; spell1; spell1 = spell1->next)
+		{
+			bool found = FALSE;
+			if( spell1->level < 1 )
+				continue;
+
+			for (spell2 = obj2->spells; spell2; spell2 = spell2->next)
+			{
+				if (spell1->sn == spell2->sn && spell2->level > 0 && !spell2->repop )
+				{
+					spell1->repop = spell2->level;
+					spell2->repop = TRUE;
+					found = TRUE;
+					break;
+				}
+			}
+
+			if( found )
+			{
+				send_to_char("You can only combine items which have the same spells.\n\r", ch);
+				return;
+			}
+		}
+	}
+
+	// Look for spells in obj2 that were not found.
+	for (spell2 = obj2->spells; spell2; spell2 = spell2->next)
+	{
+		if ( spell2->level > 0 && !spell2->repop )
+		{
+			send_to_char("You can only combine items which have the same spells.\n\r", ch);
+			return;
+		}
+	}
 
     /* add up charges on potions*/
     charges = 2;
     if (potions)
     {
-	charges += obj1->value[5];
-	charges += obj2->value[5];
-	charges = UMIN(charges, 3);
-	obj1->value[5] = charges;
+		charges += obj1->value[5];
+		charges += obj2->value[5];
+		charges = UMIN(charges, 3);
+		obj1->value[5] = charges;
     }
 
-    if (number_percent() > chance + 7)
+    if (destroy)
     {
-	act("You make a slight mistake and $p and $P vanish in a mist!",
-	    ch, NULL, NULL, obj1, obj2, NULL, NULL, TO_CHAR);
-	act("$n makes a slight mistake and $p and $P vanish in a mist!",
-	    ch, NULL, NULL, obj1, obj2, NULL, NULL, TO_ROOM);
-	extract_obj(obj1);
-	extract_obj(obj2);
-	check_improve(ch, gsn_combine, 1, FALSE);
-	return;
+		act("You make a slight mistake and $p and $P vanish in a mist!",
+			ch, NULL, NULL, obj1, obj2, NULL, NULL, TO_CHAR);
+		act("$n makes a slight mistake and $p and $P vanish in a mist!",
+			ch, NULL, NULL, obj1, obj2, NULL, NULL, TO_ROOM);
+		extract_obj(obj1);
+		extract_obj(obj2);
+		check_improve(ch, gsn_combine, 1, FALSE);
+		return;
     }
 
-    obj1->value[0] = 2 * obj1->value[0]/3 + 2 * obj2->value[0]/3;
-    obj1->value[0] = UMIN(obj1->value[0], ch->tot_level * 2);
+    // Blend the levels together
+	for (spell1 = obj1->spells; spell1; spell1 = spell1->next)
+	{
+		if (spell1->level > 0)
+		{
+			spell1->level = 2 * spell1->level/3 + 2 * spell1->repop/3;
+			spell1->level = UMIN(spell1->level, ch->tot_level * 2);
+		}
+	}
 
-    sprintf(buf, "You combine $p and $P.");
-    act(buf, ch, NULL, NULL, obj1, obj2, NULL, NULL, TO_CHAR);
-    sprintf(buf, "$n combines $p and $P.");
-    act(buf, ch, NULL, NULL, obj1, obj2, NULL, NULL, TO_ROOM);
+    act("You combine $p and $P.", ch, NULL, NULL, obj1, obj2, NULL, NULL, TO_CHAR);
+    act("$n combines $p and $P.", ch, NULL, NULL, obj1, obj2, NULL, NULL, TO_ROOM);
 
     extract_obj(obj2);
     check_improve(ch, gsn_combine, 1, TRUE);

@@ -2002,7 +2002,7 @@ CHAR_DATA *create_mobile(MOB_INDEX_DATA *pMobIndex, bool persistLoad)
 
     if (IS_AFFECTED(mob,AFF_SANCTUARY))
     {
-	af.group	= IS_SET(race->aff,AFF_SANCTUARY)?AFFGROUP_RACIAL:AFFGROUP_MAGICAL;
+	af.group	= IS_SET(race->aff,AFF_SANCTUARY)?AFFGROUP_RACIAL:AFFGROUP_DIVINE;
 	af.where	 = TO_AFFECTS;
 	af.type      = gsn_sanctuary;
 	af.level     = mob->level;
