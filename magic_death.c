@@ -84,6 +84,10 @@ SPELL_FUNC(spell_animate_dead)
 		index = get_mob_index(vnum);
 		victim = create_mobile(index, FALSE);
 
+		// Regardless what wealth the normal mob has...
+		victim->gold = 0;
+		victim->silver = 0;
+
 		// Do the animate trigger now so that information that might be needed for PREANIMATE is available.
 		if( p_percent_trigger( victim, NULL, NULL, NULL, ch, victim, NULL, obj, NULL, TRIG_ANIMATE, NULL) )
 			restring_mob = FALSE;
@@ -435,6 +439,9 @@ SPELL_FUNC(spell_raise_dead)
 			bool keep_mob = TRUE;
 
 			victim = create_mobile(get_mob_index(obj->orig_vnum), FALSE);
+			// Regardless what wealth the normal mob has...
+			victim->gold = 0;
+			victim->silver = 0;
 
 			// Take newly created NPCs items off
 			for (in = victim->carrying; in != NULL; in = in_next) {
