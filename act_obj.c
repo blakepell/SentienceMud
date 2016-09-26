@@ -600,7 +600,7 @@ void do_get(CHAR_DATA *ch, char *argument)
 	}
 
 	/* This section handles getting objects out of containers. */
-	if ((container = get_obj_inv(ch, NULL, arg2)) == NULL) {
+	if ((container = get_obj_inv(ch,arg2, FALSE)) == NULL) {
 		act("I see no $T here.", ch, NULL, NULL, NULL, NULL, NULL, arg2, TO_CHAR);
 		return;
 	}
