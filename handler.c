@@ -2924,7 +2924,6 @@ void extract_char(CHAR_DATA *ch, bool fPull)
 	ROOM_INDEX_DATA *clone, *next_clone;
     CHAR_DATA *wch;
     DESCRIPTOR_DATA *d;
-
     char buf[MAX_STRING_LENGTH];
     ITERATOR it;
 
@@ -3022,7 +3021,8 @@ void extract_char(CHAR_DATA *ch, bool fPull)
     {
 	GQ_MOB_DATA *gq_mob;
 
-	--ch->pIndexData->count;
+	if(!IS_SET(ch->act, ACT_ANIMATED))
+		--ch->pIndexData->count;
 
 	/* for NPCs and global quests. */
 	for (gq_mob = global_quest.mobs; gq_mob != NULL; gq_mob = gq_mob->next)
@@ -5725,7 +5725,7 @@ bool can_get_obj(CHAR_DATA *ch, OBJ_DATA *obj, OBJ_DATA *container, MAIL_DATA *m
 
     if (ch->carry_number + get_obj_number(obj) > can_carry_n(ch))
 	MSG(act("$p: you can't carry that many items.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR))
-	
+
     if (get_carry_weight(ch) + get_obj_weight(obj) > can_carry_w(ch))
 	MSG(act("$p: you can't carry that much weight.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR))
 
