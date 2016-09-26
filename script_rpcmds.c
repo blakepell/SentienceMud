@@ -6165,26 +6165,6 @@ SCRIPT_CMD(do_rpsaveplayer)
 	info->room->progs->lastreturn = 1;
 }
 
-		return;
-
-	switch(arg.type) {
-	case ENT_STRING:
-		if( !str_cmp(arg.d.str, "none") ||
-			!str_cmp(arg.d.str, "clear") ||
-			!str_cmp(arg.d.str, "reset") )
-			mob->checkpoint = NULL;
-		break;
-	case ENT_NUMBER:
-		if( arg.d.num > 0 )
-			mob->checkpoint = get_room_index(arg.d.num);
-		break;
-	case ENT_ROOM:
-		if( arg.d.room != NULL )
-			mob->checkpoint = arg.d.room;
-		break;
-	}
-}
-
 // Syntax:	checkpoint $PLAYER $ROOM
 // 			checkpoint $PLAYER VNUM
 //			checkpoint $PLAYER none|clear|reset
@@ -6228,5 +6208,3 @@ SCRIPT_CMD(do_rpcheckpoint)
 		break;
 	}
 }
-
-

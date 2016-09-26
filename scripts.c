@@ -4650,7 +4650,7 @@ void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument)
 
 	// Format: EXPAND <string>
 	} else if(!str_cmp(buf,"EXPAND")) {
-		char tmp[MSL*2], *p;
+		char tmp[MSL*2];
 
 		if( arg.type != ENT_STRING ) return;
 
