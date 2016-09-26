@@ -6880,15 +6880,17 @@ CD *	get_char_room		args( ( CHAR_DATA *ch, ROOM_INDEX_DATA *room, char *argument
 CD *	get_char_world	args( ( CHAR_DATA *ch, char *argument ) );
 CD *    find_char_world args( ( CHAR_DATA *ch, char *argument ) );
 OD *	get_obj_type	args( ( OBJ_INDEX_DATA *pObjIndexData ) );
-OD *	get_obj_list	args( ( CHAR_DATA *ch, char *argument,
-			    OBJ_DATA *list ) );
-OD *	get_obj_carry	args( ( CHAR_DATA *ch, char *argument,
-			    CHAR_DATA *viewer ) );
-OD *	get_obj_vnum_carry	args( ( CHAR_DATA *ch, long vnum,
-			    CHAR_DATA *viewer ) );
+OD *	get_obj_list	args( ( CHAR_DATA *ch, char *argument, OBJ_DATA *list ) );
+OD *	get_obj_list_number	args( ( CHAR_DATA *ch, char *argument, int *number, OBJ_DATA *list ) );
+OD *	get_obj_carry	args( ( CHAR_DATA *ch, char *argument, CHAR_DATA *viewer ) );
+OD *	get_obj_carry_number	args( ( CHAR_DATA *ch, char *argument, int *nth, CHAR_DATA *viewer ) );
+OD *	get_obj_vnum_carry	args( ( CHAR_DATA *ch, long vnum, CHAR_DATA *viewer ) );
 OD *	get_obj_locker	args( ( CHAR_DATA *ch, char *argument ) );
-OD *get_obj_wear	args( ( CHAR_DATA *ch, char *argument, bool character ));
+OD *	get_obj_wear	args( ( CHAR_DATA *ch, char *argument, bool character ));
+OD *	get_obj_wear_number	args( ( CHAR_DATA *ch, char *argument, int *nth, bool character ));
+OD *	get_obj_inv		args( (CHAR_DATA *ch, char *argument, bool worn));
 OD *	get_obj_here	args( ( CHAR_DATA *ch, ROOM_INDEX_DATA *room, char *argument ) );
+OD *	get_obj_here_number	args( ( CHAR_DATA *ch, ROOM_INDEX_DATA *room, char *argument, int *nth ) );
 OD *	get_obj_world	args( ( CHAR_DATA *ch, char *argument ) );
 OD *	create_money	args( ( int gold, int silver ) );
 int	get_obj_number	args( ( OBJ_DATA *obj ) );

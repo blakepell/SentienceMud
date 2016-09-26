@@ -600,7 +600,7 @@ void do_get(CHAR_DATA *ch, char *argument)
 	}
 
 	/* This section handles getting objects out of containers. */
-	if ((container = get_obj_here(ch, NULL, arg2)) == NULL) {
+	if ((container = get_obj_inv(ch, NULL, arg2)) == NULL) {
 		act("I see no $T here.", ch, NULL, NULL, NULL, NULL, NULL, arg2, TO_CHAR);
 		return;
 	}
@@ -745,343 +745,344 @@ void do_put(CHAR_DATA *ch, char *argument)
     argument = one_argument(argument, arg3);
 
     if (!str_cmp(arg2,"in") || !str_cmp(arg2,"on"))
-	argument = one_argument(argument, arg2);
+		argument = one_argument(argument, arg2);
 
     if (arg1[0] == '\0' || arg2[0] == '\0')
     {
-	send_to_char("Put what in what?\n\r", ch);
-	return;
+		send_to_char("Put what in what?\n\r", ch);
+		return;
     }
 
     if (!str_cmp(arg2, "all") || !str_prefix("all.", arg2))
     {
-	send_to_char("You can't do that.\n\r", ch);
-	return;
+		send_to_char("You can't do that.\n\r", ch);
+		return;
     }
 
     if (!str_prefix("all.", arg1) && (!str_cmp(arg1 + 4, "gold") || !str_cmp(arg1 + 4, "silver")))
     {
-	gold = !str_cmp(arg1 + 4, "gold");
+		gold = !str_cmp(arg1 + 4, "gold");
 
-        if ((amount = gold ? ch->gold : ch->silver) == 0)
-	{
-	    sprintf(buf, "You don't have any %s.\n\r", gold ? "gold" : "silver");
-	    send_to_char(buf, ch);
-	    return;
-	}
+		if ((amount = gold ? ch->gold : ch->silver) == 0)
+		{
+			sprintf(buf, "You don't have any %s.\n\r", gold ? "gold" : "silver");
+			send_to_char(buf, ch);
+			return;
+		}
 
-	if (arg2[0] == '\0')
-	{
-	    send_to_char("Put it in what?\n\r", ch);
-	    return;
-	}
+		if (arg2[0] == '\0')
+		{
+			send_to_char("Put it in what?\n\r", ch);
+			return;
+		}
 
-        if ((container = get_obj_here(ch, NULL, arg2)) == NULL)
-	{
-	    act("You can't find a $T to put it in.", ch, NULL, NULL, NULL, NULL, NULL, arg2, TO_CHAR);
-	    return;
-	}
+		if ((container = get_obj_here(ch, NULL, arg2)) == NULL)
+		{
+			act("You can't find a $T to put it in.", ch, NULL, NULL, NULL, NULL, NULL, arg2, TO_CHAR);
+			return;
+		}
 
-	if (container->item_type != ITEM_BANK)
-	{
-	    send_to_char("You can't do that.\n\r", ch);
-	    return;
-	}
+		if (container->item_type != ITEM_BANK)
+		{
+			send_to_char("You can't do that.\n\r", ch);
+			return;
+		}
 
-	sprintf(buf, "You put %ld %s coins in $p.", amount, gold ? "gold" : "silver");
-	act(buf, ch, NULL, NULL, container, NULL, NULL, NULL, TO_CHAR);
-	act("$n puts some coins in $p.", ch, NULL, NULL, container, NULL, NULL, NULL, TO_ROOM);
+		sprintf(buf, "You put %ld %s coins in $p.", amount, gold ? "gold" : "silver");
+		act(buf, ch, NULL, NULL, container, NULL, NULL, NULL, TO_CHAR);
+		act("$n puts some coins in $p.", ch, NULL, NULL, container, NULL, NULL, NULL, TO_ROOM);
 
-	act("You hear the sound of jingling coins from $p.",
-	    ch, NULL, NULL, container, NULL, NULL, NULL, TO_CHAR);
-	act("You hear the sound of jingling coins from $p.",
-	    ch, NULL, NULL, container, NULL, NULL, NULL, TO_ROOM);
+		act("You hear the sound of jingling coins from $p.",
+			ch, NULL, NULL, container, NULL, NULL, NULL, TO_CHAR);
+		act("You hear the sound of jingling coins from $p.",
+			ch, NULL, NULL, container, NULL, NULL, NULL, TO_ROOM);
 
-        if (gold)
-	{
-	    ch->gold = 0;
-	    amount = 95 * amount;
-	    ch->silver += amount;
-	}
-	else
-	{
-	    ch->silver = 0;
-	    amount = (amount * 95)/10000;
-	    ch->gold += amount;
-	}
+		if (gold)
+		{
+			ch->gold = 0;
+			amount = 95 * amount;
+			ch->silver += amount;
+		}
+		else
+		{
+			ch->silver = 0;
+			amount = (amount * 95)/10000;
+			ch->gold += amount;
+		}
 
-	sprintf(buf, "You get %ld %s coins from $p.", amount, gold ? "silver" : "gold");
-	act(buf, ch, NULL, NULL, container, NULL, NULL, NULL, TO_CHAR);
+		sprintf(buf, "You get %ld %s coins from $p.", amount, gold ? "silver" : "gold");
+		act(buf, ch, NULL, NULL, container, NULL, NULL, NULL, TO_CHAR);
 
-	act("$n gets some coins from $p.", ch, NULL, NULL,
-	    container, NULL, NULL, NULL, TO_ROOM);
-	return;
+		act("$n gets some coins from $p.", ch, NULL, NULL,
+			container, NULL, NULL, NULL, TO_ROOM);
+		return;
     }
 
-    if ((container = get_obj_here(ch, NULL, arg2)) == NULL)
+    if ((container = get_obj_inv(ch, arg2, FALSE)) == NULL)
     {
-	act("I see no $T here.", ch, NULL, NULL, NULL, NULL, NULL, arg2, TO_CHAR);
-	return;
+		act("I see no $T here.", ch, NULL, NULL, NULL, NULL, NULL, arg2, TO_CHAR);
+		return;
     }
 
     /* 'put obj container' */
     if (str_cmp(arg1, "all") && str_prefix("all.", arg1))
     {
-	if ((obj = get_obj_carry(ch, arg1, ch)) == NULL)
-	{
-	    send_to_char("You do not have that item.\n\r", ch);
-	    return;
-	}
-
-	if (!can_put_obj(ch, obj, container, NULL, FALSE))
-	    return;
-
-        /* Alemnos magic keyring */
-	if (container->item_type == ITEM_KEYRING)
-	{
-	    if (obj->item_type != ITEM_KEY)
-	    {
-		act("You can only attach keys to $p.", ch, NULL, NULL, container, NULL, NULL, NULL, TO_CHAR);
-	        return;
-	    }
-	    else
-	    {
-		OBJ_DATA *key;
-		int i;
-
-		if (IS_SET(obj->extra_flags, ITEM_NOKEYRING))
+		if ((obj = get_obj_carry(ch, arg1, ch)) == NULL)
 		{
-	  	    act("You try to attach $p to the keyring, but it recoils with a shock of energy.",
-				ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
-		    act("$n tries to attach $p to $s keyring, but it recoils with a shock of energy.",
-				ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
-			return;
-		}
-
-                i = 0;
-		for (key = container->contains; key != NULL; key = key->next_content)
-		{
-	   	    if (obj->pIndexData->vnum == key->pIndexData->vnum)
-		    {
-			act("$p is already on $P.", ch, NULL, NULL, obj, container, NULL, NULL, TO_CHAR);
-			return;
-		    }
-
-		    i++;
-		}
-
-		if (i >= 50)
-		{
-		    act("$p is already rather full of keys!",
-		        ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+		    send_to_char("You do not have that item.\n\r", ch);
 		    return;
 		}
 
-		act("You attach $p to $P.", ch, NULL, NULL, obj, container, NULL, NULL, TO_CHAR);
-		act("$n attaches $p to $P.", ch, NULL, NULL, obj, container, NULL, NULL, TO_ROOM);
+		if (!can_put_obj(ch, obj, container, NULL, FALSE))
+		    return;
 
-		obj_from_char(obj);
-		obj_to_obj(obj, container);
-		return;
-	    }
-	}
-
-        /* Orb of Shadows makes 1 item perm cursed */
-	if (container->pIndexData->vnum == OBJ_VNUM_CURSED_ORB)
-	{
-	    if (obj->item_type == ITEM_CONTAINER)
-	    {
-	        act("You can't seem to get $p into the orb.",
-			ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
-		return;
-	    }
-
-	    act("You put $p into the Orb of Shadows.",
-	    	ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
-	    act("$n puts $p into the Orb of Shadows.",
-	    	ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
-	    act("You hear demonic chants and whispers from the Orb of Shadows.",
-	    	ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
-	    act("You hear demonic chants and whispers from $n's Orb of Shadows.",
-	    	ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
-	    act("You retrieve $p from the Orb of Shadows.",
-	    	ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
-	    act("$n retrieves $p from the Orb of Shadows.",
-	    	ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
-
-	    act("The Orb of Shadows dissipates into smoke.",
-	    	ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
-	    act("$n's Orb of Shadows dissipates into smoke.",
-	    	ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
-
-	    SET_BIT(obj->extra_flags, ITEM_NODROP);
-	    SET_BIT(obj->extra_flags, ITEM_NOUNCURSE);
-	    extract_obj(container);
-	    return;
-	}
-
-
-	if (((get_obj_weight_container(container) + get_obj_weight(obj)) *
-		WEIGHT_MULT(container)/100) > container->value[0]) {
-		act("$P cannot hold that much weight.",ch, NULL, NULL,obj,container, NULL, NULL, TO_CHAR);
-		return;
-	}
-
-	if ((get_obj_number_container(container) + get_obj_number(obj)) > container->value[3]) {
-		act("$P is too full to hold $p.",ch, NULL, NULL,obj,container, NULL, NULL, TO_CHAR);
-		return;
-	}
-
-	obj_from_char(obj);
-	obj_to_obj(obj, container);
-
-	if (IS_SET(container->value[1],CONT_PUT_ON))
-	{
-	    act("$n puts $p on $P.",ch, NULL, NULL,obj,container, NULL, NULL, TO_ROOM);
-	    act("You put $p on $P.",ch, NULL, NULL,obj,container, NULL, NULL, TO_CHAR);
-	}
-	else
-	{
-	    act("$n puts $p in $P.", ch, NULL, NULL, obj, container, NULL, NULL, TO_ROOM);
-	    act("You put $p in $P.", ch, NULL, NULL, obj, container, NULL, NULL, TO_CHAR);
-	}
-
-	p_percent_trigger(NULL,container,NULL,NULL,ch, NULL, NULL,obj,NULL,TRIG_PUT, NULL);
-    }
-    else
-    {
-	/* Put all/all.<obj> <container> */
-	if (container->item_type == ITEM_KEYRING
-	||  container->pIndexData->vnum == OBJ_VNUM_CURSED_ORB)
-	{
-	    act("You can only put items in $p one at a time.", ch, NULL, NULL, container, NULL, NULL, NULL, TO_CHAR);
-	    return;
-	}
-
-	while (found)
-  	{
-	    found = FALSE;
-	    i = 0;
-	    match_obj = NULL;
-
-	    for (obj = ch->carrying; obj != NULL; obj = obj_next)
-	    {
-		obj_next = obj->next_content;
-
-		if (arg1[3] == '\0' || is_name(&arg1[4], obj->name))
-		    any = obj;
-
-		if (any == obj && can_put_obj(ch, obj, container, NULL, TRUE))
+        /* Alemnos magic keyring */
+		if (container->item_type == ITEM_KEYRING)
 		{
-		    sprintf(short_descr, "%s", obj->short_descr);
-		    found = TRUE;
-		    break;
-		}
-	    }
-
-	    if (found)
-	    {
-		for (obj = ch->carrying; obj != NULL; obj = obj_next)
-		{
-		    obj_next = obj->next_content;
-
-		    if (str_cmp(obj->short_descr, short_descr)
-		    ||  !can_put_obj(ch, obj, container, NULL, TRUE))
-			continue;
-
-		    if (((get_obj_weight_container(container) + get_obj_weight(obj)) *
-		    	WEIGHT_MULT(container)/100) > container->value[0])
+		    if (obj->item_type != ITEM_KEY)
 		    {
-			if (i > 0 && match_obj != NULL)
-			{
-			    if (IS_SET(container->value[1],CONT_PUT_ON))
-			    {
-				sprintf(buf, "{Y({G%2d{Y) {x$n puts $p on $P.", i);
-				act(buf, ch, NULL, NULL, match_obj, container, NULL, NULL, TO_ROOM);
-
-				sprintf(buf, "{Y({G%2d{Y) {xYou put $p on $P.", i);
-				act(buf, ch, NULL, NULL, match_obj, container, NULL, NULL, TO_CHAR);
-			    }
-			    else
-			    {
-				sprintf(buf, "{Y({G%2d{Y) {x$n puts $p in $P.", i);
-				act(buf, ch, NULL, NULL, match_obj, container, NULL, NULL, TO_ROOM);
-
-				sprintf(buf, "{Y({G%2d{Y) {xYou put $p in $P.", i);
-				act(buf, ch, NULL, NULL, match_obj, container, NULL, NULL, TO_CHAR);
-			    }
-			}
-
-			act("$p is full.", ch, NULL, NULL, container, NULL, NULL, NULL, TO_CHAR);
-			return;
-		    }
-
-		    if ((get_obj_number_container(container) + get_obj_number(obj)) > container->value[3])
-		    {
-			if (i > 0 && match_obj != NULL)
-			{
-			    if (container->item_type == ITEM_CONTAINER
-			    &&  IS_SET(container->value[1],CONT_PUT_ON))
-			    {
-				sprintf(buf, "{Y({G%2d{Y) {x$n puts $p on $P.", i);
-				act(buf, ch, NULL, NULL, match_obj, container, NULL, NULL, TO_ROOM);
-
-				sprintf(buf, "{Y({G%2d{Y) {xYou put $p on $P.", i);
-				act(buf, ch, NULL, NULL, match_obj, container, NULL, NULL, TO_CHAR);
-			    }
-			    else
-			    {
-				sprintf(buf, "{Y({G%2d{Y) {x$n puts $p in $P.", i);
-				act(buf, ch, NULL, NULL, match_obj, container, NULL, NULL, TO_ROOM);
-
-				sprintf(buf, "{Y({G%2d{Y) {xYou put $p in $P.", i);
-				act(buf, ch, NULL, NULL, match_obj, container, NULL, NULL, TO_CHAR);
-			    }
-			}
-
-			act("$p can't hold any more.", ch, NULL, NULL, container, NULL, NULL, NULL, TO_CHAR);
-			return;
-		    }
-
-		    if (match_obj == NULL && obj != NULL)
-			match_obj = obj;
-
-		    obj_from_char(obj);
-		    obj_to_obj(obj, container);
-		    i++;
-		}
-
-		if (i > 0 && match_obj != NULL)
-		{
-		    if (IS_SET(container->value[1],CONT_PUT_ON))
-		    {
-			sprintf(buf, "{Y({G%2d{Y) {x$n puts $p on $P.", i);
-			act(buf, ch, NULL, NULL, match_obj, container, NULL, NULL, TO_ROOM);
-
-			sprintf(buf, "{Y({G%2d{Y) {xYou put $p on $P.", i);
-			act(buf, ch, NULL, NULL, match_obj, container, NULL, NULL, TO_CHAR);
+				act("You can only attach keys to $p.", ch, NULL, NULL, container, NULL, NULL, NULL, TO_CHAR);
+		        return;
 		    }
 		    else
 		    {
-			sprintf(buf, "{Y({G%2d{Y) {x$n puts $p in $P.", i);
-			act(buf, ch, NULL, NULL, match_obj, container, NULL, NULL, TO_ROOM);
+				OBJ_DATA *key;
+				int i;
 
-			sprintf(buf, "{Y({G%2d{Y) {xYou put $p in $P.", i);
-			act(buf, ch, NULL, NULL, match_obj, container, NULL, NULL, TO_CHAR);
+				if (IS_SET(obj->extra_flags, ITEM_NOKEYRING))
+				{
+					act("You try to attach $p to the keyring, but it recoils with a shock of energy.",
+						ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+					act("$n tries to attach $p to $s keyring, but it recoils with a shock of energy.",
+						ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
+					return;
+				}
+
+				i = 0;
+				for (key = container->contains; key != NULL; key = key->next_content)
+				{
+			   	    if (obj->pIndexData->vnum == key->pIndexData->vnum)
+				    {
+						act("$p is already on $P.", ch, NULL, NULL, obj, container, NULL, NULL, TO_CHAR);
+						return;
+				    }
+				    i++;
+				}
+
+				if (i >= 50)
+				{
+				    act("$p is already rather full of keys!",
+		        		ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+		    		return;
+				}
+
+				act("You attach $p to $P.", ch, NULL, NULL, obj, container, NULL, NULL, TO_CHAR);
+				act("$n attaches $p to $P.", ch, NULL, NULL, obj, container, NULL, NULL, TO_ROOM);
+
+				obj_from_char(obj);
+				obj_to_obj(obj, container);
+				return;
 		    }
 		}
 
-		/* Too many to do individually, just let it handle all of them. */
-		p_percent_trigger(NULL,container,NULL,NULL,ch, NULL, NULL,NULL,NULL,TRIG_PUT, NULL);
+        /* Orb of Shadows makes 1 item perm cursed */
+		if (container->pIndexData->vnum == OBJ_VNUM_CURSED_ORB)
+		{
+		    if (obj->item_type == ITEM_CONTAINER)
+		    {
+		        act("You can't seem to get $p into the orb.",
+					ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+				return;
+		    }
+
+			act("You put $p into the Orb of Shadows.",
+				ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+			act("$n puts $p into the Orb of Shadows.",
+				ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
+			act("You hear demonic chants and whispers from the Orb of Shadows.",
+				ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+			act("You hear demonic chants and whispers from $n's Orb of Shadows.",
+				ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+			act("You retrieve $p from the Orb of Shadows.",
+				ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+			act("$n retrieves $p from the Orb of Shadows.",
+				ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
+
+			act("The Orb of Shadows dissipates into smoke.",
+				ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+			act("$n's Orb of Shadows dissipates into smoke.",
+				ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+
+			SET_BIT(obj->extra_flags, ITEM_NODROP);
+			SET_BIT(obj->extra_flags, ITEM_NOUNCURSE);
+			extract_obj(container);
+			return;
+		}
+
+
+		if (((get_obj_weight_container(container) + get_obj_weight(obj)) *
+			WEIGHT_MULT(container)/100) > container->value[0])
+		{
+			act("$P cannot hold that much weight.",ch, NULL, NULL,obj,container, NULL, NULL, TO_CHAR);
+			return;
+		}
+
+		if ((get_obj_number_container(container) + get_obj_number(obj)) > container->value[3])
+		{
+			act("$P is too full to hold $p.",ch, NULL, NULL,obj,container, NULL, NULL, TO_CHAR);
+			return;
+		}
+
+		obj_from_char(obj);
+		obj_to_obj(obj, container);
+
+		if (IS_SET(container->value[1],CONT_PUT_ON))
+		{
+		    act("$n puts $p on $P.",ch, NULL, NULL,obj,container, NULL, NULL, TO_ROOM);
+		    act("You put $p on $P.",ch, NULL, NULL,obj,container, NULL, NULL, TO_CHAR);
+		}
+		else
+		{
+		    act("$n puts $p in $P.", ch, NULL, NULL, obj, container, NULL, NULL, TO_ROOM);
+		    act("You put $p in $P.", ch, NULL, NULL, obj, container, NULL, NULL, TO_CHAR);
+		}
+
+		p_percent_trigger(NULL,container,NULL,NULL,ch, NULL, NULL,obj,NULL,TRIG_PUT, NULL);
+    }
+    else
+    {
+		/* Put all/all.<obj> <container> */
+		if (container->item_type == ITEM_KEYRING ||
+			container->pIndexData->vnum == OBJ_VNUM_CURSED_ORB)
+		{
+			act("You can only put items in $p one at a time.", ch, NULL, NULL, container, NULL, NULL, NULL, TO_CHAR);
+			return;
+		}
+
+		while (found)
+		{
+			found = FALSE;
+			i = 0;
+			match_obj = NULL;
+
+		    for (obj = ch->carrying; obj != NULL; obj = obj_next)
+		    {
+				obj_next = obj->next_content;
+
+				if (arg1[3] == '\0' || is_name(&arg1[4], obj->name))
+				    any = obj;
+
+				if (any == obj && can_put_obj(ch, obj, container, NULL, TRUE))
+				{
+				    sprintf(short_descr, "%s", obj->short_descr);
+				    found = TRUE;
+				    break;
+				}
+		    }
+
+		    if (found)
+		    {
+				for (obj = ch->carrying; obj != NULL; obj = obj_next)
+				{
+				    obj_next = obj->next_content;
+
+				    if (str_cmp(obj->short_descr, short_descr) ||
+				    	!can_put_obj(ch, obj, container, NULL, TRUE))
+						continue;
+
+				    if (((get_obj_weight_container(container) + get_obj_weight(obj)) *
+				    	WEIGHT_MULT(container)/100) > container->value[0])
+				    {
+						if (i > 0 && match_obj != NULL)
+						{
+						    if (IS_SET(container->value[1],CONT_PUT_ON))
+						    {
+								sprintf(buf, "{Y({G%2d{Y) {x$n puts $p on $P.", i);
+								act(buf, ch, NULL, NULL, match_obj, container, NULL, NULL, TO_ROOM);
+
+								sprintf(buf, "{Y({G%2d{Y) {xYou put $p on $P.", i);
+								act(buf, ch, NULL, NULL, match_obj, container, NULL, NULL, TO_CHAR);
+							}
+						    else
+						    {
+							sprintf(buf, "{Y({G%2d{Y) {x$n puts $p in $P.", i);
+							act(buf, ch, NULL, NULL, match_obj, container, NULL, NULL, TO_ROOM);
+
+							sprintf(buf, "{Y({G%2d{Y) {xYou put $p in $P.", i);
+							act(buf, ch, NULL, NULL, match_obj, container, NULL, NULL, TO_CHAR);
+						}
+					}
+
+					act("$p is full.", ch, NULL, NULL, container, NULL, NULL, NULL, TO_CHAR);
+					return;
+			    }
+
+			    if ((get_obj_number_container(container) + get_obj_number(obj)) > container->value[3])
+			    {
+					if (i > 0 && match_obj != NULL)
+					{
+					    if (container->item_type == ITEM_CONTAINER &&
+					    	IS_SET(container->value[1],CONT_PUT_ON))
+					    {
+							sprintf(buf, "{Y({G%2d{Y) {x$n puts $p on $P.", i);
+							act(buf, ch, NULL, NULL, match_obj, container, NULL, NULL, TO_ROOM);
+
+							sprintf(buf, "{Y({G%2d{Y) {xYou put $p on $P.", i);
+							act(buf, ch, NULL, NULL, match_obj, container, NULL, NULL, TO_CHAR);
+						}
+						else
+						{
+							sprintf(buf, "{Y({G%2d{Y) {x$n puts $p in $P.", i);
+							act(buf, ch, NULL, NULL, match_obj, container, NULL, NULL, TO_ROOM);
+
+							sprintf(buf, "{Y({G%2d{Y) {xYou put $p in $P.", i);
+							act(buf, ch, NULL, NULL, match_obj, container, NULL, NULL, TO_CHAR);
+					    }
+					}
+
+					act("$p can't hold any more.", ch, NULL, NULL, container, NULL, NULL, NULL, TO_CHAR);
+					return;
+				}
+
+			    if (match_obj == NULL && obj != NULL)
+					match_obj = obj;
+
+				obj_from_char(obj);
+				obj_to_obj(obj, container);
+				i++;
+			}
+
+			if (i > 0 && match_obj != NULL)
+			{
+				if (IS_SET(container->value[1],CONT_PUT_ON))
+				{
+					sprintf(buf, "{Y({G%2d{Y) {x$n puts $p on $P.", i);
+					act(buf, ch, NULL, NULL, match_obj, container, NULL, NULL, TO_ROOM);
+
+					sprintf(buf, "{Y({G%2d{Y) {xYou put $p on $P.", i);
+					act(buf, ch, NULL, NULL, match_obj, container, NULL, NULL, TO_CHAR);
+				}
+				else
+				{
+					sprintf(buf, "{Y({G%2d{Y) {x$n puts $p in $P.", i);
+					act(buf, ch, NULL, NULL, match_obj, container, NULL, NULL, TO_ROOM);
+
+					sprintf(buf, "{Y({G%2d{Y) {xYou put $p in $P.", i);
+					act(buf, ch, NULL, NULL, match_obj, container, NULL, NULL, TO_CHAR);
+				}
+			}
+
+			/* Too many to do individually, just let it handle all of them. */
+			p_percent_trigger(NULL,container,NULL,NULL,ch, NULL, NULL,NULL,NULL,TRIG_PUT, NULL);
 	    }
 	    else if (!any)
 	    {
-		if (arg1[3] == '\0')
-		    act("You have nothing you can put in $p.", ch, NULL, NULL, container, NULL, NULL, NULL, TO_CHAR);
-		else
-		    act("You're not carrying any $T you can put in $p.", ch, NULL, NULL, container, NULL, NULL, &arg1[4], TO_CHAR);
-	    }
-	}
+			if (arg1[3] == '\0')
+			    act("You have nothing you can put in $p.", ch, NULL, NULL, container, NULL, NULL, NULL, TO_CHAR);
+			else
+			    act("You're not carrying any $T you can put in $p.", ch, NULL, NULL, container, NULL, NULL, &arg1[4], TO_CHAR);
+			}
+		}
     }
 }
 

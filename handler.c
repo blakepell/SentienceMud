@@ -3296,6 +3296,30 @@ OBJ_DATA *get_obj_list(CHAR_DATA *ch, char *argument, OBJ_DATA *list)
     return NULL;
 }
 
+/*
+ * Find an obj in a list.
+ */
+OBJ_DATA *get_obj_list_number(CHAR_DATA *ch, char *argument, int *nth, OBJ_DATA *list)
+{
+    OBJ_DATA *obj;
+    int number = *nth;
+
+    for (obj = list; obj != NULL; obj = obj->next_content)
+    {
+		if (can_see_obj(ch, obj) && (
+				(((obj->ship != NULL) && (!str_cmp(argument, obj->ship->ship_name)))) ||
+				is_name(argument, obj->name)))
+		{
+			if (--number < 1)
+				return obj;
+		}
+    }
+
+    // Return last total for chaining together lookups
+	*nth = number;
+    return NULL;
+}
+
 
 /*
  * Find an obj in player's locker.
@@ -3349,6 +3373,30 @@ OBJ_DATA *get_obj_carry(CHAR_DATA *ch, char *argument, CHAR_DATA *viewer)
     return NULL;
 }
 
+/*
+ * Find an obj in player's inventory.
+ */
+OBJ_DATA *get_obj_carry_number(CHAR_DATA *ch, char *argument, int *nth, CHAR_DATA *viewer)
+{
+    OBJ_DATA *obj;
+    int number = *nth;
+
+	for (obj = ch->carrying; obj != NULL; obj = obj->next_content)
+	{
+		if (obj->wear_loc == WEAR_NONE &&
+			(viewer ? can_see_obj(viewer, obj) : TRUE) &&
+			is_name(argument, obj->name))
+		{
+			if (--number < 1) {
+				return obj;
+			}
+		}
+	}
+
+    // Return last total for chaining together lookups
+	*nth = number;
+    return NULL;
+}
 
 /*
  * Find an obj in player's inventory by vnum.
@@ -3369,7 +3417,6 @@ OBJ_DATA *get_obj_vnum_carry(CHAR_DATA *ch, long vnum, CHAR_DATA *viewer)
 
     return NULL;
 }
-
 
 /*
  * Find an obj in player's equipment.
@@ -3399,6 +3446,31 @@ OBJ_DATA *get_obj_wear(CHAR_DATA *ch, char *argument, bool character)
 
 
 /*
+ * Find an obj in player's equipment.
+ */
+OBJ_DATA *get_obj_wear_number(CHAR_DATA *ch, char *argument, int *nth, bool character)
+{
+    OBJ_DATA *obj;
+    int number = *nth;
+
+    for (obj = ch->carrying; obj != NULL; obj = obj->next_content)
+    {
+        if (obj->wear_loc != WEAR_NONE &&
+        	(character ? can_see_obj(ch, obj) : TRUE) &&
+        	is_name(argument, obj->name))
+        {
+            if (--number < 1)
+                return obj;
+        }
+    }
+
+    // Return last total for chaining together lookups
+    *nth = number;
+    return NULL;
+}
+
+
+/*
  * Find an obj in the room or in inventory.
  */
 OBJ_DATA *get_obj_here(CHAR_DATA *ch, ROOM_INDEX_DATA *room, char *argument)
@@ -3410,8 +3482,8 @@ OBJ_DATA *get_obj_here(CHAR_DATA *ch, ROOM_INDEX_DATA *room, char *argument)
 
     if (ch && room)
     {
-	bug("get_obj_here received a ch and a room",0);
-	return NULL;
+		bug("get_obj_here received a ch and a room",0);
+		return NULL;
     }
 
     number = number_argument(argument, arg);
@@ -3419,28 +3491,113 @@ OBJ_DATA *get_obj_here(CHAR_DATA *ch, ROOM_INDEX_DATA *room, char *argument)
 
     if (ch)
     {
-	obj = get_obj_list(ch, argument, ch->in_room->contents);
-	if (obj != NULL)
-	    return obj;
+		obj = get_obj_list_number(ch, arg, &number, ch->in_room->contents);
+		if (obj != NULL)
+		    return obj;
 
-	if ((obj = get_obj_carry(ch, argument, ch)) != NULL)
-	    return obj;
+		if ((obj = get_obj_carry_number(ch, arg, &number, ch)) != NULL)
+		    return obj;
 
-	if ((obj = get_obj_wear(ch, argument, TRUE)) != NULL)
-	    return obj;
+		if ((obj = get_obj_wear_number(ch, arg, &number, TRUE)) != NULL)
+		    return obj;
     }
     else
     {
-	for (obj = room->contents; obj; obj = obj->next_content)
-	{
-	    if (!is_name(arg, obj->name))
-		continue;
-	    if (++count == number)
-		return obj;
-	}
+		for (obj = room->contents; obj; obj = obj->next_content)
+		{
+			if (!is_name(arg, obj->name))
+				continue;
+			if (++count == number)
+				return obj;
+		}
     }
 
     return NULL;
+}
+
+/*
+ * Find an obj in the room or in inventory.
+ */
+OBJ_DATA *get_obj_here_number(CHAR_DATA *ch, ROOM_INDEX_DATA *room, char *argument, int *nth)
+{
+    OBJ_DATA *obj;
+
+    if (ch && room)
+    {
+		bug("get_obj_here received a ch and a room",0);
+		return NULL;
+    }
+
+    if (ch)
+    {
+		obj = get_obj_list_number(ch, argument, nth, ch->in_room->contents);
+		if (obj != NULL)
+		    return obj;
+
+		if ((obj = get_obj_carry_number(ch, argument, nth, ch)) != NULL)
+		    return obj;
+
+		if ((obj = get_obj_wear_number(ch, argument, nth, TRUE)) != NULL)
+		    return obj;
+    }
+    else
+    {
+	    int number = *nth;
+
+		for (obj = room->contents; obj; obj = obj->next_content)
+		{
+			if (!is_name(argument, obj->name))
+				continue;
+			if (--number < 1)
+				return obj;
+		}
+
+		*nth = number;
+    }
+
+    return NULL;
+}
+
+/*
+ * Same as get_obj_here, except it checks the inventory FIRST.
+ *
+ * If worn is TRUE, worn items will be checked before carried items.
+ */
+OBJ_DATA *get_obj_inv(CHAR_DATA *ch, char *argument, bool worn)
+{
+    OBJ_DATA *obj;
+    char arg[MAX_INPUT_LENGTH];
+    int number;
+    int count;
+
+    if (!ch)
+    {
+		bug("get_obj_inv received NULL ch",0);
+		return NULL;
+	}
+
+    number = number_argument(argument, arg);
+    count = 0;
+
+	if (worn)
+	{
+		if ((obj = get_obj_wear_number(ch, arg, &number, TRUE)) != NULL)
+			return obj;
+
+		if ((obj = get_obj_carry_number(ch, arg, &number, ch)) != NULL)
+			return obj;
+	}
+	else
+	{
+		if ((obj = get_obj_carry_number(ch, arg, &number, ch)) != NULL)
+			return obj;
+
+		if ((obj = get_obj_wear_number(ch, arg, &number, TRUE)) != NULL)
+			return obj;
+	}
+
+	obj = get_obj_list_number(ch, arg, &number, ch->in_room->contents);
+    return obj;
 }
 
 
@@ -5725,7 +5882,7 @@ bool can_get_obj(CHAR_DATA *ch, OBJ_DATA *obj, OBJ_DATA *container, MAIL_DATA *m
 
     if (ch->carry_number + get_obj_number(obj) > can_carry_n(ch))
 	MSG(act("$p: you can't carry that many items.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR))
-	
+
     if (get_carry_weight(ch) + get_obj_weight(obj) > can_carry_w(ch))
 	MSG(act("$p: you can't carry that much weight.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR))
 
