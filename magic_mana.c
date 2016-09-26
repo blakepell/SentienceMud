@@ -203,7 +203,8 @@ SPELL_FUNC(spell_dispel_magic)
 	number_affects = 0;
 	for (af = victim->affected; af != NULL; af = af_next) {
 		af_next = af->next;
-		if(af->group == AFFGROUP_MAGICAL && !af->custom_name) {
+		if((af->group == AFFGROUP_DIVINE || af->group == AFFGROUP_MAGICAL || af->group == AFFGROUP_MENTAL) &&
+			!af->custom_name) {
 			if(check_dispel(ch, victim, af->type)) found = TRUE;
 			number_affects++;
 		}
