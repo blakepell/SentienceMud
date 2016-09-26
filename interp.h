@@ -62,6 +62,7 @@ struct	cmd_type
     sh_int		level;     /* min. level required */
     sh_int		log;       /* log when? */
     sh_int              show;      /* show? */
+    bool		is_ooc;		// Command is purely OOC - certain things won't break when doing these commands
 };
 
 /* the command table itself */
