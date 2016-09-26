@@ -3298,23 +3298,22 @@ void do_affects(CHAR_DATA * ch, char *argument)
         send_to_char("{yYou are sneaking.{x\n\r", ch);
     }
 
-    if (race_table[ch->race].imm != 0)
+    if (ch->imm_flags != 0)
     {
-	sprintf(buf, "{BImmune: {G%s\n\r{x", imm_bit_name(ch->imm_flags));
-	send_to_char(buf, ch);
+		sprintf(buf, "{BImmune: {G%s\n\r{x", imm_bit_name(ch->imm_flags));
+		send_to_char(buf, ch);
     }
 
-    if (race_table[ch->race].res != 0)
+    if (ch->res_flags != 0)
     {
-	sprintf(buf, "{BResist: {G%s\n\r{x", imm_bit_name(ch->res_flags));
-	send_to_char(buf, ch);
+		sprintf(buf, "{BResist: {G%s\n\r{x", imm_bit_name(ch->res_flags));
+		send_to_char(buf, ch);
     }
 
-    if (race_table[ch->race].vuln != 0)
+    if (ch->vuln_flags != 0)
     {
-	sprintf(buf, "{BVulnerable: {G%s\n\r{x",
-		imm_bit_name(ch->vuln_flags));
-	send_to_char(buf, ch);
+		sprintf(buf, "{BVulnerable: {G%s\n\r{x", imm_bit_name(ch->vuln_flags));
+		send_to_char(buf, ch);
     }
 
     if (IS_SAGE(ch))
