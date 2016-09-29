@@ -20,6 +20,8 @@
 const struct script_cmd_type mob_cmd_table[] = {
 	{ "addaffect",			do_mpaddaffect,			TRUE	},
 	{ "addaffectname",		do_mpaddaffectname,		TRUE	},
+	{ "addspell",			do_mpaddspell,			TRUE	},
+	{ "alteraffect",		do_mpalteraffect,			TRUE	},
 	{ "alterexit",			do_mpalterexit,			FALSE	},
 	{ "altermob",			do_mpaltermob,			TRUE	},
 	{ "alterobj",			do_mpalterobj,			TRUE	},
@@ -41,6 +43,7 @@ const struct script_cmd_type mob_cmd_table[] = {
 	{ "checkpoint",			do_mpcheckpoint,		FALSE	},
 	{ "cloneroom",			do_mpcloneroom,			TRUE	},
 	{ "condition",			do_mpcondition,			FALSE	},
+	{ "crier",				do_mpcrier,			FALSE	},
 	{ "damage",				do_mpdamage,			FALSE	},
 	{ "decdeity",			do_mpdecdeity,			TRUE	},
 	{ "decpneuma",			do_mpdecpneuma,			TRUE	},
@@ -50,6 +53,7 @@ const struct script_cmd_type mob_cmd_table[] = {
 	{ "delay",				do_mpdelay,			FALSE	},
 	{ "dequeue",			do_mpdequeue,			FALSE	},
 	{ "destroyroom",		do_mpdestroyroom,		TRUE	},
+	{ "disappear",    		do_mpinvis,			FALSE	},
 	{ "echo",				do_mpecho,			FALSE	},
 	{ "echoaround",			do_mpechoaround,		FALSE	},
 	{ "echoat",				do_mpechoat,			FALSE	},
@@ -73,7 +77,6 @@ const struct script_cmd_type mob_cmd_table[] = {
 	{ "hunt",				do_mphunt,			FALSE	},
 	{ "input",				do_mpinput,			FALSE	},
 	{ "interrupt",			do_mpinterrupt,			FALSE	},
-	{ "disappear",    		do_mpinvis,			FALSE	},
 	{ "junk",				do_mpjunk,			FALSE	},
 	{ "kill",				do_mpkill,			FALSE	},
 	{ "link",				do_mplink,			FALSE	},
@@ -88,7 +91,9 @@ const struct script_cmd_type mob_cmd_table[] = {
 	{ "raisedead",			do_mpraisedead,			TRUE	},
 	{ "rawkill",			do_mprawkill,			FALSE	},
 	{ "remember",			do_mpremember,			FALSE	},
+	{ "remort",				do_mpremort,			TRUE	},
 	{ "remove",				do_mpremove,			FALSE	},
+	{ "remspell",			do_mpremspell,			TRUE	},
 	{ "resetdice",			do_mpresetdice,			TRUE	},
 	{ "saveplayer",			do_mpsaveplayer,		FALSE	},
 	{ "selfdestruct",		do_mpselfdestruct,		FALSE	},
@@ -118,12 +123,6 @@ const struct script_cmd_type mob_cmd_table[] = {
 	{ "xcall",				do_mpxcall,			FALSE	},
 	{ "zecho",				do_mpzecho,			FALSE	},
 	{ "zot",				do_mpzot,			TRUE	},
-
-	{ "addspell",			do_mpaddspell,			TRUE	},
-	{ "remspell",			do_mpremspell,			TRUE	},
-	{ "alteraffect",		do_mpalteraffect,			TRUE	},
-	{ "crier",				do_mpcrier,			FALSE	},
-
 	{ NULL,				NULL,				FALSE	}
 };
 
@@ -7895,3 +7894,45 @@ SCRIPT_CMD(do_mpfixaffects)
 
 	affect_fix_char(arg.d.mob);
 }
+
+// Syntax: remort $PLAYER
+//  - prompts them for a class out of what they can do
+SCRIPT_CMD(do_mpremort)
+{
+	char *rest;
+	SCRIPT_PARAM arg;
+    CHAR_DATA *mob;
+
+	if(!info || !info->mob || IS_NULLSTR(argument)) return;
+
+	info->mob->progs->lastreturn = 0;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+	mob = arg.d.mob;
+	if(IS_NPC(mob) || !mob->desc || is_char_busy(mob)) return;
+
+	// Are they already being prompted
+	if(mob->desc->input ||
+		mob->pk_question ||
+		mob->remove_question ||
+		mob->personal_pk_question ||
+		mob->cross_zone_question ||
+		mob->pcdata->convert_church != -1 ||
+		mob->challenged ||
+		mob->remort_question)
+		return;
+
+	if(IS_REMORT(mob)) return;
+
+    if (mob->tot_level < LEVEL_HERO) return;
+
+    mob->remort_question = TRUE;
+    show_multiclass_choices(mob, mob);
+
+	info->mob->progs->lastreturn = 1;
+}
+

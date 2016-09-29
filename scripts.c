@@ -2804,7 +2804,7 @@ bool is_trigger_type(int tindex, int type)
 
 //	log_stringf("is_trigger_type: %d, %s, %d", tindex, trigger_table[tindex].name, type);
 
-	return (tindex == type);
+	return (trigger_table[tindex].type == type);
 }
 
 bool mp_same_group(CHAR_DATA *ch,CHAR_DATA *vch,CHAR_DATA *to)

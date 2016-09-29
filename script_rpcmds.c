@@ -17,6 +17,8 @@
 const struct script_cmd_type room_cmd_table[] = {
 	{ "addaffect",			do_rpaddaffect,		TRUE	},
 	{ "addaffectname",		do_rpaddaffectname,	TRUE	},
+	{ "addspell",			do_rpaddspell,			TRUE	},
+	{ "alteraffect",		do_rpalteraffect,			TRUE	},
 	{ "alterexit",			do_rpalterexit,		FALSE	},
 	{ "altermob",			do_rpaltermob,		TRUE	},
 	{ "alterobj",			do_rpalterobj,		TRUE	},
@@ -29,6 +31,7 @@ const struct script_cmd_type room_cmd_table[] = {
 	{ "checkpoint",			do_rpcheckpoint,		FALSE	},
 	{ "cloneroom",			do_rpcloneroom,		TRUE	},
 	{ "condition",			do_rpcondition,			FALSE	},
+	{ "crier",				do_rpcrier,			FALSE	},
 	{ "damage",				do_rpdamage,		FALSE	},
 	{ "delay",				do_rpdelay,		FALSE	},
 	{ "dequeue",			do_rpdequeue,		FALSE	},
@@ -63,7 +66,9 @@ const struct script_cmd_type room_cmd_table[] = {
 	{ "queue",				do_rpqueue,		FALSE	},
 	{ "rawkill",			do_rprawkill,		FALSE	},
 	{ "remember",			do_rpremember,		FALSE	},
+	{ "remort",				do_rpremort,			TRUE	},
 	{ "remove",				do_rpremove,		FALSE	},
+	{ "remspell",			do_rpremspell,			TRUE	},
 	{ "resetdice",			do_rpresetdice,		TRUE	},
 	{ "saveplayer",			do_rpsaveplayer,		FALSE	},
 	{ "settimer",			do_rpsettimer,		FALSE	},
@@ -90,10 +95,6 @@ const struct script_cmd_type room_cmd_table[] = {
 	{ "xcall",				do_rpxcall,		FALSE	},
 	{ "zecho",				do_rpzecho,		FALSE	},
 	{ "zot",				do_rpzot,		TRUE	},
-	{ "addspell",			do_rpaddspell,			TRUE	},
-	{ "remspell",			do_rpremspell,			TRUE	},
-	{ "alteraffect",		do_rpalteraffect,			TRUE	},
-	{ "crier",				do_rpcrier,			FALSE	},
 	{ NULL,					NULL,			FALSE	}
 };
 
@@ -6208,3 +6209,45 @@ SCRIPT_CMD(do_rpcheckpoint)
 		break;
 	}
 }
+
+// Syntax: remort $PLAYER
+//  - prompts them for a class out of what they can do
+SCRIPT_CMD(do_rpremort)
+{
+	char *rest;
+	SCRIPT_PARAM arg;
+    CHAR_DATA *mob;
+
+	if(!info || !info->room || IS_NULLSTR(argument)) return;
+
+	info->room->progs->lastreturn = 0;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+	mob = arg.d.mob;
+	if(IS_NPC(mob) || !mob->desc || is_char_busy(mob)) return;
+
+	// Are they already being prompted
+	if(mob->desc->input ||
+		mob->pk_question ||
+		mob->remove_question ||
+		mob->personal_pk_question ||
+		mob->cross_zone_question ||
+		mob->pcdata->convert_church != -1 ||
+		mob->challenged ||
+		mob->remort_question)
+		return;
+
+	if(IS_REMORT(mob)) return;
+
+    if (mob->tot_level < LEVEL_HERO) return;
+
+    mob->remort_question = TRUE;
+    show_multiclass_choices(mob, mob);
+
+	info->room->progs->lastreturn = 1;
+}
+

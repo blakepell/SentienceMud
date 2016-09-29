@@ -2224,6 +2224,11 @@ SCRIPT_CMD(do_opfixaffects);
 SCRIPT_CMD(do_rpfixaffects);
 SCRIPT_CMD(do_tpfixaffects);
 
+SCRIPT_CMD(do_mpremort);
+SCRIPT_CMD(do_opremort);
+SCRIPT_CMD(do_rpremort);
+SCRIPT_CMD(do_tpremort);
+
 
 #include "tables.h"
 

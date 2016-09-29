@@ -358,6 +358,8 @@ void do_multi(CHAR_DATA *ch, char *argument)
 	    || buf2[0] == '0') ? "n" : "", buf2);
     crier_announce(buf);
     double_xp(ch);
+
+	p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_MULTICLASS, NULL);
 }
 
 
@@ -422,10 +424,17 @@ void show_multiclass_choices(CHAR_DATA *ch, CHAR_DATA *looker)
 
     send_to_char(buf, looker);
 
-    if (ch == looker)
-	sprintf(buf, "\n\r{YYou may multiclass to:{x\n\r");
-    else
-	sprintf(buf, "\n\r{Y%s may multiclass to:{x\n\r", ch->name);
+	if( ch->tot_level == LEVEL_HERO ) {
+	    if (ch == looker)
+			sprintf(buf, "\n\r{YYou may remort to:{x\n\r");
+	    else
+			sprintf(buf, "\n\r{Y%s may remort to:{x\n\r", ch->name);
+	} else {
+	    if (ch == looker)
+			sprintf(buf, "\n\r{YYou may multiclass to:{x\n\r");
+	    else
+			sprintf(buf, "\n\r{Y%s may multiclass to:{x\n\r", ch->name);
+	}
 
     for (i = 0; i < MAX_SUB_CLASS; i++)
     {
@@ -2215,4 +2224,178 @@ int skill_entry_learn (CHAR_DATA *ch, SKILL_ENTRY *entry)
 
 	else
 		return 0;
+}
+
+
+
+
+
+void remort_player(CHAR_DATA *ch, int remort_class)
+{
+	const struct sub_class_type *class_info;
+	OBJ_DATA *obj;
+    char buf[MAX_STRING_LENGTH];
+    char buf2[MSL];
+	int i;
+
+	// Safeguards
+	if( IS_NPC(ch) ) return;
+
+	// Must be a player, you twat!
+	if( IS_IMMORTAL(ch) ) return;
+
+	// Must not be remort already
+	//  - well, you could always be a masochist and want to level again
+	if( IS_REMORT(ch) ) return;
+
+	// Must be max level
+	if( ch->tot_level != LEVEL_HERO ) return;
+
+	// Only remort classes
+	if( remort_class < CLASS_WARRIOR_WARLORD || remort_class >= MAX_SUB_CLASS ) return;
+
+	if( !sub_class_table[remort_class].remort ) return;
+
+	class_info = &sub_class_table[remort_class];
+
+    i = 0;
+    ch->race = get_remort_race(ch);
+    sprintf(buf2, "%s", pc_race_table[ch->race].name);
+    while (buf2[i] != '\0')
+    {
+		buf2[i] = UPPER(buf2[i]);
+		i++;
+    }
+
+    if (ch->alignment < 0) {
+        sprintf(buf, "{RHoly statues cry tears of blood and the sillhouettes "
+		      "of winged horrors appear in the sky.{X\n\r{RA new %s has been born!{x\n\r", buf2);
+
+		ch->alignment = -1000;
+
+		send_to_char("Your mortal essence crumbles as you embrace your fate.\n\r", ch);
+		send_to_char("You welcome the dark power as it flows through your divine veins.\n\r", ch);
+		send_to_char("A dark influence clouds all that you once knew; your lifeless body\n\r", ch);
+		send_to_char("lies slouched in front of you as part of you is torn into the Abyss.\n\r", ch);
+		send_to_char("You feel complete, and wielding unfathomable power, you know you can\n\r", ch);
+		send_to_char("manipulate it to suit your darkest desires.\n\r", ch);
+    } else if (ch->alignment > 0) {
+		sprintf(buf, "{WBrilliant white light radiates down from the heavens and thunder rolls through the valleys.\n\r"
+		             "{WA new %s has been born!{x\n\r", buf2);
+
+		ch->alignment = 1000;
+
+		send_to_char("Your mortal essence shines brightly, blinding your eyes.\n\r", ch);
+		send_to_char("Images flash before you: sadness, grief, terror and hatred.\n\r", ch);
+		send_to_char("Your life is played to you, from the beginning to the present.\n\r", ch);
+		send_to_char("Your veins flow with the divine influence as you stand before your\n\r", ch);
+		send_to_char("lifeless mortal vessel. It becomes clear to you that you have been\n\r", ch);
+		send_to_char("reborn a divine power.\n\r", ch);
+    } else {
+		sprintf(buf, "{CThe cosmic energies of the world shift and the clouds speed overhead.{x\n\r"
+					 "{CA new %s has been born!{x\n\r", buf2);
+
+		ch->alignment = 0;
+    }
+
+    gecho(buf);
+
+    /* take off equipment*/
+    for (obj = ch->carrying; obj != NULL; obj = obj->next_content)
+    {
+		if (obj->wear_loc != WEAR_NONE)
+		    unequip_char(ch, obj, FALSE);
+    }
+
+    /* take off remaining affects*/
+    while (ch->affected)
+		affect_remove(ch, ch->affected);
+
+    /* lower their stats significantly*/
+    for (i = 0; i < MAX_STATS; i++) {
+		int val = ch->perm_stat[i] - number_range(4,6);
+		set_perm_stat(ch, i, UMAX(val, 13));
+	}
+
+	ch->affected_by_perm = race_table[ch->race].aff;
+	ch->affected_by2_perm = race_table[ch->race].aff2;
+    ch->imm_flags_perm = race_table[ch->race].imm;
+    ch->res_flags_perm = race_table[ch->race].res;
+    ch->vuln_flags_perm = race_table[ch->race].vuln;
+
+    ch->form        = race_table[ch->race].form;
+    ch->parts       = race_table[ch->race].parts;
+    ch->lostparts	= 0;	// Restore anything lost
+
+    /* add skills for remort race*/
+    for (i = 0; pc_race_table[ch->race].skills[i] != NULL; i++)
+		group_add(ch,pc_race_table[ch->race].skills[i],FALSE);
+
+    ch->pcdata->hit_before  = ch->pcdata->perm_hit;
+    ch->pcdata->mana_before = ch->pcdata->perm_mana;
+    ch->pcdata->move_before = ch->pcdata->perm_move;
+
+    ch->pcdata->perm_hit  = 20;
+    ch->pcdata->perm_mana = 20;
+    ch->pcdata->perm_move = 20;
+
+    ch->max_hit  = 20;
+    ch->max_mana = 20;
+    ch->max_move = 20;
+
+    ch->hit  = 20;
+    ch->mana = 20;
+    ch->move = 20;
+
+    ch->tot_level = 1;
+    ch->level = 1;
+
+	// Reset base affects - will reset affected_by, affected_by2, imm_flags, res_flags and vuln_flags
+    affect_fix_char(ch);
+
+    char_from_room(ch);
+    char_to_room(ch, get_room_index(ROOM_VNUM_SCHOOL));
+
+	ch->pcdata->class_current = class_info->class;
+    ch->pcdata->sub_class_current = remort_class;
+
+	switch(class_info->class) {
+	case CLASS_MAGE:
+		ch->pcdata->second_class_mage = CLASS_MAGE;
+	    ch->pcdata->second_sub_class_mage = remort_class;
+		break;
+
+	case CLASS_CLERIC:
+		ch->pcdata->second_class_cleric = CLASS_CLERIC;
+	    ch->pcdata->second_sub_class_cleric = remort_class;
+		break;
+
+	case CLASS_THIEF:
+		ch->pcdata->second_class_thief = CLASS_THIEF;
+	    ch->pcdata->second_sub_class_thief = remort_class;
+		break;
+
+	case CLASS_WARRIOR:
+		ch->pcdata->second_class_warrior = CLASS_WARRIOR;
+	    ch->pcdata->second_sub_class_warrior = remort_class;
+		break;
+	}
+
+    group_add(ch, class_table[ch->pcdata->class_current].base_group, TRUE);
+    group_add(ch, sub_class_table[ch->pcdata->sub_class_current].default_group, TRUE);
+    ch->exp = 0;
+
+    sprintf(buf2, sub_class_table[ch->pcdata->sub_class_current].name[ch->sex]);
+    buf2[0] = UPPER(buf2[0]);
+    sprintf(buf, "All congratulate %s, who is now a%s %s!",
+        ch->name, (buf2[0] == 'A' || buf2[0] == 'I' || buf2[0] == 'E' || buf2[0] == 'U'
+	    || buf2[0] == 'O') ? "n" : "", buf2);
+    crier_announce(buf);
+    double_xp(ch);
+
+	// Reset here since an immortal can still remort a player while they still have this question up
+	ch->remort_question = FALSE;
+
+	p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_REMORT, NULL);
+
 }

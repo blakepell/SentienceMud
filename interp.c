@@ -1047,6 +1047,40 @@ void interpret( CHAR_DATA *ch, char *argument )
 	}
     }
 
+    // Remorting!
+    if (ch->remort_question) {
+		int iClass;
+		if(!str_cmp(command, "help")) {
+			for (iClass = CLASS_WARRIOR_WARLORD; iClass < MAX_SUB_CLASS; iClass++) {
+				if (!str_cmp(argument, sub_class_table[iClass].name[ch->sex]))
+					break;
+			}
+
+			if (iClass == MAX_SUB_CLASS || !can_choose_subclass(ch, iClass)) {
+				send_to_char("Not a valid subclass.\n\r", ch);
+				show_multiclass_choices(ch, ch);
+				return;
+			}
+
+			do_function(ch, do_help, sub_class_table[iClass].name[0]);
+
+		} else {
+			for (iClass = CLASS_WARRIOR_WARLORD; iClass < MAX_SUB_CLASS; iClass++) {
+				if (!str_cmp(command, sub_class_table[iClass].name[ch->sex]))
+					break;
+			}
+
+			if (iClass == MAX_SUB_CLASS || !can_choose_subclass(ch, iClass)) {
+				send_to_char("Not a valid subclass.\n\r", ch);
+				show_multiclass_choices(ch, ch);
+				return;
+			}
+
+			remort_player(ch, iClass);	// MWUHAHAHA
+		}
+		return;
+	}
+
     // Convert church to a different alignment?
     if (!IS_NPC(ch) && ch->pcdata->convert_church != -1)
     {

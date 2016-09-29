@@ -5920,67 +5920,70 @@ void do_reckoning(CHAR_DATA *ch, char *argument)
 void do_immortalise(CHAR_DATA *ch, char *argument)
 {
     CHAR_DATA *victim;
-    OBJ_DATA *obj;
+    //OBJ_DATA *obj;
     char arg[MAX_INPUT_LENGTH];
-    char buf[MAX_STRING_LENGTH];
-    char buf2[MSL];
+    //char buf[MAX_STRING_LENGTH];
+    //char buf2[MSL];
     int i;
 
     argument = one_argument(argument, arg);
 
     if (arg[0] == '\0')
     {
-	send_to_char("Immortalise whom?\n\r", ch);
-	send_to_char("Syntax: immortalise <person> <subclass>\n\r", ch);
-	return;
+		send_to_char("Immortalise whom?\n\r", ch);
+		send_to_char("Syntax: immortalise <person> <subclass>\n\r", ch);
+		return;
     }
 
     if ((victim = get_char_world(ch, arg)) == NULL)
     {
-	send_to_char("They aren't online.\n\r", ch);
-	return;
+		send_to_char("They aren't online.\n\r", ch);
+		return;
     }
 
     if (IS_NPC(victim))
     {
-	send_to_char("You can't immortalise NPCs.\n\r", ch);
-	return;
+		send_to_char("You can't immortalise NPCs.\n\r", ch);
+		return;
     }
 
     if (IS_REMORT(victim))
     {
-	send_to_char("That person has already been immortalised.\n\r", ch);
-	return;
+		send_to_char("That person has already been immortalised.\n\r", ch);
+		return;
     }
 
     if (victim->tot_level < LEVEL_HERO)
     {
-	act("$N must be at max level to remort.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
-	return;
+		act("$N must be at max level to remort.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		return;
     }
 
     if (*argument == '\0')
     {
-	show_multiclass_choices(victim, ch);
-	return;
+		show_multiclass_choices(victim, ch);
+		return;
     }
 
     for (i = CLASS_WARRIOR_WARLORD; i < MAX_SUB_CLASS; i++) {
-	if (!str_cmp(argument, sub_class_table[i].name[victim->sex]))
-	    break;
+		if (!str_cmp(argument, sub_class_table[i].name[victim->sex]))
+		    break;
     }
 
     if (i == MAX_SUB_CLASS) {
-	send_to_char("Not a valid subclass.\n\r", ch);
-	return;
+		send_to_char("Not a valid subclass.\n\r", ch);
+		return;
     }
 
     if (!can_choose_subclass(victim, i))
     {
-	act("$N cannot choose that subclass.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
-	return;
+		act("$N cannot choose that subclass.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		return;
     }
 
+	remort_player(victim, i);
+
+#if 0
     sprintf(argument, "%s", sub_class_table[i].name[0]);
 
     i = 0;
@@ -6205,6 +6208,7 @@ void do_immortalise(CHAR_DATA *ch, char *argument)
 	    || buf2[0] == 'O') ? "n" : "", buf2);
     crier_announce(buf);
     double_xp(victim);
+#endif
 }
 
 

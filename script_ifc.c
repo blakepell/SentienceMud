@@ -2783,7 +2783,8 @@ DECL_IFC_FUN(ifc_inputwait)
 		ARG_MOB(0)->personal_pk_question ||
 		ARG_MOB(0)->cross_zone_question ||
 		ARG_MOB(0)->pcdata->convert_church != -1 ||
-		ARG_MOB(0)->challenged);
+		ARG_MOB(0)->challenged ||
+		ARG_MOB(0)->remort_question);
 	return TRUE;
 }
 

@@ -3875,17 +3875,17 @@ void msdp_update( void )
             char buf[MAX_STRING_LENGTH];
             CHAR_DATA *pOpponent = d->character->fighting;
             ROOM_INDEX_DATA *pRoom = d->character->in_room;
-            AFFECT_DATA *paf;
+//            AFFECT_DATA *paf;
 
             ++PlayerCount;
 
             MSDPSetString( d, eMSDP_CHARACTER_NAME, d->character->name );
             MSDPSetNumber( d, eMSDP_ALIGNMENT, d->character->alignment );
             MSDPSetNumber( d, eMSDP_EXPERIENCE, d->character->exp );
-            MSDPSetNumber( d, eMSDP_EXPERIENCE_MAX, exp_per_level(d->character, 
-               d->character->pcdata->points)  ); 
+            MSDPSetNumber( d, eMSDP_EXPERIENCE_MAX, exp_per_level(d->character,
+               d->character->pcdata->points)  );
             MSDPSetNumber( d, eMSDP_EXPERIENCE_TNL, ((d->character->level + 1) *
-               exp_per_level(d->character, d->character->pcdata->points) - 
+               exp_per_level(d->character, d->character->pcdata->points) -
                d->character->exp ) );
 
             MSDPSetNumber( d, eMSDP_HEALTH, d->character->hit );
@@ -3973,7 +3973,7 @@ void msdp_update( void )
             {
                 char skill_buf[MAX_STRING_LENGTH];
                 sprintf( skill_buf, "%c%s%c%d",
-                    (char)MSDP_VAR, skill_table[paf->type].name, 
+                    (char)MSDP_VAR, skill_table[paf->type].name,
                     (char)MSDP_VAL, paf->duration );
                 strcat( buf, skill_buf );
             }
@@ -3983,8 +3983,8 @@ void msdp_update( void )
         }
     }
 
-    /* Ideally this should be called once at startup, and again whenever 
-     * someone leaves or joins the mud.  But this works, and it keeps the 
+    /* Ideally this should be called once at startup, and again whenever
+     * someone leaves or joins the mud.  But this works, and it keeps the
      * snippet simple.  Optimise as you see fit.
      */
     MSSPSetPlayers( PlayerCount );

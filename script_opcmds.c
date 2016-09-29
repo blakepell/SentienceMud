@@ -15,6 +15,8 @@ extern bool wiznet_script;
 const struct script_cmd_type obj_cmd_table[] = {
 	{ "addaffect",			do_opaddaffect,		TRUE	},
 	{ "addaffectname",		do_opaddaffectname,	TRUE	},
+	{ "addspell",			do_opaddspell,			TRUE	},
+	{ "alteraffect",		do_opalteraffect,			TRUE	},
 	{ "alterexit",			do_opalterexit,		FALSE	},
 	{ "altermob",			do_opaltermob,		TRUE	},
 	{ "alterobj",			do_opalterobj,		TRUE	},
@@ -28,6 +30,7 @@ const struct script_cmd_type obj_cmd_table[] = {
 	{ "checkpoint",			do_opcheckpoint,		FALSE	},
 	{ "cloneroom",			do_opcloneroom,		TRUE	},
 	{ "condition",			do_opcondition,			FALSE	},
+	{ "crier",				do_opcrier,			FALSE	},
 	{ "damage",				do_opdamage,		FALSE	},
 	{ "delay",				do_opdelay,		FALSE	},
 	{ "dequeue",			do_opdequeue,		FALSE	},
@@ -65,7 +68,9 @@ const struct script_cmd_type obj_cmd_table[] = {
 	{ "queue",				do_opqueue,		FALSE	},
 	{ "rawkill",			do_oprawkill,		FALSE	},
 	{ "remember",			do_opremember,		FALSE	},
+	{ "remort",				do_opremort,			TRUE	},
 	{ "remove",				do_opremove,		FALSE	},
+	{ "remspell",			do_opremspell,			TRUE	},
 	{ "resetdice",			do_opresetdice,		TRUE	},
 	{ "saveplayer",			do_opsaveplayer,		FALSE	},
 	{ "scriptwait",			do_opscriptwait,		TRUE	},
@@ -94,10 +99,6 @@ const struct script_cmd_type obj_cmd_table[] = {
 	{ "xcall",				do_opxcall,		FALSE	},
 	{ "zecho",				do_opzecho,		FALSE	},
 	{ "zot",				do_opzot,		TRUE	},
-	{ "addspell",			do_opaddspell,			TRUE	},
-	{ "remspell",			do_opremspell,			TRUE	},
-	{ "alteraffect",		do_opalteraffect,			TRUE	},
-	{ "crier",				do_opcrier,			FALSE	},
 	{ NULL,				NULL,			FALSE	}
 };
 
@@ -6709,3 +6710,43 @@ SCRIPT_CMD(do_opsaveplayer)
 	info->obj->progs->lastreturn = 1;
 }
 
+// Syntax: remort $PLAYER
+//  - prompts them for a class out of what they can do
+SCRIPT_CMD(do_opremort)
+{
+	char *rest;
+	SCRIPT_PARAM arg;
+    CHAR_DATA *mob;
+
+	if(!info || !info->obj || IS_NULLSTR(argument)) return;
+
+	info->obj->progs->lastreturn = 0;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+	mob = arg.d.mob;
+	if(IS_NPC(mob) || !mob->desc || is_char_busy(mob)) return;
+
+	// Are they already being prompted
+	if(mob->desc->input ||
+		mob->pk_question ||
+		mob->remove_question ||
+		mob->personal_pk_question ||
+		mob->cross_zone_question ||
+		mob->pcdata->convert_church != -1 ||
+		mob->challenged ||
+		mob->remort_question)
+		return;
+
+	if(IS_REMORT(mob)) return;
+
+    if (mob->tot_level < LEVEL_HERO) return;
+
+    mob->remort_question = TRUE;
+    show_multiclass_choices(mob, mob);
+
+	info->obj->progs->lastreturn = 1;
+}

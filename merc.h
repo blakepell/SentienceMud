@@ -2416,6 +2416,7 @@ struct affliction_type {
 #define GATE_SNEAK		(M)	/* @@@NIB : 20070126 */
 #define GATE_TURBULENT		(N)	/* @@@NIB : 20070126 */
 #define GATE_CANDRAGITEMS	(O)
+#define GATE_FORCE_BRIEF	(P)
 
 /* furniture flags */
 #define STAND_AT		(A)
@@ -3715,6 +3716,7 @@ struct	char_data
     bool 		pk_question;
     bool 		cross_zone_question;
     bool 		personal_pk_question;
+    bool		remort_question;
 
     bool 		in_war;
 
@@ -4996,6 +4998,7 @@ enum trigger_index_enum {
 	TRIG_LORE_EX,
 	TRIG_MOON,
 	TRIG_MOUNT,
+	TRIG_MULTICLASS,	// Called when a player multiclasses
 	TRIG_OPEN,
 	TRIG_PRACTICE,
 	TRIG_PRACTICETOKEN,
@@ -5037,6 +5040,7 @@ enum trigger_index_enum {
 	TRIG_PRETRAINTOKEN,
 	TRIG_PREWAKE,
 	TRIG_PREWEAR,
+	TRIG_PREWIMPY,
 	TRIG_PULL,
 	TRIG_PULL_ON,		/* NIB : 20070121 */
 	TRIG_PUSH,
@@ -5051,6 +5055,7 @@ enum trigger_index_enum {
 	TRIG_REGEN_HP,		/* Modification on ALL hp regens */
 	TRIG_REGEN_MANA,	/* Modification on ALL mana regens */
 	TRIG_REGEN_MOVE,	/* Modification on ALL move regens */
+	TRIG_REMORT,		// Called when a player remorts
 	TRIG_REMOVE,		/* NIB : 20070120 */
 	TRIG_REPOP,
 	TRIG_REST,
@@ -5076,7 +5081,6 @@ enum trigger_index_enum {
 	TRIG_STRIPAFFECT,
 	TRIG_TAKEOFF,
 	TRIG_THROW,
-	TRIG_TOKENPRACTICE,
 	TRIG_TOUCH,
 	TRIG_TURN,
 	TRIG_TURN_ON,		/* NIB : 20070121 */
@@ -5091,6 +5095,7 @@ enum trigger_index_enum {
 	TRIG_WEAPON_PARRIED,
 	TRIG_WEAR,
 	TRIG_WHISPER,
+	TRIG_WIMPY,
 	TRIG_XPGAIN,
 	TRIG_ZAP
 };
@@ -5124,6 +5129,7 @@ enum trigger_index_enum {
 struct trigger_type {
 	char *name;		// Cannonical name
 	char *alias;	// Aliases for the trigger
+	int type;		// Trigger type
 	int slot;		// Trigger slot for grouping similar triggers together
 	bool mob;
 	bool obj;
@@ -7592,6 +7598,7 @@ int skill_entry_level (CHAR_DATA *ch, SKILL_ENTRY *entry);
 int skill_entry_mana (CHAR_DATA *ch, SKILL_ENTRY *entry);
 int skill_entry_learn (CHAR_DATA *ch, SKILL_ENTRY *entry);
 char *skill_entry_name (SKILL_ENTRY *entry);
+void remort_player(CHAR_DATA *ch, int remort_class);
 
 void persist_addmobile(CHAR_DATA *mob);
 void persist_addobject(OBJ_DATA *obj);

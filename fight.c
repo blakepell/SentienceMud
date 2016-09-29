@@ -46,7 +46,7 @@
 #include "wilds.h"
 
 #define MAX_BACKSTAB_DAMAGE 15000
-#define MAX_FLEE_ATTEMPTS 10 
+#define MAX_FLEE_ATTEMPTS 10
 
 bool is_combatant_valid(CHAR_DATA *ch, long id1, long id2)
 {
@@ -140,7 +140,7 @@ void violence_update(void)
 			stop_fighting(ch, TRUE);
 			continue;
 		}
-	
+
 
 		if(!is_combatant_valid(ch, aid[0], aid[1])) continue;
 		if(!is_combatant_valid(victim, vid[0], vid[1])) continue;
@@ -1716,15 +1716,15 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 		do_function(victim, &do_recall, "");
 		return TRUE;
 	}
-	
-	/* 
-	 * mobs automatically flee in terror if there is too large a level difference 
+
+	/*
+	 * mobs automatically flee in terror if there is too large a level difference
 	 * */
         if (IS_NPC(victim) && !IS_NPC(ch) && abs(ch->tot_level - victim->tot_level > 90) && number_percent() < 75) {
 		char buf[MAX_STRING_LENGTH];
 		sprintf(buf, "%s balks with fear at the sight of your approach!\n\r", victim->short_descr);
 		send_to_char(buf,ch);
-		do_function (victim, &do_flee, ""); 
+		do_function (victim, &do_flee, "");
 	}
 
 	// Wimpy - Mobiles
@@ -5877,8 +5877,8 @@ void do_flee(CHAR_DATA *ch, char *argument)
 	if (ch->fighting != NULL && !IS_NPC(ch->fighting))
 		flee_lag = TRUE;
 
-	if (p_percent_trigger(ch->fighting,NULL,NULL,NULL,ch,NULL,NULL, NULL, NULL,TRIG_PREFLEE,argument?argument:"anyway") ||
-		p_percent_trigger(ch,NULL,NULL,NULL,ch,NULL,NULL, NULL, NULL,TRIG_PREFLEE,argument?argument:"anyway"))
+	if (p_percent_trigger(ch->fighting,NULL,NULL,NULL,ch,NULL,NULL, NULL, NULL,argument?TRIG_PREFLEE:TRIG_PREWIMPY,argument) ||
+		p_percent_trigger(ch,NULL,NULL,NULL,ch,NULL,ch->fighting, NULL, NULL,argument?TRIG_PREFLEE:TRIG_PREWIMPY,argument))
 		return;
 
 	if (IS_AFFECTED(ch,AFF_BLIND))
@@ -5923,10 +5923,10 @@ void do_flee(CHAR_DATA *ch, char *argument)
 			{
 				plogf("fight.c, do_flee(): char is fleeing from a static room.");
 				// Check if door is a valid exit for this char
-				if (!(pexit = was_in->exit[door]) 
-					|| (!pexit->u1.to_room && pexit->wilds.wilds_uid == 0) 
-					|| (IS_SET(pexit->exit_info, EX_CLOSED) && !IS_AFFECTED(ch, AFF_PASS_DOOR)) 
-					|| number_range(0,ch->daze) != 0 
+				if (!(pexit = was_in->exit[door])
+					|| (!pexit->u1.to_room && pexit->wilds.wilds_uid == 0)
+					|| (IS_SET(pexit->exit_info, EX_CLOSED) && !IS_AFFECTED(ch, AFF_PASS_DOOR))
+					|| number_range(0,ch->daze) != 0
 					|| (IS_NPC(ch) && (IS_SET(pexit->u1.to_room->room_flags, ROOM_NO_MOB) || IS_SET(pexit->u1.to_room->room_flags, ROOM_SAFE))))
 					continue;
 			}
@@ -5951,11 +5951,11 @@ void do_flee(CHAR_DATA *ch, char *argument)
 		send_to_char("{RPANIC! You couldn't escape!{x\n\r", ch);
 		return;
 	}
-	else
+
 	/* if an NPC and was killed in the move_char procedure, e.g. by room flames,
 	   the char data will have been freed and the in_room will be null, so bail out here. */
-		if (IS_NPC(ch) && !ch->in_room)
-			return;
+	if (IS_NPC(ch) && !ch->in_room)
+		return;
 
 	char_from_room(ch);
 	char_to_room(ch, was_in);
@@ -5965,7 +5965,13 @@ void do_flee(CHAR_DATA *ch, char *argument)
 
 	sprintf(buf, "{RYou flee to the %s!{x\n\r", dir_name[door]);
 	send_to_char(buf, ch);
+
+	p_percent_trigger(ch->fighting,NULL,NULL,NULL,ch,NULL,NULL, NULL, NULL,argument?TRIG_FLEE:TRIG_WIMPY,argument);
+	p_percent_trigger(ch,NULL,NULL,NULL,ch,NULL,ch->fighting, NULL, NULL,argument?TRIG_FLEE:TRIG_WIMPY,argument);
+
 	stop_fighting(ch, TRUE);
+
+
 
 /* 05-29-2006 Syn - Disabling this for now. I originally added this because Nopraptor reported
    a bug of flee <direction> sending you elsewhere than the stated direction, causing him to get
@@ -6193,7 +6199,7 @@ void do_kick(CHAR_DATA *ch, char *argument)
 		send_to_char("You can't kick while riding!\n\r", ch);
 		return;
 	}
-	
+
         if ((victim = get_char_room(ch, NULL, argument)) == NULL) {
                 if ((victim = ch->fighting) == NULL) {
 			send_to_char("Kick whom?\n\r", ch);

@@ -74,6 +74,7 @@ const struct script_cmd_type token_cmd_table[] = {
 	{ "raisedead",			do_tpraisedead,			TRUE	},
 	{ "rawkill",			do_tprawkill,			FALSE	},
 	{ "remember",			do_tpremember,			FALSE	},
+	{ "remort",				do_tpremort,			TRUE	},
 	{ "remove",				do_tpremove,			FALSE	},
 	{ "remspell",			do_tpremspell,			TRUE	},
 	{ "resetdice",			do_tpresetdice,			TRUE	},
@@ -7195,4 +7196,45 @@ SCRIPT_CMD(do_tpfixaffects)
 	if(arg.d.mob == NULL) return;
 
 	affect_fix_char(arg.d.mob);
+}
+
+// Syntax: remort $PLAYER
+//  - prompts them for a class out of what they can do
+SCRIPT_CMD(do_tpremort)
+{
+	char *rest;
+	SCRIPT_PARAM arg;
+    CHAR_DATA *mob;
+
+	if(!info || !info->token || IS_NULLSTR(argument)) return;
+
+	info->token->progs->lastreturn = 0;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+	mob = arg.d.mob;
+	if(IS_NPC(mob) || !mob->desc || is_char_busy(mob)) return;
+
+	// Are they already being prompted
+	if(mob->desc->input ||
+		mob->pk_question ||
+		mob->remove_question ||
+		mob->personal_pk_question ||
+		mob->cross_zone_question ||
+		mob->pcdata->convert_church != -1 ||
+		mob->challenged ||
+		mob->remort_question)
+		return;
+
+	if(IS_REMORT(mob)) return;
+
+    if (mob->tot_level < LEVEL_HERO) return;
+
+    mob->remort_question = TRUE;
+    show_multiclass_choices(mob, mob);
+
+	info->token->progs->lastreturn = 1;
 }
