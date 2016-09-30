@@ -453,57 +453,66 @@ int get_skill(CHAR_DATA *ch, int sn)
     }
     else /* mobiles */
     {
-	/* Syn - Outdated and fucks up a LOT of skills, e.g. anything not on the list here.
-	   Disabling and replacing with a fix until we get in skill-specifications for NPCs.
-        if (skill_table[sn].spell_fun != spell_null)
-	    skill = 40+ch->level/2;
+        /* AO 092916 -- Making it better, but not perfetc, for now. Based on flags.
+	 * Changed level calculation to the log functio to scale
+	 * well up to lv500  */ 
 
-	else if (sn == gsn_sneak || sn == gsn_hide)
-	    skill = 40+ch->level/2;
+	// Account for racial skills.
+	if (skill_table[sn].race != -1 && ch->race != skill_table[sn].race)
+	    skill = 0;
+	if (ch->tot_level < 10)
+	    skill = 10;
+ 
+	/* Handle spells */
+	if (skill_table[sn].spell_fun != spell_null) {
+		if (ch->max_mana > 0)
+			skill = 40+19 * log10(ch->tot_level)/2;
+		else 
+			skill = 0;
+	} //thief skills
+	else if (IS_SET(ch->act, ACT_THIEF) && (sn == gsn_sneak || sn == gsn_hide))
+	    skill = 40+19 * log10(ch->tot_level)/2;
 
         else if ((sn == gsn_dodge && IS_SET(ch->off_flags,OFF_DODGE))
  	||       (sn == gsn_parry && IS_SET(ch->off_flags,OFF_PARRY)))
-	    skill = 10+ch->level/2;
+	    skill = 40+19 * log10(ch->tot_level)/2;
 
  	else if (sn == gsn_shield_block)
-	    skill = 10+ch->level/2;
+	    skill = 40+19 * log10(ch->tot_level)/2;
 
 	else if (sn == gsn_second_attack
 	&& (IS_SET(ch->act,ACT_WARRIOR) || IS_SET(ch->act,ACT_THIEF)))
-	    skill = 10+ch->level/2;
+	    skill = 40+19 * log10(ch->tot_level)/2;
 
 	else if (sn == gsn_third_attack && IS_SET(ch->act,ACT_WARRIOR))
-	    skill = ch->level - 40;
+	    skill = 40 * log10(ch->tot_level);
 
 	else if (sn == gsn_hand_to_hand)
-	    skill = 40 + ch->level/2;
-
- 	else if (sn == gsn_trip && IS_SET(ch->off_flags,OFF_TRIP))
-	    skill = 10 + ch->level/1.5;
+	    skill = 40 + 19 * log10(ch->tot_level)/2;
 
  	else if (sn == gsn_bash && IS_SET(ch->off_flags,OFF_BASH))
-	    skill = 10 + ch->level/1.5;
+	    skill = 40 + 19 * log10(ch->tot_level)/1.5;
 
 	else if (sn == gsn_disarm
 	     &&  (IS_SET(ch->off_flags,OFF_DISARM)
 	     ||   IS_SET(ch->act,ACT_WARRIOR)
 	     ||	  IS_SET(ch->act,ACT_THIEF)))
-	    skill = 20 + ch->level/1.5;
+	    skill = 40 + 19*log10(ch->tot_level)/1.5;
 
 	else if (sn == gsn_berserk && IS_SET(ch->off_flags,OFF_BERSERK))
-	    skill = ch->level/1.5;
+	    skill = 19*log10(ch->tot_level)/1.5;
 
 	else if (sn == gsn_kick)
-	    skill = 10 + ch->level/1.5;
+	    skill = 40 + 19*log10(ch->tot_level)/1.5;
 
 	else if (sn == gsn_backstab && IS_SET(ch->act,ACT_THIEF))
-	    skill = 40 + ch->level/2;
+	    skill = 40 + 19*log10(ch->tot_level)/2;
 
   	else if (sn == gsn_rescue)
-	    skill = 40 + ch->level/2;
+	    skill = 40 + 19*log10(ch->tot_level)/2;
 
 	else if (sn == gsn_recall)
-	    skill = 40 + ch->level/2;
+	    skill = 40 + 19*log10(ch->tot_level)/2;
 
 	else if (sn == gsn_sword
 	||  sn == gsn_dagger
@@ -515,22 +524,10 @@ int get_skill(CHAR_DATA *ch, int sn)
 	||  sn == gsn_stake
 	||  sn == gsn_polearm
 	||  sn == gsn_quarterstaff)
-	    skill = 40 + ch->level;
+	    skill = 40 + 19*log10(ch->tot_level);
 
 	else
 	   skill = 0;
-     */
-	/* Syn - The new routine is a very, VERY simple logarithmic function
-	   which scales NPC skill levels from the lower 40% at level 1 to
-	   upwards of 93% at level 500. */
-
-	// Account for racial skills.
-	if (skill_table[sn].race != -1 && ch->race != skill_table[sn].race)
-	    skill = 0;
-	else
-	    skill = mob_skill_table[ch->tot_level];
-	if (ch->tot_level < 10)
-	    skill = 0;
     }
 
     if (ch->daze > 0)
