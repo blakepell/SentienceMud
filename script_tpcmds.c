@@ -78,6 +78,7 @@ const struct script_cmd_type token_cmd_table[] = {
 	{ "remove",				do_tpremove,			FALSE	},
 	{ "remspell",			do_tpremspell,			TRUE	},
 	{ "resetdice",			do_tpresetdice,			TRUE	},
+	{ "restore",			do_tprestore,		TRUE	},
 	{ "saveplayer",			do_tpsaveplayer,		FALSE	},
 	{ "scriptwait",			do_tpscriptwait,		TRUE	},
 	{ "settimer",			do_tpsettimer,			FALSE	},
@@ -7237,4 +7238,20 @@ SCRIPT_CMD(do_tpremort)
     show_multiclass_choices(mob, mob);
 
 	info->token->progs->lastreturn = 1;
+}
+
+// Syntax: restore $MOBILE
+SCRIPT_CMD(do_tprestore)
+{
+	char *rest;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->token || IS_NULLSTR(argument)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+	restore_char(arg.d.mob, NULL);
 }

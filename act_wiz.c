@@ -3530,25 +3530,7 @@ void do_restore(CHAR_DATA *ch, char *argument)
 
         for (vch = ch->in_room->people; vch != NULL; vch = vch->next_in_room)
         {
-            affect_strip(vch,gsn_plague);
-            affect_strip(vch,gsn_poison);
-            affect_strip(vch,gsn_blindness);
-            affect_strip(vch,gsn_sleep);
-            affect_strip(vch,gsn_curse);
-	    affect_strip(vch,gsn_toxic_fumes);	/* @@@NIB : 20070127*/
-            vch->hit 	= vch->max_hit;
-            vch->mana	= vch->max_mana;
-            vch->move	= vch->max_move;
-
-	    if (IS_DEAD(vch))
-		resurrect_pc(vch);
-
-	    if (vch->maze_time_left > 0)
-		return_from_maze(vch);
-
-        affect_fix_char(vch);
-
-            act("$n has restored you.",ch,vch, NULL, NULL, NULL, NULL, NULL,TO_VICT);
+			restore_char(vch, ch);
         }
 
 
@@ -3560,70 +3542,35 @@ void do_restore(CHAR_DATA *ch, char *argument)
     }
 
     /* restore all */
-    if ((ch->tot_level >= MAX_LEVEL - 2
-         || !str_cmp(ch->name, "Kitala")) && !str_cmp(arg,"all"))
+    if ((ch->tot_level >= MAX_LEVEL - 2) && !str_cmp(arg,"all"))
     {
         for (d = descriptor_list; d != NULL; d = d->next)
         {
-	    victim = d->character;
 
-	    if (victim == NULL || IS_NPC(victim) || IS_IMMORTAL(victim))
-		continue;
+		    victim = d->character;
 
-            affect_strip(victim,gsn_plague);
-            affect_strip(victim,gsn_poison);
-            affect_strip(victim,gsn_blindness);
-            affect_strip(victim,gsn_sleep);
-            affect_strip(victim,gsn_curse);
-            affect_strip(victim,gsn_toxic_fumes);	/* @@@NIB : 20070127*/
-
-            victim->hit 	= victim->max_hit;
-            victim->mana	= victim->max_mana;
-            victim->move	= victim->max_move;
-
-	    if (victim->dead == TRUE)
-		resurrect_pc(victim);
-	    if (victim->maze_time_left > 0)
-		return_from_maze(victim);
-
-		affect_fix_char(victim);
-
-	    act("$n has restored you.",ch,victim, NULL, NULL, NULL, NULL, NULL,TO_VICT);
+		    if (victim == NULL || IS_NPC(victim) || IS_IMMORTAL(victim))
+				continue;
+			restore_char(victim, ch);
         }
 
-	send_to_char("All active players restored.\n\r",ch);
-	return;
+		send_to_char("All active players restored.\n\r",ch);
+		return;
     }
 
     if ((victim = get_char_world(ch, arg)) == NULL)
     {
-	send_to_char("They aren't here.\n\r", ch);
-	return;
+		send_to_char("They aren't here.\n\r", ch);
+		return;
     }
 
-    affect_strip(victim,gsn_plague);
-    affect_strip(victim,gsn_poison);
-    affect_strip(victim,gsn_blindness);
-    affect_strip(victim,gsn_sleep);
-    affect_strip(victim,gsn_curse);
-    affect_strip(victim,gsn_toxic_fumes);	/* @@@NIB : 20070127*/
-
-    victim->hit  = victim->max_hit;
-    victim->mana = victim->max_mana;
-    victim->move = victim->max_move;
-
-    if (victim->dead == TRUE)
-	resurrect_pc(victim);
-    if (victim->maze_time_left > 0)
-	return_from_maze(victim);
-
-	affect_fix_char(victim);
-
+	restore_char(victim, ch);
     act("Restored $N.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
-    act("$n has restored you.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
-    sprintf(buf, "$N restored %s.",
-	IS_NPC(victim) ? victim->short_descr : victim->name);
+
+    sprintf(buf, "$N restored %s.", IS_NPC(victim) ? victim->short_descr : victim->name);
     wiznet(buf,ch,NULL,WIZ_RESTORE,WIZ_SECURE,get_trust(ch));
+
+
 }
 
 

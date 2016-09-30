@@ -70,6 +70,7 @@ const struct script_cmd_type room_cmd_table[] = {
 	{ "remove",				do_rpremove,		FALSE	},
 	{ "remspell",			do_rpremspell,			TRUE	},
 	{ "resetdice",			do_rpresetdice,		TRUE	},
+	{ "restore",			do_rprestore,		TRUE	},
 	{ "saveplayer",			do_rpsaveplayer,		FALSE	},
 	{ "settimer",			do_rpsettimer,		FALSE	},
 	{ "showroom",			do_rpshowroom,		FALSE	},
@@ -6251,3 +6252,19 @@ SCRIPT_CMD(do_rpremort)
 	info->room->progs->lastreturn = 1;
 }
 
+
+// Syntax: restore $MOBILE
+SCRIPT_CMD(do_rprestore)
+{
+	char *rest;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->room || IS_NULLSTR(argument)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+	restore_char(arg.d.mob, NULL);
+}

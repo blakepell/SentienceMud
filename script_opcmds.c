@@ -72,6 +72,7 @@ const struct script_cmd_type obj_cmd_table[] = {
 	{ "remove",				do_opremove,		FALSE	},
 	{ "remspell",			do_opremspell,			TRUE	},
 	{ "resetdice",			do_opresetdice,		TRUE	},
+	{ "restore",			do_oprestore,		TRUE	},
 	{ "saveplayer",			do_opsaveplayer,		FALSE	},
 	{ "scriptwait",			do_opscriptwait,		TRUE	},
 	{ "selfdestruct",		do_opselfdestruct,	FALSE	},
@@ -6749,4 +6750,20 @@ SCRIPT_CMD(do_opremort)
     show_multiclass_choices(mob, mob);
 
 	info->obj->progs->lastreturn = 1;
+}
+
+// Syntax: restore $MOBILE
+SCRIPT_CMD(do_oprestore)
+{
+	char *rest;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->obj || IS_NULLSTR(argument)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+	restore_char(arg.d.mob, NULL);
 }

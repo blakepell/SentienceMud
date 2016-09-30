@@ -95,6 +95,7 @@ const struct script_cmd_type mob_cmd_table[] = {
 	{ "remove",				do_mpremove,			FALSE	},
 	{ "remspell",			do_mpremspell,			TRUE	},
 	{ "resetdice",			do_mpresetdice,			TRUE	},
+	{ "restore",			do_mprestore,		TRUE	},
 	{ "saveplayer",			do_mpsaveplayer,		FALSE	},
 	{ "selfdestruct",		do_mpselfdestruct,		FALSE	},
 	{ "settimer",			do_mpsettimer,			FALSE	},
@@ -7936,3 +7937,19 @@ SCRIPT_CMD(do_mpremort)
 	info->mob->progs->lastreturn = 1;
 }
 
+
+// Syntax: restore $MOBILE
+SCRIPT_CMD(do_mprestore)
+{
+	char *rest;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->mob || IS_NULLSTR(argument)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+	restore_char(arg.d.mob, NULL);
+}

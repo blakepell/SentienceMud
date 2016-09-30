@@ -2229,6 +2229,11 @@ SCRIPT_CMD(do_opremort);
 SCRIPT_CMD(do_rpremort);
 SCRIPT_CMD(do_tpremort);
 
+SCRIPT_CMD(do_mprestore);
+SCRIPT_CMD(do_oprestore);
+SCRIPT_CMD(do_rprestore);
+SCRIPT_CMD(do_tprestore);
+
 
 #include "tables.h"
 

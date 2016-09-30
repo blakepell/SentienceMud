@@ -5059,6 +5059,7 @@ enum trigger_index_enum {
 	TRIG_REMOVE,		/* NIB : 20070120 */
 	TRIG_REPOP,
 	TRIG_REST,
+	TRIG_RESTORE,
 	TRIG_RESURRECT,
 	TRIG_SAVE,
 	TRIG_SAYTO,		/* NIB : 20070121 */
@@ -7645,5 +7646,6 @@ void loot_corpse(CHAR_DATA *ch, OBJ_DATA *corpse);
 int music_lookup( char *name);
 bool is_char_busy(CHAR_DATA *ch);
 bool obj_has_spell(OBJ_DATA *obj, char *name);
+void restore_char(CHAR_DATA *ch, CHAR_DATA *whom);
 
 #endif /* !def __MERC_H__ */
