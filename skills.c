@@ -359,7 +359,7 @@ void do_multi(CHAR_DATA *ch, char *argument)
     crier_announce(buf);
     double_xp(ch);
 
-	p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_MULTICLASS, NULL);
+	p_percent_trigger(ch, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_MULTICLASS, NULL);
 }
 
 
@@ -2396,6 +2396,13 @@ void remort_player(CHAR_DATA *ch, int remort_class)
 	// Reset here since an immortal can still remort a player while they still have this question up
 	ch->remort_question = FALSE;
 
-	p_percent_trigger(ch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_REMORT, NULL);
+	p_percent_trigger(ch, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_REMORT, NULL);
+
+    for (obj = ch->carrying; obj != NULL;)
+    {
+		OBJ_DATA *obj_next = obj->next_content;
+		p_percent_trigger(NULL, obj, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_REMORT, NULL);
+		obj = obj_next;
+    }
 
 }
