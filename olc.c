@@ -3436,9 +3436,9 @@ void set_mob_hitdice(MOB_INDEX_DATA *pMob)
     hitBonus = ((hp_per_level) * (pMob->level / 2));
     hitNumDice = pMob->level * 0.8;
     hitDiceType = hp_per_level;
-    pMob->hit[DICE_NUMBER] = hitNumDice;
-    pMob->hit[DICE_TYPE]   = hitDiceType;
-    pMob->hit[DICE_BONUS]  = hitBonus;
+    pMob->hit[DICE_NUMBER] = UMAX(1,hitNumDice);
+    pMob->hit[DICE_TYPE]   = UMAX(1, hitDiceType);
+    pMob->hit[DICE_BONUS]  = UMAX(1, hitBonus);
 }
 
 
