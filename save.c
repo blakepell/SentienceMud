@@ -3462,6 +3462,7 @@ void cleanup_affects(OBJ_DATA *obj)
 }
 
 
+#define HAS_ALL_BITS(a, b) (((a) & (b)) == (a))
 
 void fix_character(CHAR_DATA *ch)
 {
@@ -3481,35 +3482,7 @@ void fix_character(CHAR_DATA *ch)
     for (i = 0; pc_race_table[ch->race].skills[i] != NULL; i++)
 	group_add(ch,pc_race_table[ch->race].skills[i],FALSE);
 
-	if( ch->affected_by_perm != race_table[ch->race].aff )
-	{
-		ch->affected_by_perm = race_table[ch->race].aff;
-		resetaffects = TRUE;
-	}
-
-	if( ch->affected_by2_perm != race_table[ch->race].aff2 )
-	{
-		ch->affected_by2_perm = race_table[ch->race].aff2;
-		resetaffects = TRUE;
-	}
-
-    if( ch->imm_flags_perm != race_table[ch->race].imm )
-    {
-		ch->imm_flags_perm = race_table[ch->race].imm;
-		resetaffects = TRUE;
-	}
-
-    if( ch->res_flags_perm != race_table[ch->race].res )
-    {
-		ch->res_flags_perm = race_table[ch->race].res;
-		resetaffects = TRUE;
-	}
-
-    if( ch->vuln_flags_perm != race_table[ch->race].vuln )
-    {
-		ch->vuln_flags_perm = race_table[ch->race].vuln;
-		resetaffects = TRUE;
-	}
+	// TODO: Readd checks for dealing with racial affects, affects2, imm, res and vuln
 
 	if( resetaffects )
 	{
