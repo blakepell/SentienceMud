@@ -3161,7 +3161,7 @@ int test_string_trigger(char *string, MATCH_STRING match, int type,
 				// Loop Level 2
 				while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
 					if (is_trigger_type(prg->trig_type,type)) {
-						if ((*match)(prg->trig_phrase, string)) {
+						if ((*match)(string, prg->trig_phrase)) {
 							ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, enactor, obj1, obj2, victim, victim2,NULL, NULL,string,prg->trig_phrase,0,0,0,0,0);
 							if( ret != PRET_NOSCRIPT) {
 								iterator_stop(&tit);
@@ -3185,7 +3185,7 @@ int test_string_trigger(char *string, MATCH_STRING match, int type,
 			// Loop Level 1:
 			while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
 				if (is_trigger_type(prg->trig_type,type)) {
-					if ((*match)(prg->trig_phrase, string)) {
+					if ((*match)(string, prg->trig_phrase)) {
 						ret = execute_script(prg->vnum, prg->script, mob, NULL, NULL, NULL, enactor, obj1, obj2, victim, victim2,NULL, NULL,string,prg->trig_phrase,0,0,0,0,0);
 						if( ret != PRET_NOSCRIPT) {
 							iterator_stop(&pit);
@@ -3216,7 +3216,7 @@ int test_string_trigger(char *string, MATCH_STRING match, int type,
 				iterator_start(&pit, token->pIndexData->progs[slot]);
 				while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
 					if (is_trigger_type(prg->trig_type,type)) {
-						if ((*match)(prg->trig_phrase, string)) {
+						if ((*match)(string, prg->trig_phrase)) {
 							ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, enactor, obj1, obj2, victim, victim2,NULL, NULL,string,prg->trig_phrase,0,0,0,0,0);
 							if( ret != PRET_NOSCRIPT) {
 								iterator_stop(&tit);
@@ -3243,7 +3243,7 @@ int test_string_trigger(char *string, MATCH_STRING match, int type,
 			iterator_start(&pit, obj->pIndexData->progs[slot]);
 			while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
 				if (is_trigger_type(prg->trig_type,type)) {
-					if ((*match)(prg->trig_phrase, string)) {
+					if ((*match)(string, prg->trig_phrase)) {
 						ret = execute_script(prg->vnum, prg->script, NULL, obj, NULL, NULL, enactor, obj1, obj2, victim, victim2,NULL, NULL,string,prg->trig_phrase,0,0,0,0,0);
 						if( ret != PRET_NOSCRIPT) {
 							iterator_stop(&pit);
@@ -3285,7 +3285,7 @@ int test_string_trigger(char *string, MATCH_STRING match, int type,
 				iterator_start(&pit, token->pIndexData->progs[slot]);
 				while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
 					if (is_trigger_type(prg->trig_type,type)) {
-						if ((*match)(prg->trig_phrase, string)) {
+						if ((*match)(string, prg->trig_phrase)) {
 							ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, enactor, obj1, obj2, victim, victim2,NULL, NULL,string,prg->trig_phrase,0,0,0,0,0);
 							if( ret != PRET_NOSCRIPT) {
 								iterator_stop(&tit);
@@ -3312,7 +3312,7 @@ int test_string_trigger(char *string, MATCH_STRING match, int type,
 			iterator_start(&pit, source->progs->progs[slot]);
 			while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
 				if (is_trigger_type(prg->trig_type,type)) {
-					if ((*match)(prg->trig_phrase, string)) {
+					if ((*match)(string, prg->trig_phrase)) {
 						ret = execute_script(prg->vnum, prg->script, NULL, NULL, room, NULL, enactor, obj1, obj2, victim, victim2,NULL, NULL,string,prg->trig_phrase,0,0,0,0,0);
 						if( ret != PRET_NOSCRIPT) {
 							iterator_stop(&pit);
