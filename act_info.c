@@ -1509,7 +1509,6 @@ void do_survey(CHAR_DATA *ch, char *argument)
 void show_room(CHAR_DATA *ch, ROOM_INDEX_DATA *room, bool remote, bool silent, bool automatic)
 {
 	char buf[MAX_STRING_LENGTH];
-	char arg1[MAX_INPUT_LENGTH];
 	EXIT_DATA *pexit;
 	int count;
 	int linelength;
@@ -1713,7 +1712,7 @@ void show_room(CHAR_DATA *ch, ROOM_INDEX_DATA *room, bool remote, bool silent, b
 	} else
 		send_to_char("     -{x\n\r", ch);
 
-	if (arg1[0] == '\0' || ((!IS_NPC(ch) || IS_SWITCHED(ch)) && !IS_SET(ch->comm, COMM_BRIEF))) {
+	if (!automatic || ((!IS_NPC(ch) || IS_SWITCHED(ch)) && !IS_SET(ch->comm, COMM_BRIEF))) {
 		if (IS_WILDERNESS(room) || IS_SET(room->room_flags, ROOM_VIEWWILDS)) {
 			send_to_char("\n\r", ch);
 		} else {
