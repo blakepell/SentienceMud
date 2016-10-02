@@ -1731,12 +1731,12 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 	if (IS_NPC(victim) && dam > 0 && victim->wait < PULSE_VIOLENCE / 2 &&
 		((IS_SET(victim->act, ACT_WIMPY)  /* && !number_bits(2) */ && victim->hit < victim->max_hit / 3) ||
 		(IS_AFFECTED(victim, AFF_CHARM) && victim->master && victim->master->in_room != victim->in_room)))
-		do_function(victim, &do_flee, "");
+		do_function(victim, &do_flee, NULL);
 
 	// Wimpy - Players
 	if (!IS_NPC(victim) && victim->hit > 0 && victim->hit <= victim->wimpy &&
 		victim->wait < PULSE_VIOLENCE / 2 && victim->paralyzed <= 0 && !IS_AFFECTED2(victim, AFF2_PARALYSIS) && !IS_AFFECTED2(victim, AFF2_IMMOBILE))
-		do_function (victim, &do_flee, "");
+		do_function (victim, &do_flee, NULL);
 
 	/* if fled successfully, return false so it doesn't keep position at fighting AO 092516 */
 	if (victim->in_room != ch->in_room)
