@@ -2275,6 +2275,9 @@ CHAR_DATA *create_mobile(MOB_INDEX_DATA *pMobIndex, bool persistLoad)
     if(pMobIndex->persist)
     	persist_addmobile(mob);
 
+    // make sure nothing has 0 hp
+    mob->max_hit = UMAX(1, mob->max_hit);
+
     return mob;
 }
 
