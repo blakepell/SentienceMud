@@ -5877,8 +5877,8 @@ void do_flee(CHAR_DATA *ch, char *argument)
 	if (ch->fighting != NULL && !IS_NPC(ch->fighting))
 		flee_lag = TRUE;
 
-	if (p_percent_trigger(ch->fighting,NULL,NULL,NULL,ch,NULL,NULL, NULL, NULL,argument?TRIG_PREFLEE:TRIG_PREWIMPY,argument) ||
-		p_percent_trigger(ch,NULL,NULL,NULL,ch,NULL,ch->fighting, NULL, NULL,argument?TRIG_PREFLEE:TRIG_PREWIMPY,argument))
+	if (p_percent_trigger(ch,NULL,NULL,NULL,ch,ch->fighting,NULL, NULL, NULL,argument?TRIG_PREFLEE:TRIG_PREWIMPY,argument) ||
+		p_percent_trigger(ch->fighting,NULL,NULL,NULL,ch,NULL,NULL, NULL, NULL,argument?TRIG_PREFLEE:TRIG_PREWIMPY,argument))
 		return;
 
 	if (IS_AFFECTED(ch,AFF_BLIND))
@@ -5967,7 +5967,7 @@ void do_flee(CHAR_DATA *ch, char *argument)
 	send_to_char(buf, ch);
 
 	p_percent_trigger(ch->fighting,NULL,NULL,NULL,ch,NULL,NULL, NULL, NULL,argument?TRIG_FLEE:TRIG_WIMPY,argument);
-	p_percent_trigger(ch,NULL,NULL,NULL,ch,NULL,ch->fighting, NULL, NULL,argument?TRIG_FLEE:TRIG_WIMPY,argument);
+	p_percent_trigger(ch,NULL,NULL,NULL,ch,ch->fighting,NULL, NULL, NULL,argument?TRIG_FLEE:TRIG_WIMPY,argument);
 
 	stop_fighting(ch, TRUE);
 

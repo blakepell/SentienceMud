@@ -719,7 +719,7 @@ void do_train(CHAR_DATA *ch, char *argument)
 		max_mana += mod_mana;
 		mod_move += mod_move;
 
-		if (!str_cmp(argument, "str"))
+		if (!str_cmp(arg, "str"))
 		{
 			if (class_table[ch->pcdata->class_current].attr_prime == STAT_STR || ch->pcdata->class_mage != -1)
 				cost    = 1;
@@ -727,7 +727,7 @@ void do_train(CHAR_DATA *ch, char *argument)
 			pOutput     = "strength";
 		}
 
-		else if (!str_cmp(argument, "int"))
+		else if (!str_cmp(arg, "int"))
 		{
 			if (class_table[ch->pcdata->class_current].attr_prime == STAT_INT || ch->pcdata->class_mage != -1)
 				cost    = 1;
@@ -735,7 +735,7 @@ void do_train(CHAR_DATA *ch, char *argument)
 			pOutput     = "intelligence";
 		}
 
-		else if (!str_cmp(argument, "wis"))
+		else if (!str_cmp(arg, "wis"))
 		{
 			if (class_table[ch->pcdata->class_current].attr_prime == STAT_WIS || ch->pcdata->class_cleric != -1)
 				cost    = 1;
@@ -743,7 +743,7 @@ void do_train(CHAR_DATA *ch, char *argument)
 			pOutput     = "wisdom";
 		}
 
-		else if (!str_cmp(argument, "dex"))
+		else if (!str_cmp(arg, "dex"))
 		{
 			if (class_table[ch->pcdata->class_current].attr_prime == STAT_DEX || ch->pcdata->class_thief != -1)
 				cost    = 1;
@@ -751,20 +751,20 @@ void do_train(CHAR_DATA *ch, char *argument)
 			pOutput     = "dexterity";
 		}
 
-		else if (!str_cmp(argument, "con"))
+		else if (!str_cmp(arg, "con"))
 		{
 			if (class_table[ch->pcdata->class_current].attr_prime == STAT_CON)
 				cost    = 1;
 			stat	    = STAT_CON;
 			pOutput     = "constitution";
 		}
-	    else if (!str_cmp(argument, "hp"))
+	    else if (!str_cmp(arg, "hp"))
 		    cost = 1;
 
-	    else if (!str_cmp(argument, "mana"))
+	    else if (!str_cmp(arg, "mana"))
 		    cost = 1;
 
-	    else if (!str_cmp(argument, "move"))
+	    else if (!str_cmp(arg, "move"))
 		    cost = 1;
 
 	    else

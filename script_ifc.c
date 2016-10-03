@@ -4238,3 +4238,31 @@ DECL_IFC_FUN(ifc_hascheckpoint)
 	*ret = VALID_PLAYER(0) ? (ARG_MOB(0)->checkpoint != NULL) : FALSE;
 	return TRUE;
 }
+
+// ismobile $ENTITY
+DECL_IFC_FUN(ifc_ismobile)
+{
+	*ret = ISARG_MOB(0) && TRUE;
+	return TRUE;
+}
+
+// isobject $ENTITY
+DECL_IFC_FUN(ifc_isobject)
+{
+	*ret = ISARG_OBJ(0) && TRUE;
+	return TRUE;
+}
+
+// isroom $ENTITY
+DECL_IFC_FUN(ifc_isroom)
+{
+	*ret = ISARG_ROOM(0) && TRUE;
+	return TRUE;
+}
+
+// istoken $ENTITY
+DECL_IFC_FUN(ifc_istoken)
+{
+	*ret = ISARG_TOK(0) && TRUE;
+	return TRUE;
+}

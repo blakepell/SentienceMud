@@ -885,6 +885,10 @@ char *expand_entity_primary(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->type = ENT_MOBILE;
 		arg->d.mob = info->vch;
 		break;
+	case ENTITY_VICTIM2:
+		arg->type = ENT_MOBILE;
+		arg->d.mob = info->vch2;
+		break;
 	case ENTITY_TARGET:
 		arg->type = ENT_MOBILE;
 		arg->d.mob = info->targ ? *info->targ : NULL;
