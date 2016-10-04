@@ -66,6 +66,23 @@ void violence_update(void)
 	ITERATOR ait;
 	long aid[2], vid[2];
 
+	// MK 100316 - Handle all combatants that are fighting to fire PREROUND before any combat is done each round.
+	iterator_start(&ait, loaded_chars);
+	while(( ch = (CHAR_DATA *)iterator_nextdata(&ait)))
+	{
+		if( !IS_VALID(ch) || ch->in_room == NULL) continue;
+
+		if ((victim = ch->fighting) == NULL)
+			continue;
+
+		if (!IS_AWAKE(ch) || ch->in_room != victim->in_room)
+			continue;
+
+		p_percent_trigger(ch, NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_PREROUND, NULL);
+	}
+	iterator_stop(&ait);
+
+
 	iterator_start(&ait, loaded_chars);
 	while(( ch = (CHAR_DATA *)iterator_nextdata(&ait)))
 	{
@@ -125,9 +142,6 @@ void violence_update(void)
 		}
 
 		if ((victim = ch->fighting) == NULL || ch->in_room == NULL)
-			continue;
-
-		if ((victim = ch->fighting) == NULL)
 			continue;
 
 		aid[0] = ch->id[0]; aid[1] = ch->id[1];
@@ -1387,14 +1401,11 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 		//  This has a damage at the deepest level, the last stop before it is be applied to the victim
 		victim->hit_damage = dam;
 		victim->hit_type = dt;
-		if(p_percent_trigger(victim,NULL, NULL, NULL, ch, NULL, NULL, weapon, NULL, TRIG_DAMAGE, show?"visible":"hidden")) {
-			victim->hit_damage = 0;
 
-			// the damage script should have posted messages if code reaches here.
-			victim->in_damage_function = FALSE;
-			tail_chain();
-			return FALSE;
-		}
+
+		// If the trigger returns non-zero, it will silence default messages, but not further processing of damage.
+		if(p_percent_trigger(victim,NULL, NULL, NULL, ch, NULL, NULL, weapon, NULL, TRIG_DAMAGE, show?"visible":"hidden"))
+			show = FALSE;
 
 		// Only allow reduction in damage
 		if( victim->hit_damage < dam )
@@ -2707,46 +2718,26 @@ void update_pos(CHAR_DATA *victim)
 	else                          victim->position = POS_STUNNED;
 }
 
-
-// Start a fight.
-bool set_fighting(CHAR_DATA *ch, CHAR_DATA *victim)
+bool can_start_combat(CHAR_DATA *ch)
 {
-	OBJ_DATA *obj;
-
-	if (ch->in_room == NULL || victim->in_room == NULL)
-		return FALSE;
+	if( ch->in_room == NULL ) return FALSE;
 
 	// Fix for do_opcast. Make sure the dummy mob is not attacked.
-	if ((IS_NPC(ch) && ch->pIndexData->vnum == MOB_VNUM_OBJCASTER) ||
-		(IS_NPC(victim) && victim->pIndexData->vnum == MOB_VNUM_OBJCASTER))
-		return FALSE;
+	if( IS_NPC(ch) && ch->pIndexData->vnum == MOB_VNUM_OBJCASTER) return FALSE;
 
-	if (ch->fighting != NULL)
-	{
-		/*
-		sprintf(buf, "Set_fighting: already fighting, ch %s in room %s (%ld), victim %s in room %s (%ld)",
-			 ch->name, ch->in_room->name, ch->in_room->vnum,
-			 IS_NPC(victim) ? victim->short_descr : victim->name,
-			 victim->in_room->name, victim->in_room->vnum);
-		bug(buf, 0);
-		*/
-		return FALSE;
-	}
+	if( ch->fighting != NULL ) return FALSE;
 
-	// Mount character
 	if (IS_NPC(ch) && IS_SET(ch->act, ACT_MOUNT) && MOUNTED(ch))
 	{
 		if (IS_NPC(MOUNTED(ch)) || get_profession(MOUNTED(ch), SECOND_SUBCLASS_WARRIOR) != CLASS_WARRIOR_CRUSADER)
 			return FALSE;
 	}
 
-	// Mount victim
-	if (IS_NPC(victim) && IS_SET(victim->act, ACT_MOUNT) && MOUNTED(victim))
-	{
-		if (IS_NPC(MOUNTED(victim)) || get_profession(MOUNTED(victim), SECOND_SUBCLASS_WARRIOR) != CLASS_WARRIOR_CRUSADER)
-			return FALSE;
-	}
+	return TRUE;
+}
 
+void enter_combat(CHAR_DATA *ch, CHAR_DATA *victim)
+{
 	if (IS_AFFECTED(ch, AFF_SLEEP))
 	{
 		affect_strip(ch, gsn_sleep);
@@ -2781,9 +2772,22 @@ bool set_fighting(CHAR_DATA *ch, CHAR_DATA *victim)
 	*/
 
 	act("$N begins attacking $n!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
+}
+
+// Start a fight.
+bool set_fighting(CHAR_DATA *ch, CHAR_DATA *victim)
+{
+	OBJ_DATA *obj;
+
+	if( !can_start_combat(ch) ) return FALSE;
+
+	if( !can_start_combat(victim) ) return FALSE;
+
+	enter_combat(ch, victim);
 
 	// Wilderness spear style kicks in here too
-	if (get_skill(victim, gsn_wilderness_spear_style) > 0)
+	// MK 100316 - Changed so that the victim must be standing to do this defense.
+	if (victim->position == POS_STANDING && get_skill(victim, gsn_wilderness_spear_style) > 0)
 	{
 		bool found = FALSE;
 		int chance;
@@ -2807,7 +2811,9 @@ bool set_fighting(CHAR_DATA *ch, CHAR_DATA *victim)
 	}
 
 	/* AO 092516 Make sure to initiate combat on a successful defense. Hackish but oh well. */
-	damage_new(ch,victim,NULL,0,0,0,FALSE);
+	//damage_new(ch,victim,NULL,0,0,0,FALSE);	// MK couldn't you just... set the victim's fighting if it's null?
+	if( victim->fighting == NULL )
+		enter_combat(victim, ch);
 
 	p_percent_trigger(victim, NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_START_COMBAT, NULL);
 	p_percent_trigger(ch, NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_START_COMBAT, NULL);
@@ -4011,12 +4017,20 @@ void dam_message(CHAR_DATA *ch, CHAR_DATA *victim, int dam,int dt,bool immune)
 	CHAR_DATA *gch;
 	char punct;
 	float percent;
+//	char msg[MSL];
+
+//	sprintf(msg, "dam_message: '%s' vs '%s', dam = %d, dt = %d, immune = %s",
+//		(ch ? ch->name : "(null)"),
+//		(victim ? victim->name: "(null"),
+//		dam, dt, (immune ? "TRUE" : "FALSE"));
+//	wiznet(msg,NULL,NULL,WIZ_TESTING,0,0);
+
+	if (ch == NULL || victim == NULL)
+		return;
 
 	percent = (float) dam / victim->hit;
 	percent *= 100;
 
-	if (ch == NULL || victim == NULL)
-	return;
 
 	if (dam <   0) { vs = "miss";	vp = "misses";		}
 	else if (dam == 0) { vs = "do nothing to";	vp = "does nothing to";		}
