@@ -3344,6 +3344,8 @@ SCRIPT_CMD(do_opaltermob)
 	else if(!str_cmp(field,"danger"))	{ ptr = IS_NPC(mob)?NULL:(int*)&mob->pcdata->danger_range; allowpc = TRUE; }
 	else if(!str_cmp(field,"daze"))		ptr = (int*)&mob->daze;
 	else if(!str_cmp(field,"death"))	{ ptr = (IS_NPC(mob) || !IS_DEAD(mob))?NULL:(int*)&mob->time_left_death; allowpc = TRUE; }
+	else if(!str_cmp(field,"dicenumber"))	{ ptr = IS_NPC(mob)?&mob->damage[DICE_NUMBER]:NULL; }
+	else if(!str_cmp(field,"dicetype"))	{ ptr = IS_NPC(mob)?&mob->damage[DICE_TYPE]:NULL; }
 	else if(!str_cmp(field,"drunk"))	{ ptr = IS_NPC(mob)?NULL:(int*)&mob->pcdata->condition[COND_DRUNK]; allowpc = TRUE; }
 //	else if(!str_cmp(field,"exitdir"))	{ ptr = (int*)&mob->exit_dir; allowpc = TRUE; }
 	else if(!str_cmp(field,"exp"))		{ ptr = (int*)&mob->exp; allowpc = TRUE; }
@@ -5700,7 +5702,7 @@ SCRIPT_CMD(do_opstartcombat)
 		return;
 
 	// The victim is fighting someone else in a singleplay room
-	if(victim->fighting != attacker && !IS_SET(attacker->in_room->room2_flags, ROOM_MULTIPLAY))
+	if(!IS_NPC(attacker) && victim->fighting != attacker && !IS_SET(attacker->in_room->room2_flags, ROOM_MULTIPLAY))
 		return;
 
 	// They are not in the same room
