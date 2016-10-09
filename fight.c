@@ -72,7 +72,7 @@ void violence_update(void)
 	{
 		if( !IS_VALID(ch) || ch->in_room == NULL) continue;
 
-		if ((victim = ch->fighting) == NULL)
+		if ((victim = ch->fighting) == NULL || !IS_VALID(victim))
 			continue;
 
 		if (!IS_AWAKE(ch) || ch->in_room != victim->in_room)
@@ -1203,6 +1203,7 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 	int corpse_type = RAWKILL_NORMAL;
 	bool immune;
 	bool kill_in_room = FALSE;
+	long vid[2], cid[2];
 
 	if (victim->in_damage_function) {
 		victim->set_death_type = DEATHTYPE_ALIVE;
@@ -1228,6 +1229,12 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 		victim->set_death_type = DEATHTYPE_ALIVE;
 		return FALSE;
 	}
+
+	vid[0] = victim->id[0];
+	vid[1] = victim->id[1];
+
+	cid[0] = ch->id[0];
+	cid[1] = ch->id[1];
 
 	victim->in_damage_function = TRUE;
 
@@ -1389,7 +1396,7 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 
 	// Apply immunity/resistant/vuln
 	switch(check_immune(victim,dam_type)) {
-	case(IS_IMMUNE): immune = TRUE; dam = 0; break;
+	case(IS_IMMUNE): immune = TRUE; break;
 	case(IS_RESISTANT): dam = dam * 3/4; break;		// Reduces damage by 25%
 	case(IS_VULNERABLE): dam = dam * 6/5; break;		// Boosts damage by 20%
 	}
@@ -1401,7 +1408,7 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 		//  This has a damage at the deepest level, the last stop before it is be applied to the victim
 		victim->hit_damage = dam;
 		victim->hit_type = dt;
-
+		victim->hit_class = dam_type;
 
 		// If the trigger returns non-zero, it will silence default messages, but not further processing of damage.
 		if(p_percent_trigger(victim,NULL, NULL, NULL, ch, NULL, NULL, weapon, NULL, TRIG_DAMAGE, show?"visible":"hidden"))
@@ -1417,8 +1424,13 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 	// READ-ONLY access to damage and damage type
 	victim->hit_damage = dam;
 	victim->hit_type = dt;
+	victim->hit_class = dam_type;
 	p_percent_trigger(victim,NULL, NULL, NULL, ch, NULL, NULL, weapon, NULL, TRIG_CHECK_DAMAGE, show?"visible":"hidden");
+
+	// Reset the damage down to zero if immune
+	if( immune ) dam = 0;
 	victim->hit_damage = dam;
+
 
 	if (show) dam_message(ch, victim, dam, dt, immune);
 
@@ -1432,7 +1444,7 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 	}
 
 	// Barrier spells bounce back damage
-	if (dam > 0 && ch != victim && dam_type != DAM_POISON && ch->in_room == victim->in_room) {
+	if (!ch->in_damage_function && dam > 0 && ch != victim && dam_type != DAM_POISON && ch->in_room == victim->in_room) {
 		AFFECT_DATA *af;
 		int level, bdam;
 
@@ -1461,7 +1473,8 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 				} else
 					victim->hit_damage = 0;
 
-				p_percent_trigger(victim,NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_BARRIER,"electrical post");
+				if(is_combatant_valid(victim, vid[0], vid[1]) && is_combatant_valid(ch, cid[0], cid[1])
+					p_percent_trigger(victim,NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_BARRIER,"electrical post");
 			}
 		}
 
@@ -1490,7 +1503,8 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 				} else
 					victim->hit_damage = 0;
 
-				p_percent_trigger(victim,NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_BARRIER,"fire post");
+				if(is_combatant_valid(victim, vid[0], vid[1]) && is_combatant_valid(ch, cid[0], cid[1])
+					p_percent_trigger(victim,NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_BARRIER,"fire post");
 			}
 		}
 
@@ -1519,7 +1533,8 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 				} else
 					victim->hit_damage = 0;
 
-				p_percent_trigger(victim,NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_BARRIER,"frost post");
+				if(is_combatant_valid(victim, vid[0], vid[1]) && is_combatant_valid(ch, cid[0], cid[1])
+					p_percent_trigger(victim,NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_BARRIER,"frost post");
 			}
 		}
 	}
@@ -1714,13 +1729,12 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 	}
 
 	victim->set_death_type = DEATHTYPE_ALIVE;
+	victim->in_damage_function = FALSE;
 
 	if (victim == ch) {
-		victim->in_damage_function = FALSE;
 		return TRUE;
 	}
 
-	victim->in_damage_function = FALSE;
 
 	// Take care of link dead newbs.
 	if (!IS_NPC(victim) && victim->desc == NULL && victim->tot_level < 31 && !number_range(0, victim->wait)) {
@@ -1731,7 +1745,7 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 	/*
 	 * mobs automatically flee in terror if there is too large a level difference
 	 * */
-        if (IS_NPC(victim) && !IS_NPC(ch) && abs(ch->tot_level - victim->tot_level > 90) && number_percent() < 75) {
+	if (IS_NPC(victim) && !IS_NPC(ch) && abs(ch->tot_level - victim->tot_level > 90) && number_percent() < 75) {
 		char buf[MAX_STRING_LENGTH];
 		sprintf(buf, "%s balks with fear at the sight of your approach!\n\r", victim->short_descr);
 		send_to_char(buf,ch);
@@ -2725,8 +2739,6 @@ bool can_start_combat(CHAR_DATA *ch)
 	// Fix for do_opcast. Make sure the dummy mob is not attacked.
 	if( IS_NPC(ch) && ch->pIndexData->vnum == MOB_VNUM_OBJCASTER) return FALSE;
 
-	if( ch->fighting != NULL ) return FALSE;
-
 	if (IS_NPC(ch) && IS_SET(ch->act, ACT_MOUNT) && MOUNTED(ch))
 	{
 		if (IS_NPC(MOUNTED(ch)) || get_profession(MOUNTED(ch), SECOND_SUBCLASS_WARRIOR) != CLASS_WARRIOR_CRUSADER)
@@ -2779,7 +2791,7 @@ bool set_fighting(CHAR_DATA *ch, CHAR_DATA *victim)
 {
 	OBJ_DATA *obj;
 
-	if( !can_start_combat(ch) ) return FALSE;
+	if( ch->fighting != NULL || !can_start_combat(ch) ) return FALSE;
 
 	if( !can_start_combat(victim) ) return FALSE;
 

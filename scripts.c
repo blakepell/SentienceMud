@@ -336,6 +336,7 @@ char *ifcheck_get_value(SCRIPT_VARINFO *info,IFCHECK_DATA *ifc,char *text,int *r
 {
 	int i;
 	SCRIPT_PARAM argv[IFC_MAXPARAMS];
+	char *argument;
 
 	*valid = FALSE;
 
@@ -348,17 +349,18 @@ char *ifcheck_get_value(SCRIPT_VARINFO *info,IFCHECK_DATA *ifc,char *text,int *r
 	memset(argv,0,sizeof(argv));
 
 	text = skip_whitespace(text);
+	argument = text;
 
 	// Stop when there the param list is full, there's no more text or it hits an
 	//	operator
-	for(i=0;text && *text && *text != ESCAPE_END && *text != '=' && *text != '<' &&
-		*text != '>' && *text != '!' && *text != '&' && i<IFC_MAXPARAMS;i++) {
+	for(i=0;argument && *argument && *argument != ESCAPE_END && *argument != '=' && *argument != '<' &&
+		*argument != '>' && *argument != '!' && *argument != '&' && i<IFC_MAXPARAMS;i++) {
 //		if(wiznet_script) {
-//			sprintf(buf,"*text = %02.2X (%c)", *text, isprint(*text) ? *text : ' ');
+//			sprintf(buf,"*argument = %02.2X (%c)", *argument, isprint(*argument) ? *argument : ' ');
 //			wiznet(buf,NULL,NULL,WIZ_SCRIPTS,0,0);
 //		}
 		argv[i].buf[0] = 0;
-		text = expand_argument(info,text,&argv[i]);
+		argument = expand_argument(info,argument,&argv[i]);
 //		if(wiznet_script) {
 //			sprintf(buf,"argv[%d].type = %d (%s)", i, argv[i].type, ifcheck_param_type_names[argv[i].type]);
 //			wiznet(buf,NULL,NULL,WIZ_SCRIPTS,0,0);
@@ -375,8 +377,8 @@ char *ifcheck_get_value(SCRIPT_VARINFO *info,IFCHECK_DATA *ifc,char *text,int *r
 //		sprintf(buf,"ret = %d", *ret);
 //		wiznet(buf,NULL,NULL,WIZ_SCRIPTS,0,0);
 //	}
-	DBG2EXITVALUE1(PTR,text);
-	return text;
+	DBG2EXITVALUE1(PTR,argument);
+	return argument;
 }
 
 int ifcheck_comparison(SCRIPT_CB *block)
@@ -4595,6 +4597,39 @@ void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument)
 				variables_set_integer(vars,name,atoi(arg.d.str)); break;
 		}
 
+	// Decrements the variable, if it's a NUMBER by the specified decrement
+	// Format: DEC <step>
+	// Format: DECREMENT <step>
+	} else if(!str_cmp(buf,"dec") || !str_cmp(buf,"decrement")) {
+		pVARIABLE var = variable_get(*vars, name);
+		if(!var) return;
+
+		if(var->type != VAR_INTEGER) return;	// Must be a number!
+
+		switch(arg.type) {
+		case ENT_NUMBER: var->_.i -= arg.d.num; break;
+		case ENT_STRING:
+			if(is_number(arg.d.str))
+				var->_.i -= atoi(arg.d.str);
+			break;
+		}
+
+	// Increments the variable, if it's a NUMBER by the specified decrement
+	// Format: INC <step>
+	// Format: INCREMENT <step>
+	} else if(!str_cmp(buf,"inc") || !str_cmp(buf,"increment")) {
+		pVARIABLE var = variable_get(*vars, name);
+		if(!var) return;
+
+		if(var->type != VAR_INTEGER) return;	// Must be a number!
+
+		switch(arg.type) {
+		case ENT_NUMBER: var->_.i += arg.d.num; break;
+		case ENT_STRING:
+			if(is_number(arg.d.str))
+				var->_.i += atoi(arg.d.str);
+			break;
+		}
 	// Format: STRING <string>[ <word index>]
 	} else if(!str_cmp(buf,"string")) {
 		char tmp[MSL],*p;

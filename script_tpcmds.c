@@ -6483,7 +6483,7 @@ SCRIPT_CMD(do_tpscriptwait)
 
 	mob = arg.d.mob;
 
-	if( !mob || IS_NPC(mob) ) return;	// only players
+	if( !mob/* || IS_NPC(mob)*/ ) return;	// only players
 
 	// Check that the mob is not busy
 	if( is_char_busy( mob ) ) {

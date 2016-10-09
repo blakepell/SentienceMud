@@ -2128,20 +2128,21 @@ DECL_IFC_FUN(ifc_uses)
 
 DECL_IFC_FUN(ifc_varexit)
 {
-	pVARIABLE var, vars = NULL;
-	if(ISARG_MOB(0)) { vars = ARG_MOB(0)->progs->vars; ++argv; }
-	else if(ISARG_OBJ(0)) { vars = ARG_OBJ(0)->progs->vars; ++argv; }
-	else if(ISARG_ROOM(0)) { vars = ARG_ROOM(0)->progs->vars; ++argv; }
-	else if(ISARG_TOK(0)) { vars = ARG_TOK(0)->progs->vars; ++argv; }
-	else if(mob) vars = mob->progs->vars;
-	else if(obj) vars = obj->progs->vars;
-	else if(room) vars = room->progs->vars;
-	else if(token) vars = token->progs->vars;
+	PROG_DATA * progs = NULL;
+	pVARIABLE var;
+	if(ISARG_MOB(0)) { progs = ARG_MOB(0)->progs; ++argv; }
+	else if(ISARG_OBJ(0)) { progs = ARG_OBJ(0)->progs; ++argv; }
+	else if(ISARG_ROOM(0)) { progs = ARG_ROOM(0)->progs; ++argv; }
+	else if(ISARG_TOK(0)) { progs = ARG_TOK(0)->progs; ++argv; }
+	else if(mob) progs = mob->progs;
+	else if(obj) progs = obj->progs;
+	else if(room) progs = room->progs;
+	else if(token) progs = token->progs;
 
-	if(ISARG_STR(0) && ISARG_STR(1)) {
+	if(progs && progs->vars && ISARG_STR(0) && ISARG_STR(1)) {
 		int door = get_num_dir(ARG_STR(1));
 
-		var = variable_get(vars,ARG_STR(0));
+		var = variable_get(progs->vars,ARG_STR(0));
 
 		if(var && var->type == VAR_EXIT) {
 			*ret = var->_.door.r && var->_.door.door == door;
@@ -2153,18 +2154,19 @@ DECL_IFC_FUN(ifc_varexit)
 
 DECL_IFC_FUN(ifc_varnumber)
 {
-	pVARIABLE var, vars = NULL;
-	if(ISARG_MOB(0)) { vars = ARG_MOB(0)->progs->vars; ++argv; }
-	else if(ISARG_OBJ(0)) { vars = ARG_OBJ(0)->progs->vars; ++argv; }
-	else if(ISARG_ROOM(0)) { vars = ARG_ROOM(0)->progs->vars; ++argv; }
-	else if(ISARG_TOK(0)) { vars = ARG_TOK(0)->progs->vars; ++argv; }
-	else if(mob) vars = mob->progs->vars;
-	else if(obj) vars = obj->progs->vars;
-	else if(room) vars = room->progs->vars;
-	else if(token) vars = token->progs->vars;
+	PROG_DATA * progs = NULL;
+	pVARIABLE var;
+	if(ISARG_MOB(0)) { progs  = ARG_MOB(0)->progs; ++argv; }
+	else if(ISARG_OBJ(0)) { progs  = ARG_OBJ(0)->progs; ++argv; }
+	else if(ISARG_ROOM(0)) { progs  = ARG_ROOM(0)->progs; ++argv; }
+	else if(ISARG_TOK(0)) { progs  = ARG_TOK(0)->progs; ++argv; }
+	else if(mob) progs  = mob->progs;
+	else if(obj) progs  = obj->progs;
+	else if(room) progs  = room->progs;
+	else if(token) progs  = token->progs;
 
-	if(ISARG_STR(0)) {
-		var = variable_get(vars,ARG_STR(0));
+	if(progs && progs->vars && ISARG_STR(0)) {
+		var = variable_get(progs->vars,ARG_STR(0));
 
 		if(var && var->type == VAR_INTEGER) {
 			*ret = var->_.i;
@@ -2208,18 +2210,19 @@ DECL_IFC_FUN(ifc_vardefined)
 
 DECL_IFC_FUN(ifc_varstring)
 {
-	pVARIABLE var, vars = NULL;
-	if(ISARG_MOB(0)) { vars = ARG_MOB(0)->progs->vars; ++argv; }
-	else if(ISARG_OBJ(0)) { vars = ARG_OBJ(0)->progs->vars; ++argv; }
-	else if(ISARG_ROOM(0)) { vars = ARG_ROOM(0)->progs->vars; ++argv; }
-	else if(ISARG_TOK(0)) { vars = ARG_TOK(0)->progs->vars; ++argv; }
-	else if(mob) vars = mob->progs->vars;
-	else if(obj) vars = obj->progs->vars;
-	else if(room) vars = room->progs->vars;
-	else if(token) vars = token->progs->vars;
+	PROG_DATA * progs = NULL;
+	pVARIABLE var;
+	if(ISARG_MOB(0)) { progs = ARG_MOB(0)->progs; ++argv; }
+	else if(ISARG_OBJ(0)) { progs = ARG_OBJ(0)->progs; ++argv; }
+	else if(ISARG_ROOM(0)) { progs = ARG_ROOM(0)->progs; ++argv; }
+	else if(ISARG_TOK(0)) { progs = ARG_TOK(0)->progs; ++argv; }
+	else if(mob) progs = mob->progs;
+	else if(obj) progs = obj->progs;
+	else if(room) progs = room->progs;
+	else if(token) progs = token->progs;
 
-	if(ISARG_STR(0) && ISARG_STR(1)) {
-		var = variable_get(vars,ARG_STR(0));
+	if(progs && progs->vars && ISARG_STR(0) && ISARG_STR(1)) {
+		var = variable_get(progs->vars,ARG_STR(0));
 
 		if(var && (var->type == VAR_STRING || var->type == VAR_STRING_S)) {
 			*ret = is_name(ARG_STR(1),var->_.s);

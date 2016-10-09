@@ -97,6 +97,7 @@ const struct script_cmd_type mob_cmd_table[] = {
 	{ "resetdice",			do_mpresetdice,			TRUE	},
 	{ "restore",			do_mprestore,		TRUE	},
 	{ "saveplayer",			do_mpsaveplayer,		FALSE	},
+	{ "scriptwait",			do_mpscriptwait,		FALSE	},
 	{ "selfdestruct",		do_mpselfdestruct,		FALSE	},
 	{ "settimer",			do_mpsettimer,			FALSE	},
 	{ "showroom",			do_mpshowroom,			TRUE	},
@@ -7680,7 +7681,7 @@ SCRIPT_CMD(do_mpscriptwait)
 
 	mob = arg.d.mob;
 
-	if( !mob || IS_NPC(mob) ) return;	// only players
+	if( !mob /*|| IS_NPC(mob)*/ ) return;	// only players ....... TESTING WITH NPCS!!!
 
 	// Check that the mob is not busy
 	if( is_char_busy( mob ) ) {

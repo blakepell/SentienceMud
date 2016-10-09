@@ -77,6 +77,7 @@ const struct script_cmd_type obj_cmd_table[] = {
 	{ "scriptwait",			do_opscriptwait,		TRUE	},
 	{ "selfdestruct",		do_opselfdestruct,	FALSE	},
 	{ "settimer",			do_opsettimer,		FALSE	},
+	{ "scriptwait",			do_opscriptwait,		FALSE	},
 	{ "showroom",			do_opshowroom,		TRUE	},
 	{ "skill",				do_opskill,						TRUE	},
 	{ "skillgroup",			do_opskillgroup,			TRUE	},
@@ -6512,7 +6513,7 @@ SCRIPT_CMD(do_opscriptwait)
 
 	mob = arg.d.mob;
 
-	if( !mob || IS_NPC(mob) ) return;	// only players
+	if( !mob/* || IS_NPC(mob)*/ ) return;	// only players
 
 	// Check that the mob is not busy
 	if( is_char_busy( mob ) ) {
