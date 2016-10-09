@@ -389,9 +389,9 @@ void do_quest(CHAR_DATA *ch, char *argument)
 	if (obj != NULL)
         {
 	    obj->level = ch->tot_level;
-	    if (obj->item_type == ITEM_ARMOR)
+	    if (obj->item_type == ITEM_ARMOUR)
 	    {
-		set_armor_obj(obj);
+		set_armour_obj(obj);
 	    }
 
             act("$N gives $p to $n.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_ROOM);
@@ -471,8 +471,8 @@ void do_quest(CHAR_DATA *ch, char *argument)
 	act("$N chants a mantra over $p, then hands it back to $n.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 
 	obj->level = ch->tot_level;
-	if (obj->item_type == ITEM_ARMOR)
-	    set_armor_obj(obj);
+	if (obj->item_type == ITEM_ARMOUR)
+	    set_armour_obj(obj);
 
 	ch->questpoints -= cost;
 	return;

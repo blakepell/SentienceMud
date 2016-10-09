@@ -156,7 +156,7 @@ DECLARE_DO_FUN(	do_circle	);
 DECLARE_DO_FUN(	do_clear	);
 DECLARE_DO_FUN( do_clone	);
 DECLARE_DO_FUN(	do_close	);
-DECLARE_DO_FUN( do_color	);
+DECLARE_DO_FUN( do_colour	);
 DECLARE_DO_FUN( do_colour       );
 DECLARE_DO_FUN( do_combine	);
 DECLARE_DO_FUN(	do_commands	);

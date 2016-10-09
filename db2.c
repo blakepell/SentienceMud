@@ -514,7 +514,7 @@ ROOM_INDEX_DATA *get_random_room_area( CHAR_DATA *ch, AREA_DATA *area )
 
 
 /* Count how many letters in a string, not counting colour codes. */
-int strlen_no_colors( const char *str )
+int strlen_no_colours( const char *str )
 {
     int count;
     int i;
@@ -548,8 +548,8 @@ int strlen_no_colors( const char *str )
 }
 
 
-/* return a string without color codes- {x {Y etc. */
-char *nocolor( const char *string )
+/* return a string without colour codes- {x {Y etc. */
+char *nocolour( const char *string )
 {
     int i,n;
     char buf[MSL];
@@ -930,7 +930,7 @@ void do_dump( CHAR_DATA *ch, char *argument )
 
 	fprintf(fp, "Vnum	ShortDesc	Name	Level	Area	Type	WearFlags	"
 	            "Update	Fragility	Weight(kg)	Condition (%%)	Timer	Cost	Material	"
-		    "AC Pierce	AC Bash	AC Slash	AC Exotic	ArmorStrength	"
+		    "AC Pierce	AC Bash	AC Slash	AC Exotic	ArmourStrength	"
 		    "WeaponClass	DiceNumber	DiceType	DamageType	WeaponAttributes	"
 		    "SpellLevel	Spell1	Spell2	"
 		    "Key	Capacity	WeightMultiplier	ContainerFlags	"
@@ -961,11 +961,11 @@ void do_dump( CHAR_DATA *ch, char *argument )
 					obj->cost,
 					obj->material);
 
-				//Armor attributes
-				if ( obj->item_type == ITEM_ARMOR ) {
+				//Armour attributes
+				if ( obj->item_type == ITEM_ARMOUR ) {
 					fprintf( fp, "%ld	%ld	%ld	%ld	%s	",
 						obj->value[0], obj->value[1], obj->value[2], obj->value[3],
-						armor_strength_table[obj->value[4]].name );
+						armour_strength_table[obj->value[4]].name );
 				} else {
 					fprintf( fp, "N/A	N/A	N/A	N/A	N/A	");
 				}
@@ -982,11 +982,11 @@ void do_dump( CHAR_DATA *ch, char *argument )
 				}
 
 				//Spells
-				if (obj->item_type == ITEM_WEAPON || obj->item_type == ITEM_ARMOR || obj->item_type == ITEM_ARTIFACT
+				if (obj->item_type == ITEM_WEAPON || obj->item_type == ITEM_ARMOUR || obj->item_type == ITEM_ARTIFACT
 					|| obj->item_type == ITEM_LIGHT) {
 					switch(obj->item_type) {
 					case ITEM_WEAPON:
-					case ITEM_ARMOR:
+					case ITEM_ARMOUR:
 						fprintf(fp, "%ld	%s	%s	", obj->value[5], obj->value[6] > 0 ? skill_table[obj->value[6]].name :
 							"none", obj->value[7] > 0 ? skill_table[obj->value[7]].name : "none");
 						break;

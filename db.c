@@ -201,7 +201,7 @@ sh_int	gsn_air_spells;
 sh_int	gsn_ambush;
 sh_int	gsn_animate_dead;
 sh_int	gsn_archery;
-sh_int	gsn_armor;
+sh_int	gsn_armour;
 sh_int	gsn_athletics;
 sh_int	gsn_avatar_shield;
 sh_int	gsn_axe;
@@ -284,7 +284,7 @@ sh_int	gsn_eagle_eye;
 sh_int	gsn_earth_spells;
 sh_int	gsn_earthquake;
 sh_int	gsn_electrical_barrier;
-sh_int	gsn_enchant_armor;
+sh_int	gsn_enchant_armour;
 sh_int	gsn_enchant_weapon;
 sh_int	gsn_energy_drain;
 sh_int	gsn_energy_field;
@@ -1887,7 +1887,7 @@ CHAR_DATA *create_mobile(MOB_INDEX_DATA *pMobIndex, bool persistLoad)
 	}
     }
     for (i = 0; i < 4; i++)
-	mob->armor[i]	= pMobIndex->ac[i];
+	mob->armour[i]	= pMobIndex->ac[i];
 
     mob->off_flags	= pMobIndex->off_flags;
     mob->imm_flags	= pMobIndex->imm_flags;
@@ -2353,7 +2353,7 @@ CHAR_DATA *clone_mobile(CHAR_DATA *parent)
 
 
     for (i = 0; i < 4; i++)
-    	clone->armor[i]	= parent->armor[i];
+    	clone->armour[i]	= parent->armour[i];
 
     for (i = 0; i < MAX_STATS; i++)
     {
@@ -2492,7 +2492,7 @@ OBJ_DATA *create_object_noid(OBJ_INDEX_DATA *pObjIndex, int level, bool affects)
 	case ITEM_WAND:
 	case ITEM_STAFF:
 	case ITEM_WEAPON:
-	case ITEM_ARMOR:
+	case ITEM_ARMOUR:
 	case ITEM_BANK:
 	case ITEM_KEYRING:
 	case ITEM_POTION:
@@ -5358,7 +5358,7 @@ void persist_save_mobile(FILE *fp, CHAR_DATA *ch)
 	fprintf(fp, "Alig  %d\n", ch->alignment);
 	fprintf(fp, "Hit   %d\n", ch->hitroll);
 	fprintf(fp, "Dam   %d\n", ch->damroll);
-	fprintf(fp, "ACs %d %d %d %d\n", ch->armor[0],ch->armor[1],ch->armor[2],ch->armor[3]);
+	fprintf(fp, "ACs %d %d %d %d\n", ch->armour[0],ch->armour[1],ch->armour[2],ch->armour[3]);
 	fprintf(fp, "Wimp  %d\n", UMAX(0,ch->wimpy));
 	fprintf(fp, "Attr %d %d %d %d %d\n",
 		ch->perm_stat[STAT_STR],
@@ -6371,7 +6371,7 @@ CHAR_DATA *persist_load_mobile(FILE *fp)
 				break;
 			case 'A':
 				if(IS_KEY("ACs")) {
-					for(i = 0; i < 4; ch->armor[i++] = fread_number(fp));
+					for(i = 0; i < 4; ch->armour[i++] = fread_number(fp));
 
 					fMatch = TRUE;
 				}

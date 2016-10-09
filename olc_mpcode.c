@@ -1175,7 +1175,7 @@ void show_script_list(CHAR_DATA *ch, char *argument,int type)
 			len += sprintf(buf+len, "{RUncompiled{x ");
 
 		if(prg->name && *prg->name) {
-			noc = nocolor(prg->name);
+			noc = nocolour(prg->name);
 			len += sprintf(buf+len, "%.40s", noc);
 			free_string(noc);
 		}

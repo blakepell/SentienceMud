@@ -611,7 +611,7 @@ void auction_channel( char *msg )
     char buf[MAX_STRING_LENGTH];
     DESCRIPTOR_DATA *d;
 
-    sprintf(buf, "\n\r{M[AUCTION] %s{x", msg ); /* Add color if you wish */
+    sprintf(buf, "\n\r{M[AUCTION] %s{x", msg ); /* Add colour if you wish */
 
       for ( d = descriptor_list; d != NULL; d = d->next )
       {

@@ -71,7 +71,7 @@ const struct olc_help_type help_table[] =
     {	"wear-loc",	wear_loc_flags,	 "Where mobile wears object."	 },
     {	"spells",	skill_table,	 "Names of current spells." 	 },
     {	"container",	container_flags, "Container status."		 },
-    {	"armor",	ac_type,	 "Ac for different attacks."	 },
+    {	"armour",	ac_type,	 "Ac for different attacks."	 },
     {   "apply",	apply_flags,	 "Apply flags"			 },
     {	"form",		form_flags,	 "Mobile body form."	         },
     {	"part",		part_flags,	 "Mobile body parts."		 },
@@ -2871,7 +2871,7 @@ REDIT(redit_oreset)
 	    case ITEM_WAND:	olevel = number_range(10, 20);	break;
 	    case ITEM_STAFF:	olevel = number_range(15, 25);	break;
 	    case ITEM_TATTOO:	olevel = number_range( 0, 10);	break;
-	    case ITEM_ARMOR:	olevel = number_range( 5, 15);	break;
+	    case ITEM_ARMOUR:	olevel = number_range( 5, 15);	break;
 	    case ITEM_SEED:	olevel = number_range( 5, 15);	break;
 	    case ITEM_RANGED_WEAPON:	olevel = number_range( 5, 15);	break;
 	    case ITEM_WEAPON:	if (pReset->command == 'G')
@@ -3065,18 +3065,18 @@ void print_obj_values(OBJ_INDEX_DATA *obj, BUFFER *buffer)
 	    add_buf(buffer, buf);
 	    break;
 
-        case ITEM_ARMOR:
+        case ITEM_ARMOUR:
 	    sprintf(buf,
 		"{B[  {Wv0{B] {GAc pierce       {x[%ld]\n\r"
 		"{B[  {Wv1{B] {GAc bash         {x[%ld]\n\r"
 		"{B[  {Wv2{B] {GAc slash        {x[%ld]\n\r"
 		"{B[  {Wv3{B] {GAc exotic       {x[%ld]\n\r"
-		"{B[  {Wv4{B] {GArmor strength  {x%s\n\r",
+		"{B[  {Wv4{B] {GArmour strength  {x%s\n\r",
 		obj->value[0],
 		obj->value[1],
 		obj->value[2],
 		obj->value[3],
-		armor_strength_table[obj->value[4]].name);
+		armour_strength_table[obj->value[4]].name);
 	    add_buf(buffer, buf);
 	    break;
 
@@ -3446,11 +3446,11 @@ bool set_obj_values(CHAR_DATA *ch, OBJ_INDEX_DATA *pObj, int value_num, char *ar
 
 	  break;
 
-        case ITEM_ARMOR:
+        case ITEM_ARMOUR:
 	    switch (value_num)
 	    {
 	        default:
-		    do_help(ch, "ITEM_ARMOR");
+		    do_help(ch, "ITEM_ARMOUR");
 		    return FALSE;
 	        case 0:
 		    send_to_char("AC PIERCE SET.\n\r\n\r", ch);
@@ -3469,12 +3469,12 @@ bool set_obj_values(CHAR_DATA *ch, OBJ_INDEX_DATA *pObj, int value_num, char *ar
 		    pObj->value[3] = atoi(argument);
 		    break;
       	        case 4:
-	        	send_to_char("ARMOR STRENGTH SET.\n\r", ch);
-	        	send_to_char("ARMOR CLASS SET.\n\r\n\r", ch);
+	        	send_to_char("ARMOUR STRENGTH SET.\n\r", ch);
+	        	send_to_char("ARMOUR CLASS SET.\n\r\n\r", ch);
 
-	        	pObj->value[4] = get_armor_strength(argument);
+	        	pObj->value[4] = get_armour_strength(argument);
 
-			set_armor(pObj);
+			set_armour(pObj);
 
 	        	break;
 	        case 5:
@@ -4370,7 +4370,7 @@ OEDIT(oedit_show)
     if (pObj->catalyst)
     {
 		cnt = 0;
-		char line_color = 'x';
+		char line_colour = 'x';
 
 		sprintf(buf, "{m%-6s %-20s %-10s %-6s %-6s %-11s{x\n\r", "Number", "Type", "Strength", "Amount", "Random", "Script Name");
 		add_buf(buffer, buf);
@@ -4379,15 +4379,15 @@ OEDIT(oedit_show)
 		add_buf(buffer, buf);
 
 		for (paf = pObj->catalyst; paf; paf = paf->next, cnt++) {
-			line_color = ( paf->where == TO_CATALYST_ACTIVE ) ? 'W' : 'x';
+			line_colour = ( paf->where == TO_CATALYST_ACTIVE ) ? 'W' : 'x';
 
 			char *name = (IS_NULLSTR(paf->custom_name)) ? "---" : paf->custom_name;
 
 			if(paf->modifier < 0)
-				sprintf(buf, "{M[{W%4d{M]{%c %-20s %-10d {Wsource{%c %d%% %s{x\n\r", cnt, line_color,
-					flag_string(catalyst_types,paf->type),paf->level,line_color,paf->random, name);
+				sprintf(buf, "{M[{W%4d{M]{%c %-20s %-10d {Wsource{%c %d%% %s{x\n\r", cnt, line_colour,
+					flag_string(catalyst_types,paf->type),paf->level,line_colour,paf->random, name);
 			else
-				sprintf(buf, "{M[{W%4d{M]{%c %-20s %-10d %-6d %d%% %s{x\n\r", cnt, line_color,
+				sprintf(buf, "{M[{W%4d{M]{%c %-20s %-10d %-6d %d%% %s{x\n\r", cnt, line_colour,
 					flag_string(catalyst_types,paf->type),paf->level,paf->modifier,paf->random, name);
 			buf[0] = UPPER(buf[0]);
 			add_buf(buffer, buf);
@@ -6161,8 +6161,8 @@ OEDIT(oedit_level)
 {
     OBJ_INDEX_DATA *pObj;
     char buf[MAX_STRING_LENGTH];
-    int armor;
-    int armor_exotic;
+    int armour;
+    int armour_exotic;
 
     EDIT_OBJ(ch, pObj);
 
@@ -6189,18 +6189,18 @@ OEDIT(oedit_level)
     }
 
 
-    /* auto setting armor stuff */
-    if (pObj->item_type == ITEM_ARMOR)
+    /* auto setting armour stuff */
+    if (pObj->item_type == ITEM_ARMOUR)
     {
-        armor=(int) calc_obj_armor(pObj->level, pObj->value[4]);
-	armor_exotic=(int) armor * .90;
+        armour=(int) calc_obj_armour(pObj->level, pObj->value[4]);
+	armour_exotic=(int) armour * .90;
 
-	pObj->value[0] = armor;
-	pObj->value[1] = armor;
-	pObj->value[2] = armor;
-	pObj->value[3] = armor_exotic;
+	pObj->value[0] = armour;
+	pObj->value[1] = armour;
+	pObj->value[2] = armour;
+	pObj->value[3] = armour_exotic;
 
-	send_to_char("Armor class set.\n\r", ch);
+	send_to_char("Armour class set.\n\r", ch);
     }
 
     return TRUE;
@@ -6312,28 +6312,28 @@ OEDIT(oedit_allowed_fixed)
 }
 
 
-int get_armor_strength(char *argument)
+int get_armour_strength(char *argument)
 {
     char arg[MAX_STRING_LENGTH];
     argument = one_argument(argument, arg);
 
     if (!str_cmp(arg, "Heavy"))
-	return OBJ_ARMOR_HEAVY;
+	return OBJ_ARMOUR_HEAVY;
 
     else if (!str_cmp(arg, "Strong"))
-	return OBJ_ARMOR_STRONG;
+	return OBJ_ARMOUR_STRONG;
 
     else if (!str_cmp(arg, "Medium"))
-	return OBJ_ARMOR_MEDIUM;
+	return OBJ_ARMOUR_MEDIUM;
 
     else if (!str_cmp(arg, "Light"))
-	return OBJ_ARMOR_LIGHT;
+	return OBJ_ARMOUR_LIGHT;
 
     else if (!str_cmp(arg, "None"))
-	return OBJ_ARMOR_NOSTRENGTH;
+	return OBJ_ARMOUR_NOSTRENGTH;
 
     else
-	return OBJ_ARMOR_NOSTRENGTH;
+	return OBJ_ARMOUR_NOSTRENGTH;
 }
 
 
@@ -6423,7 +6423,7 @@ MEDIT(medit_show)
 		flag_string(affect2_flags, pMob->affected_by2));
 	add_buf(buffer, buf);
 
-	sprintf(buf, "Armor:        {C[{xpierce: %d  bash: %d  slash: %d  magic: %d{C]{x\n\r",
+	sprintf(buf, "Armour:        {C[{xpierce: %d  bash: %d  slash: %d  magic: %d{C]{x\n\r",
 		pMob->ac[AC_PIERCE], pMob->ac[AC_BASH],
 		pMob->ac[AC_SLASH],  pMob->ac[AC_EXOTIC]);
 	add_buf(buffer, buf);
@@ -8130,10 +8130,10 @@ void show_liqlist(CHAR_DATA *ch)
     for (liq = 0; liq_table[liq].liq_name != NULL; liq++)
     {
 	if ((liq % 21) == 0)
-	    add_buf(buffer,"Name                 Color          Proof Full Thirst Food Ssize\n\r");
+	    add_buf(buffer,"Name                 Colour          Proof Full Thirst Food Ssize\n\r");
 
 	sprintf(buf, "%-20s %-14s %5d %4d %6d %4d %5d\n\r",
-		liq_table[liq].liq_name,liq_table[liq].liq_color,
+		liq_table[liq].liq_name,liq_table[liq].liq_colour,
 		liq_table[liq].liq_affect[0],liq_table[liq].liq_affect[1],
 		liq_table[liq].liq_affect[2],liq_table[liq].liq_affect[3],
 		liq_table[liq].liq_affect[4]);

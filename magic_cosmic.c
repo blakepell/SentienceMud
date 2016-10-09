@@ -43,7 +43,7 @@ SPELL_FUNC(spell_create_food)
 // Medium Catalyst:	stops fizzles and destruction (ie, failures)
 // Strong Catalyst:	augments the enchanting
 // Perfect Catalyst:	allows one more enchant to the maximum
-SPELL_FUNC(spell_enchant_armor)
+SPELL_FUNC(spell_enchant_armour)
 {
 	OBJ_DATA *obj;
 	AFFECT_DATA *paf;
@@ -51,8 +51,8 @@ SPELL_FUNC(spell_enchant_armor)
 
 	obj = (OBJ_DATA *) vo;
 
-	if (obj->item_type != ITEM_ARMOR) {
-		send_to_char("That isn't armor.\n\r",ch);
+	if (obj->item_type != ITEM_ARMOUR) {
+		send_to_char("That isn't armour.\n\r",ch);
 		return FALSE;
 	}
 
@@ -155,8 +155,8 @@ SPELL_FUNC(spell_enchant_object)
 	obj = (OBJ_DATA *) vo;
 
 /*
-	if (obj->item_type != ITEM_ARMOR) {
-		send_to_char("That isn't armor.\n\r",ch);
+	if (obj->item_type != ITEM_ARMOUR) {
+		send_to_char("That isn't armour.\n\r",ch);
 		return FALSE;
 	}
 */

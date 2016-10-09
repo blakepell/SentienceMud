@@ -175,8 +175,8 @@ static variable_name_t VariableNameTable[eMSDP_MAX+1] =
    { eMSDP_CLIENT_ID,        "CLIENT_ID",        STRING_WRITE_ONCE(1,40) }, 
    { eMSDP_CLIENT_VERSION,   "CLIENT_VERSION",   STRING_WRITE_ONCE(1,40) }, 
    { eMSDP_PLUGIN_ID,        "PLUGIN_ID",        STRING_WITH_LENGTH_OF(1,40) }, 
-   { eMSDP_ANSI_COLORS,      "ANSI_COLORS",      BOOLEAN_SET_TO(1) }, 
-   { eMSDP_XTERM_256_COLORS, "XTERM_256_COLORS", BOOLEAN_SET_TO(0) }, 
+   { eMSDP_ANSI_COLOURS,      "ANSI_COLOURS",      BOOLEAN_SET_TO(1) }, 
+   { eMSDP_XTERM_256_COLOURS, "XTERM_256_COLOURS", BOOLEAN_SET_TO(0) }, 
    { eMSDP_UTF_8,            "UTF_8",            BOOLEAN_SET_TO(0) }, 
    { eMSDP_SOUND,            "SOUND",            BOOLEAN_SET_TO(0) }, 
    { eMSDP_MXP,              "MXP",              BOOLEAN_SET_TO(0) }, 
@@ -437,7 +437,7 @@ void ProtocolInput( descriptor_t *apDescriptor, char *apData, int aSize, char *a
                /* MUSHclient 4.02 and later supports 256 colours. */
                if ( strcmp(pMXPTag, "4.02") >= 0 )
                {
-                  pProtocol->pVariables[eMSDP_XTERM_256_COLORS]->ValueInt = 1;
+                  pProtocol->pVariables[eMSDP_XTERM_256_COLOURS]->ValueInt = 1;
                   pProtocol->b256Support = eYES;
                }
                else /* We know for sure that 256 colours are not supported */
@@ -448,7 +448,7 @@ void ProtocolInput( descriptor_t *apDescriptor, char *apData, int aSize, char *a
                /* CMUD 3.04 and later supports 256 colours. */
                if ( strcmp(pMXPTag, "3.04") >= 0 )
                {
-                  pProtocol->pVariables[eMSDP_XTERM_256_COLORS]->ValueInt = 1;
+                  pProtocol->pVariables[eMSDP_XTERM_256_COLOURS]->ValueInt = 1;
                   pProtocol->b256Support = eYES;
                }
                else /* We know for sure that 256 colours are not supported */
@@ -460,7 +460,7 @@ void ProtocolInput( descriptor_t *apDescriptor, char *apData, int aSize, char *a
                 * yet have MXP.  However MXP is planned, so once it responds 
                 * to a <VERSION> tag we'll know we can use 256 colours.
                 */
-               pProtocol->pVariables[eMSDP_XTERM_256_COLORS]->ValueInt = 1;
+               pProtocol->pVariables[eMSDP_XTERM_256_COLOURS]->ValueInt = 1;
                pProtocol->b256Support = eYES;
             }
          }
@@ -1056,7 +1056,7 @@ const char *CopyoverGet( descriptor_t *apDescriptor )
          *pBuffer++ = 'c';
          CompressEnd(apDescriptor);
       }
-      if ( pProtocol->pVariables[eMSDP_XTERM_256_COLORS]->ValueInt )
+      if ( pProtocol->pVariables[eMSDP_XTERM_256_COLOURS]->ValueInt )
          *pBuffer++ = 'C';
       if ( pProtocol->bCHARSET )
          *pBuffer++ = 'H';
@@ -1108,7 +1108,7 @@ void CopyoverSet( descriptor_t *apDescriptor, const char *apData )
                CompressStart(apDescriptor);
                break;
             case 'C':
-               pProtocol->pVariables[eMSDP_XTERM_256_COLORS]->ValueInt = 1;
+               pProtocol->pVariables[eMSDP_XTERM_256_COLOURS]->ValueInt = 1;
                break;
             case 'H':
                pProtocol->bCHARSET = true;
@@ -1575,7 +1575,7 @@ const char *ColourRGB( descriptor_t *apDescriptor, const char *apRGB )
 {
    protocol_t *pProtocol = apDescriptor ? apDescriptor->pProtocol : NULL;
 
-   if ( pProtocol && pProtocol->pVariables[eMSDP_ANSI_COLORS]->ValueInt )
+   if ( pProtocol && pProtocol->pVariables[eMSDP_ANSI_COLOURS]->ValueInt )
    {
       if ( IsValidColour(apRGB) )
       {
@@ -1584,7 +1584,7 @@ const char *ColourRGB( descriptor_t *apDescriptor, const char *apRGB )
          int Green = apRGB[2] - '0';
          int Blue = apRGB[3] - '0';
 
-         if ( pProtocol->pVariables[eMSDP_XTERM_256_COLORS]->ValueInt )
+         if ( pProtocol->pVariables[eMSDP_XTERM_256_COLOURS]->ValueInt )
             return GetRGBColour( bBackground, Red, Green, Blue );
          else /* Use regular ANSI colour */
             return GetAnsiColour( bBackground, Red, Green, Blue );
@@ -2041,12 +2041,12 @@ static void PerformSubnegotiation( descriptor_t *apDescriptor, char aCmd, char *
                pProtocol->pLastTTYPE = AllocString(pClientName);
 
                /* Look for 256 colour support */
-               if ( pStartPos != NULL && MatchString(pStartPos, "-256color") )
+               if ( pStartPos != NULL && MatchString(pStartPos, "-256colour") )
                {
                   /* This is currently the only way to detect support for 256 
                    * colours in TinTin++, WinTin++ and BlowTorch.
                    */
-                  pProtocol->pVariables[eMSDP_XTERM_256_COLORS]->ValueInt = 1;
+                  pProtocol->pVariables[eMSDP_XTERM_256_COLOURS]->ValueInt = 1;
                   pProtocol->b256Support = eYES;
                }
 
@@ -2074,7 +2074,7 @@ static void PerformSubnegotiation( descriptor_t *apDescriptor, char aCmd, char *
                   /* Mudlet 1.1 and later supports 256 colours. */
                   if ( strcmp(pProtocol->pVariables[eMSDP_CLIENT_VERSION]->pValueString, "1.1") >= 0 )
                   {
-                     pProtocol->pVariables[eMSDP_XTERM_256_COLORS]->ValueInt = 1;
+                     pProtocol->pVariables[eMSDP_XTERM_256_COLOURS]->ValueInt = 1;
                      pProtocol->b256Support = eYES;
                   }
                }
@@ -2082,13 +2082,13 @@ static void PerformSubnegotiation( descriptor_t *apDescriptor, char aCmd, char *
             else if ( MatchString(pClientName, "EMACS-RINZAI") || MatchString(pClientName, "MUDRAMMER") )
             {
                /* We know for certain that this client has support */
-               pProtocol->pVariables[eMSDP_XTERM_256_COLORS]->ValueInt = 1;
+               pProtocol->pVariables[eMSDP_XTERM_256_COLOURS]->ValueInt = 1;
                pProtocol->b256Support = eYES;
             }
             else if ( PrefixString("DecafMUD", pClientName) )
             {
                /* We know for certain that this client has support */
-               pProtocol->pVariables[eMSDP_XTERM_256_COLORS]->ValueInt = 1;
+               pProtocol->pVariables[eMSDP_XTERM_256_COLOURS]->ValueInt = 1;
                pProtocol->b256Support = eYES;
 
                if ( strlen(pClientName) > 9 )
@@ -2667,7 +2667,7 @@ static void SendMSSP( descriptor_t *apDescriptor )
       { "PUEBLO",             "0" },
       { "UTF-8",              "1" },
       { "VT100",              "0" },
-      { "XTERM 256 COLORS",   "1" },
+      { "XTERM 256 COLOURS",   "1" },
 
       /* Commercial */
 /*

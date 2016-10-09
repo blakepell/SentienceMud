@@ -695,7 +695,7 @@ void reset_char(CHAR_DATA *ch)
     ch->max_move	= ch->pcdata->perm_move;
 
     for (i = 0; i < 4; i++)
-	ch->armor[i]	= 100;
+	ch->armour[i]	= 100;
 
     ch->hitroll		= 0;
     ch->damroll		= 0;
@@ -708,7 +708,7 @@ void reset_char(CHAR_DATA *ch)
 	if (obj == NULL)
 	    continue;
 	for (i = 0; i < 4; i++)
-	    ch->armor[i] -= apply_ac(obj, loc, i);
+	    ch->armour[i] -= apply_ac(obj, loc, i);
 	for (af = obj->affected; af != NULL; af = af->next)
 	{
 	    mod = af->modifier;
@@ -727,7 +727,7 @@ void reset_char(CHAR_DATA *ch)
 
 		case APPLY_AC:
 					for (i = 0; i < 4; i ++)
-					    ch->armor[i] += mod;
+					    ch->armour[i] += mod;
 					break;
 		case APPLY_HITROLL:     ch->hitroll             += mod; break;
 		case APPLY_DAMROLL:     ch->damroll             += mod; break;
@@ -760,7 +760,7 @@ void reset_char(CHAR_DATA *ch)
 
 	    case APPLY_AC:
 				    for (i = 0; i < 4; i ++)
-					ch->armor[i] += mod;
+					ch->armour[i] += mod;
 				    break;
 	    case APPLY_HITROLL:     ch->hitroll             += mod; break;
 	    case APPLY_DAMROLL:     ch->damroll             += mod; break;
@@ -1129,7 +1129,7 @@ void affect_modify(CHAR_DATA *ch, AFFECT_DATA *paf, bool fAdd)
 	case APPLY_GOLD:						break;
 	case APPLY_AC:
 	    for (i = 0; i < 4; i ++)
-		ch->armor[i] += mod;
+		ch->armour[i] += mod;
 	    break;
 	case APPLY_HITROLL:       ch->hitroll			+= mod;	break;
 	case APPLY_DAMROLL:       ch->damroll			+= mod;	break;
@@ -2247,7 +2247,7 @@ void obj_from_char(OBJ_DATA *obj)
  */
 int apply_ac(OBJ_DATA *obj, int iWear, int type)
 {
-    if (obj->item_type != ITEM_ARMOR)
+    if (obj->item_type != ITEM_ARMOUR)
 	return 0;
 
     switch (iWear)
@@ -2335,9 +2335,9 @@ void equip_char(CHAR_DATA *ch, OBJ_DATA *obj, int iWear)
 
 	// Concealed items do nothing to the wearer's stats and affects.
 	if(wear_params[iWear][WEAR_PARAM_AFFECTS]) {
-	    /* apply armor class */
+	    /* apply armour class */
 	    for (i = 0; i < 4; i++)
-		ch->armor[i] -= apply_ac(obj, iWear, i);
+		ch->armour[i] -= apply_ac(obj, iWear, i);
 
 
 	    /* put obj's affects on the character */
@@ -2408,7 +2408,7 @@ int unequip_char(CHAR_DATA *ch, OBJ_DATA *obj, bool show)
 	// If the item was concealed, don't handle any object affects.
 	if(wear_params[loc][WEAR_PARAM_AFFECTS]) {
 	    for (i = 0; i < 4; i++)
-		ch->armor[i] += apply_ac(obj, loc, i);
+		ch->armour[i] += apply_ac(obj, loc, i);
 
 	    for (paf = obj->affected; paf != NULL; paf = paf->next)
 	    {

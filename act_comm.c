@@ -43,13 +43,13 @@
 #include "recycle.h"
 #include "tables.h"
 
-/* This macro strips a string of colors and concantenates it into a local buffer.
+/* This macro strips a string of colours and concantenates it into a local buffer.
    Necesarry to avoid memory leaks. */
-#define STRIP_COLOR(string, buffer) \
+#define STRIP_COLOUR(string, buffer) \
 	do { \
-		char *no_color = nocolor(string); \
-		strcat((buffer), no_color); \
-		free_string(no_color); \
+		char *no_colour = nocolour(string); \
+		strcat((buffer), no_colour); \
+		free_string(no_colour); \
 	} while(0)
 
 /* MOVED: */
@@ -306,7 +306,7 @@ void do_ooc(CHAR_DATA *ch, char *argument)
 		REMOVE_BIT(ch->comm,COMM_NO_OOC);
 
 		buf[0] = '\0';
-		STRIP_COLOR(argument, buf);
+		STRIP_COLOUR(argument, buf);
 
 		if(!buf[0]) {
 			send_to_char("Is that all you want to say?\n\r",ch);
@@ -396,7 +396,7 @@ void do_gossip(CHAR_DATA *ch, char *argument)
 			argument = makedrunk(argument,ch);
 
 		buf[0] = '\0';
-		STRIP_COLOR(argument, buf);
+		STRIP_COLOUR(argument, buf);
 		if(!buf[0]) {
 			send_to_char("Is that all you want to say?\n\r",ch);
 			return;
@@ -447,7 +447,7 @@ void do_flame(CHAR_DATA *ch, char *argument)
 			argument = makedrunk(argument,ch);
 
 		buf[0] = '\0';
-		STRIP_COLOR(argument, buf);
+		STRIP_COLOUR(argument, buf);
 		if(!buf[0]) {
 			send_to_char("Is that all you want to say?\n\r",ch);
 			return;
@@ -500,7 +500,7 @@ void do_helper(CHAR_DATA *ch, char *argument)
 		}
 
 		buf[0] = '\0';
-		STRIP_COLOR(argument, buf);
+		STRIP_COLOUR(argument, buf);
 		if(!buf[0]) {
 			send_to_char("Is that all you want to say?\n\r",ch);
 			return;
@@ -565,7 +565,7 @@ void do_music(CHAR_DATA *ch, char *argument)
 			argument = makedrunk(argument,ch);
 
 		buf[0] = '\0';
-		STRIP_COLOR(argument, buf);
+		STRIP_COLOUR(argument, buf);
 		if(!buf[0]) {
 			send_to_char("Is that all you want to say?\n\r",ch);
 			return;
@@ -646,7 +646,7 @@ void do_say(CHAR_DATA *ch, char *argument)
 	argument = makedrunk(argument,ch);
 
 	msg[0] = '\0';
-	STRIP_COLOR(argument, msg);
+	STRIP_COLOUR(argument, msg);
 
 	if(!msg[0]) {
 		send_to_char("Say what?\n\r", ch);
@@ -886,7 +886,7 @@ void do_tell(CHAR_DATA *ch, char *argument)
 	}
 
 	buf[0] = '\0';
-	STRIP_COLOR(argument, buf);
+	STRIP_COLOUR(argument, buf);
 	if(!buf[0]) {
 		send_to_char("Tell whom what?\n\r",ch);
 		return;
@@ -1024,7 +1024,7 @@ void do_yell(CHAR_DATA *ch, char *argument)
 	argument = makedrunk(argument,ch);
 
 	buf[0] = '\0';
-	STRIP_COLOR(argument, buf);
+	STRIP_COLOUR(argument, buf);
 	if(!buf[0]) {
 		send_to_char("Is that all you want to say?\n\r",ch);
 		return;
@@ -2633,7 +2633,7 @@ void do_quote(CHAR_DATA *ch, char *argument)
 	REMOVE_BIT(ch->comm,COMM_NOQUOTE);
 
 	buf[0] = '\0';
-	STRIP_COLOR(argument, buf);
+	STRIP_COLOUR(argument, buf);
 	if(!buf[0]) {
 		send_to_char("Is that all you want to say?\n\r",ch);
 		return;
@@ -2709,7 +2709,7 @@ void do_flag(CHAR_DATA *ch, char *argument)
 	char buf[MSL];
 	int value;
 	/*char *c;
-	 int colors; */
+	 int colours; */
 
 	argument = one_argument_norm(argument, arg);
 
@@ -2744,20 +2744,20 @@ void do_flag(CHAR_DATA *ch, char *argument)
 	return;
 	}
 
-	if (strlen_no_colors(arg) > 10) {
-	send_to_char("Flag length limit is 10 characters (not counting color codes).\n\r", ch);
+	if (strlen_no_colours(arg) > 10) {
+	send_to_char("Flag length limit is 10 characters (not counting colour codes).\n\r", ch);
 	return;
 	}
 	/*
-	colors = 0;
+	colours = 0;
 	for (c = arg; *c != '\0'; c++) {
 	if (*c == '{')
-	colors++;
+	colours++;
 	}
 
 
-	if (colors > 5) {
-	send_to_char("You may only use 5 color codes in your flag.\n\r", ch);
+	if (colours > 5) {
+	send_to_char("You may only use 5 colour codes in your flag.\n\r", ch);
 	return;
 	}
 	*/
@@ -2809,7 +2809,7 @@ void do_sayto(CHAR_DATA *ch, char *argument)
 	argument = makedrunk(argument,ch);
 
 	msg[0] = '\0';
-	STRIP_COLOR(argument, msg);
+	STRIP_COLOUR(argument, msg);
 
 	buf[0] = '\0';
 	for (i = 0; msg[i]; i++)
@@ -2963,7 +2963,7 @@ void do_intone(CHAR_DATA *ch, char *argument)
 	argument = makedrunk(argument,ch);
 
 	msg[0] = '\0';
-	STRIP_COLOR(argument, msg);
+	STRIP_COLOUR(argument, msg);
 
 	act("{C$n intones to $p '$t'{x", ch, NULL, NULL, obj, NULL, msg, NULL, TO_ROOM);
 	act("{CYou intone to $p '$t'{x", ch, NULL, NULL, obj, NULL, msg, NULL, TO_CHAR);

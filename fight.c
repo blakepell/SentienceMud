@@ -870,7 +870,7 @@ bool one_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt, bool secondary)
 	if (IS_NPC(ch))
 		dam += dice(ch->pIndexData->damage[DICE_NUMBER],ch->pIndexData->damage[DICE_TYPE]) / 2;
 
-	// apply armor class
+	// apply armour class
 	dam += victim_ac/10;
 
 
@@ -1345,7 +1345,7 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 		return FALSE;
 	}
 
-	// Armor and weapons decay with use
+	// Armour and weapons decay with use
 	for (vObj = victim->carrying; vObj; vObj = vObj->next_content)
 		if (vObj->wear_loc != WEAR_NONE && (!IS_SET(vObj->extra_flags, ITEM_BLESS || number_percent() < 33))) {
 			switch(vObj->fragility) {
@@ -3195,7 +3195,7 @@ void death_cry( CHAR_DATA *ch, bool has_head, bool messages )
 	} else
 		switch ( number_bits(4)) {
 		case 0: msg = "{R$n hits the ground ... DEAD.{x"; break;
-		case 1: if (!ch->material) { msg  = "{R$n splatters blood on your armor.{x"; break; }
+		case 1: if (!ch->material) { msg  = "{R$n splatters blood on your armour.{x"; break; }
 		case 2:
 			if (IS_SET(ch->parts,PART_GUTS)) {
 				msg = "{R$n spills $s guts all over the floor.{x";

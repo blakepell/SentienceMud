@@ -1972,7 +1972,7 @@ void join_world(DESCRIPTOR_DATA * d)
 
     if (ch->level == 0)
     {
-        if(global.mud_ansicolor)
+        if(global.mud_ansicolour)
             SET_BIT (ch->act, PLR_COLOUR);
         if(global.mud_telnetga)
             SET_BIT (ch->comm, COMM_TELNET_GA);

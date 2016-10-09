@@ -235,7 +235,7 @@ const struct olc_cmd_type medit_table[] =
     {   "affect",       medit_affect    },
     {   "affect2",	medit_affect2   },
     {   "alignment",	medit_align	},
-    {   "armor",        medit_ac        },
+    {   "armour",        medit_ac        },
     {   "attacks",	medit_attacks   },
     {   "commands",	show_commands	},
     {   "create",	medit_create	},
@@ -3126,7 +3126,7 @@ void do_rlist(CHAR_DATA *ch, char *argument)
 	{
 	    char *noc;
 	    found = TRUE;
-	    noc = nocolor(pRoomIndex->name);
+	    noc = nocolour(pRoomIndex->name);
 	    sprintf(buf, "[%5ld] %-17.16s", vnum, noc);
 	    free_string(noc);
 	    if (!add_buf(buf1, buf))
@@ -3187,7 +3187,7 @@ void do_mlist(CHAR_DATA *ch, char *argument)
 	    {
 		char *noc;
 		found = TRUE;
-		noc = nocolor(pMobIndex->short_descr);
+		noc = nocolour(pMobIndex->short_descr);
 		sprintf(buf, "{x[%5ld] %-17.16s{x", pMobIndex->vnum, noc);
 		add_buf(buf1, buf);
 		free_string(noc);
@@ -3211,7 +3211,7 @@ void do_mlist(CHAR_DATA *ch, char *argument)
     return;
 }
 
-int strlen_colors_limit( const char *str, int limit )
+int strlen_colours_limit( const char *str, int limit )
 {
     int count;
     int i;
@@ -3268,13 +3268,13 @@ void do_olist(CHAR_DATA *ch, char *argument)
 	    {
 		found = TRUE;/*
 		sprintf(buf2, "%s", pObjIndex->short_descr);
-		if ((i = (17 - strlen_no_colors(buf2))) > 0) {
+		if ((i = (17 - strlen_no_colours(buf2))) > 0) {
 		   while (i > 0) {
 		       strcat(buf2, " ");
 		       i--;
 		   }
 		}*/
-		max = strlen_colors_limit(pObjIndex->short_descr,16) + 17;
+		max = strlen_colours_limit(pObjIndex->short_descr,16) + 17;
 		sprintf(buf, "{x[%5ld] %-*.*s{x",
 		    pObjIndex->vnum, max, max - 1, pObjIndex->short_descr);
 		add_buf(buf1, buf);
@@ -3407,15 +3407,15 @@ void do_rshow(CHAR_DATA *ch, char *argument)
 }
 
 
-int calc_obj_armor(int level, int strength)
+int calc_obj_armour(int level, int strength)
 {
     switch (strength)
     {
-	case OBJ_ARMOR_LIGHT:		return level/10;
-	case OBJ_ARMOR_MEDIUM:		return level/5;
-	case OBJ_ARMOR_STRONG:		return level * 3/10;
-	case OBJ_ARMOR_HEAVY:		return level * 2/5;
-	case OBJ_ARMOR_NOSTRENGTH:
+	case OBJ_ARMOUR_LIGHT:		return level/10;
+	case OBJ_ARMOUR_MEDIUM:		return level/5;
+	case OBJ_ARMOUR_STRONG:		return level * 3/10;
+	case OBJ_ARMOUR_HEAVY:		return level * 2/5;
+	case OBJ_ARMOUR_NOSTRENGTH:
 	default:			return 0;
     }
 }
@@ -3619,34 +3619,34 @@ void set_weapon_dice_obj(OBJ_DATA *obj)
 
 
 /* set AC for an obj index */
-void set_armor(OBJ_INDEX_DATA *objIndex)
+void set_armour(OBJ_INDEX_DATA *objIndex)
 {
-    int armor;
-    int armor_exotic;
+    int armour;
+    int armour_exotic;
 
-    armor = calc_obj_armor(objIndex->level, objIndex->value[4]) ;
-    armor_exotic = armor * 9/10;
+    armour = calc_obj_armour(objIndex->level, objIndex->value[4]) ;
+    armour_exotic = armour * 9/10;
 
-    objIndex->value[0] = armor;
-    objIndex->value[1] = armor;
-    objIndex->value[2] = armor;
-    objIndex->value[3] = armor_exotic;
+    objIndex->value[0] = armour;
+    objIndex->value[1] = armour;
+    objIndex->value[2] = armour;
+    objIndex->value[3] = armour_exotic;
 }
 
 
 /* set AC for an obj */
-void set_armor_obj(OBJ_DATA *obj)
+void set_armour_obj(OBJ_DATA *obj)
 {
-    int armor;
-    int armor_exotic;
+    int armour;
+    int armour_exotic;
 
-    armor = calc_obj_armor(obj->level, obj->value[4]) ;
-    armor_exotic = armor * 9/10;
+    armour = calc_obj_armour(obj->level, obj->value[4]) ;
+    armour_exotic = armour * 9/10;
 
-    obj->value[0] = armor;
-    obj->value[1] = armor;
-    obj->value[2] = armor;
-    obj->value[3] = armor_exotic;
+    obj->value[0] = armour;
+    obj->value[1] = armour;
+    obj->value[2] = armour;
+    obj->value[3] = armour_exotic;
 }
 
 

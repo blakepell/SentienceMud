@@ -3271,10 +3271,10 @@ SCRIPT_CMD(do_opaltermob)
 	default: return;
 	}
 
-	if(!str_cmp(field,"acbash"))		ptr = (int*)&mob->armor[AC_BASH];
-	else if(!str_cmp(field,"acexotic"))	ptr = (int*)&mob->armor[AC_EXOTIC];
-	else if(!str_cmp(field,"acpierce"))	ptr = (int*)&mob->armor[AC_PIERCE];
-	else if(!str_cmp(field,"acslash"))	ptr = (int*)&mob->armor[AC_SLASH];
+	if(!str_cmp(field,"acbash"))		ptr = (int*)&mob->armour[AC_BASH];
+	else if(!str_cmp(field,"acexotic"))	ptr = (int*)&mob->armour[AC_EXOTIC];
+	else if(!str_cmp(field,"acpierce"))	ptr = (int*)&mob->armour[AC_PIERCE];
+	else if(!str_cmp(field,"acslash"))	ptr = (int*)&mob->armour[AC_SLASH];
 	else if(!str_cmp(field,"act"))		ptr = (int*)&mob->act;
 	else if(!str_cmp(field,"act2"))		ptr = (int*)&mob->act2;
 	else if(!str_cmp(field,"alignment"))	ptr = (int*)&mob->alignment;

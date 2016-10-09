@@ -2600,7 +2600,7 @@ DECL_IFC_FUN(ifc_value_moon)
 
 DECL_IFC_FUN(ifc_value_acstr)
 {
-	*ret = ISARG_STR(0) ? flag_value_ifcheck(armor_strength_table,ARG_STR(0)) : -1;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(armour_strength_table,ARG_STR(0)) : -1;
 	return TRUE;
 }
 

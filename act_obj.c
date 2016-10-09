@@ -2069,7 +2069,7 @@ void do_restring(CHAR_DATA *ch, char *argument)
         return;
     }
 
-    if (str_cmp(arg2, "desc") && strlen_no_colors(argument) < 5)
+    if (str_cmp(arg2, "desc") && strlen_no_colours(argument) < 5)
     {
 	act("{R$N tells you, 'Surely you can think of a better name than that! It's too short!'{x", ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	return;
