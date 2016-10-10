@@ -5466,7 +5466,7 @@ void do_backstab(CHAR_DATA *ch, char *argument)
 		else
 			dam = victim->max_hit/10;
 
-		if (ch->tot_level < victim->tot_level) dam = (dam * ch->tot_level)/(victim->tot_level/2);
+		//if (ch->tot_level < victim->tot_level) dam = (dam * ch->tot_level)/(victim->tot_level/2);
 
 		dam += 3 * dice(wield->value[1], wield->value[2]);
 		dam = UMIN(dam, MAX_BACKSTAB_DAMAGE);

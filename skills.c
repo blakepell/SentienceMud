@@ -999,7 +999,7 @@ void do_spells(CHAR_DATA *ch, char *argument)
 
 				// Don't have it yet
 				if( level < 0 )
-					sprintf(buf, " %3d     %3d    %3d      {%c%-26s    {xN/A\n\r", i, -level, skill_table[entry->sn].min_mana, color, name);
+					sprintf(buf, " %3d     %3d     %3d       {%c%-26s    {xN/A\n\r", i, -level, skill_table[entry->sn].min_mana, color, name);
 				else {
 					rating = skill + mod;
 					rating = URANGE(0,rating,100);
