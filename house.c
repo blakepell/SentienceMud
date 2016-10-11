@@ -84,7 +84,7 @@ void do_house(CHAR_DATA *ch, char *argument)
 	    return;
 	}
 
-	if ( strlen_no_colors(argument) < 6 ) {
+	if ( strlen_no_colours(argument) < 6 ) {
 	    send_to_char("House name too short.\n\r", ch );
 	    return;
 	}
@@ -92,7 +92,7 @@ void do_house(CHAR_DATA *ch, char *argument)
 	if ( strlen( argument ) > 45 )
 	    argument[45] = '\0';
 
-	ch->in_room->name = nocolor(argument);
+	ch->in_room->name = nocolour(argument);
 
 	act("A small gnome appears, changes the room's and then disappears.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 	act("A small gnome appears, changes the room's and then disappears.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_CHAR);

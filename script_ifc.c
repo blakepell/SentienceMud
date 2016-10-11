@@ -2600,7 +2600,7 @@ DECL_IFC_FUN(ifc_value_moon)
 
 DECL_IFC_FUN(ifc_value_acstr)
 {
-	*ret = ISARG_STR(0) ? flag_value_ifcheck(armor_strength_table,ARG_STR(0)) : -1;
+	*ret = ISARG_STR(0) ? flag_value_ifcheck(armour_strength_table,ARG_STR(0)) : -1;
 	return TRUE;
 }
 
@@ -2624,11 +2624,13 @@ DECL_IFC_FUN(ifc_timer)
 		else if(!str_prefix(ARG_STR(1),"fade")) *ret = ARG_MOB(0)->fade;
 		else if(!str_prefix(ARG_STR(1),"hide")) *ret = ARG_MOB(0)->hide;
 		else if(!str_prefix(ARG_STR(1),"music")) *ret = ARG_MOB(0)->music;
+		else if(!str_prefix(ARG_STR(1),"next_quest")) *ret = ARG_MOB(0)->nextquest;
 		else if(!str_prefix(ARG_STR(1),"norecall")) *ret = ARG_MOB(0)->no_recall;
 		else if(!str_prefix(ARG_STR(1),"panic")) *ret = ARG_MOB(0)->panic;
 		else if(!str_prefix(ARG_STR(1),"paralyzed")) *ret = ARG_MOB(0)->paralyzed;
 		else if(!str_prefix(ARG_STR(1),"paroxysm")) *ret = ARG_MOB(0)->paroxysm;
 		else if(!str_prefix(ARG_STR(1),"pk")) *ret = ARG_MOB(0)->pk_timer;
+		else if(!str_prefix(ARG_STR(1),"quest")) *ret = ARG_MOB(0)->countdown;
 		else if(!str_prefix(ARG_STR(1),"ranged")) *ret = ARG_MOB(0)->ranged;
 		else if(!str_prefix(ARG_STR(1),"recite")) *ret = ARG_MOB(0)->recite;
 		else if(!str_prefix(ARG_STR(1),"resurrect")) *ret = ARG_MOB(0)->resurrect;

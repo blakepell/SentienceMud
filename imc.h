@@ -36,7 +36,7 @@
 #define IMC_CONFIG_FILE  IMC_DIR "imc.config"
 #define IMC_BAN_FILE     IMC_DIR "imc.ignores"
 #define IMC_UCACHE_FILE  IMC_DIR "imc.ucache"
-#define IMC_COLOR_FILE   IMC_DIR "imc.color"
+#define IMC_COLOUR_FILE   IMC_DIR "imc.colour"
 #define IMC_HELP_FILE    IMC_DIR "imc.help"
 #define IMC_CMD_FILE     IMC_DIR "imc.commands"
 #define IMC_HOTBOOT_FILE IMC_DIR "imc.hotboot"
@@ -76,7 +76,7 @@ typedef enum
 #define IMC_PRIVACY      (1 <<  5)
 #define IMC_DENYFINGER   (1 <<  6)
 #define IMC_AFK          (1 <<  7)
-#define IMC_COLORFLAG    (1 <<  8)
+#define IMC_COLOURFLAG    (1 <<  8)
 #define IMC_PERMOVERRIDE (1 <<  9)
 
 #define IMCPERM(ch)           (CH_IMCDATA((ch))->imcperm)
@@ -212,7 +212,7 @@ typedef struct imc_ban_data IMC_BAN;   /* Mud level bans */
 typedef struct imcchar_data IMC_CHARDATA; /* Player flags */
 typedef struct imc_ignore IMC_IGNORE;  /* Player level ignores */
 typedef struct imcucache_data IMCUCACHE_DATA;   /* User cache data for gender targetting socials */
-typedef struct imc_color_table IMC_COLOR; /* The Color config */
+typedef struct imc_colour_table IMC_COLOUR; /* The Colour config */
 typedef struct imc_command_table IMC_CMD_DATA;  /* Command table */
 typedef struct imc_help_table IMC_HELP_DATA; /* Help table */
 typedef struct imc_cmd_alias IMC_ALIAS;   /* Big, bad, bloated command alias thing */
@@ -260,11 +260,11 @@ struct imc_help_table
    int level;
 };
 
-struct imc_color_table
+struct imc_colour_table
 {
-   IMC_COLOR *next;
-   IMC_COLOR *prev;
-   char *name; /* the name of the color */
+   IMC_COLOUR *next;
+   IMC_COLOUR *prev;
+   char *name; /* the name of the colour */
    char *mudtag;  /* What the mud uses for the raw tag */
    char *imctag;  /* The imc tilde code that represents the mudtag to the network */
 };

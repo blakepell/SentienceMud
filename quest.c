@@ -389,9 +389,9 @@ void do_quest(CHAR_DATA *ch, char *argument)
 	if (obj != NULL)
         {
 	    obj->level = ch->tot_level;
-	    if (obj->item_type == ITEM_ARMOR)
+	    if (obj->item_type == ITEM_ARMOUR)
 	    {
-		set_armor_obj(obj);
+		set_armour_obj(obj);
 	    }
 
             act("$N gives $p to $n.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_ROOM);
@@ -471,8 +471,8 @@ void do_quest(CHAR_DATA *ch, char *argument)
 	act("$N chants a mantra over $p, then hands it back to $n.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 
 	obj->level = ch->tot_level;
-	if (obj->item_type == ITEM_ARMOR)
-	    set_armor_obj(obj);
+	if (obj->item_type == ITEM_ARMOUR)
+	    set_armour_obj(obj);
 
 	ch->questpoints -= cost;
 	return;
@@ -958,6 +958,7 @@ bool generate_quest_part(CHAR_DATA *ch, CHAR_DATA *questman, int partnum, OBJ_DA
 
 	    item = create_object(get_obj_index(quest_item_token_table[rand]),
 			    0, FALSE);
+	    item->owner = ch->name;
 	    part->pObj = item;
 
 	    if (questman->pIndexData->vnum == VNUM_QUESTOR_1)

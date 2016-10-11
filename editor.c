@@ -45,7 +45,7 @@ enum {
 	SYNTAX_COMMENT,
 };
 
-char *syntax_colors[] = {
+char *syntax_colours[] = {
 	CLEAR,
 	C_CYAN,
 	C_GREEN,

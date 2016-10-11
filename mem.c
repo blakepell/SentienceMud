@@ -490,7 +490,7 @@ CHAR_DATA *new_char( void )
     ch->logon                   = current_time;
     ch->lines                   = PAGELEN;
     for (i = 0; i < 4; i++)
-        ch->armor[i]            = 100;
+        ch->armour[i]            = 100;
     ch->position                = POS_STANDING;
     ch->hit                     = 20;
     ch->max_hit                 = 20;
@@ -1227,8 +1227,8 @@ CHURCH_DATA *new_church( void )
     pChurch->cpk_losses = 0;
     pChurch->wars_won = 0;
     pChurch->created = 0;
-    pChurch->color1 = 'C';
-    pChurch->color2 = 'B';
+    pChurch->colour1 = 'C';
+    pChurch->colour2 = 'B';
     pChurch->online_players = list_create(FALSE);
     pChurch->roster = list_create(FALSE);
 

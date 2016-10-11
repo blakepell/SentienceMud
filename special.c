@@ -414,7 +414,7 @@ bool spec_cast_adept( CHAR_DATA *ch )
     switch ( number_bits( 4 ) )
     {
     case 0:
-	sprintf( buf, "'armor' %s", victim->name );
+	sprintf( buf, "'armour' %s", victim->name );
 	do_function( ch, &do_cast, buf );
 	return TRUE;
 

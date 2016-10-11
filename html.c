@@ -65,7 +65,7 @@ BUFFER *get_churches_html()
     add_buf( output, "<table cellspacing=\"0\" cellpadding=\"0\" style=\"width: 100%; margin-top: 30px;\">" );
     add_buf( output, "<tr><td valign=\"top\">" );
     add_buf( output, "The following is a list of the Churches within Sentience:<br/>" );
-    add_buf( output, "<font color=\"#FF99CC\">(Churches are sorted by date first created)</font><br/><br/>" );
+    add_buf( output, "<font colour=\"#FF99CC\">(Churches are sorted by date first created)</font><br/><br/>" );
 
     // Table
     add_buf( output, "<table width=\"100%\" border=\"0\" style=\"padding: 15px; padding-top: 10px;\"> <tr> <td class=\"title\">Church Name&nbsp;</td> <td class=\"title\">Church Type&nbsp;</td> <td class=\"title\">Alignment&nbsp;</td> <td class=\"title\">Player Killer?&nbsp;</td> </tr>" );
@@ -137,52 +137,52 @@ char *format_and_colour_html( char *buf )
 	    switch( *a )
 	    {
 		case 'r' :
-		    skip = copy_in_colour_code( b, "<font color=\"990000\">" );
+		    skip = copy_in_colour_code( b, "<font colour=\"990000\">" );
 		    break;
 		case 'R' :
-		    skip = copy_in_colour_code( b, "<font color=\"FF0000\">" );
+		    skip = copy_in_colour_code( b, "<font colour=\"FF0000\">" );
 		    break;
 		case 'x' :
 		    skip = copy_in_colour_code( b, "</font>" );
 		    break;
 		case 'C' :
-		    skip = copy_in_colour_code( b, "<font color=\"6666FF\">" );
+		    skip = copy_in_colour_code( b, "<font colour=\"6666FF\">" );
 		    break;
 		case 'c' :
-		    skip = copy_in_colour_code( b, "<font color=\"33CCCC\">" );
+		    skip = copy_in_colour_code( b, "<font colour=\"33CCCC\">" );
 		    break;
 		case 'B' :
-		    skip = copy_in_colour_code( b, "<font color=\"0000FF\">" );
+		    skip = copy_in_colour_code( b, "<font colour=\"0000FF\">" );
 		    break;
 		case 'b' :
-		    skip = copy_in_colour_code( b, "<font color=\"003399\">" );
+		    skip = copy_in_colour_code( b, "<font colour=\"003399\">" );
 		    break;
 		case 'Y' :
-		    skip = copy_in_colour_code( b, "<font color=\"FFFF00\">" );
+		    skip = copy_in_colour_code( b, "<font colour=\"FFFF00\">" );
 		    break;
 		case 'y' :
-		    skip = copy_in_colour_code( b, "<font color=\"FFCC66\">" );
+		    skip = copy_in_colour_code( b, "<font colour=\"FFCC66\">" );
 		    break;
 		case 'W' :
-		    skip = copy_in_colour_code( b, "<font color=\"FFFFFF\">" );
+		    skip = copy_in_colour_code( b, "<font colour=\"FFFFFF\">" );
 		    break;
 		case 'w' :
-		    skip = copy_in_colour_code( b, "<font color=\"CCCCCC\">" );
+		    skip = copy_in_colour_code( b, "<font colour=\"CCCCCC\">" );
 		    break;
 		case 'G' :
-		    skip = copy_in_colour_code( b, "<font color=\"00FF00\">" );
+		    skip = copy_in_colour_code( b, "<font colour=\"00FF00\">" );
 		    break;
 		case 'g' :
-		    skip = copy_in_colour_code( b, "<font color=\"009966\">" );
+		    skip = copy_in_colour_code( b, "<font colour=\"009966\">" );
 		    break;
 		case 'M' :
-		    skip = copy_in_colour_code( b, "<font color=\"CC00FF\">" );
+		    skip = copy_in_colour_code( b, "<font colour=\"CC00FF\">" );
 		    break;
 		case 'm' :
-		    skip = copy_in_colour_code( b, "<font color=\"993399\">" );
+		    skip = copy_in_colour_code( b, "<font colour=\"993399\">" );
 		    break;
 		case 'D' :
-		    skip = copy_in_colour_code( b, "<font color=\"666666\">" );
+		    skip = copy_in_colour_code( b, "<font colour=\"666666\">" );
 		    break;
 		case '{' :
 		    skip = copy_in_colour_code( b, "{" );

@@ -340,7 +340,7 @@ void do_strike(CHAR_DATA *ch, char *argument)
     }
 
     /* Allow hammers to be used for instruments as well - Tieryo*/
-    if (obj_struck->item_type != ITEM_WEAPON && obj_struck->item_type != ITEM_ARMOR && obj_struck->item_type != ITEM_INSTRUMENT)
+    if (obj_struck->item_type != ITEM_WEAPON && obj_struck->item_type != ITEM_ARMOUR && obj_struck->item_type != ITEM_INSTRUMENT)
     {
 	send_to_char("This item can only be used on weapons and armour.\n\r", ch);
 	return;
@@ -444,7 +444,7 @@ void do_lore(CHAR_DATA *ch, char *argument)
     {
 	act("{R$N tells you, 'I've never heard of that type of item.'{x",
 	    ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
-	act("{R$N tells you, 'I mainly know about armor, weapons, ranged weapons, lights, containers, artifacts, and musical instruments.'{x", ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+	act("{R$N tells you, 'I mainly know about armour, weapons, ranged weapons, lights, containers, artifacts, and musical instruments.'{x", ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	return;
     }
 
@@ -506,7 +506,7 @@ void do_lore(CHAR_DATA *ch, char *argument)
 	|| !objIndex->area->open
 	|| !IS_SET(objIndex->wear_flags, ITEM_TAKE)
 	|| (objIndex->item_type != ITEM_WEAPON
-	     && objIndex->item_type != ITEM_ARMOR
+	     && objIndex->item_type != ITEM_ARMOUR
 	     && objIndex->item_type != ITEM_ARTIFACT
 	     && objIndex->item_type != ITEM_LIGHT
 	     && objIndex->item_type != ITEM_CONTAINER
@@ -544,7 +544,7 @@ void do_lore(CHAR_DATA *ch, char *argument)
 	    i + 1,
 	    sd,
 		aname,
-	    objIndex->item_type == ITEM_ARMOR ? "" : "a ",
+	    objIndex->item_type == ITEM_ARMOUR ? "" : "a ",
 	    objIndex->level,
 	    item_name(objIndex->item_type));
 	strcat(buf, buf2);

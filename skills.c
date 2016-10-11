@@ -954,7 +954,7 @@ void do_spells(CHAR_DATA *ch, char *argument)
 	char buf[MAX_STRING_LENGTH];
 	char arg[MSL];
 	int i;
-	char color, *name;
+	char colour, *name;
 	int skill, rating, mod, level;
 	SKILL_ENTRY *entry;
 
@@ -977,9 +977,9 @@ void do_spells(CHAR_DATA *ch, char *argument)
 			rating = skill_entry_rating(ch, entry);
 
 			if(rating < 0) {
-				color = ( IS_IMMORTAL(ch) && IS_VALID(entry->token) ) ? 'G' : 'Y';
+				colour = ( IS_IMMORTAL(ch) && IS_VALID(entry->token) ) ? 'G' : 'Y';
 
-				sprintf(buf, " %3d     ---       {%c%-26s    {D%d%%{x\n\r", i++, color, skill_entry_name(entry), -rating);
+				sprintf(buf, " %3d     ---       {%c%-26s    {D%d%%{x\n\r", i++, colour, skill_entry_name(entry), -rating);
 				add_buf(buffer,buf);
 				found = TRUE;
 			}
@@ -995,24 +995,24 @@ void do_spells(CHAR_DATA *ch, char *argument)
 
 			if( !arg[0] || !str_prefix(arg, name) ) {
 
-				color = ( IS_IMMORTAL(ch) && IS_VALID(entry->token) ) ? 'G' : 'Y';
+				colour = ( IS_IMMORTAL(ch) && IS_VALID(entry->token) ) ? 'G' : 'Y';
 
 				// Don't have it yet
 				if( level < 0 )
-					sprintf(buf, " %3d     %3d     %3d       {%c%-26s    {xN/A\n\r", i, -level, skill_table[entry->sn].min_mana, color, name);
+					sprintf(buf, " %3d     %3d     %3d       {%c%-26s    {xN/A\n\r", i, -level, skill_table[entry->sn].min_mana, colour, name);
 				else {
 					rating = skill + mod;
 					rating = URANGE(0,rating,100);
 
 					if( rating >= 100 ) {	// MASTER
 						if( mod )
-							sprintf(buf, " %3d     %3d     %3d       {%c%-26s    {MMaster {W(%+d%%){x\n\r", i, level, skill_table[entry->sn].min_mana, color, name, mod);
+							sprintf(buf, " %3d     %3d     %3d       {%c%-26s    {MMaster {W(%+d%%){x\n\r", i, level, skill_table[entry->sn].min_mana, colour, name, mod);
 						else
-							sprintf(buf, " %3d     %3d     %3d       {%c%-26s    {MMaster{x\n\r", i, level, skill_table[entry->sn].min_mana, color, name);
+							sprintf(buf, " %3d     %3d     %3d       {%c%-26s    {MMaster{x\n\r", i, level, skill_table[entry->sn].min_mana, colour, name);
 					} else if( mod )
-						sprintf(buf, " %3d     %3d     %3d       {%c%-26s    {G%d%% {W(%+d%%){x\n\r", i, level, skill_table[entry->sn].min_mana, color, name, rating, mod);
+						sprintf(buf, " %3d     %3d     %3d       {%c%-26s    {G%d%% {W(%+d%%){x\n\r", i, level, skill_table[entry->sn].min_mana, colour, name, rating, mod);
 					else
-						sprintf(buf, " %3d     %3d     %3d       {%c%-26s    {G%d%%{x\n\r", i, level, skill_table[entry->sn].min_mana,  color, name, rating);
+						sprintf(buf, " %3d     %3d     %3d       {%c%-26s    {G%d%%{x\n\r", i, level, skill_table[entry->sn].min_mana,  colour, name, rating);
 				}
 
 				add_buf(buffer,buf);
@@ -1039,7 +1039,7 @@ void do_skills(CHAR_DATA *ch, char *argument)
 	char buf[MAX_STRING_LENGTH];
 	char arg[MSL];
 	int i;
-	char color, *name;
+	char colour, *name;
 	int skill, rating, mod, level;
 	SKILL_ENTRY *entry;
 
@@ -1062,9 +1062,9 @@ void do_skills(CHAR_DATA *ch, char *argument)
 			rating = skill_entry_rating(ch, entry);
 
 			if(rating < 0) {
-				color = ( IS_IMMORTAL(ch) && IS_VALID(entry->token) ) ? 'G' : 'Y';
+				colour = ( IS_IMMORTAL(ch) && IS_VALID(entry->token) ) ? 'G' : 'Y';
 
-				sprintf(buf, " %3d     ---       {%c%-26s    {D%d%%{x\n\r", i++, color, skill_entry_name(entry), -rating);
+				sprintf(buf, " %3d     ---       {%c%-26s    {D%d%%{x\n\r", i++, colour, skill_entry_name(entry), -rating);
 				add_buf(buffer,buf);
 				found = TRUE;
 			}
@@ -1080,24 +1080,24 @@ void do_skills(CHAR_DATA *ch, char *argument)
 
 			if( !arg[0] || !str_prefix(arg, name) ) {
 
-				color = ( IS_IMMORTAL(ch) && IS_VALID(entry->token) ) ? 'G' : 'Y';
+				colour = ( IS_IMMORTAL(ch) && IS_VALID(entry->token) ) ? 'G' : 'Y';
 
 				// Don't have it yet
 				if( level < 0 )
-					sprintf(buf, " %3d     %3d       {%c%-26s    {xN/A\n\r", i, -level, color, name);
+					sprintf(buf, " %3d     %3d       {%c%-26s    {xN/A\n\r", i, -level, colour, name);
 				else {
 					rating = skill + mod;
 					rating = URANGE(0,rating,100);
 
 					if( rating >= 100 ) {	// MASTER
 						if( mod )
-							sprintf(buf, " %3d     %3d       {%c%-26s    {MMaster {W(%+d%%){x\n\r", i, level, color, name, mod);
+							sprintf(buf, " %3d     %3d       {%c%-26s    {MMaster {W(%+d%%){x\n\r", i, level, colour, name, mod);
 						else
-							sprintf(buf, " %3d     %3d       {%c%-26s    {MMaster{x\n\r", i, level, color, name);
+							sprintf(buf, " %3d     %3d       {%c%-26s    {MMaster{x\n\r", i, level, colour, name);
 					} else if( mod )
-						sprintf(buf, " %3d     %3d       {%c%-26s    {G%d%% {W(%+d%%){x\n\r", i, level, color, name, rating, mod);
+						sprintf(buf, " %3d     %3d       {%c%-26s    {G%d%% {W(%+d%%){x\n\r", i, level, colour, name, rating, mod);
 					else
-						sprintf(buf, " %3d     %3d       {%c%-26s    {G%d%%{x\n\r", i, level, color, name, rating);
+						sprintf(buf, " %3d     %3d       {%c%-26s    {G%d%%{x\n\r", i, level, colour, name, rating);
 				}
 
 				add_buf(buffer,buf);
@@ -2076,4 +2076,3 @@ int skill_entry_level (CHAR_DATA *ch, SKILL_ENTRY *entry)
 	} else
 		return 0;
 }
-

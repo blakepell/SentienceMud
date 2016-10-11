@@ -6,7 +6,7 @@
  * Additional contributions by Rogel, Copyright ©2004
  * Additional contributions by MTFox, multiconnection added Copyright ©2008
  * Additional contributions by Madison Koenig (Pedlar, Syxx), Copyright (C) 2008.
- * Added in Channel Separator for Color code issues, and customization.
+ * Added in Channel Separator for Colour code issues, and customization.
  * Comments and suggestions welcome: http://www.mudbytes.net/imc2-support-forum
  * License terms are available in the imc2freedom.license file.
  */
@@ -124,8 +124,8 @@ IMC_BAN *first_imc_ban;
 IMC_BAN *last_imc_ban;
 IMCUCACHE_DATA *first_imcucache;
 IMCUCACHE_DATA *last_imcucache;
-IMC_COLOR *first_imc_color;
-IMC_COLOR *last_imc_color;
+IMC_COLOUR *first_imc_colour;
+IMC_COLOUR *last_imc_colour;
 IMC_CMD_DATA *first_imc_command;
 IMC_CMD_DATA *last_imc_command;
 IMC_HELP_DATA *first_imc_help;
@@ -385,55 +385,55 @@ char *imcone_argument( char *argument, char *arg_first )
  * User level output functions. *
  *******************************/
 
-char *imc_strip_colors( const char *txt )
+char *imc_strip_colours( const char *txt )
 {
-   IMC_COLOR *color;
+   IMC_COLOUR *colour;
    static char tbuf[LGST];
 
    imcstrlcpy( tbuf, txt, LGST );
-   for( color = first_imc_color; color; color = color->next )
-      imcstrlcpy( tbuf, imcstrrep( tbuf, color->imctag, "" ), LGST );
+   for( colour = first_imc_colour; colour; colour = colour->next )
+      imcstrlcpy( tbuf, imcstrrep( tbuf, colour->imctag, "" ), LGST );
 
-   for( color = first_imc_color; color; color = color->next )
-      imcstrlcpy( tbuf, imcstrrep( tbuf, color->mudtag, "" ), LGST );
+   for( colour = first_imc_colour; colour; colour = colour->next )
+      imcstrlcpy( tbuf, imcstrrep( tbuf, colour->mudtag, "" ), LGST );
    return tbuf;
 }
 
 /* Now tell me this isn't cleaner than the mess that was here before. -- Xorith */
 /* Yes, Xorith it is. Now, how about this update? Much less hassle with no hardcoded table! -- Samson */
-/* convert from imc color -> mud color */
-const char *color_itom( const char *txt, CHAR_DATA * ch )
+/* convert from imc colour -> mud colour */
+const char *colour_itom( const char *txt, CHAR_DATA * ch )
 {
-   IMC_COLOR *color;
+   IMC_COLOUR *colour;
    static char tbuf[LGST];
 
    if( !txt || *txt == '\0' )
       return "";
 
-   if( IMCIS_SET( IMCFLAG( ch ), IMC_COLORFLAG ) )
+   if( IMCIS_SET( IMCFLAG( ch ), IMC_COLOURFLAG ) )
    {
       imcstrlcpy( tbuf, txt, LGST );
-      for( color = first_imc_color; color; color = color->next )
-         imcstrlcpy( tbuf, imcstrrep( tbuf, color->imctag, color->mudtag ), LGST );
+      for( colour = first_imc_colour; colour; colour = colour->next )
+         imcstrlcpy( tbuf, imcstrrep( tbuf, colour->imctag, colour->mudtag ), LGST );
    }
    else
-      imcstrlcpy( tbuf, imc_strip_colors( txt ), LGST );
+      imcstrlcpy( tbuf, imc_strip_colours( txt ), LGST );
 
    return tbuf;
 }
 
-/* convert from mud color -> imc color */
-const char *color_mtoi( const char *txt )
+/* convert from mud colour -> imc colour */
+const char *colour_mtoi( const char *txt )
 {
-   IMC_COLOR *color;
+   IMC_COLOUR *colour;
    static char tbuf[LGST];
 
    if( !txt || *txt == '\0' )
       return "";
 
    imcstrlcpy( tbuf, txt, LGST );
-   for( color = first_imc_color; color; color = color->next )
-      imcstrlcpy( tbuf, imcstrrep( tbuf, color->mudtag, color->imctag ), LGST );
+   for( colour = first_imc_colour; colour; colour = colour->next )
+      imcstrlcpy( tbuf, imcstrrep( tbuf, colour->mudtag, colour->imctag ), LGST );
 
    return tbuf;
 }
@@ -443,9 +443,9 @@ void imc_to_char( const char *txt, CHAR_DATA * ch )
 {
    char buf[LGST * 2];
 
-   snprintf( buf, LGST * 2, "%s\033[0m", color_itom( txt, ch ) );
+   snprintf( buf, LGST * 2, "%s\033[0m", colour_itom( txt, ch ) );
 #if defined(IMCSMAUG)
-   send_to_char_color( buf, ch );
+   send_to_char_colour( buf, ch );
 #elif defined(IMCCIRCLE)
  #if _CIRCLEMUD < CIRCLEMUD_VERSION(3,0,21)
    send_to_char( buf, ch );
@@ -461,7 +461,7 @@ void imc_to_char( const char *txt, CHAR_DATA * ch )
 #endif
 }
 
-/* Modified version of Smaug's ch_printf_color function */
+/* Modified version of Smaug's ch_printf_colour function */
 void imc_printf( CHAR_DATA * ch, const char *fmt, ... )
 {
    char buf[LGST];
@@ -479,9 +479,9 @@ void imc_to_pager( const char *txt, CHAR_DATA * ch )
 {
    char buf[LGST * 2];
 
-   snprintf( buf, LGST * 2, "%s\033[0m", color_itom( txt, ch ) );
+   snprintf( buf, LGST * 2, "%s\033[0m", colour_itom( txt, ch ) );
 #if defined(IMCSMAUG) || defined(IMCCHRONICLES)
-   send_to_pager_color( buf, ch );
+   send_to_pager_colour( buf, ch );
 #elif defined(IMCROM)
    page_to_char( buf, ch );
 #elif defined(IMC1STMUD)
@@ -1839,7 +1839,7 @@ void update_imchistory( IMC_CHANNEL * channel, char *message )
             }
             else
             {
-               fprintf( fp, "%s\n", imc_strip_colors( channel->history[x] ) );
+               fprintf( fp, "%s\n", imc_strip_colours( channel->history[x] ) );
                IMCFCLOSE( fp );
             }
          }
@@ -1878,7 +1878,7 @@ void update_imchistory( IMC_CHANNEL * channel, char *message )
             }
             else
             {
-               fprintf( fp, "%s\n", imc_strip_colors( channel->history[x] ) );
+               fprintf( fp, "%s\n", imc_strip_colours( channel->history[x] ) );
                IMCFCLOSE( fp );
             }
          }
@@ -2202,7 +2202,7 @@ char *imccenterline( const char *string, int length )
    static char outbuf[400];
    int amount;
 
-   imcstrlcpy( stripped, imc_strip_colors( string ), 300 );
+   imcstrlcpy( stripped, imc_strip_colours( string ), 300 );
    amount = length - strlen( stripped );  /* Determine amount to put in front of line */
 
    if( amount < 1 )
@@ -2226,14 +2226,14 @@ char *imcrankbuffer( CHAR_DATA * ch )
       imcstrlcpy( rbuf, "~YStaff", SMST );
 
       if( CH_IMCRANK( ch ) && CH_IMCRANK( ch )[0] != '\0' )
-         snprintf( rbuf, SMST, "~Y%s", color_mtoi( CH_IMCRANK( ch ) ) );
+         snprintf( rbuf, SMST, "~Y%s", colour_mtoi( CH_IMCRANK( ch ) ) );
    }
    else
    {
       imcstrlcpy( rbuf, "~BPlayer", SMST );
 
       if( CH_IMCRANK( ch ) && CH_IMCRANK( ch )[0] != '\0' )
-         snprintf( rbuf, SMST, "~B%s", color_mtoi( CH_IMCRANK( ch ) ) );
+         snprintf( rbuf, SMST, "~B%s", colour_mtoi( CH_IMCRANK( ch ) ) );
    }
    return rbuf;
 }
@@ -2437,7 +2437,7 @@ char *imc_assemble_who( void )
             imcstrlcpy( flags, "---", SMST );
 
          imcstrlcpy( name, CH_IMCNAME( person ), SMST );
-         imcstrlcpy( title, color_mtoi( CH_IMCTITLE( person ) ), SMST );
+         imcstrlcpy( title, colour_mtoi( CH_IMCTITLE( person ) ), SMST );
          imcstrlcpy( plrline, process_plrline( rank, flags, name, title ), SMST );
          imcstrlcat( plrlines, plrline, LGST );
       }
@@ -2472,7 +2472,7 @@ char *imc_assemble_who( void )
             imcstrlcpy( flags, "---", SMST );
 
          imcstrlcpy( name, CH_IMCNAME( person ), SMST );
-         imcstrlcpy( title, color_mtoi( CH_IMCTITLE( person ) ), SMST );
+         imcstrlcpy( title, colour_mtoi( CH_IMCTITLE( person ) ), SMST );
          imcstrlcpy( immline, process_immline( rank, flags, name, title ), SMST );
          imcstrlcat( immlines, immline, LGST );
       }
@@ -4032,7 +4032,7 @@ void imc_initchar( CHAR_DATA * ch )
    IMC_MSN( ch ) = NULL;
    IMC_COMMENT( ch ) = NULL;
    IMCFLAG( ch ) = 0;
-   IMCSET_BIT( IMCFLAG( ch ), IMC_COLORFLAG );
+   IMCSET_BIT( IMCFLAG( ch ), IMC_COLOURFLAG );
    FIRST_IMCIGNORE( ch ) = NULL;
    LAST_IMCIGNORE( ch ) = NULL;
    IMCPERM( ch ) = IMCPERM_NOTSET;
@@ -4320,30 +4320,30 @@ void imc_readbans( void )
    IMCFCLOSE( inf );
 }
 
-void imc_savecolor( void )
+void imc_savecolour( void )
 {
    FILE *fp;
-   IMC_COLOR *color;
+   IMC_COLOUR *colour;
 
-   if( !( fp = fopen( IMC_COLOR_FILE, "w" ) ) )
+   if( !( fp = fopen( IMC_COLOUR_FILE, "w" ) ) )
    {
-      imclog( "%s", "Couldn't write to IMC2 color file." );
+      imclog( "%s", "Couldn't write to IMC2 colour file." );
       return;
    }
 
-   for( color = first_imc_color; color; color = color->next )
+   for( colour = first_imc_colour; colour; colour = colour->next )
    {
-      fprintf( fp, "%s", "#COLOR\n" );
-      fprintf( fp, "Name   %s\n", color->name );
-      fprintf( fp, "Mudtag %s\n", color->mudtag );
-      fprintf( fp, "IMCtag %s\n", color->imctag );
+      fprintf( fp, "%s", "#COLOUR\n" );
+      fprintf( fp, "Name   %s\n", colour->name );
+      fprintf( fp, "Mudtag %s\n", colour->mudtag );
+      fprintf( fp, "IMCtag %s\n", colour->imctag );
       fprintf( fp, "%s", "End\n\n" );
    }
    fprintf( fp, "%s", "#END\n" );
    IMCFCLOSE( fp );
 }
 
-void imc_readcolor( IMC_COLOR * color, FILE * fp )
+void imc_readcolour( IMC_COLOUR * colour, FILE * fp )
 {
    const char *word;
    bool fMatch;
@@ -4366,34 +4366,34 @@ void imc_readcolor( IMC_COLOR * color, FILE * fp )
             break;
 
          case 'I':
-            IMCKEY( "IMCtag", color->imctag, imcfread_line( fp ) );
+            IMCKEY( "IMCtag", colour->imctag, imcfread_line( fp ) );
             break;
 
          case 'M':
-            IMCKEY( "Mudtag", color->mudtag, imcfread_line( fp ) );
+            IMCKEY( "Mudtag", colour->mudtag, imcfread_line( fp ) );
             break;
 
          case 'N':
-            IMCKEY( "Name", color->name, imcfread_line( fp ) );
+            IMCKEY( "Name", colour->name, imcfread_line( fp ) );
             break;
       }
       if( !fMatch )
-         imcbug( "imc_readcolor: no match: %s", word );
+         imcbug( "imc_readcolour: no match: %s", word );
    }
 }
 
-void imc_load_color_table( void )
+void imc_load_colour_table( void )
 {
    FILE *fp;
-   IMC_COLOR *color;
+   IMC_COLOUR *colour;
 
-   first_imc_color = last_imc_color = NULL;
+   first_imc_colour = last_imc_colour = NULL;
 
-   imclog( "%s", "Loading IMC2 color table..." );
+   imclog( "%s", "Loading IMC2 colour table..." );
 
-   if( !( fp = fopen( IMC_COLOR_FILE, "r" ) ) )
+   if( !( fp = fopen( IMC_COLOUR_FILE, "r" ) ) )
    {
-      imclog( "%s", "No color table found." );
+      imclog( "%s", "No colour table found." );
       return;
    }
 
@@ -4411,23 +4411,23 @@ void imc_load_color_table( void )
 
       if( letter != '#' )
       {
-         imcbug( "%s", "imc_load_color_table: # not found." );
+         imcbug( "%s", "imc_load_colour_table: # not found." );
          break;
       }
 
       word = imcfread_word( fp );
-      if( !strcasecmp( word, "COLOR" ) )
+      if( !strcasecmp( word, "COLOUR" ) )
       {
-         IMCCREATE( color, IMC_COLOR, 1 );
-         imc_readcolor( color, fp );
-         IMCLINK( color, first_imc_color, last_imc_color, next, prev );
+         IMCCREATE( colour, IMC_COLOUR, 1 );
+         imc_readcolour( colour, fp );
+         IMCLINK( colour, first_imc_colour, last_imc_colour, next, prev );
          continue;
       }
       else if( !strcasecmp( word, "END" ) )
          break;
       else
       {
-         imcbug( "imc_load_color_table: bad section: %s.", word );
+         imcbug( "imc_load_colour_table: bad section: %s.", word );
          continue;
       }
    }
@@ -5527,7 +5527,7 @@ void free_imcdata( bool complete )
    IMC_CMD_DATA *cmd, *cmd_next;
    IMC_ALIAS *alias, *alias_next;
    IMC_HELP_DATA *help, *help_next;
-   IMC_COLOR *color, *color_next;
+   IMC_COLOUR *colour, *colour_next;
    IMC_PHANDLER *ph, *ph_next;
    IMC_CHANNEL *c, *c_next;
    SERVER_DATA *server, *next_server;
@@ -5591,14 +5591,14 @@ void free_imcdata( bool complete )
          IMCDISPOSE( help );
       }
 
-      for( color = first_imc_color; color; color = color_next )
+      for( colour = first_imc_colour; colour; colour = colour_next )
       {
-         color_next = color->next;
-         IMCSTRFREE( color->name );
-         IMCSTRFREE( color->mudtag );
-         IMCSTRFREE( color->imctag );
-         IMCUNLINK( color, first_imc_color, last_imc_color, next, prev );
-         IMCDISPOSE( color );
+         colour_next = colour->next;
+         IMCSTRFREE( colour->name );
+         IMCSTRFREE( colour->mudtag );
+         IMCSTRFREE( colour->imctag );
+         IMCUNLINK( colour, first_imc_colour, last_imc_colour, next, prev );
+         IMCDISPOSE( colour );
       }
 
       for( ph = first_phandler; ph; ph = ph_next )
@@ -5764,10 +5764,10 @@ if (imc_is_connected( ) == FALSE)
       imc_load_helps(  );
 
    /*
-    * ... as should the color table.
+    * ... as should the colour table.
     */
-   if( first_imc_color == NULL )
-      imc_load_color_table(  );
+   if( first_imc_colour == NULL )
+      imc_load_colour_table(  );
 
    /*
     * ... and the templates. Checks for whot being defined, but the others are loaded here to, so....
@@ -6159,7 +6159,7 @@ IMC_CMD( imcchanlist )
 {
    IMC_CHANNEL *c = NULL;
    int count = 0; /* Count -- Xorith */
-   char col = 'C';   /* Listening Color -- Xorith */
+   char col = 'C';   /* Listening Colour -- Xorith */
 
    if( !first_imc_channel )
    {
@@ -6199,7 +6199,7 @@ IMC_CMD( imcchanlist )
          continue;
 
       /*
-       * If it's locally configured and we're not listening, then color it red -- Xorith
+       * If it's locally configured and we're not listening, then colour it red -- Xorith
        */
       if( c->local_name )
       {
@@ -6216,7 +6216,7 @@ IMC_CMD( imcchanlist )
       count++; /* Keep a count -- Xorith */
    }
    /*
-    * Show the count and a bit of text explaining the red color -- Xorith
+    * Show the count and a bit of text explaining the red colour -- Xorith
     */
    imc_printf( ch, "\r\n~W%d ~cchannels found.", count );
    imc_to_char( "\r\n~RRed ~clocal name indicates a channel not being listened to.\r\n", ch );
@@ -6374,12 +6374,12 @@ IMC_CMD( imctell )
       argument++;
       while( isspace( *argument ) )
          argument++;
-      imc_send_tell( CH_IMCNAME( ch ), fix_sending( buf ), color_mtoi( argument ), 1 );
+      imc_send_tell( CH_IMCNAME( ch ), fix_sending( buf ), colour_mtoi( argument ), 1 );
       snprintf( buf1, LGST, "~WImctell: ~c%s %s\r\n", buf, argument );
    }
    else
    {
-      imc_send_tell( CH_IMCNAME( ch ), fix_sending( buf ), color_mtoi( argument ), 0 );
+      imc_send_tell( CH_IMCNAME( ch ), fix_sending( buf ), colour_mtoi( argument ), 0 );
       snprintf( buf1, LGST, "~cYou imctell ~C%s ~c'~W%s~c'\r\n", buf, argument );
    }
    imc_to_char( buf1, ch );
@@ -6453,12 +6453,12 @@ IMC_CMD( imcreply )
       argument++;
       while( isspace( *argument ) )
          argument++;
-      imc_send_tell( CH_IMCNAME( ch ), IMC_RREPLY( ch ), color_mtoi( argument ), 1 );
+      imc_send_tell( CH_IMCNAME( ch ), IMC_RREPLY( ch ), colour_mtoi( argument ), 1 );
       snprintf( buf1, LGST, "~WImctell: ~c%s %s\r\n", fix_sender(IMC_RREPLY( ch )), argument );
    }
    else
    {
-      imc_send_tell( CH_IMCNAME( ch ), IMC_RREPLY( ch ), color_mtoi( argument ), 0 );
+      imc_send_tell( CH_IMCNAME( ch ), IMC_RREPLY( ch ), colour_mtoi( argument ), 0 );
       snprintf( buf1, LGST, "~cYou imctell ~C%s ~c'~W%s~c'\r\n", fix_sender(IMC_RREPLY( ch )), argument );
    }
    imc_to_char( buf1, ch );
@@ -7636,16 +7636,16 @@ IMC_CMD( imchelp )
    imc_printf( ch, "~gNo help exists for topic ~W%s~g.\r\n", argument );
 }
 
-IMC_CMD( imccolor )
+IMC_CMD( imccolour )
 {
-   if( IMCIS_SET( IMCFLAG( ch ), IMC_COLORFLAG ) )
+   if( IMCIS_SET( IMCFLAG( ch ), IMC_COLOURFLAG ) )
    {
-      IMCREMOVE_BIT( IMCFLAG( ch ), IMC_COLORFLAG );
-      imc_to_char( "IMC2 color is now off.\r\n", ch );
+      IMCREMOVE_BIT( IMCFLAG( ch ), IMC_COLOURFLAG );
+      imc_to_char( "IMC2 colour is now off.\r\n", ch );
    }
    else
    {
-      IMCSET_BIT( IMCFLAG( ch ), IMC_COLORFLAG );
+      IMCSET_BIT( IMCFLAG( ch ), IMC_COLOURFLAG );
       imc_to_char( "~RIMC2 c~Yo~Gl~Bo~Pr ~Ris now on. Enjoy :)\r\n", ch );
    }
 }
@@ -8431,7 +8431,7 @@ const char *imc_send_social( CHAR_DATA * ch, char *argument, int telloption )
    imcstrlcpy( msg, ( char * )imc_act_string( socbuf, ch, skeleton ), LGST );
    if( skeleton )
       imc_purge_skeleton( skeleton );
-   return ( color_mtoi( msg ) );
+   return ( colour_mtoi( msg ) );
 }
 #endif /* IMCSTANDALONE */
 
@@ -8463,8 +8463,8 @@ const char *imc_funcname( IMC_FUN * func )
       return ( "imcfinger" );
    if( func == imcinfo )
       return ( "imcinfo" );
-   if( func == imccolor )
-      return ( "imccolor" );
+   if( func == imccolour )
+      return ( "imccolour" );
    if( func == imcafk )
       return ( "imcafk" );
    if( func == imcchanwho )
@@ -8536,8 +8536,8 @@ IMC_FUN *imc_function( const char *func )
       return imcfinger;
    if( !strcasecmp( func, "imcinfo" ) )
       return imcinfo;
-   if( !strcasecmp( func, "imccolor" ) )
-      return imccolor;
+   if( !strcasecmp( func, "imccolour" ) )
+      return imccolour;
    if( !strcasecmp( func, "imcafk" ) )
       return imcafk;
    if( !strcasecmp( func, "imcchanwho" ) )
@@ -8723,7 +8723,7 @@ bool imc_command_hook( CHAR_DATA * ch, const char *command, char *argument )
          argument++;
          while( isspace( *argument ) )
             argument++;
-         imc_sendmessage( c, CH_IMCNAME( ch ), color_mtoi( argument ), 1 );
+         imc_sendmessage( c, CH_IMCNAME( ch ), colour_mtoi( argument ), 1 );
          break;
       case '@':
          /*
@@ -8738,7 +8738,7 @@ bool imc_command_hook( CHAR_DATA * ch, const char *command, char *argument )
          imc_sendmessage( c, CH_IMCNAME( ch ), p, 2 );
          break;
       default:
-         imc_sendmessage( c, CH_IMCNAME( ch ), color_mtoi( argument ), 0 );
+         imc_sendmessage( c, CH_IMCNAME( ch ), colour_mtoi( argument ), 0 );
          break;
    }
    return TRUE;

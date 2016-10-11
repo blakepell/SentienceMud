@@ -616,13 +616,13 @@ const struct string_type fragile_table[] =
 };
 
 
-const struct flag_type armor_strength_table[] =
+const struct flag_type armour_strength_table[] =
 {
-    {	"None",		OBJ_ARMOR_NOSTRENGTH,	TRUE   	},
-    {   "Light",	OBJ_ARMOR_LIGHT,   TRUE  	},
-    {   "Medium",	OBJ_ARMOR_MEDIUM,   TRUE    	},
-    {   "Strong",	OBJ_ARMOR_STRONG,   TRUE  	},
-    {   "Heavy",	OBJ_ARMOR_HEAVY,   TRUE 	},
+    {	"None",		OBJ_ARMOUR_NOSTRENGTH,	TRUE   	},
+    {   "Light",	OBJ_ARMOUR_LIGHT,   TRUE  	},
+    {   "Medium",	OBJ_ARMOUR_MEDIUM,   TRUE    	},
+    {   "Strong",	OBJ_ARMOUR_STRONG,   TRUE  	},
+    {   "Heavy",	OBJ_ARMOUR_HEAVY,   TRUE 	},
     {	NULL, 0, FALSE }
 };
 
@@ -1148,7 +1148,7 @@ const struct flag_type type_flags[] =
     {	"staff",		ITEM_STAFF,		TRUE	},
     {	"weapon",		ITEM_WEAPON,		TRUE	},
     {	"treasure",		ITEM_TREASURE,		TRUE	},
-    {	"armor",		ITEM_ARMOR,		TRUE	},
+    {	"armour",		ITEM_ARMOUR,		TRUE	},
     {	"potion",		ITEM_POTION,		TRUE	},
     {	"furniture",		ITEM_FURNITURE,		TRUE	},
     {	"trash",		ITEM_TRASH,		TRUE	},

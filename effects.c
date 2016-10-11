@@ -82,7 +82,7 @@ void acid_effect(void *vo, int level, int dam, int target)
 	    case ITEM_CORPSE_NPC:
 		msg = "$p fumes and dissolves.";
 		break;
-	    case ITEM_ARMOR:
+	    case ITEM_ARMOUR:
 		msg = "$p is pitted and etched.";
 		break;
 	    case ITEM_CLOTHING:
@@ -109,14 +109,14 @@ void acid_effect(void *vo, int level, int dam, int target)
 	else if (obj->in_room != NULL && obj->in_room->people != NULL)
 	    act(msg,obj->in_room->people, NULL, NULL,obj, NULL, NULL,NULL,TO_ALL);
 
-	if (obj->item_type == ITEM_ARMOR)  /* etch it */
+	if (obj->item_type == ITEM_ARMOUR)  /* etch it */
 	{
 	    int i;
 
             if (obj->carried_by != NULL && obj->wear_loc != WEAR_NONE)
 	    {
                 for (i = 0; i < 4; i++)
-                    obj->carried_by->armor[i] += 1;
+                    obj->carried_by->armour[i] += 1;
 
 		if ( obj->condition >= 2 )
 		{

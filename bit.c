@@ -254,7 +254,7 @@ char *affect_loc_name( int location )
 	case APPLY_HIT:			return "hp";
 	case APPLY_MOVE:		return "moves";
 	case APPLY_GOLD:		return "gold";
-	case APPLY_AC:			return "armor class";
+	case APPLY_AC:			return "armour class";
 	case APPLY_HITROLL:		return "hit roll";
 	case APPLY_DAMROLL:		return "damage roll";
 	case APPLY_SPELL_AFFECT:	return "none";
