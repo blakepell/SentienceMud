@@ -958,6 +958,7 @@ bool generate_quest_part(CHAR_DATA *ch, CHAR_DATA *questman, int partnum, OBJ_DA
 
 	    item = create_object(get_obj_index(quest_item_token_table[rand]),
 			    0, FALSE);
+	    item->owner = ch->name;
 	    part->pObj = item;
 
 	    if (questman->pIndexData->vnum == VNUM_QUESTOR_1)
