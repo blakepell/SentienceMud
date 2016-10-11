@@ -2076,4 +2076,3 @@ int skill_entry_level (CHAR_DATA *ch, SKILL_ENTRY *entry)
 	} else
 		return 0;
 }
-
