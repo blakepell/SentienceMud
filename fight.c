@@ -48,9 +48,20 @@
 #define MAX_BACKSTAB_DAMAGE 15000
 #define MAX_FLEE_ATTEMPTS 10
 
+void char_id(CHAR_DATA *ch, long *id)
+{
+	id[0] = ch->id[0];
+	id[1] = ch->id[1];
+}
+
 bool is_combatant_valid(CHAR_DATA *ch, long id1, long id2)
 {
 	return IS_VALID(ch) && (ch->id[0] == id1) && (ch->id[1] == id2);
+}
+
+bool is_char_stillvalid(CHAR_DATA *ch, long *id)
+{
+	return IS_VALID(ch) && (ch->id[0] == id[0]) && (ch->id[1] == id[1]);
 }
 
 /*
@@ -1473,7 +1484,7 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 				} else
 					victim->hit_damage = 0;
 
-				if(is_combatant_valid(victim, vid[0], vid[1]) && is_combatant_valid(ch, cid[0], cid[1])
+				if(is_combatant_valid(victim, vid[0], vid[1]) && is_combatant_valid(ch, cid[0], cid[1]))
 					p_percent_trigger(victim,NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_BARRIER,"electrical post");
 			}
 		}
@@ -1503,7 +1514,7 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 				} else
 					victim->hit_damage = 0;
 
-				if(is_combatant_valid(victim, vid[0], vid[1]) && is_combatant_valid(ch, cid[0], cid[1])
+				if(is_combatant_valid(victim, vid[0], vid[1]) && is_combatant_valid(ch, cid[0], cid[1]))
 					p_percent_trigger(victim,NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_BARRIER,"fire post");
 			}
 		}
@@ -1533,7 +1544,7 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 				} else
 					victim->hit_damage = 0;
 
-				if(is_combatant_valid(victim, vid[0], vid[1]) && is_combatant_valid(ch, cid[0], cid[1])
+				if(is_combatant_valid(victim, vid[0], vid[1]) && is_combatant_valid(ch, cid[0], cid[1]))
 					p_percent_trigger(victim,NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_BARRIER,"frost post");
 			}
 		}
@@ -5237,6 +5248,11 @@ void do_dirt(CHAR_DATA *ch, char *argument)
 
 		p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_DIRTKICK,"attack_pass");
 	} else {
+		long cid[2], vid[2];
+
+		char_id(ch, cid);
+		char_id(victim, vid);
+
 		if (number_percent() < 5) {
 			AFFECT_DATA af;
 			memset(&af,0,sizeof(af));
@@ -5262,9 +5278,14 @@ void do_dirt(CHAR_DATA *ch, char *argument)
 		}
 
 		damage(ch,victim,0,gsn_dirt,DAM_NONE,TRUE);
-		check_improve(ch,gsn_dirt,FALSE,2);
-		WAIT_STATE(ch,skill_table[gsn_dirt].beats);
-		p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_DIRTKICK,"attack_fail");
+		if( is_char_stillvalid(ch, cid) )
+		{
+			check_improve(ch,gsn_dirt,FALSE,2);
+			WAIT_STATE(ch,skill_table[gsn_dirt].beats);
+
+			if( is_char_stillvalid(victim, vid) )
+				p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_DIRTKICK,"attack_fail");
+		}
 	}
 }
 
@@ -5705,6 +5726,7 @@ void do_blackjack(CHAR_DATA *ch, char *argument)
 	CHAR_DATA *victim;
 	OBJ_DATA *helmet, *weapon;
 	int chance, skill;
+	long cid[2], vid[2];
 
 	one_argument(argument, arg);
 
@@ -5758,6 +5780,9 @@ void do_blackjack(CHAR_DATA *ch, char *argument)
 		return;
 	}
 
+	char_id(ch, cid);
+	char_id(victim, vid);
+
 	// Make sure victim doesn't have a super strong helmet
 	helmet = get_eq_char(victim, WEAR_HEAD);
 	if (helmet && IS_SET(helmet->extra2_flags, ITEM_SUPER_STRONG)) {
@@ -5765,7 +5790,8 @@ void do_blackjack(CHAR_DATA *ch, char *argument)
 		act("Your weapon bounces off $N's strong helmet!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		act("Your helmet protects you from $n's blackjack!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
 		multi_hit(victim, ch, TYPE_UNDEFINED);
-		WAIT_STATE(ch, skill_table[gsn_blackjack].beats);
+		if( is_char_stillvalid(ch, cid) )
+			WAIT_STATE(ch, skill_table[gsn_blackjack].beats);
 		return;
 	}
 
@@ -5774,7 +5800,8 @@ void do_blackjack(CHAR_DATA *ch, char *argument)
 		act("Shrouded in your relaxed state of mind, you catch $n attempt to blackjack you!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
 		act("While in $S relaxed state, $N notices $n's attempted blackjack!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
 		multi_hit(victim, ch, TYPE_UNDEFINED);
-		WAIT_STATE(ch, skill_table[gsn_blackjack].beats);
+		if( is_char_stillvalid(ch, cid) )
+			WAIT_STATE(ch, skill_table[gsn_blackjack].beats);
 		return;
 	}
 
@@ -5795,7 +5822,8 @@ void do_blackjack(CHAR_DATA *ch, char *argument)
 			act("{R$n notices $N sneaking around and kicks $M with $s hind legs!{x", mount, ch, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
 			act("{R$n notices you sneaking around and kicks you with $s hind legs!{x", mount, ch, NULL, NULL, NULL, NULL, NULL, TO_VICT);
 			damage(mount, ch, dam, gsn_kick, DAM_BASH, TRUE);
-			check_improve(victim, gsn_riding, TRUE, 10);
+			if( is_char_stillvalid(victim, vid) )
+				check_improve(victim, gsn_riding, TRUE, 10);
 			return;
 		}
 	}
@@ -5870,7 +5898,8 @@ void do_blackjack(CHAR_DATA *ch, char *argument)
 			multi_hit(victim, ch, TYPE_UNDEFINED);
 		}
 	}
-	WAIT_STATE(ch, skill_table[gsn_blackjack].beats);
+	if( is_char_stillvalid(ch, cid) )
+		WAIT_STATE(ch, skill_table[gsn_blackjack].beats);
 }
 
 
@@ -6148,6 +6177,7 @@ void do_tail_kick(CHAR_DATA *ch, char *argument)
 	CHAR_DATA *victim;
 	int this_class, chance, dam;
 	char arg[MAX_INPUT_LENGTH];
+	long cid[2], vid[2];
 
 	argument = one_argument(argument, arg);
 
@@ -6186,22 +6216,32 @@ void do_tail_kick(CHAR_DATA *ch, char *argument)
 		return;
 
 	WAIT_STATE(ch, skill_table[gsn_tail_kick].beats);
+	char_id(ch, cid);
+	char_id(victim, vid);
+
 	if (chance > number_percent()) {
 		victim->hit_damage = number_range(ch->tot_level/2, ch->tot_level)*3;
 		p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_TAILKICK,"damage");
 		dam = victim->hit_damage;
 		victim->hit_damage = 0;
 		damage(ch,victim, dam, gsn_tail_kick,DAM_BASH,TRUE);
-		check_improve(ch,gsn_tail_kick,TRUE,1);
+		if(is_char_stillvalid(ch, cid)) {
+			check_improve(ch,gsn_tail_kick,TRUE,1);
 
-
-		p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_TAILKICK,"attack_pass");
-		p_percent_trigger(ch,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_TAILKICK,"attack_pass");
+			if(is_char_stillvalid(victim, vid)) {
+				p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_TAILKICK,"attack_pass");
+				p_percent_trigger(ch,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_TAILKICK,"attack_pass");
+			}
+		}
 	} else {
 		damage(ch, victim, 0, gsn_tail_kick,DAM_BASH,TRUE);
-		check_improve(ch,gsn_tail_kick,FALSE,1);
-		p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_TAILKICK,"attack_fail");
-		p_percent_trigger(ch,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_TAILKICK,"attack_fail");
+		if(is_char_stillvalid(ch, cid)) {
+			check_improve(ch,gsn_tail_kick,FALSE,1);
+			if(is_char_stillvalid(victim, vid)) {
+				p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_TAILKICK,"attack_fail");
+				p_percent_trigger(ch,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_TAILKICK,"attack_fail");
+			}
+		}
 	}
 }
 
@@ -6210,6 +6250,7 @@ void do_kick(CHAR_DATA *ch, char *argument)
 {
 	CHAR_DATA *victim;
 	int skill;
+	long vid[2], cid[2];
 
 	if (is_dead(ch)) return;
 
@@ -6242,6 +6283,9 @@ void do_kick(CHAR_DATA *ch, char *argument)
 		p_percent_trigger(ch,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_KICK,"pretest"))
 		return;
 
+	char_id(ch, cid);
+	char_id(victim, vid);
+
 	WAIT_STATE(ch, skill_table[gsn_kick].beats);
 
 	if (skill > number_percent()) {
@@ -6260,9 +6304,15 @@ void do_kick(CHAR_DATA *ch, char *argument)
 		victim->hit_damage = 0;
 
 		if(dam > 0) damage(ch,victim,dam, gsn_kick,DAM_BASH,TRUE);
-		check_improve(ch,gsn_kick,TRUE,1);
-		p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_KICK,"attack_pass");
-		p_percent_trigger(ch,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_KICK,"attack_pass");
+
+		if(is_char_stillvalid(ch, cid)) {
+			check_improve(ch,gsn_kick,TRUE,1);
+
+			if(is_char_stillvalid(victim, vid)) {
+				p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_KICK,"attack_pass");
+				p_percent_trigger(ch,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_KICK,"attack_pass");
+			}
+		}
 	} else {
 		damage(ch, victim, 0, gsn_kick,DAM_BASH,TRUE);
 		check_improve(ch,gsn_kick,FALSE,1);
