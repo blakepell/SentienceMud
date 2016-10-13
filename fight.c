@@ -161,6 +161,8 @@ void violence_update(void)
 		if (IS_AWAKE(ch) && ch->in_room == victim->in_room)
 			multi_hit(ch, victim, TYPE_UNDEFINED);
 
+		if(!is_combatant_valid(victim, vid[0], vid[1])) continue;
+
 		if (ch->in_room != victim->in_room) {
 			stop_fighting(ch, TRUE);
 			continue;
@@ -168,7 +170,6 @@ void violence_update(void)
 
 
 		if(!is_combatant_valid(ch, aid[0], aid[1])) continue;
-		if(!is_combatant_valid(victim, vid[0], vid[1])) continue;
 
 		check_assist(ch,victim);
 
@@ -642,7 +643,7 @@ bool one_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt, bool secondary)
 	}
 
 	// If the attacker of one_hit is not fighting and is not what the attacker is fighting
-	if( !ch->fighting && !set_fighting(ch, victim)) {
+	if( (!ch->fighting || !victim->fighting) && !set_fighting(ch, victim)) {
 
 		// If for some reason, fighting could not be established, bail out.
 		victim->set_death_type = DEATHTYPE_ALIVE;
@@ -1607,8 +1608,11 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 
 	// Gain experience if victim is killed.
 	if (victim->position == POS_DEAD) {
-		if (ch != victim)
+		if (ch != victim) {
 			group_gain(ch, victim);
+			if( ch->fighting == victim )
+				ch->fighting = NULL;
+		}
 
 		// If invasion mob then check if quest point is earned
 		if (!IS_NPC(ch) && IS_NPC(victim) && IS_SET(victim->act2, ACT2_INVASION_MOB) && number_percent() < 5) {
@@ -2802,7 +2806,19 @@ bool set_fighting(CHAR_DATA *ch, CHAR_DATA *victim)
 {
 	OBJ_DATA *obj;
 
-	if( ch->fighting != NULL || !can_start_combat(ch) ) return FALSE;
+	if( !can_start_combat(ch) ) return FALSE;
+
+	// They were already fighting the victim, just resume combat without any of the precombat stuff
+	if( ch->fighting == victim )
+	{
+		if( victim->fighting == NULL ) {
+//			send_to_char("Resuming combat...\n\r", victim);
+			enter_combat(victim, ch);
+		}
+		return TRUE;
+	}
+
+	if( ch->fighting != NULL ) return FALSE;
 
 	if( !can_start_combat(victim) ) return FALSE;
 
@@ -2865,7 +2881,7 @@ void stop_fighting(CHAR_DATA *ch, bool fBoth)
 	iterator_start(&it, loaded_chars);
 	while(( fch = (CHAR_DATA *)iterator_nextdata(&it)))
 	{
-		if (fch == ch || (fBoth && fch->fighting == ch))
+		if (fch == ch || (fBoth && ch->fighting == fch))
 		{
 			if (fch->reverie == -1)
 				fch->reverie = 0;
