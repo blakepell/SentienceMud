@@ -18,7 +18,7 @@
 #include "wilds.h"
 
 
-SPELL_FUNC(spell_armor)
+SPELL_FUNC(spell_armour)
 {
 	CHAR_DATA *victim = (CHAR_DATA *) vo;
 	AFFECT_DATA af;
@@ -35,9 +35,9 @@ SPELL_FUNC(spell_armor)
 		affect_strip(victim, sn);
 	} else if (is_affected(victim, sn)) {
 		if (victim == ch)
-			send_to_char("You are already armored.\n\r",ch);
+			send_to_char("You are already armoured.\n\r",ch);
 		else
-			act("$N is already armored.",ch,victim, NULL, NULL, NULL, NULL, NULL,TO_CHAR);
+			act("$N is already armoured.",ch,victim, NULL, NULL, NULL, NULL, NULL,TO_CHAR);
 		return FALSE;
 	}
 
@@ -303,8 +303,8 @@ SPELL_FUNC(spell_identify)
 		break;
 
 	case ITEM_DRINK_CON:
-		sprintf(buf,"{MIt holds %s-colored {x%s{M.\n\r{x",
-			liq_table[obj->value[2]].liq_color,
+		sprintf(buf,"{MIt holds %s-coloured {x%s{M.\n\r{x",
+			liq_table[obj->value[2]].liq_colour,
 			liq_table[obj->value[2]].liq_name);
 		add_buf(buffer,buf);
 		break;
@@ -368,8 +368,8 @@ SPELL_FUNC(spell_identify)
 		}
 		break;
 
-	case ITEM_ARMOR:
-		sprintf(buf, "{MArmor class is {x%d {Mpierce, {x%d {Mbash, {x%d {Mslash, and {x%d {Mvs. magic.\n\r",
+	case ITEM_ARMOUR:
+		sprintf(buf, "{MArmour class is {x%d {Mpierce, {x%d {Mbash, {x%d {Mslash, and {x%d {Mvs. magic.\n\r",
 			obj->value[0], obj->value[1], obj->value[2], obj->value[3]);
 		add_buf(buffer, buf);
 		break;

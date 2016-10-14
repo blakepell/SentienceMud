@@ -125,7 +125,7 @@ void update_handler(void)
 	if (i != BOOST_RECKONING && boost_table[i].timer != 0
 	&&  current_time > boost_table[i].timer)
 	{
-	    sprintf(buf, "%s {Dboost has ended.{x\n\r", boost_table[i].color_name);
+	    sprintf(buf, "%s {Dboost has ended.{x\n\r", boost_table[i].colour_name);
 	    gecho(buf);
 	    boost_table[i].timer = 0;
 	    boost_table[i].boost = 100;
@@ -1773,7 +1773,7 @@ void char_update(void)
 		challenger->mana		= ch->max_hit;
 
 		for (i = 0; i < 3; i++)
-		    challenger->armor[i]	= ch->armor[i];
+		    challenger->armour[i]	= ch->armour[i];
 
 		wield = get_eq_char(ch, WEAR_WIELD);
 		challenger->dam_type = wield->value[3];

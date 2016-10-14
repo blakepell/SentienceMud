@@ -1886,7 +1886,7 @@ void do_mstat(CHAR_DATA *ch, char *argument)
 	send_to_char(buf, ch);
     }
 
-    sprintf(buf,"{BArmor:{x pierce: %d  bash: %d  slash: %d  magic: %d\n\r",
+    sprintf(buf,"{BArmour:{x pierce: %d  bash: %d  slash: %d  magic: %d\n\r",
 	    GET_AC(victim,AC_PIERCE), GET_AC(victim,AC_BASH),
 	    GET_AC(victim,AC_SLASH),  GET_AC(victim,AC_EXOTIC));
     send_to_char(buf,ch);
@@ -7220,7 +7220,7 @@ void do_boost(CHAR_DATA *ch, char *argument)
 	boost_table[type].timer = mktime(timer);
 	boost_table[type].boost = percent;
 	sprintf(buf, "{B({WBOOST{B)--> {W%d {Dminutes of %s {Dboost ({W%+d%%{D)!!!{x\n\r",
-		mins, boost_table[type].color_name, (percent - 100));
+		mins, boost_table[type].colour_name, (percent - 100));
 	gecho(buf);
 	return;
 	}
@@ -7496,7 +7496,7 @@ void do_immflag(CHAR_DATA *ch, char *argument)
 	return;
     }
 
-    if (strlen_no_colors(argument) > 12)
+    if (strlen_no_colours(argument) > 12)
     {
 	send_to_char("That flag is too long. Must be no more than 12 characters, not counting colour codes.\n\r", ch);
 	return;

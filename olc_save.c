@@ -953,7 +953,7 @@ void save_object_new(FILE *fp, OBJ_INDEX_DATA *obj)
 	// Save objects with old spell format here.
 	if (obj->spells == NULL)
 		switch (obj->item_type) {
-		case ITEM_ARMOR:
+		case ITEM_ARMOUR:
 		case ITEM_WEAPON:
 		case ITEM_RANGED_WEAPON:
 			if (obj->value[5] > 0) {

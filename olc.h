@@ -242,7 +242,7 @@ DECLARE_OLC_FUN( oedit_addskill		);
 DECLARE_OLC_FUN( oedit_addcatalyst	);
 DECLARE_OLC_FUN( oedit_affect           );
 DECLARE_OLC_FUN( oedit_allowed_fixed	);
-DECLARE_OLC_FUN( oedit_armor_strength	);
+DECLARE_OLC_FUN( oedit_armour_strength	);
 DECLARE_OLC_FUN( oedit_condition        );
 DECLARE_OLC_FUN( oedit_cost		);
 DECLARE_OLC_FUN( oedit_create		);

@@ -172,7 +172,7 @@ extern  const   struct  damDiceType     damDiceTypeTable[];
 extern  const   struct  wepHitDice      wepHitDiceTable[];
 extern  const   struct  hint_type       hintsTable[];
 extern  const   struct  string_type     fragile_table[];
-extern  const   struct  flag_type armor_strength_table[];
+extern  const   struct  flag_type armour_strength_table[];
 extern  const   struct  string_type     object_damage_table[];
 
 /* flag tables */

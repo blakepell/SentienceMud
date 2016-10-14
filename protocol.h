@@ -188,8 +188,8 @@ typedef enum
    eMSDP_CLIENT_ID, 
    eMSDP_CLIENT_VERSION, 
    eMSDP_PLUGIN_ID, 
-   eMSDP_ANSI_COLORS, 
-   eMSDP_XTERM_256_COLORS, 
+   eMSDP_ANSI_COLOURS, 
+   eMSDP_XTERM_256_COLOURS, 
    eMSDP_UTF_8, 
    eMSDP_SOUND, 
    eMSDP_MXP, 
@@ -257,7 +257,7 @@ typedef struct
    bool_t    bMSP;             /* The client supports MSP */
    bool_t    bMXP;             /* The client supports MXP */
    bool_t    bMCCP;            /* The client supports MCCP */
-   support_t b256Support;      /* The client supports XTerm 256 colors */
+   support_t b256Support;      /* The client supports XTerm 256 colours */
    int       ScreenWidth;      /* The client's screen width */
    int       ScreenHeight;     /* The client's screen height */
    char     *pMXPVersion;      /* The version of MXP supported */

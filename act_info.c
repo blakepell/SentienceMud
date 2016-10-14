@@ -1337,7 +1337,7 @@ void do_prompt(CHAR_DATA * ch, char *argument)
     else {
 	//if (strlen(argument) > 50)
 	//    argument[50] = '\0';
-	if (strlen_no_colors(argument) > 50)
+	if (strlen_no_colours(argument) > 50)
 	{
 		send_to_char("That prompt is too long. Must be no more than 50 characters, not counting colour codes.\n\r",ch);
 		return;
@@ -1910,7 +1910,7 @@ void do_look(CHAR_DATA * ch, char *argument)
 		    ? "less than half-" :
 		    obj->value[1] < 3 * obj->value[0] / 4
 		    ? "about half-" : "more than half-",
-		    liq_table[obj->value[2]].liq_color);
+		    liq_table[obj->value[2]].liq_colour);
 
 	    send_to_char(buf, ch);
 	    break;
@@ -3480,7 +3480,7 @@ char *moon_face[19] = {
 };
 
 /* MOVED: weather/moon.c */
-char *moon_colors[][19] = {
+char *moon_colours[][19] = {
 	{
 		"xxxxxxxxxxxx",
 		"xxxxWWxDxxxxDxxxxxxx",
@@ -3548,12 +3548,12 @@ char *moon_shadow[19] = {
 	"`----------'"
 };
 
-char moon_shadow_colors[] = "Dr";
+char moon_shadow_colours[] = "Dr";
 
 char *moon_spacing = "                                        ";
 
 /* MOVED: weather/moon.c */
-void draw_moon(CHAR_DATA *ch,int color)
+void draw_moon(CHAR_DATA *ch,int colour)
 {
 	int i,j,k,l,ll,ld;
 	int hours;
@@ -3584,7 +3584,7 @@ void draw_moon(CHAR_DATA *ch,int color)
 			lastc = 'x';
 			if(time_info.hour < 6 || time_info.hour > 19) {
 				send_to_char(moon_spacing+20+l/2, ch);
-				lastc = moon_shadow_colors[color];
+				lastc = moon_shadow_colours[colour];
 				j = sprintf(buf,"{%c",lastc);
 				strncpy(buf+j,moon_shadow[i],ld); buf[j+ld] = 0;
 				send_to_char(buf, ch);
@@ -3592,9 +3592,9 @@ void draw_moon(CHAR_DATA *ch,int color)
 				send_to_char(moon_spacing+20+ll-l/2, ch);
 
 			for(k=j=0;k<ll;k++) {
-				if(lastc != moon_colors[color][i][k+ld]) {
+				if(lastc != moon_colours[colour][i][k+ld]) {
 					buf[j++] = '{';
-					buf[j++] = lastc = moon_colors[color][i][k+ld];
+					buf[j++] = lastc = moon_colours[colour][i][k+ld];
 				}
 
 				buf[j++] = moon_face[i][k+ld];
@@ -3613,9 +3613,9 @@ void draw_moon(CHAR_DATA *ch,int color)
 			lastc = 'x';
 			send_to_char(moon_spacing+20+l/2, ch);
 			for(k=j=0;k<ll;k++) {
-				if(lastc != moon_colors[color][i][k]) {
+				if(lastc != moon_colours[colour][i][k]) {
 					buf[j++] = '{';
-					buf[j++] = lastc = moon_colors[color][i][k];
+					buf[j++] = lastc = moon_colours[colour][i][k];
 				}
 
 				buf[j++] = moon_face[i][k];
@@ -3624,7 +3624,7 @@ void draw_moon(CHAR_DATA *ch,int color)
 			send_to_char(buf, ch);
 
 			if(time_info.hour < 6 || time_info.hour > 19) {
-				lastc = moon_shadow_colors[color];
+				lastc = moon_shadow_colours[colour];
 				j = sprintf(buf,"{%c",lastc);
 				strncpy(buf+j,moon_shadow[i]+ll,ld); buf[j+ld] = 0;
 				send_to_char(buf, ch);
@@ -3907,13 +3907,13 @@ void do_who_new(CHAR_DATA * ch, char *argument)
 	    strcpy(classstr,wch->pcdata->immortal->imm_flag);
 	else
 	    strcpy(classstr,sub_class_table[get_profession(wch, SUBCLASS_CURRENT)].who_name[wch->sex]);
-	classlen = 12 + strlen(classstr) - strlen_no_colors(classstr);
+	classlen = 12 + strlen(classstr) - strlen_no_colours(classstr);
 
 	if(wch->race >= MAX_PC_RACE)
 		strcpy(racestr, "       ");
 	else
 		strcpy(racestr, pc_race_table[wch->race].who_name);
-	racelen = 7 + strlen(racestr) - strlen_no_colors(racestr);
+	racelen = 7 + strlen(racestr) - strlen_no_colours(racestr);
 
 	nMatch++;
 

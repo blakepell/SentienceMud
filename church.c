@@ -23,7 +23,7 @@ char *get_chsize_from_number(int size);
 char *time_for_log(void);
 void church_log(CHURCH_DATA *church, char *string);
 void do_chadvance(CHAR_DATA *ch, char *argument);
-void do_chcolor(CHAR_DATA *ch, char *argument);
+void do_chcolour(CHAR_DATA *ch, char *argument);
 void do_chconvert(CHAR_DATA *ch, char *argument);
 void do_chdeduct(CHAR_DATA *ch, char *argument);
 void do_chdelete(CHAR_DATA * ch, char *argument);
@@ -74,7 +74,7 @@ const struct church_command_type church_command_table[] =
     { "withdraw", 	1,	do_chwithdraw 		},
 
     { "add", 		3, 	do_chadd		},
-    { "color", 		3, 	do_chcolor		},
+    { "colour", 		3, 	do_chcolour		},
     { "convert",	3,	do_chconvert 		},
     { "delmember", 	3,	do_chrem		},
     { "demote", 	3,	do_chdem		},
@@ -1014,7 +1014,7 @@ void do_chflag(CHAR_DATA *ch, char *argument)
 	return;
     }
 
-    if (strlen_no_colors(arg1) > 16)
+    if (strlen_no_colours(arg1) > 16)
     {
         sprintf(buf, "Sorry %s, that flag is too long.", pers(ch, temp_char));
 	do_say(temp_char, buf);
@@ -1529,25 +1529,25 @@ void do_chtalk(CHAR_DATA *ch, char *argument)
 	    if (!IS_NPC(ch) && ch->pcdata->flag != NULL && SHOW_CHANNEL_FLAG(victim, FLAG_CT))
 	    {
 		sprintf(buf, "{%c[{%c%s{%c] says '%s {%c%s{%c'{x\n\r",
-		    ch->church->color2,
-		    ch->church->color1,
+		    ch->church->colour2,
+		    ch->church->colour1,
 		    ch->name,
-		    ch->church->color2,
+		    ch->church->colour2,
 		    ch->pcdata->flag,
-		    ch->church->color1,
+		    ch->church->colour1,
 		    argument,
-		    ch->church->color2);
+		    ch->church->colour2);
 	    }
 	    else
 	    {
 		sprintf(buf, "{%c[{%c%s{%c] says '{%c%s{%c'{x\n\r",
-		    ch->church->color2,
-		    ch->church->color1,
+		    ch->church->colour2,
+		    ch->church->colour1,
 		    ch->name,
-		    ch->church->color2,
-		    ch->church->color1,
+		    ch->church->colour2,
+		    ch->church->colour1,
 		    argument,
-		    ch->church->color2);
+		    ch->church->colour2);
 	    }
 	    send_to_char(buf, d->character);
 	}
@@ -1558,27 +1558,27 @@ void do_chtalk(CHAR_DATA *ch, char *argument)
 	if (counter > 1)
 	{
 	    sprintf(buf, "{%c[{%c%d{%c] people heard you say '%s {%c%s{%c'{x\n\r",
-		    ch->church->color2,
-		    ch->church->color1,
+		    ch->church->colour2,
+		    ch->church->colour1,
 		    counter,
-		    ch->church->color2,
+		    ch->church->colour2,
 		    ch->pcdata->flag,
-		    ch->church->color1,
+		    ch->church->colour1,
 		    argument,
-		    ch->church->color2);
+		    ch->church->colour2);
 	    send_to_char(buf, ch);
 	}
 	else if (counter == 1)
 	{
 	    sprintf(buf, "{%c[{%c%d{%c] person heard you say '%s {%c%s{%c'{x\n\r",
-		    ch->church->color2,
-		    ch->church->color1,
+		    ch->church->colour2,
+		    ch->church->colour1,
 		    counter,
-		    ch->church->color2,
+		    ch->church->colour2,
 		    ch->pcdata->flag,
-		    ch->church->color1,
+		    ch->church->colour1,
 		    argument,
-		    ch->church->color2);
+		    ch->church->colour2);
 	    send_to_char(buf, ch);
 	}
 	else
@@ -1589,25 +1589,25 @@ void do_chtalk(CHAR_DATA *ch, char *argument)
 	if (counter > 1)
 	{
 	    sprintf(buf, "{%c[{%c%d{%c] people heard you say '{%c%s{%c'{x\n\r",
-		    ch->church->color2,
-		    ch->church->color1,
+		    ch->church->colour2,
+		    ch->church->colour1,
 		    counter,
-		    ch->church->color2,
-		    ch->church->color1,
+		    ch->church->colour2,
+		    ch->church->colour1,
 		    argument,
-		    ch->church->color2);
+		    ch->church->colour2);
 	    send_to_char(buf, ch);
 	}
 	else if (counter == 1)
 	{
 	    sprintf(buf, "{%c[{%c%d{%c] person heard you say '{%c%s{%c'{x\n\r",
-		    ch->church->color2,
-		    ch->church->color1,
+		    ch->church->colour2,
+		    ch->church->colour1,
 		    counter,
-		    ch->church->color2,
-		    ch->church->color1,
+		    ch->church->colour2,
+		    ch->church->colour1,
 		    argument,
-		    ch->church->color2);
+		    ch->church->colour2);
 	    send_to_char(buf, ch);
 	}
 	else
@@ -2914,7 +2914,7 @@ bool is_treasure_room(CHURCH_DATA *church, ROOM_INDEX_DATA *room)
 
 
 /* lets leaders set their own churchtalk colours */
-void do_chcolor(CHAR_DATA *ch, char *argument)
+void do_chcolour(CHAR_DATA *ch, char *argument)
 {
     char arg[MSL];
     char arg2[MSL];
@@ -2933,8 +2933,8 @@ void do_chcolor(CHAR_DATA *ch, char *argument)
     if (arg[0] == '\0' || arg2[0] == '\0')
     {
 	send_to_char(
-	    "Syntax: church color <color1> <color2>\n\r"
-	    "Ex.: church color Y B\n\r", ch);
+	    "Syntax: church colour <colour1> <colour2>\n\r"
+	    "Ex.: church colour Y B\n\r", ch);
 	return;
     }
 
@@ -2947,7 +2947,7 @@ void do_chcolor(CHAR_DATA *ch, char *argument)
     && letter != 'Y' && letter != 'g' && letter != 'G'
     && letter != 'y' && letter != 'D')
     {
-	send_to_char("Invalid color code. To see available codes, type 'help colour'.\n\r", ch);
+	send_to_char("Invalid colour code. To see available codes, type 'help colour'.\n\r", ch);
 	return;
     }
 
@@ -2958,13 +2958,13 @@ void do_chcolor(CHAR_DATA *ch, char *argument)
     && letter2 != 'Y' && letter2 != 'g' && letter2 != 'G'
     && letter2 != 'y' && letter2 != 'D')
     {
-	send_to_char("Invalid color code. To see available codes, type 'help colour'.\n\r", ch);
+	send_to_char("Invalid colour code. To see available codes, type 'help colour'.\n\r", ch);
 	return;
     }
 
-    ch->church->color1 = letter;
-    ch->church->color2 = letter2;
-    send_to_char("Church colors set.\n\r", ch);
+    ch->church->colour1 = letter;
+    ch->church->colour2 = letter2;
+    send_to_char("Church colours set.\n\r", ch);
 }
 
 
@@ -3160,10 +3160,10 @@ void append_church_log(CHURCH_DATA *church, char *string)
     time = time_for_log();
 
     sprintf(buf2, "{%c[{%c%s{%c]{x %s\n\r",
-        church->color1,
-	church->color2,
+        church->colour1,
+	church->colour2,
 	time,
-	church->color1,
+	church->colour1,
         string);
 
     strcat(buf, buf2);
@@ -3294,8 +3294,8 @@ void show_church_info(CHURCH_DATA *church, CHAR_DATA *ch)
     sprintf(buf, "{YPK:{x %s\n\r", church->pk ? "yes" : "no");
     add_buf(buffer, buf);
 
-    sprintf(buf, "{YColors:{x {%cColor One{x and {%cColor Two{x\n\r",
-        church->color1, church->color2);
+    sprintf(buf, "{YColours:{x {%cColour One{x and {%cColour Two{x\n\r",
+        church->colour1, church->colour2);
     add_buf(buffer, buf);
 
     sprintf(buf, "{BMember Info:{x\n\r");
@@ -3538,8 +3538,8 @@ void write_church(CHURCH_DATA *church, FILE *fp)
     fprintf(fp, "Alignment %d\n", church->alignment);
     fprintf(fp, "CPKLosses %ld\n", church->cpk_losses);
     fprintf(fp, "CPKWins %ld\n", church->cpk_wins);
-    fprintf(fp, "Color1 %c\n", church->color1);
-    fprintf(fp, "Color2 %c\n", church->color2);
+    fprintf(fp, "Colour1 %c\n", church->colour1);
+    fprintf(fp, "Colour2 %c\n", church->colour2);
     fprintf(fp, "DeityPoints %ld\n", church->dp);
     fprintf(fp, "Flag %s~\n", fix_string(church->flag));
     fprintf(fp, "Founder %s~\n", church->founder);
@@ -3695,8 +3695,8 @@ CHURCH_DATA *read_church(FILE *fp)
 	    case 'C':
 	        KEY("CPKLosses",	church->cpk_losses,		fread_number(fp));
 		KEY("CPKWins",		church->cpk_wins,		fread_number(fp));
-		KEY("Color1",		church->color1,			fread_letter(fp));
-		KEY("Color2",		church->color2,			fread_letter(fp));
+		KEY("Colour1",		church->colour1,			fread_letter(fp));
+		KEY("Colour2",		church->colour2,			fread_letter(fp));
 		break;
 
 	    case 'D':

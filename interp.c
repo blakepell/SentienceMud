@@ -165,7 +165,7 @@ const	struct	cmd_type	cmd_table	[] =
 
     { "autolist",	do_toggle,	POS_DEAD,	 0,  LOG_NORMAL, 1, TRUE },
     { "colour",		do_colour,	POS_DEAD,        0,  LOG_NORMAL, 1, TRUE },
-    { "color",		do_colour,      POS_DEAD,        0,  LOG_NORMAL, 1, TRUE },
+    { "colour",		do_colour,      POS_DEAD,        0,  LOG_NORMAL, 1, TRUE },
     { "config",	        do_toggle,	POS_DEAD,	 0,  LOG_NORMAL, 1, TRUE },
     { "description",	do_description,	POS_DEAD,	 0,  LOG_NORMAL, 1, TRUE },
     { "delet",			do_delet,	POS_DEAD,	 0,  LOG_ALWAYS, 0, FALSE },

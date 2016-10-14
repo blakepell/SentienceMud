@@ -574,11 +574,11 @@ Object:
 	obj_extra_mid		Mid tier extra flags (1 point per flag)
 	obj_extra_high		High tier extra flags (1 point per flag)
 
-	obj_armor_pierce	Deviation from calculated armor (% based)
-	obj_armor_bash		Deviation from calculated armor (% based)
-	obj_armor_slash		Deviation from calculated armor (% based)
-	obj_armor_exotic	Deviation from calculated armor (% based)
-	obj_armor_strength	Stronger armor requires more points
+	obj_armour_pierce	Deviation from calculated armour (% based)
+	obj_armour_bash		Deviation from calculated armour (% based)
+	obj_armour_slash		Deviation from calculated armour (% based)
+	obj_armour_exotic	Deviation from calculated armour (% based)
+	obj_armour_strength	Stronger armour requires more points
 
 	obj_weapon_damage	Deviation from calculated damage
 	obj_weapon_flags	Special weapon flags that we'd like to require points (1 point per flag)
@@ -620,11 +620,11 @@ Mobile:
 #define OLC_PNTCAT_OBJ_EXTRA_MID		0	// Mid tier extra flags (1 point per flag)
 #define OLC_PNTCAT_OBJ_EXTRA_HIGH		0	// High tier extra flags (1 point per flag)
 
-#define OLC_PNTCAT_OBJ_ARMOR_PIERCE		0	// Deviation from calculated armor (% based)
-#define OLC_PNTCAT_OBJ_ARMOR_BASH		0	// Deviation from calculated armor (% based)
-#define OLC_PNTCAT_OBJ_ARMOR_SLASH		0	// Deviation from calculated armor (% based)
-#define OLC_PNTCAT_OBJ_ARMOR_EXOTIC		0	// Deviation from calculated armor (% based)
-#define OLC_PNTCAT_OBJ_ARMOR_STRENGTH	0	// Stronger armor requires more points
+#define OLC_PNTCAT_OBJ_ARMOUR_PIERCE		0	// Deviation from calculated armour (% based)
+#define OLC_PNTCAT_OBJ_ARMOUR_BASH		0	// Deviation from calculated armour (% based)
+#define OLC_PNTCAT_OBJ_ARMOUR_SLASH		0	// Deviation from calculated armour (% based)
+#define OLC_PNTCAT_OBJ_ARMOUR_EXOTIC		0	// Deviation from calculated armour (% based)
+#define OLC_PNTCAT_OBJ_ARMOUR_STRENGTH	0	// Stronger armour requires more points
 
 #define OLC_PNTCAT_OBJ_WEAPON_DAMAGE	0	// Deviation from calculated damage
 #define OLC_PNTCAT_OBJ_WEAPON_FLAGS		0	// Special weapon flags that we'd like to require points (1 point per flag)
@@ -795,7 +795,7 @@ struct olc_point_area_data {
 #define C_MAGENTA	"\033[0;35m"
 #define C_CYAN		"\033[0;36m"
 #define C_WHITE		"\033[0;37m"
-#define C_D_GREY	"\033[1;30m"  	/* Light Colors		*/
+#define C_D_GREY	"\033[1;30m"  	/* Light Colours		*/
 #define C_B_RED		"\033[1;31m"
 #define C_B_GREEN	"\033[1;32m"
 #define C_B_YELLOW	"\033[1;33m"
@@ -803,7 +803,7 @@ struct olc_point_area_data {
 #define C_B_MAGENTA	"\033[1;35m"
 #define C_B_CYAN	"\033[1;36m"
 #define C_B_WHITE	"\033[1;37m"
-#define C_BK_BLACK	"\033[40m"  	/* Background Colors		*/
+#define C_BK_BLACK	"\033[40m"  	/* Background Colours		*/
 #define C_BK_RED	"\033[41m"
 #define C_BK_GREEN	"\033[42m"
 #define C_BK_YELLOW	"\033[43m"
@@ -1015,8 +1015,8 @@ struct church_data
 
     bool 		pk;
 
-    char 		color1;
-    char 		color2;
+    char 		colour1;
+    char 		colour2;
 
     LLIST *online_players;
     LLIST *roster;
@@ -1404,7 +1404,7 @@ struct herb_type
 struct boost_type
 {
     char *	name;			/* name */
-    char * 	color_name;		/* the name of the boost displayed in gecho (cosmetic */
+    char * 	colour_name;		/* the name of the boost displayed in gecho (cosmetic */
     int 	boost;			/* what % the current boost is, normal is 100% */
     time_t	timer;			/* this is the time the boost expires. */
 };
@@ -1997,7 +1997,7 @@ struct affliction_type {
 #define OBJ_VNUM_NEWB_QUARTERSTAFF 3740
 #define OBJ_VNUM_NEWB_DAGGER	   3741
 #define OBJ_VNUM_NEWB_SWORD        3742
-#define OBJ_VNUM_NEWB_ARMOR        3747
+#define OBJ_VNUM_NEWB_ARMOUR        3747
 #define OBJ_VNUM_NEWB_CLOAK        3748
 #define OBJ_VNUM_NEWB_LEGGINGS     3749
 #define OBJ_VNUM_NEWB_BOOTS        3750
@@ -2117,7 +2117,7 @@ struct affliction_type {
 #define ITEM_STAFF		      4
 #define ITEM_WEAPON		      5
 #define ITEM_TREASURE		      8
-#define ITEM_ARMOR		      9
+#define ITEM_ARMOUR		      9
 #define ITEM_POTION		     10
 #define ITEM_CLOTHING		     11
 #define ITEM_FURNITURE		     12
@@ -3614,7 +3614,7 @@ struct	char_data
     int			alignment;
     int			hitroll;
     int			damroll;
-    int			armor[4];
+    int			armour[4];
     int			wimpy;
 
     /* stats */
@@ -3820,7 +3820,7 @@ struct	char_data
 
 
 /* These values are used in a bitfield to store what type of channels will
-   display those lovely colorful 10 character or less channel tags. */
+   display those lovely colourful 10 character or less channel tags. */
 #define FLAG_GOSSIP	(A)
 #define FLAG_OOC	(B)
 #define FLAG_YELL	(C)
@@ -3952,7 +3952,7 @@ struct	pc_data
 struct	liq_type
 {
     char *	liq_name;
-    char *	liq_color;
+    char *	liq_colour;
     sh_int	liq_affect[LIQ_AFF_MAX];
 };
 
@@ -4145,11 +4145,11 @@ struct	obj_data
 #define OBJ_FRAGILE_WEAK 	2
 #define OBJ_FRAGILE_STRONG 	3
 
-#define OBJ_ARMOR_NOSTRENGTH 	0
-#define OBJ_ARMOR_LIGHT 	1
-#define OBJ_ARMOR_MEDIUM 	2
-#define OBJ_ARMOR_STRONG 	3
-#define OBJ_ARMOR_HEAVY 	4
+#define OBJ_ARMOUR_NOSTRENGTH 	0
+#define OBJ_ARMOUR_LIGHT 	1
+#define OBJ_ARMOUR_MEDIUM 	2
+#define OBJ_ARMOUR_STRONG 	3
+#define OBJ_ARMOUR_HEAVY 	4
 
 #define OBJ_XPGAIN_GROUP	1		// XP gained from the group_gain function, which is only received when a kill is made
 
@@ -5408,7 +5408,7 @@ extern sh_int	gsn_air_spells;
 extern sh_int	gsn_ambush;
 extern sh_int	gsn_animate_dead;
 extern sh_int	gsn_archery;
-extern sh_int	gsn_armor;
+extern sh_int	gsn_armour;
 extern sh_int	gsn_athletics;
 extern sh_int	gsn_avatar_shield;
 extern sh_int	gsn_axe;
@@ -5491,7 +5491,7 @@ extern sh_int	gsn_eagle_eye;
 extern sh_int	gsn_earth_spells;
 extern sh_int	gsn_earthquake;
 extern sh_int	gsn_electrical_barrier;
-extern sh_int	gsn_enchant_armor;
+extern sh_int	gsn_enchant_armour;
 extern sh_int	gsn_enchant_weapon;
 extern sh_int	gsn_energy_drain;
 extern sh_int	gsn_energy_field;
@@ -5852,7 +5852,7 @@ extern sh_int grn_unique;
 #define IS_NEUTRAL(ch)		(!IS_GOOD(ch) && !IS_EVIL(ch))
 
 #define IS_AWAKE(ch)		(ch->position > POS_SLEEPING)
-#define GET_AC(ch,type)		((ch)->armor[type])
+#define GET_AC(ch,type)		((ch)->armour[type])
 #define GET_HITROLL(ch)	\
 		((ch)->hitroll+str_app[get_curr_stat(ch,STAT_STR)].tohit)
 
@@ -6556,9 +6556,9 @@ CHAR_DATA *get_random_mob( CHAR_DATA *ch, int continent );
 MOB_INDEX_DATA *get_random_mob_index( AREA_DATA *area ) ;
 OBJ_DATA *get_random_obj( CHAR_DATA *ch, int continent );
 ROOM_INDEX_DATA *get_random_room( CHAR_DATA *ch, int continent );
-char *nocolor(const char *string);
+char *nocolour(const char *string);
 char *short_to_name (const char *short_desc);
-int strlen_no_colors( const char *str );
+int strlen_no_colours( const char *str );
 void fix_short_description( char *short_descr );
 void generate_poa_resets( int level );
 void global_reset( void );
@@ -7231,11 +7231,11 @@ NPC_SHIP_DATA *get_npc_ship_data args( ( long vnum ) );
 bool	run_olc_editor	args( ( DESCRIPTOR_DATA *d ) );
 char	*olc_ed_name	args( ( CHAR_DATA *ch ) );
 char	*olc_ed_vnum	args( ( CHAR_DATA *ch ) );
-int calc_obj_armor args ( (int level, int strength) );
+int calc_obj_armour args ( (int level, int strength) );
 void set_weapon_dice( OBJ_INDEX_DATA *objIndex );
 void set_weapon_dice_obj( OBJ_DATA *obj );
-void set_armor_obj( OBJ_DATA *obj );
-void set_armor( OBJ_INDEX_DATA *objIndex );
+void set_armour_obj( OBJ_DATA *obj );
+void set_armour( OBJ_INDEX_DATA *objIndex );
 void set_mob_damdice( MOB_INDEX_DATA *pMobIndex );
 void set_mob_hitdice( MOB_INDEX_DATA *pMob );
 void set_mob_manadice(MOB_INDEX_DATA *pMobIndex);
@@ -7250,7 +7250,7 @@ void use_imp_sig( MOB_INDEX_DATA *mob, OBJ_INDEX_DATA *obj );
 /* olc_act.c */
 AREA_DATA *get_vnum_area( long vnum );
 bool rp_change_exit args( ( ROOM_INDEX_DATA *pRoom, char *argument, int door));
-int get_armor_strength(char *argument);
+int get_armour_strength(char *argument);
 
 /* olc_act2.c */
 char *condition_type_to_name ( int type );

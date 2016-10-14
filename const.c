@@ -191,7 +191,7 @@ const struct item_type		item_table	[]	=
     {   ITEM_STAFF,		"staff"				},
     {   ITEM_WEAPON,		"weapon"			},
     {   ITEM_TREASURE,		"treasure"			},
-    {   ITEM_ARMOR,		"armor"				},
+    {   ITEM_ARMOUR,		"armour"				},
     {	ITEM_POTION,		"potion"			},
     {	ITEM_CLOTHING,		"clothing"			},
     {   ITEM_FURNITURE,		"furniture"			},
@@ -395,7 +395,7 @@ const  struct player_setting_type    pc_set_table[] =
     {	"autosurvey",	0,		 PLR_AUTOSURVEY,0,		FALSE,	0,	SETTING_OFF	},
     {	"battlespam",	0,		 0,		COMM_NOBATTLESPAM,TRUE,	0,	SETTING_OFF	},
     {	"brief",	0,		 0,		COMM_BRIEF,	FALSE,	0,	SETTING_OFF	},
-    {	"color",	PLR_COLOUR,	 0,		0,		FALSE,	0,	SETTING_OFF	},
+    {	"colour",	PLR_COLOUR,	 0,		0,		FALSE,	0,	SETTING_OFF	},
     {	"compact",	0,		 0,		COMM_COMPACT,	FALSE,	0,	SETTING_OFF	},
     {	"formstate",	0,		 0,		COMM_SHOW_FORM_STATE,FALSE,0,	SETTING_ON	},
     {   "holyaura",	0,		PLR_HOLYAURA,	 0,		FALSE,	IM,	SETTING_OFF	},
@@ -2482,7 +2482,7 @@ const struct  material_type material_table [] =
 
 const  struct  newbie_eq_type  newbie_eq_table[] =
 {
-    {	OBJ_VNUM_NEWB_ARMOR,	WEAR_BODY	},
+    {	OBJ_VNUM_NEWB_ARMOUR,	WEAR_BODY	},
     {	OBJ_VNUM_NEWB_CLOAK,	WEAR_ABOUT	},
     {	OBJ_VNUM_NEWB_LEGGINGS, WEAR_LEGS	},
     {	OBJ_VNUM_NEWB_BOOTS,	WEAR_FEET	},
@@ -2494,7 +2494,7 @@ const  struct  newbie_eq_type  newbie_eq_table[] =
 const   struct  music_type 	music_table 	[MAX_SONGS] 	=
 {
 /*  name,	level gained, spell1,spell2,spell3, play length, mana cost, target*/
-    { "Purple Mist", 			1, "armor", "shield", NULL, 12, 75, TAR_CHAR_DEFENSIVE },
+    { "Purple Mist", 			1, "armour", "shield", NULL, 12, 75, TAR_CHAR_DEFENSIVE },
     { "Fireworks", 				2, "magic missile", "lightning bolt", NULL, 9, 50, TAR_CHAR_OFFENSIVE },
     { "A Dwarven Tale", 		3, "stone skin", "infravision", NULL, 12, 75, TAR_CHAR_DEFENSIVE },
     { "Fade to Black", 			5, "improved invisibility", NULL, NULL, 8, 75, TAR_CHAR_DEFENSIVE },
@@ -2529,7 +2529,7 @@ const   struct  music_type 	music_table 	[MAX_SONGS] 	=
 
 const	struct	liq_type	liq_table	[]	=
 {
-/*  name			color		proof, full, thirst, food, ssize*/
+/*  name			colour		proof, full, thirst, food, ssize*/
     { "water",			"clear",	{   0, 1, 10, 0, 16 }	},
     { "beer",			"amber",	{  12, 1,  8, 1, 12 }	},
     { "red wine",		"burgundy",	{  30, 1,  8, 1,  5 }	},
@@ -2555,7 +2555,7 @@ const	struct	liq_type	liq_table	[]	=
     { "white wine",		"golden",	{  28, 1,  8, 1,  5 }   },
 
     { "champagne",		"golden",	{  32, 1,  8, 1,  5 }   },
-    { "mead",			"honey-colored",{  34, 2,  8, 2, 12 }   },
+    { "mead",			"honey-coloured",{  34, 2,  8, 2, 12 }   },
     { "rose wine",		"pink",		{  26, 1,  8, 1,  5 }	},
     { "benedictine wine",	"burgundy",	{  40, 1,  8, 1,  5 }   },
     { "vodka",			"clear",	{ 130, 1,  5, 0,  2 }   },
@@ -2663,11 +2663,11 @@ const struct skill_type	skill_table [MAX_SKILL]	=
 		"shot", "!Archery!", "", "",
 		{ { CATALYST_NONE, 0 },{ CATALYST_NONE, 0 },{ CATALYST_NONE, 0 } }
 	}, {
-		"armor",
+		"armour",
 		{ 3, 1, 31, 3 }, { 2, 2, 5, 5},
-		spell_armor, TAR_CHAR_DEFENSIVE, POS_STANDING, &gsn_armor,
+		spell_armour, TAR_CHAR_DEFENSIVE, POS_STANDING, &gsn_armour,
 		-1, 5, 2,
-		"", "{CYou feel less armored.{x", "", "",
+		"", "{CYou feel less armoured.{x", "", "",
 		{ { CATALYST_NONE, 0 },{ CATALYST_NONE, 0 },{ CATALYST_NONE, 0 } }
 	}, {
 		"athletics",
@@ -3251,11 +3251,11 @@ const struct skill_type	skill_table [MAX_SKILL]	=
 		"electrical wave", "{CThe electrical barrier surrounding you vanishes.{x", "", "The hazy blue barrier around $n vanishes.",
 		{ { CATALYST_BODY, 2 },{ CATALYST_COSMIC, 1 },{ CATALYST_ENERGY, 2 } }
 	}, {
-		"enchant armor",
+		"enchant armour",
 		{ 10, 15, 31, 31 }, { 3, 2, 4, 4 },
-		spell_enchant_armor, TAR_OBJ_INV, POS_STANDING, &gsn_enchant_armor,
+		spell_enchant_armour, TAR_OBJ_INV, POS_STANDING, &gsn_enchant_armour,
 		-1, 100, 8,
-		"", "!Enchant Armor!", "", "",
+		"", "!Enchant Armour!", "", "",
 		{ { CATALYST_NONE, 0 },{ CATALYST_NONE, 0 },{ CATALYST_NONE, 0 } }
 	}, {
 		"enchant weapon",
@@ -4507,7 +4507,7 @@ const struct group_type group_table [MAX_GROUP] =
 	{ "dagger", "quarterstaff", "lightning bolt", "dispel magic",
 	  "shield", "stone skin", "fireball", "magic missile",
 	  "shocking grasp", "burning hands", "chain lightning", "invis",
-	  "armor", "control weather", "haste", "giant strength",
+	  "armour", "control weather", "haste", "giant strength",
 	  "infravision", "colour spray", "earthquake", "charm person",
 	  "pass door", "fly", "invisibility", "inferno", NULL
 	}
@@ -4578,7 +4578,7 @@ const struct group_type group_table [MAX_GROUP] =
     {
 	"druid skills",      { 4, 4, 8, 8 },
  	{ "dispel evil", "dispel good", "brew", "cosmic blast",
-          "enchant armor", "enchant weapon", "underwater breathing",
+          "enchant armour", "enchant weapon", "underwater breathing",
 	  "fireproof", "summon", "scribe", "lore",
 	  "earthquake", "call lightning",
 	  "bless", "archery", "bow", NULL},
@@ -4589,7 +4589,7 @@ const struct group_type group_table [MAX_GROUP] =
 	"monk skills",      { 4, 4, 8, 8 },
  	{ "counterspell", "dodge", "dispel evil", "frenzy",
 	  "fireproof", "catch", "bless", "stone skin",
-	  "armor", "dirt kicking", "kick",
+	  "armour", "dirt kicking", "kick",
 	  "lore", "mass healing",
 	  "holy word", "reverie", "martial arts", "deep trance", NULL },
     },
@@ -4635,7 +4635,7 @@ const struct group_type group_table [MAX_GROUP] =
     {
 	"paladin skills",      { 4, 4, 8, 8 },
  	{ "refresh", "cure critical", "rescue", "dual wield",
-	  "disarm", "armor", "bless",
+	  "disarm", "armour", "bless",
 	  "shield and weapon style", "remove curse",
 	  "cure disease", "cure poison", "shield block",
 	  "stone skin", "cure blindness",

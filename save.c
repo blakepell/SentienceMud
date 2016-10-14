@@ -499,7 +499,7 @@ void fwrite_char(CHAR_DATA *ch, FILE *fp)
     if (ch->damroll != 0)
 	fprintf(fp, "Dam   %d\n",	ch->damroll	);
     fprintf(fp, "ACs %d %d %d %d\n",
-	ch->armor[0],ch->armor[1],ch->armor[2],ch->armor[3]);
+	ch->armour[0],ch->armour[1],ch->armour[2],ch->armour[3]);
     if (ch->wimpy !=0)
 	fprintf(fp, "Wimp  %d\n",	ch->wimpy	);
     fprintf(fp, "Attr %d %d %d %d %d\n",
@@ -901,7 +901,7 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
                 break;
             }
 
-	    if (!str_cmp(word, "AC") || !str_cmp(word,"Armor"))
+	    if (!str_cmp(word, "AC") || !str_cmp(word,"Armour"))
 	    {
 		fread_to_eol(fp);
 		fMatch = TRUE;
@@ -913,7 +913,7 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
 		int i;
 
 		for (i = 0; i < 4; i++)
-		    ch->armor[i] = fread_number(fp);
+		    ch->armour[i] = fread_number(fp);
 		fMatch = TRUE;
 		break;
 	    }
@@ -2783,16 +2783,16 @@ OBJ_DATA *fread_obj_new(FILE *fp)
 	        if (obj->pIndexData != NULL
  	        && obj->pIndexData->vnum == 100035)
 	        {
-	            int armor;
-		    int armor_exotic;
+	            int armour;
+		    int armour_exotic;
 
-		    armor=(int) calc_obj_armor(obj->level, obj->value[4]);
-		    armor_exotic=(int) armor * .90;
+		    armour=(int) calc_obj_armour(obj->level, obj->value[4]);
+		    armour_exotic=(int) armour * .90;
 
-		    obj->value[0] = armor;
-		    obj->value[1] = armor;
-		    obj->value[2] = armor;
-		    obj->value[3] = armor_exotic;
+		    obj->value[0] = armour;
+		    obj->value[1] = armour;
+		    obj->value[2] = armour;
+		    obj->value[3] = armour_exotic;
 		}
 
 		fMatch = TRUE;
@@ -2887,7 +2887,7 @@ OBJ_DATA *fread_obj_new(FILE *fp)
 		else
 		{
 		    if (obj->item_type == ITEM_WEAPON
-	            ||  obj->item_type == ITEM_ARMOR)
+	            ||  obj->item_type == ITEM_ARMOUR)
 		    {
 			if (iValue == 1)
 			    obj->value[6] = sn;
@@ -2951,7 +2951,7 @@ OBJ_DATA *fread_obj_new(FILE *fp)
 
 	    if ((!str_cmp(word, "Val")) &&
 	          obj->item_type != ITEM_WEAPON &&
-	          obj->item_type != ITEM_ARMOR)
+	          obj->item_type != ITEM_ARMOUR)
 	    {
 		obj->value[0] 	= fread_number(fp);
 	 	obj->value[1]	= fread_number(fp);
