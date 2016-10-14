@@ -1611,7 +1611,7 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 		if (ch != victim) {
 			group_gain(ch, victim);
 			if( ch->fighting == victim )
-				ch->fighting = NULL;
+				stop_fighting(ch, FALSE);
 		}
 
 		// If invasion mob then check if quest point is earned
