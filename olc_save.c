@@ -2297,12 +2297,14 @@ MOB_INDEX_DATA *read_mobile_new(FILE *fp, AREA_DATA *area)
 	    set_mob_manadice(mob);
     }
 
-    /* AO 092516 - Use Mitch's hitdice/damdice fixes */
-    set_mob_hitdice(mob);
-    set_mob_damdice(mob);
+	if( !has_imp_sig(mob, NULL) ) {
+		// Made reseting require there be no impsign
 
-
-    set_mob_movedice(mob);
+    	/* AO 092516 - Use Mitch's hitdice/damdice fixes */
+		set_mob_hitdice(mob);
+		set_mob_damdice(mob);
+		set_mob_movedice(mob);
+	}
 
     return mob;
 }

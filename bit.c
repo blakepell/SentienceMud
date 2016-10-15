@@ -127,6 +127,8 @@ long flag_value( const struct flag_type *flag_table, char *argument)
     long marked = 0;
     bool found = FALSE;
 
+    if ( flag_table == NULL ) return NO_FLAG;
+
     if ( is_stat( flag_table ) )
     {
 	one_argument( argument, word );

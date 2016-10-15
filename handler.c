@@ -8137,3 +8137,32 @@ bool obj_has_spell(OBJ_DATA *obj, char *name)
 
 	return FALSE;
 }
+
+void restore_char(CHAR_DATA *ch, CHAR_DATA *whom)
+{
+	affect_strip(ch,gsn_plague);
+	affect_strip(ch,gsn_poison);
+	affect_strip(ch,gsn_blindness);
+	affect_strip(ch,gsn_sleep);
+	affect_strip(ch,gsn_curse);
+	affect_strip(ch,gsn_toxic_fumes);	/* @@@NIB : 20070127*/
+	ch->hit 	= ch->max_hit;
+	ch->mana	= ch->max_mana;
+	ch->move	= ch->max_move;
+
+	if (IS_DEAD(ch))
+		resurrect_pc(ch);
+
+	if (ch->maze_time_left > 0)
+		return_from_maze(ch);
+
+	affect_fix_char(ch);
+
+	// Will only be set when used by the command "restore"
+	//  - scripted restores will pass NULL
+	if(whom)
+		act("$n has restored you.",whom, ch, NULL, NULL, NULL, NULL, NULL,TO_VICT);
+
+	p_percent_trigger( ch, NULL, NULL, NULL, ch, whom, NULL,NULL, NULL, TRIG_RESTORE, NULL);
+
+}

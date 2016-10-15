@@ -885,6 +885,10 @@ char *expand_entity_primary(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->type = ENT_MOBILE;
 		arg->d.mob = info->vch;
 		break;
+	case ENTITY_VICTIM2:
+		arg->type = ENT_MOBILE;
+		arg->d.mob = info->vch2;
+		break;
 	case ENTITY_TARGET:
 		arg->type = ENT_MOBILE;
 		arg->d.mob = info->targ ? *info->targ : NULL;
@@ -935,6 +939,11 @@ char *expand_entity_primary(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 
 	case ENTITY_GAME:
 		arg->type = ENT_GAME;
+		break;
+
+	case ENTITY_TOKEN:
+		arg->type = ENT_TOKEN;
+		arg->d.token = info->tok;
 		break;
 
 	case ENTITY_REGISTER1:
@@ -1123,6 +1132,16 @@ char *expand_entity_church(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->type = ENT_MOBILE;
 		arg->d.mob = ( arg->d.church ) ? get_player(arg->d.church->founder) : NULL;
 		break;
+
+	case ENTITY_CHURCH_FOUNDER_NAME:
+		arg->type = ENT_STRING;
+		if( arg->d.church && arg->d.church->founder && arg->d.church->founder[0] ) {
+			strcpy(arg->buf, arg->d.church->founder);
+			arg->d.str = arg->buf;
+		} else
+			arg->d.str = &str_empty[0];
+		break;
+
 	case ENTITY_CHURCH_MOTD:
 		arg->type = ENT_STRING;
 		if( arg->d.church && arg->d.church->motd && arg->d.church->motd[0] && (IS_SET(arg->d.church->settings, CHURCH_PUBLIC_MOTD) || script_security >= MAX_SCRIPT_SECURITY)) {
@@ -1640,6 +1659,10 @@ char *expand_entity_mobile(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->type = ENT_PLLIST_OBJ;
 		arg->d.blist = arg->d.mob ? arg->d.mob->lworn : NULL;
 		break;
+	case ENTITY_MOB_CHECKPOINT:
+		arg->type = ENT_ROOM;
+		arg->d.room = (arg->d.mob && !IS_NPC(arg->d.mob)) ? arg->d.mob->checkpoint : NULL;
+		break;
 	default: return NULL;
 	}
 
@@ -1864,6 +1887,10 @@ char *expand_entity_mobile_id(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 	case ENTITY_MOB_WORN:
 		arg->type = ENT_PLLIST_OBJ;
 		arg->d.blist = NULL;
+		break;
+	case ENTITY_MOB_CHECKPOINT:
+		arg->type = ENT_ROOM;
+		arg->d.room = NULL;
 		break;
 
 	default: return NULL;
@@ -2698,7 +2725,7 @@ char *expand_entity_skillinfo(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->type = ENT_NUMBER;
 		if( arg->d.sk.m ) {
 			if( arg->d.sk.t )
-				arg->d.num = token_skill_rating(arg->d.sk.m, arg->d.sk.t);
+				arg->d.num = token_skill_rating(arg->d.sk.t);
 			else
 				arg->d.num = get_skill(arg->d.sk.m,arg->d.sk.sn);
 		} else

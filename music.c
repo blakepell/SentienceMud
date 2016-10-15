@@ -115,7 +115,6 @@ void do_play(CHAR_DATA *ch, char *argument)
 			iterator_start(&it, entry->token->pIndexData->progs[TRIGSLOT_SPELL]);
 			while(( prg = (PROG_LIST *)iterator_nextdata(&it))) {
 				if(is_trigger_type(prg->trig_type,TRIG_SPELL)) {
-					mana = atoi(prg->trig_phrase);
 					script = prg->script;
 					break;
 				}
@@ -129,6 +128,7 @@ void do_play(CHAR_DATA *ch, char *argument)
 			return;
 		}
 
+		mana = entry->token->value[TOKVAL_SPELL_MANA];
 		if ((ch->mana + ch->manastore) < mana) {
 			send_to_char("You don't have enough mana.\n\r", ch);
 			return;
@@ -401,7 +401,7 @@ void music_end( CHAR_DATA *ch )
 			else
 			{
 				if (check_spell_deflection_token(ch, mob, token, script, music_target_name)) {
-					if( execute_script(script->vnum, script, NULL, NULL, NULL, token, ch, NULL, NULL, mob, NULL, NULL,music_target_name,NULL,0,0,0,0,0) > 0)
+					if( execute_script(script->vnum, script, NULL, NULL, NULL, token, ch, NULL, NULL, mob, NULL, NULL, NULL,music_target_name,NULL,0,0,0,0,0) > 0)
 						offensive = TRUE;
 				}
 			}
@@ -499,7 +499,7 @@ void music_end( CHAR_DATA *ch )
 				else
 				{
 					if (check_spell_deflection_token(ch, mob, token, script, NULL))
-						if(execute_script(script->vnum, script, NULL, NULL, NULL, token, ch, NULL, NULL, mob, NULL,NULL, NULL,NULL,0,0,0,0,0) > 0)
+						if(execute_script(script->vnum, script, NULL, NULL, NULL, token, ch, NULL, NULL, mob, NULL,NULL, NULL,NULL, NULL,0,0,0,0,0) > 0)
 							offensive = TRUE;
 				}
 
@@ -542,7 +542,7 @@ void music_end( CHAR_DATA *ch )
 				}
 				else
 				{
-					execute_script(script->vnum, script, NULL, NULL, NULL, token, ch, NULL, NULL, mob, NULL,NULL,NULL,NULL,0,0,0,0,0);
+					execute_script(script->vnum, script, NULL, NULL, NULL, token, ch, NULL, NULL, mob, NULL,NULL,NULL,NULL, NULL,0,0,0,0,0);
 				}
 			}
 			break;
@@ -584,7 +584,7 @@ void music_end( CHAR_DATA *ch )
 				else
 				{
 					if (check_spell_deflection_token(ch, mob, token, script, NULL))
-						if(execute_script(script->vnum, script, NULL, NULL, NULL, token, ch, NULL, NULL, mob, NULL,NULL, NULL,NULL,0,0,0,0,0) > 0)
+						if(execute_script(script->vnum, script, NULL, NULL, NULL, token, ch, NULL, NULL, mob, NULL,NULL, NULL,NULL, NULL,0,0,0,0,0) > 0)
 							offensive = TRUE;
 				}
 
@@ -620,7 +620,7 @@ void music_end( CHAR_DATA *ch )
 			}
 			else
 			{
-				execute_script(script->vnum, script, NULL, NULL, NULL, token, ch, NULL, NULL, mob, NULL,NULL,NULL,NULL,0,0,0,0,0);
+				execute_script(script->vnum, script, NULL, NULL, NULL, token, ch, NULL, NULL, mob, NULL,NULL,NULL,NULL, NULL,0,0,0,0,0);
 			}
 			break;
 		case TAR_IGNORE:
@@ -650,7 +650,7 @@ void music_end( CHAR_DATA *ch )
 			}
 			else
 			{
-				execute_script(script->vnum, script, NULL, NULL, NULL, token, ch, NULL, NULL, mob, NULL,NULL,NULL,NULL,0,0,0,0,0);
+				execute_script(script->vnum, script, NULL, NULL, NULL, token, ch, NULL, NULL, mob, NULL,NULL,NULL,NULL, NULL,0,0,0,0,0);
 			}
 			break;
 

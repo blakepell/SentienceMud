@@ -249,6 +249,9 @@ if (PULLING_CART(ch) && portal->item_type != ITEM_SHIP)
 	if(p_percent_trigger(NULL, NULL, location, NULL, ch, NULL, NULL,portal, NULL,TRIG_PREENTER, "portal"))
 		return;
 
+	if(p_percent_trigger(NULL, portal, NULL, NULL, ch, NULL, NULL,NULL, NULL,TRIG_PREENTER, NULL))
+		return;
+
 	portal->value[3] = location->vnum;
 	portal->value[4] = location->area->uid;
 	portal->value[5] = location->wilds ? location->wilds->uid : 0;
@@ -327,7 +330,18 @@ if (PULLING_CART(ch) && portal->item_type != ITEM_SHIP)
   		    act("$n has arrived through $p.",ch, NULL, NULL,portal, NULL, NULL,NULL,TO_ROOM);
 	}
 
-	do_function(ch, &do_look, "auto");
+	if(!IS_NPC(ch) && IS_SET(portal->value[2],GATE_FORCE_BRIEF)) {
+		bool was_brief = IS_SET(ch->comm, COMM_BRIEF) && TRUE;
+
+		SET_BIT(ch->comm, COMM_BRIEF);
+		do_function(ch, &do_look, "auto");
+
+		if( !was_brief )
+			REMOVE_BIT(ch->comm, COMM_BRIEF);
+	} else {
+		do_function(ch, &do_look, "auto");
+	}
+
 
 	/* charges */
 	if (portal->value[0] > 0)
@@ -336,6 +350,9 @@ if (PULLING_CART(ch) && portal->item_type != ITEM_SHIP)
 	    if (portal->value[0] == 0)
 		portal->value[0] = -1;
 	}
+
+	if(p_percent_trigger(NULL, portal, NULL, NULL, ch, NULL, NULL,NULL, NULL,TRIG_ENTRY, NULL))
+		return;
 
 	/* protect against circular follows */
 	if (old_room == location)

@@ -7,6 +7,7 @@
 
 #include "merc.h"
 #include "scripts.h"
+#include "tables.h"
 #include "wilds.h"
 
 #define DEBUG_MODULE
@@ -16,6 +17,8 @@
 const struct script_cmd_type room_cmd_table[] = {
 	{ "addaffect",			do_rpaddaffect,		TRUE	},
 	{ "addaffectname",		do_rpaddaffectname,	TRUE	},
+	{ "addspell",			do_rpaddspell,			TRUE	},
+	{ "alteraffect",		do_rpalteraffect,			TRUE	},
 	{ "alterexit",			do_rpalterexit,		FALSE	},
 	{ "altermob",			do_rpaltermob,		TRUE	},
 	{ "alterobj",			do_rpalterobj,		TRUE	},
@@ -25,8 +28,10 @@ const struct script_cmd_type room_cmd_table[] = {
 	{ "call",				do_rpcall,		FALSE	},
 	{ "cancel",				do_rpcancel,		FALSE	},
 	{ "chargebank",			do_rpchargebank,	FALSE	},
+	{ "checkpoint",			do_rpcheckpoint,		FALSE	},
 	{ "cloneroom",			do_rpcloneroom,		TRUE	},
 	{ "condition",			do_rpcondition,			FALSE	},
+	{ "crier",				do_rpcrier,			FALSE	},
 	{ "damage",				do_rpdamage,		FALSE	},
 	{ "delay",				do_rpdelay,		FALSE	},
 	{ "dequeue",			do_rpdequeue,		FALSE	},
@@ -42,6 +47,7 @@ const struct script_cmd_type room_cmd_table[] = {
 	{ "echoleadat",			do_rpecholeadat,	FALSE	},
 	{ "echonotvict",		do_rpechonotvict,	FALSE	},
 	{ "echoroom",			do_rpechoroom,		FALSE	},
+	{ "fixaffects",			do_rpfixaffects,			FALSE	},
 	{ "force",				do_rpforce,		FALSE	},
 	{ "forget",				do_rpforget,		FALSE	},
 	{ "gecho",				do_rpgecho,		FALSE	},
@@ -60,8 +66,12 @@ const struct script_cmd_type room_cmd_table[] = {
 	{ "queue",				do_rpqueue,		FALSE	},
 	{ "rawkill",			do_rprawkill,		FALSE	},
 	{ "remember",			do_rpremember,		FALSE	},
+	{ "remort",				do_rpremort,			TRUE	},
 	{ "remove",				do_rpremove,		FALSE	},
+	{ "remspell",			do_rpremspell,			TRUE	},
 	{ "resetdice",			do_rpresetdice,		TRUE	},
+	{ "restore",			do_rprestore,		TRUE	},
+	{ "saveplayer",			do_rpsaveplayer,		FALSE	},
 	{ "settimer",			do_rpsettimer,		FALSE	},
 	{ "showroom",			do_rpshowroom,		FALSE	},
 	{ "skill",				do_rpskill,						TRUE	},
@@ -86,10 +96,6 @@ const struct script_cmd_type room_cmd_table[] = {
 	{ "xcall",				do_rpxcall,		FALSE	},
 	{ "zecho",				do_rpzecho,		FALSE	},
 	{ "zot",				do_rpzot,		TRUE	},
-	{ "addspell",			do_rpaddspell,			TRUE	},
-	{ "remspell",			do_rpremspell,			TRUE	},
-	{ "alteraffect",		do_rpalteraffect,			TRUE	},
-	{ "crier",				do_rpcrier,			FALSE	},
 	{ NULL,					NULL,			FALSE	}
 };
 
@@ -751,7 +757,7 @@ SCRIPT_CMD(do_rpcall)
 		}
 	}
 
-	ret = execute_script(script->vnum, script, NULL, NULL, info->room, NULL, ch, obj1, obj2, vch,NULL, NULL,info->phrase,info->trigger,0,0,0,0,0);
+	ret = execute_script(script->vnum, script, NULL, NULL, info->room, NULL, ch, obj1, obj2, vch,NULL, NULL, NULL,info->phrase,info->trigger,0,0,0,0,0);
 	if(info->room) {
 		info->room->progs->lastreturn = ret;
 		DBG3MSG1("lastreturn = %d\n", info->room->progs->lastreturn);
@@ -2558,6 +2564,8 @@ SCRIPT_CMD(do_rpalterobj)
 	int value, num, min_sec = MIN_SCRIPT_SECURITY;
 	OBJ_DATA *obj = NULL;
 	SCRIPT_PARAM arg;
+	bool allowarith = TRUE;
+	const struct flag_type *flags = NULL;
 
 	if(!info || !info->room) return;
 
@@ -2618,13 +2626,13 @@ SCRIPT_CMD(do_rpalterobj)
 		return;
 	}
 
-	switch(arg.type) {
-	case ENT_STRING: value = is_number(arg.d.str) ? atoi(arg.d.str) : 0; break;
-	case ENT_NUMBER: value = arg.d.num; break;
-	default: return;
-	}
-
 	if(num >= 0) {
+		switch(arg.type) {
+		case ENT_STRING: value = is_number(arg.d.str) ? atoi(arg.d.str) : 0; break;
+		case ENT_NUMBER: value = arg.d.num; break;
+		default: return;
+		}
+
 		if(obj->item_type == ITEM_CONTAINER) {
 			if(num == 3 || num == 4) min_sec = 5;
 		}
@@ -2665,19 +2673,19 @@ SCRIPT_CMD(do_rpalterobj)
 	} else {
 		int *ptr = NULL;
 
-		if(!str_cmp(field,"extra"))		ptr = (int*)&obj->extra_flags;
-		else if(!str_cmp(field,"extra2"))	{ ptr = (int*)&obj->extra2_flags; min_sec = 7; }
-		else if(!str_cmp(field,"extra3"))	{ ptr = (int*)&obj->extra3_flags; min_sec = 7; }
-		else if(!str_cmp(field,"extra4"))	{ ptr = (int*)&obj->extra4_flags; min_sec = 7; }
-		else if(!str_cmp(field,"wear"))		ptr = (int*)&obj->wear_flags;
-		else if(!str_cmp(field,"wearloc"))	ptr = (int*)&obj->wear_loc;
+		if(!str_cmp(field,"extra"))			{ ptr = (int*)&obj->extra_flags; flags = extra_flags; }
+		else if(!str_cmp(field,"extra2"))	{ ptr = (int*)&obj->extra2_flags; flags = extra2_flags; min_sec = 7; }
+		else if(!str_cmp(field,"extra3"))	{ ptr = (int*)&obj->extra3_flags; flags = extra3_flags; min_sec = 7; }
+		else if(!str_cmp(field,"extra4"))	{ ptr = (int*)&obj->extra4_flags; flags = extra4_flags; min_sec = 7; }
+		else if(!str_cmp(field,"wear"))		{ ptr = (int*)&obj->wear_flags; flags = wear_flags; }
+		else if(!str_cmp(field,"wearloc"))	{ ptr = (int*)&obj->wear_loc; flags = wear_loc_flags; }
 		else if(!str_cmp(field,"weight"))	ptr = (int*)&obj->weight;
 		else if(!str_cmp(field,"cond"))		ptr = (int*)&obj->condition;
 		else if(!str_cmp(field,"timer"))	ptr = (int*)&obj->timer;
 		else if(!str_cmp(field,"level"))	{ ptr = (int*)&obj->level; min_sec = 5; }
 		else if(!str_cmp(field,"repairs"))	ptr = (int*)&obj->times_fixed;
 		else if(!str_cmp(field,"fixes"))	{ ptr = (int*)&obj->times_allowed_fixed; min_sec = 5; }
-		else if(!str_cmp(field,"type"))		{ ptr = (int*)&obj->item_type; min_sec = 7; }
+		else if(!str_cmp(field,"type"))		{ ptr = (int*)&obj->item_type; flags = type_flags; min_sec = 7; }
 		else if(!str_cmp(field,"cost"))		{ ptr = (int*)&obj->cost; min_sec = 5; }
 		else if(!str_cmp(field,"tempstore1"))	ptr = (int*)&obj->tempstore[0];
 		else if(!str_cmp(field,"tempstore2"))	ptr = (int*)&obj->tempstore[1];
@@ -2692,11 +2700,57 @@ SCRIPT_CMD(do_rpalterobj)
 			return;
 		}
 
+		switch(arg.type) {
+		case ENT_STRING:
+			if( is_number(arg.d.str) )
+				value = atoi(arg.d.str);
+			else
+			{
+				allowarith = FALSE;	// This is a bit vector, no arithmetic operators.
+				value = script_flag_value(flags, arg.d.str);
+
+				if( value == NO_FLAG ) value = 0;
+			}
+
+			break;
+		case ENT_NUMBER: value = arg.d.num; break;
+		default: return;
+		}
+
 		switch (buf[0]) {
-		case '+': *ptr += value; break;
-		case '-': *ptr -= value; break;
-		case '*': *ptr *= value; break;
+		case '+':
+			if( !allowarith ) {
+				bug("RpAlterObj - alterobj called with arithmetic operator on a bitonly field.", 0);
+				return;
+			}
+
+			*ptr += value;
+			break;
+
+		case '-':
+			if( !allowarith ) {
+				bug("RpAlterObj - alterobj called with arithmetic operator on a bitonly field.", 0);
+				return;
+			}
+
+			*ptr -= value;
+			break;
+
+		case '*':
+			if( !allowarith ) {
+				bug("RpAlterObj - alterobj called with arithmetic operator on a bitonly field.", 0);
+				return;
+			}
+
+			*ptr *= value;
+			break;
+
 		case '/':
+			if( !allowarith ) {
+				bug("RpAlterObj - alterobj called with arithmetic operator on a bitonly field.", 0);
+				return;
+			}
+
 			if (!value) {
 				bug("RpAlterObj - adjust called with operator / and value 0", 0);
 				return;
@@ -2704,6 +2758,11 @@ SCRIPT_CMD(do_rpalterobj)
 			*ptr /= value;
 			break;
 		case '%':
+			if( !allowarith ) {
+				bug("RpAlterObj - alterobj called with arithmetic operator on a bitonly field.", 0);
+				return;
+			}
+
 			if (!value) {
 				bug("RpAlterObj - adjust called with operator % and value 0", 0);
 				return;
@@ -2868,6 +2927,7 @@ SCRIPT_CMD(do_rpaltermob)
 	int *ptr = NULL;
 	bool allowpc = FALSE;
 	bool allowarith = TRUE;
+	const struct flag_type *flags = NULL;
 	int dirty_stat = -1;
 
 	if(!info || !info->room) return;
@@ -2918,29 +2978,27 @@ SCRIPT_CMD(do_rpaltermob)
 		return;
 	}
 
-	switch(arg.type) {
-	case ENT_STRING: value = is_number(arg.d.str) ? atoi(arg.d.str) : 0; break;
-	case ENT_NUMBER: value = arg.d.num; break;
-	default: return;
-	}
-
 	if(!str_cmp(field,"acbash"))		ptr = (int*)&mob->armour[AC_BASH];
 	else if(!str_cmp(field,"acexotic"))	ptr = (int*)&mob->armour[AC_EXOTIC];
 	else if(!str_cmp(field,"acpierce"))	ptr = (int*)&mob->armour[AC_PIERCE];
 	else if(!str_cmp(field,"acslash"))	ptr = (int*)&mob->armour[AC_SLASH];
-	else if(!str_cmp(field,"act"))		ptr = (int*)&mob->act;
-	else if(!str_cmp(field,"act2"))		ptr = (int*)&mob->act2;
+	else if(!str_cmp(field,"act"))		{ ptr = (int*)&mob->act; flags = IS_NPC(mob) ? act_flags : plr_flags; }
+	else if(!str_cmp(field,"act2"))		{ ptr = (int*)&mob->act2; flags = IS_NPC(mob) ? act2_flags : plr2_flags; }
+	else if(!str_cmp(field,"affect"))	{ ptr = (int*)&mob->affected_by; flags = affect_flags; }
+	else if(!str_cmp(field,"affect2"))	{ ptr = (int*)&mob->affected_by2; flags = affect2_flags; }
 	else if(!str_cmp(field,"alignment"))	ptr = (int*)&mob->alignment;
 	else if(!str_cmp(field,"bashed"))	ptr = (int*)&mob->bashed;
 	else if(!str_cmp(field,"bind"))		ptr = (int*)&mob->bind;
 	else if(!str_cmp(field,"bomb"))		ptr = (int*)&mob->bomb;
 	else if(!str_cmp(field,"brew"))		ptr = (int*)&mob->brew;
 	else if(!str_cmp(field,"cast"))		ptr = (int*)&mob->cast;
-	else if(!str_cmp(field,"comm"))		{ ptr = IS_NPC(mob)?NULL:(int*)&mob->comm; allowpc = TRUE; allowarith = FALSE; min_sec = 7; }		// 20140512NIB - Allows for scripted fun with player communications, only bit operators allowed
+	else if(!str_cmp(field,"comm"))		{ ptr = IS_NPC(mob)?NULL:(int*)&mob->comm; allowpc = TRUE; allowarith = FALSE; min_sec = 7; flags = comm_flags; }		// 20140512NIB - Allows for scripted fun with player communications, only bit operators allowed
 	else if(!str_cmp(field,"damroll"))	ptr = (int*)&mob->damroll;
 	else if(!str_cmp(field,"danger"))	{ ptr = IS_NPC(mob)?NULL:(int*)&mob->pcdata->danger_range; allowpc = TRUE; }
 	else if(!str_cmp(field,"daze"))		ptr = (int*)&mob->daze;
 	else if(!str_cmp(field,"death"))	{ ptr = (IS_NPC(mob) || !IS_DEAD(mob))?NULL:(int*)&mob->time_left_death; allowpc = TRUE; }
+	else if(!str_cmp(field,"dicenumber"))	{ ptr = IS_NPC(mob)?&mob->damage[DICE_NUMBER]:NULL; }
+	else if(!str_cmp(field,"dicetype"))	{ ptr = IS_NPC(mob)?&mob->damage[DICE_TYPE]:NULL; }
 	else if(!str_cmp(field,"drunk"))	{ ptr = IS_NPC(mob)?NULL:(int*)&mob->pcdata->condition[COND_DRUNK]; allowpc = TRUE; }
 //	else if(!str_cmp(field,"exitdir"))	{ ptr = (int*)&mob->exit_dir; allowpc = TRUE; }
 	else if(!str_cmp(field,"exp"))		{ ptr = (int*)&mob->exp; allowpc = TRUE; }
@@ -2952,9 +3010,9 @@ SCRIPT_CMD(do_rpaltermob)
 	else if(!str_cmp(field,"hitdamage"))	ptr = (int*)&mob->hit_damage;
 	else if(!str_cmp(field,"hitroll"))	ptr = (int*)&mob->hitroll;
 	else if(!str_cmp(field,"hunger"))	{ ptr = IS_NPC(mob)?NULL:(int*)&mob->pcdata->condition[COND_HUNGER]; allowpc = TRUE; }
-	else if(!str_cmp(field,"imm"))		ptr = (int*)&mob->imm_flags;
+	else if(!str_cmp(field,"imm"))		{ ptr = (int*)&mob->imm_flags; allowarith = FALSE; flags = imm_flags; }
 	else if(!str_cmp(field,"level"))	ptr = (int*)&mob->tot_level;
-	else if(!str_cmp(field,"lostparts"))	{ ptr = (int*)&mob->lostparts; allowarith = FALSE; }
+	else if(!str_cmp(field,"lostparts"))	{ ptr = (int*)&mob->lostparts; allowarith = FALSE; flags = part_flags; }
 	else if(!str_cmp(field,"mana"))		ptr = (int*)&mob->mana;
 	else if(!str_cmp(field,"manastore"))	{ ptr = (int*)&mob->manastore; allowpc = TRUE; }
 //	else if(!str_cmp(field,"material"))	ptr = (int*)&mob->material;
@@ -2974,18 +3032,23 @@ SCRIPT_CMD(do_rpaltermob)
 	else if(!str_cmp(field,"panic"))	ptr = (int*)&mob->panic;
 	else if(!str_cmp(field,"paralyzed"))	ptr = (int*)&mob->paralyzed;
 	else if(!str_cmp(field,"paroxysm"))	ptr = (int*)&mob->paroxysm;
-	else if(!str_cmp(field,"parts"))	{ ptr = (int*)&mob->parts; allowarith = FALSE; }
+	else if(!str_cmp(field,"parts"))	{ ptr = (int*)&mob->parts; allowarith = FALSE; flags = part_flags; }
+	else if(!str_cmp(field,"permaffects"))	{ ptr = (int*)&mob->affected_by_perm; allowarith = FALSE; flags = affect_flags; }
+	else if(!str_cmp(field,"permaffects2"))	{ ptr = (int*)&mob->affected_by2_perm; allowarith = FALSE; flags = affect2_flags; }
+	else if(!str_cmp(field,"permimm"))	{ ptr = (int*)&mob->imm_flags_perm; allowarith = FALSE; flags = imm_flags; }
+	else if(!str_cmp(field,"permres"))	{ ptr = (int*)&mob->res_flags_perm; allowarith = FALSE; flags = imm_flags; }
+	else if(!str_cmp(field,"permvuln"))	{ ptr = (int*)&mob->vuln_flags_perm; allowarith = FALSE; flags = imm_flags; }
 	else if(!str_cmp(field,"pktimer"))	ptr = (int*)&mob->pk_timer;
 	else if(!str_cmp(field,"pneuma"))	ptr = (int*)&mob->pneuma;
 	else if(!str_cmp(field,"practice"))	ptr = (int*)&mob->practice;
 	else if(!str_cmp(field,"race"))		{ ptr = (int*)&mob->race; min_sec = 7; }
 	else if(!str_cmp(field,"ranged"))	ptr = (int*)&mob->ranged;
 	else if(!str_cmp(field,"recite"))	ptr = (int*)&mob->recite;
-	else if(!str_cmp(field,"res"))		ptr = (int*)&mob->res_flags;
+	else if(!str_cmp(field,"res"))		{ ptr = (int*)&mob->res_flags;  allowarith = FALSE; flags = imm_flags; }
 	else if(!str_cmp(field,"resurrect"))	ptr = (int*)&mob->resurrect;
 	else if(!str_cmp(field,"reverie"))	ptr = (int*)&mob->reverie;
 	else if(!str_cmp(field,"scribe"))	ptr = (int*)&mob->scribe;
-	else if(!str_cmp(field,"sex"))		{ ptr = (int*)&mob->sex; min = 0; max = 2; }
+	else if(!str_cmp(field,"sex"))		{ ptr = (int*)&mob->sex; min = 0; max = 2; flags = sex_flags; }
 	else if(!str_cmp(field,"silver"))	ptr = (int*)&mob->silver;
 	else if(!str_cmp(field,"skillchance"))	ptr = (int*)&mob->skill_chance;
 	else if(!str_cmp(field,"sublevel"))	ptr = (int*)&mob->level;
@@ -3000,14 +3063,14 @@ SCRIPT_CMD(do_rpaltermob)
 	else if(!str_cmp(field,"toxinweak"))	ptr = (int*)&mob->toxin[TOXIN_WEAKNESS];
 	else if(!str_cmp(field,"train"))	ptr = (int*)&mob->train;
 	else if(!str_cmp(field,"trance"))	ptr = (int*)&mob->trance;
-	else if(!str_cmp(field,"vuln"))		ptr = (int*)&mob->vuln_flags;
+	else if(!str_cmp(field,"vuln"))		{ ptr = (int*)&mob->vuln_flags; allowarith = FALSE; flags = imm_flags; }
 	else if(!str_cmp(field,"wait"))		ptr = (int*)&mob->wait;
 	else if(!str_cmp(field,"wildviewx"))	ptr = (int*)&mob->wildview_bonus_x;
 	else if(!str_cmp(field,"wildviewy"))	ptr = (int*)&mob->wildview_bonus_y;
 	else if(!str_cmp(field,"wimpy"))	ptr = (int*)&mob->wimpy;
 
-
 	if(!ptr) return;
+
 
 	// MINIMUM to alter ANYTHING not allowed on players on a player
 	if(!allowpc && !IS_NPC(mob)) min_sec = 9;
@@ -3018,6 +3081,23 @@ SCRIPT_CMD(do_rpaltermob)
 		return;
 	}
 
+	switch(arg.type) {
+	case ENT_STRING:
+		if( is_number(arg.d.str) )
+			value = atoi(arg.d.str);
+		else
+		{
+			allowarith = FALSE;	// This is a bit vector, no arithmetic operators.
+			value = script_flag_value(flags, arg.d.str);
+
+			if( value == NO_FLAG ) value = 0;
+		}
+
+		break;
+	case ENT_NUMBER: value = arg.d.num; break;
+	default: return;
+	}
+
 	switch (buf[0]) {
 	case '+':
 		if( !allowarith ) {
@@ -3025,24 +3105,21 @@ SCRIPT_CMD(do_rpaltermob)
 			return;
 		}
 
-		*ptr += value;
-		break;
+		*ptr += value; break;
 	case '-':
 		if( !allowarith ) {
 			bug("RpAlterMob - altermob called with arithmetic operator on a bitonly field.", 0);
 			return;
 		}
 
-		*ptr -= value;
-		break;
+		*ptr -= value; break;
 	case '*':
 		if( !allowarith ) {
 			bug("RpAlterMob - altermob called with arithmetic operator on a bitonly field.", 0);
 			return;
 		}
 
-		*ptr *= value;
-		break;
+		*ptr *= value; break;
 	case '/':
 		if( !allowarith ) {
 			bug("RpAlterMob - altermob called with arithmetic operator on a bitonly field.", 0);
@@ -3050,25 +3127,25 @@ SCRIPT_CMD(do_rpaltermob)
 		}
 
 		if (!value) {
-			bug("RpAlterMob - adjust called with operator / and value 0", 0);
+			bug("RpAlterMob - altermob called with operator / and value 0", 0);
 			return;
 		}
 		*ptr /= value;
 		break;
 	case '%':
+		if( !allowarith ) {
+			bug("RpAlterMob - altermob called with arithmetic operator on a bitonly field.", 0);
+			return;
+		}
+
 		if (!value) {
-			bug("RpAlterMob - adjust called with operator % and value 0", 0);
+			bug("RpAlterMob - altermob called with operator % and value 0", 0);
 			return;
 		}
 		*ptr %= value;
 		break;
 
 	case '=':
-		if( !allowarith ) {
-			bug("RpAlterMob - altermob called with arithmetic operator on a bitonly field.", 0);
-			return;
-		}
-
 		*ptr = value;
 		break;
 	case '&': *ptr &= value; break;
@@ -3994,6 +4071,8 @@ SCRIPT_CMD(do_rpalterexit)
 	int *ptr = NULL;
 	sh_int *sptr = NULL;
 	char **str;
+	bool allowarith = TRUE;
+	const struct flag_type *flags = NULL;
 
 	if(!info || !info->room) return;
 
@@ -4095,8 +4174,8 @@ SCRIPT_CMD(do_rpalterexit)
 	default: return;
 	}
 
-	if(!str_cmp(field,"flags"))		ptr = (int*)&ex->exit_info;
-	else if(!str_cmp(field,"resets"))	ptr = (int*)&ex->rs_flags;
+	if(!str_cmp(field,"flags"))			{ ptr = (int*)&ex->exit_info; flags = exit_flags; }
+	else if(!str_cmp(field,"resets"))	{ ptr = (int*)&ex->rs_flags; flags = exit_flags; }
 	else if(!str_cmp(field,"strength"))	sptr = (sh_int*)&ex->door.strength;
 	else if(!str_cmp(field,"key"))		ptr = (int*)&ex->door.key_vnum;
 
@@ -4109,12 +4188,52 @@ SCRIPT_CMD(do_rpalterexit)
 		return;
 	}
 
+	switch(arg.type) {
+	case ENT_STRING:
+		if( is_number(arg.d.str) )
+			value = atoi(arg.d.str);
+		else
+		{
+			allowarith = FALSE;	// This is a bit vector, no arithmetic operators.
+			value = script_flag_value(flags, arg.d.str);
+
+			if( value == NO_FLAG ) value = 0;
+		}
+
+		break;
+	case ENT_NUMBER: value = arg.d.num; break;
+	default: return;
+	}
+
+
 	if(ptr) {
 		switch (buf[0]) {
-		case '+': *ptr += value; break;
-		case '-': *ptr -= value; break;
-		case '*': *ptr *= value; break;
+		case '+':
+			if( !allowarith ) {
+				bug("RpAlterExit - alterexit called with arithmetic operator on a bitonly field.", 0);
+				return;
+			}
+			*ptr += value;
+			break;
+		case '-':
+			if( !allowarith ) {
+				bug("RpAlterExit - alterexit called with arithmetic operator on a bitonly field.", 0);
+				return;
+			}
+			*ptr -= value;
+			break;
+		case '*':
+			if( !allowarith ) {
+				bug("RpAlterExit - alterexit called with arithmetic operator on a bitonly field.", 0);
+				return;
+			}
+			*ptr *= value;
+			break;
 		case '/':
+			if( !allowarith ) {
+				bug("RpAlterExit - alterexit called with arithmetic operator on a bitonly field.", 0);
+				return;
+			}
 			if (!value) {
 				bug("RpAlterExit - adjust called with operator / and value 0", 0);
 				return;
@@ -4122,6 +4241,10 @@ SCRIPT_CMD(do_rpalterexit)
 			*ptr /= value;
 			break;
 		case '%':
+			if( !allowarith ) {
+				bug("RpAlterExit - alterexit called with arithmetic operator on a bitonly field.", 0);
+				return;
+			}
 			if (!value) {
 				bug("RpAlterExit - adjust called with operator % and value 0", 0);
 				return;
@@ -4390,6 +4513,8 @@ SCRIPT_CMD(do_rpalterroom)
 	sh_int *sptr = NULL;
 	char **str;
 	bool allow_empty = FALSE;
+	bool allowarith = TRUE;
+	const struct flag_type *flags = NULL;
 
 	if(!info || !info->room) return;
 
@@ -4494,14 +4619,8 @@ SCRIPT_CMD(do_rpalterroom)
 		return;
 	}
 
-	switch(arg.type) {
-	case ENT_STRING: value = is_number(arg.d.str) ? atoi(arg.d.str) : 0; break;
-	case ENT_NUMBER: value = arg.d.num; break;
-	default: return;
-	}
-
-	if(!str_cmp(field,"room"))		ptr = (int*)&room->room_flags;
-	else if(!str_cmp(field,"room2"))	ptr = (int*)&room->room2_flags;
+	if(!str_cmp(field,"room"))			{ ptr = (int*)&room->room_flags; flags = room_flags; }
+	else if(!str_cmp(field,"room2"))	{ ptr = (int*)&room->room2_flags; flags = room2_flags; }
 	else if(!str_cmp(field,"light"))	ptr = (int*)&room->light;
 	else if(!str_cmp(field,"sector"))	ptr = (int*)&room->sector_type;
 	else if(!str_cmp(field,"heal"))		{ ptr = (int*)&room->heal_rate; min_sec = 9; }
@@ -4517,21 +4636,66 @@ SCRIPT_CMD(do_rpalterroom)
 		return;
 	}
 
+	switch(arg.type) {
+	case ENT_STRING:
+		if( is_number(arg.d.str) )
+			value = atoi(arg.d.str);
+		else
+		{
+			allowarith = FALSE;	// This is a bit vector, no arithmetic operators.
+			value = script_flag_value(flags, arg.d.str);
+
+			if( value == NO_FLAG ) value = 0;
+		}
+
+		break;
+	case ENT_NUMBER: value = arg.d.num; break;
+	default: return;
+	}
+
 	if(ptr) {
 		switch (buf[0]) {
-		case '+': *ptr += value; break;
-		case '-': *ptr -= value; break;
-		case '*': *ptr *= value; break;
+		case '+':
+			if( !allowarith ) {
+				bug("RpAlterRoom - alterroom called with arithmetic operator on a bitonly field.", 0);
+				return;
+			}
+
+			*ptr += value; break;
+		case '-':
+			if( !allowarith ) {
+				bug("RpAlterRoom - alterroom called with arithmetic operator on a bitonly field.", 0);
+				return;
+			}
+
+			*ptr -= value; break;
+		case '*':
+			if( !allowarith ) {
+				bug("RpAlterRoom - alterroom called with arithmetic operator on a bitonly field.", 0);
+				return;
+			}
+
+			*ptr *= value; break;
 		case '/':
+			if( !allowarith ) {
+				bug("RpAlterRoom - alterroom called with arithmetic operator on a bitonly field.", 0);
+				return;
+			}
+
 			if (!value) {
-				bug("RpAlterRoom - adjust called with operator / and value 0", 0);
+				bug("RpAlterRoom - alterroom called with operator / and value 0", 0);
 				return;
 			}
 			*ptr /= value;
 			break;
 		case '%':
+			if( !allowarith ) {
+				bug("RpAlterRoom - alterroom called with arithmetic operator on a bitonly field.", 0);
+				return;
+			}
+
 			if (!value) {
-				bug("RpAlterRoom - adjust called with operator % and value 0", 0);
+				bug("RpAlterRoom - alterroom called with operator % and value 0", 0);
 				return;
 			}
 			*ptr %= value;
@@ -4934,7 +5098,7 @@ SCRIPT_CMD(do_rpxcall)
 		}
 	}
 
-	ret = execute_script(script->vnum, script, mob, obj, room, token, ch, obj1, obj2, vch, NULL,NULL,info->phrase,info->trigger,0,0,0,0,0);
+	ret = execute_script(script->vnum, script, mob, obj, room, token, ch, obj1, obj2, vch, NULL,NULL, NULL,info->phrase,info->trigger,0,0,0,0,0);
 	if(info->room) {
 		info->room->progs->lastreturn = ret;
 		DBG3MSG1("lastreturn = %d\n", info->room->progs->lastreturn);
@@ -5190,7 +5354,7 @@ SCRIPT_CMD(do_rpstartcombat)
 		return;
 
 	// The victim is fighting someone else in a singleplay room
-	if(victim->fighting != attacker && !IS_SET(attacker->in_room->room2_flags, ROOM_MULTIPLAY))
+	if(!IS_NPC(attacker) && victim->fighting != attacker && !IS_SET(attacker->in_room->room2_flags, ROOM_MULTIPLAY))
 		return;
 
 	// They are not in the same room
@@ -5967,4 +6131,147 @@ SCRIPT_CMD(do_rpcrier)
 	strcat(buf, "{x");
 
 	crier_announce(buf);
+}
+
+// Syntax: FIXAFFECTS $MOBILE
+SCRIPT_CMD(do_rpfixaffects)
+{
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->room || IS_NULLSTR(argument)) return;
+
+	if(!expand_argument(info,argument,&arg))
+		return;
+
+	if(arg.type != ENT_MOBILE) return;
+
+	if(arg.d.mob == NULL) return;
+
+	affect_fix_char(arg.d.mob);
+}
+
+// Syntax: saveplayer $PLAYER
+SCRIPT_CMD(do_rpsaveplayer)
+{
+	char *rest;
+	SCRIPT_PARAM arg;
+    CHAR_DATA *mob;
+
+	if(!info || !info->room || IS_NULLSTR(argument)) return;
+
+	info->room->progs->lastreturn = 0;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+	mob = arg.d.mob;
+	if(IS_NPC(mob)) return;
+
+	save_char_obj(mob);
+
+	info->room->progs->lastreturn = 1;
+}
+
+// Syntax:	checkpoint $PLAYER $ROOM
+// 			checkpoint $PLAYER VNUM
+//			checkpoint $PLAYER none|clear|reset
+//
+// Sets the checkpoint of the $PLAYER to the destination or clears it.
+// - When a checkpoint is set, it will override what location is saved to the pfile.
+// - When setting a checkpoint via VNUM and an invalid vnum is given, it will clear the checkpoint.
+SCRIPT_CMD(do_rpcheckpoint)
+{
+	char *rest;
+	SCRIPT_PARAM arg;
+    CHAR_DATA *mob;
+
+	if(!info || !info->room || IS_NULLSTR(argument)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+	mob = arg.d.mob;
+	if(IS_NPC(mob)) return;
+
+	if(!(rest = expand_argument(info,rest,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING:
+		if( !str_cmp(arg.d.str, "none") ||
+			!str_cmp(arg.d.str, "clear") ||
+			!str_cmp(arg.d.str, "reset") )
+			mob->checkpoint = NULL;
+		break;
+	case ENT_NUMBER:
+		if( arg.d.num > 0 )
+			mob->checkpoint = get_room_index(arg.d.num);
+		break;
+	case ENT_ROOM:
+		if( arg.d.room != NULL )
+			mob->checkpoint = arg.d.room;
+		break;
+	}
+}
+
+// Syntax: remort $PLAYER
+//  - prompts them for a class out of what they can do
+SCRIPT_CMD(do_rpremort)
+{
+	char *rest;
+	SCRIPT_PARAM arg;
+    CHAR_DATA *mob;
+
+	if(!info || !info->room || IS_NULLSTR(argument)) return;
+
+	info->room->progs->lastreturn = 0;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+	mob = arg.d.mob;
+	if(IS_NPC(mob) || !mob->desc || is_char_busy(mob)) return;
+
+	// Are they already being prompted
+	if(mob->desc->input ||
+		mob->pk_question ||
+		mob->remove_question ||
+		mob->personal_pk_question ||
+		mob->cross_zone_question ||
+		mob->pcdata->convert_church != -1 ||
+		mob->challenged ||
+		mob->remort_question)
+		return;
+
+	if(IS_REMORT(mob)) return;
+
+    if (mob->tot_level < LEVEL_HERO) return;
+
+    mob->remort_question = TRUE;
+    show_multiclass_choices(mob, mob);
+
+	info->room->progs->lastreturn = 1;
+}
+
+
+// Syntax: restore $MOBILE
+SCRIPT_CMD(do_rprestore)
+{
+	char *rest;
+	SCRIPT_PARAM arg;
+
+	if(!info || !info->room || IS_NULLSTR(argument)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+	restore_char(arg.d.mob, NULL);
 }

@@ -1733,6 +1733,7 @@ const struct flag_type portal_flags[]=
 {
     {	"arearandom",	GATE_AREARANDOM,	TRUE	},
     {	"candragitems",	GATE_CANDRAGITEMS,	TRUE	},
+    {	"force_brief",	GATE_FORCE_BRIEF,	TRUE	},
     {	"gravity",		GATE_GRAVITY,		FALSE	},	// @@@NIB : 20070126 : Not imped yet
     {	"no_curse",		GATE_NOCURSE,		TRUE	},
     {	"noprivacy",	GATE_NOPRIVACY,		TRUE	},	// @@@NIB : 20070126

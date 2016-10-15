@@ -308,8 +308,17 @@ void fwrite_char(CHAR_DATA *ch, FILE *fp)
     if (IS_IMMORTAL(ch))
 	fprintf(fp, "LastInquiryRead %ld\n", (long int)ch->pcdata->last_project_inquiry);
 
-	if(!ch->in_room)
-		fprintf (fp, "Room %ld\n", (long int)3001);
+	if( ch->checkpoint ) {
+		if( ch->checkpoint->wilds )
+			fprintf (fp, "Vroom %ld %ld %ld %ld\n",
+				ch->checkpoint->x, ch->checkpoint->y, ch->checkpoint->wilds->pArea->uid, ch->checkpoint->wilds->uid);
+		else if(ch->checkpoint->source)
+			fprintf(fp,"CloneRoom %ld %ld %ld\n",
+				ch->checkpoint->source->vnum, ch->checkpoint->id[0], ch->checkpoint->id[1]);
+		else
+			fprintf(fp,"Room %ld\n", ch->checkpoint->vnum);
+	} else if(!ch->in_room)
+		fprintf (fp, "Room %ld\n", (long int)ROOM_VNUM_TEMPLE);
 	else if(ch->in_wilds) {
 		fprintf (fp, "Vroom %ld %ld %ld %ld\n",
 			ch->in_room->x, ch->in_room->y, ch->in_wilds->pArea->uid, ch->in_wilds->uid);
@@ -3453,6 +3462,7 @@ void cleanup_affects(OBJ_DATA *obj)
 }
 
 
+#define HAS_ALL_BITS(a, b) (((a) & (b)) == (a))
 
 void fix_character(CHAR_DATA *ch)
 {
@@ -3472,35 +3482,7 @@ void fix_character(CHAR_DATA *ch)
     for (i = 0; pc_race_table[ch->race].skills[i] != NULL; i++)
 	group_add(ch,pc_race_table[ch->race].skills[i],FALSE);
 
-	if( ch->affected_by_perm != race_table[ch->race].aff )
-	{
-		ch->affected_by_perm = race_table[ch->race].aff;
-		resetaffects = TRUE;
-	}
-
-	if( ch->affected_by2_perm != race_table[ch->race].aff2 )
-	{
-		ch->affected_by2_perm = race_table[ch->race].aff2;
-		resetaffects = TRUE;
-	}
-
-    if( ch->imm_flags_perm != race_table[ch->race].imm )
-    {
-		ch->imm_flags_perm = race_table[ch->race].imm;
-		resetaffects = TRUE;
-	}
-
-    if( ch->res_flags_perm != race_table[ch->race].res )
-    {
-		ch->res_flags_perm = race_table[ch->race].res;
-		resetaffects = TRUE;
-	}
-
-    if( ch->vuln_flags_perm != race_table[ch->race].vuln )
-    {
-		ch->vuln_flags_perm = race_table[ch->race].vuln;
-		resetaffects = TRUE;
-	}
+	// TODO: Readd checks for dealing with racial affects, affects2, imm, res and vuln
 
 	if( resetaffects )
 	{

@@ -129,6 +129,8 @@ SKILL_ENTRY *new_skill_entry()
 		skill_entry_free = skill_entry_free->next;
 	}
 
+	entry->scripted = FALSE;
+	entry->isspell = FALSE;
 	entry->song = -1;
 
 	return entry;
@@ -572,7 +574,6 @@ CHAR_DATA *new_char( void )
     ch->hit_type		= TYPE_UNDEFINED;
 
     ch->sorted_skills		= NULL;
-    ch->sorted_spells		= NULL;
     ch->sorted_songs		= NULL;
 
     ch->llocker			= list_create(FALSE);
@@ -583,6 +584,8 @@ CHAR_DATA *new_char( void )
 
     ch->deathsight_vision = 0;
     ch->in_damage_function = FALSE;
+
+    ch->checkpoint = NULL;
 
     return ch;
 }
@@ -607,11 +610,6 @@ void free_char( CHAR_DATA *ch )
     // Free data structures unique to the character
 
  	for(se = ch->sorted_skills; se; se = se_next) {
-		se_next = se->next;
-		free_skill_entry(se);
-	}
-
- 	for(se = ch->sorted_spells; se; se = se_next) {
 		se_next = se->next;
 		free_skill_entry(se);
 	}
@@ -699,6 +697,8 @@ void free_char( CHAR_DATA *ch )
 
     ch->events = NULL;
     ch->id[0] = ch->id[1] = 0;
+
+    ch->checkpoint = NULL;
 
 	if( ch->persist ) persist_removemobile(ch);
 
