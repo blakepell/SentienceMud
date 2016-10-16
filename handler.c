@@ -7151,7 +7151,7 @@ void visit_room_recurse(LLIST *visited, ROOM_INDEX_DATA *room, VISIT_FUNC *func,
 
 void visit_rooms(ROOM_INDEX_DATA *room, VISIT_FUNC *func, int depth, void *argv[], int argc, bool closed)
 {
-	LLIST *visited = list_create(TRUE);
+	LLIST *visited = list_create(FALSE);
 
 	visit_room_recurse(visited, room,func,depth,argv,argc,closed,MAX_DIR);
 
