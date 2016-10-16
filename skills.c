@@ -2219,7 +2219,7 @@ int skill_entry_learn (CHAR_DATA *ch, SKILL_ENTRY *entry)
 			skill_table[entry->sn].rating[this_class]);
 	}
 
-	if(amount > 1)
+	if(amount > 0)
 		return int_app[get_curr_stat(ch, STAT_INT)].learn / amount;
 
 	else
