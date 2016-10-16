@@ -57,8 +57,6 @@
 #define DECLARE_ROOM_FUN( fun )		ROOM_FUN  fun
 #define SPELL_FUNC(s)	bool s (int sn, int level, CHAR_DATA *ch, void *vo, int target, int obj_wear_loc)
 
-
-
 /* System calls */
 int unlink();
 int system();
@@ -7647,5 +7645,9 @@ int music_lookup( char *name);
 bool is_char_busy(CHAR_DATA *ch);
 bool obj_has_spell(OBJ_DATA *obj, char *name);
 void restore_char(CHAR_DATA *ch, CHAR_DATA *whom);
+
+typedef bool (*pVISIT_ROOM_LINE_FUNC)(ROOM_INDEX_DATA *room, CHAR_DATA *ch, int depth, int door, void *data );
+typedef void (*pVISIT_ROOM_END_FUNC)(ROOM_INDEX_DATA *room, CHAR_DATA *ch, int depth, int door, void *data, bool canceled );
+void visit_room_direction(CHAR_DATA *ch, ROOM_INDEX_DATA *start_room, int max_depth, int door, void *data, pVISIT_ROOM_LINE_FUNC func, pVISIT_ROOM_END_FUNC end_func);
 
 #endif /* !def __MERC_H__ */

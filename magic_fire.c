@@ -10,18 +10,77 @@
 #include "tables.h"
 #include "wilds.h"
 
-SPELL_FUNC(spell_afterburn)
+struct afterburn_data {
+	int level;
+	int decay;
+};
+
+void afterburn_hitroom(ROOM_INDEX_DATA *room, CHAR_DATA *ch, int dam, int level)
 {
 	CHAR_DATA *victim;
 	CHAR_DATA *vnext;
-	ROOM_INDEX_DATA *to_room;
-	EXIT_DATA *exit;
+
+	// Maybe add a chance for creating an inferno?
+
+	fire_effect((void *) room, level, dam, TARGET_ROOM);
+	for (victim = room->people; victim ; victim = vnext) {
+		vnext = victim->next_in_room;
+		if (!is_safe(ch, victim, FALSE) && victim != ch) {
+			if (!check_spell_deflection(ch, victim, gsn_afterburn))
+				continue;
+
+			damage(ch, victim, dam, gsn_afterburn, DAM_FIRE, TRUE);
+			fire_effect((void *)victim, level, dam, TARGET_CHAR);
+		}
+	}
+
+
+}
+
+bool afterburn_progress(ROOM_INDEX_DATA *room, CHAR_DATA *ch, int depth, int door, void *data )
+{
+	struct afterburn_data *afdata = (struct afterburn_data *)data;
+	int level, dam;
+	char buf[MSL];
+
+	if(!afdata || !room) return TRUE;
+
+	level = afdata->level - afdata->decay * depth;
+	if( level < 1 ) level = 1;
+
+	dam = dice(level, 5);
+
+	if( door >= 0 && door < MAX_DIR ) {
+		sprintf(buf, "{RA scorching fireball flies in from the %s!{x\n\r", dir_name[ rev_dir[ door ] ]);
+		room_echo(room, buf);
+		printf_to_char(ch, "%d] {RA scorching fireball flies in from the %s!{x\n\r", depth, dir_name[ rev_dir[ door ] ]);
+	}
+
+	afterburn_hitroom(room, ch, dam, level);
+
+	if( door >= 0 && door < MAX_DIR ) {
+		sprintf(buf, "{RA scorching fireball flies %sward!{x\n\r",dir_name[ door ]);
+		room_echo(room, buf);
+		printf_to_char(ch, "%d] {RA scorching fireball flies %sward!{x\n\r", depth, dir_name[ door ]);
+	}
+
+	return FALSE;
+}
+
+void afterburn_end(ROOM_INDEX_DATA *room, CHAR_DATA *ch, int depth, int door, void *data, bool canceled )
+{
+	if(!room) return;
+
+	room_echo(room, "{RA scorching fireball explodes in a roaring inferno!{x\n\r");
+	printf_to_char(ch, "%d] {RA scorching fireball explodes in a roaring inferno!{x\n\r", depth);
+}
+
+SPELL_FUNC(spell_afterburn)
+{
 	char *arg = (char *) vo;
-	int depth;
 	int max_depth;
 	int door;
-	int dam;
-	char buf[MAX_STRING_LENGTH];
+	struct afterburn_data data;
 
 	if (!arg) return FALSE;
 
@@ -39,6 +98,14 @@ SPELL_FUNC(spell_afterburn)
 	act("{RA scorching fireball erupts from $n's hands and flies $tward!{x", ch, NULL, NULL, NULL, NULL, dir_name[door], NULL, TO_ROOM);
 
 	max_depth = 5;
+
+	data.level = level;
+	data.decay = 6 - get_skill(ch, sn) / 20;
+
+	if( !afterburn_progress(ch->in_room, ch, 0, -1, &data) )
+		visit_room_direction(ch, ch->in_room, max_depth, door, &data, afterburn_progress, afterburn_end);
+
+#if 0
 
 	dam = dice(level, 5);
 	fire_effect((void *) ch->in_room, level, dam, TARGET_ROOM);
@@ -89,6 +156,7 @@ SPELL_FUNC(spell_afterburn)
 		sprintf(buf, "{RA scorching fireball flies %sward!{x\n\r",dir_name[ door ]);
 		room_echo(to_room, buf);
 	}
+#endif
 	return TRUE;
 }
 
@@ -236,7 +304,7 @@ SPELL_FUNC(spell_fire_cloud)
 
 		if (IS_SET(ch->in_room->exit[dir]->exit_info, EX_CLOSED)) continue;
 
-		room = ch->in_room->exit[dir]->u1.to_room;
+		if(!(room = exit_destination(ch->in_room->exit[dir]))) continue;
 
 		for (obj = room->contents; obj != NULL; obj = obj->next_content) {
 			if (obj->item_type == ITEM_ROOM_FLAME) {

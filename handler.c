@@ -455,19 +455,19 @@ int get_skill(CHAR_DATA *ch, int sn)
     {
         /* AO 092916 -- Making it better, but not perfetc, for now. Based on flags.
 	 * Changed level calculation to the log functio to scale
-	 * well up to lv500  */ 
+	 * well up to lv500  */
 
 	// Account for racial skills.
 	if (skill_table[sn].race != -1 && ch->race != skill_table[sn].race)
 	    skill = 0;
 	if (ch->tot_level < 10)
 	    skill = 10;
- 
+
 	/* Handle spells */
 	if (skill_table[sn].spell_fun != spell_null) {
 		if (ch->max_mana > 0)
 			skill = 40+19 * log10(ch->tot_level)/2;
-		else 
+		else
 			skill = 0;
 	} //thief skills
 	else if (IS_SET(ch->act, ACT_THIEF) && (sn == gsn_sneak || sn == gsn_hide))
@@ -8165,4 +8165,178 @@ void restore_char(CHAR_DATA *ch, CHAR_DATA *whom)
 
 	p_percent_trigger( ch, NULL, NULL, NULL, ch, whom, NULL,NULL, NULL, TRIG_RESTORE, NULL);
 
+}
+
+
+void visit_room_direction(CHAR_DATA *ch, ROOM_INDEX_DATA *start_room, int max_depth, int door, void *data, pVISIT_ROOM_LINE_FUNC func, pVISIT_ROOM_END_FUNC end_func)
+{
+	int depth;
+	int to_x, to_y;
+	DESTINATION_DATA dest;
+	DESTINATION_DATA nextdest;
+	EXIT_DATA *pExit;
+	WILDS_VLINK *pVLink = NULL;
+	bool canceled = FALSE;
+
+	if( max_depth < 1)
+		return;
+
+	// Initialize current destination data to the start room
+	dest.room =		nextdest.room =		start_room;
+	dest.wilds =	nextdest.wilds =	NULL;
+	dest.wx =		nextdest.wx =		0;
+	dest.wy =		nextdest.wy =		0;
+
+	for( depth = 1; !canceled && depth <= max_depth; depth++) {
+
+		if( dest.room ) {
+			// We have an actual room (static, clone or existing wilds)
+			if ((pExit = dest.room->exit[door])) {
+				// Hidden exits that haven't been found
+				if(IS_SET(pExit->exit_info,EX_HIDDEN) && !IS_SET(pExit->exit_info,EX_FOUND))
+					break;
+
+				// Closed exits
+				if(IS_SET(pExit->exit_info, EX_CLOSED))
+					break;
+
+				if(!exit_destination_data(pExit, &nextdest))
+					break;
+
+			} else
+				break;
+
+		} else if(dest.wilds) {
+			// We have a wilds location, the room has not been loaded
+
+			pVLink = vroom_get_to_vlink(dest.wilds, dest.wx, dest.wy, door);
+			if( pVLink != NULL ) {
+				if( !pVLink->pDestRoom )
+					nextdest.room = get_room_index(pVLink->destvnum);
+				else
+					nextdest.room = pVLink->pDestRoom;
+
+			} else {
+				to_x = get_wilds_vroom_x_by_dir(dest.wilds, dest.wx, dest.wy, door);
+				to_y = get_wilds_vroom_y_by_dir(dest.wilds, dest.wx, dest.wy, door);
+
+				// Nothing here to reach, so stop
+				if( !check_for_bad_room(dest.wilds, to_x, to_y) )
+					break;
+
+				nextdest.room = get_wilds_vroom(dest.wilds, to_x, to_y);
+				nextdest.wx = to_x;
+				nextdest.wy = to_y;
+
+
+			}
+		} else
+			break;
+
+		// We have an actual room
+		if(nextdest.room) {
+			// Depth 0 == initial room, that should already be taken care of prior to using this function
+			if(func)
+				canceled = (*func)(nextdest.room, ch, depth, door, data);
+
+/*
+			else {
+				if( nextdest.room->wilds )
+					printf_to_char(ch, "visit: depth = %d, door = %d, Wilds = <%ld, %d, %d>\n\r", depth, door, nextdest.room->wilds->uid, nextdest.room->x, nextdest.room->y);
+				else
+					printf_to_char(ch, "visit: depth = %d, door = %d, Room = <%ld>\n\r", depth, door, nextdest.room->vnum);
+			}*/
+		} else {
+//			printf_to_char(ch, "visit: depth = %d, door = %d, Unloaded Wilds = <%d, %d>\n\r", depth, door, nextdest.wx, nextdest.wy);
+		}
+
+		dest.room =		nextdest.room;
+		dest.wilds =	nextdest.wilds;
+		dest.wx =		nextdest.wx;
+		dest.wy =		nextdest.wy;
+	}
+
+	if( end_func && dest.room )
+		(*end_func)(dest.room, ch, depth - 1, door, data, canceled);
+
+
+/*
+
+	for( depth = 1; depth < max_depth; depth++) {
+		last_room = dest.room;
+
+		if( pVLink != NULL ) {
+			// TODO: VLINKS need FROM-WILD side exit flags
+
+			// Hidden exits that haven't been found
+			// Closed exits
+
+			// No room there actually!
+			if( !pVLink->pDestRoom )
+				dest.room = get_room_index(pVLink->destvnum);
+			else
+				dest.room = pVLink->pDestRoom;
+
+			if(!dest.room) {
+
+				break;
+			}
+
+			(*func)(dest.room, ch, depth, door, data);
+
+
+			pVLink = NULL;
+
+		} else if( dest.room ) {
+			// We have an actual room (static, clone or existing wilds)
+			if ((pExit = dest.room->exit[door])) {
+				// Hidden exits that haven't been found
+				if(IS_SET(pExit->exit_info,EX_HIDDEN) && !IS_SET(pExit->exit_info,EX_FOUND))
+					break;
+
+				// Closed exits
+				if(IS_SET(pExit->exit_info, EX_CLOSED))
+					break;
+
+				if(!exit_destination_data(pExit, &dest))
+					break;
+
+				// We have an actual room
+				if(dest.room)
+					(*func)(dest.room, ch, depth, door, data);
+			} else
+				break;
+
+		} else if(dest.wilds) {
+			// We have a wilds location, the room has not been loaded
+
+			pVLink = vroom_get_to_vlink(dest.wilds, dest.wx, dest.wy, door);
+			if( pVLink != NULL ) {
+				continue;
+
+			} else {
+				to_x = get_wilds_vroom_x_by_dir(dest.wilds, dest.wx, dest.wy, door);
+				to_y = get_wilds_vroom_y_by_dir(dest.wilds, dest.wx, dest.wy, door);
+
+				// Nothing here to reach, so stop
+				if( !check_for_bad_room(dest.wilds, to_x, to_y) )
+					break;
+
+				dest.room = get_wilds_vroom(dest.wilds, to_x, to_y);
+				dest.wx = to_x;
+				dest.wy = to_y;
+
+				if(dest.room) {
+					(*func)(dest.room, ch, depth, door, data);
+				}
+
+			}
+		} else
+			break;
+
+	}
+
+	if( end_func && last_room )
+		(*end_func)(last_room, ch, depth, door, data);
+*/
 }
