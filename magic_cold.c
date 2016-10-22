@@ -198,19 +198,125 @@ void spellassist_room_freeze(ROOM_INDEX_DATA *room, CHAR_DATA *ch, int level, in
 	}
 }
 
+int get_room_heat(ROOM_INDEX_DATA *room, int catalyst)
+{
+	OBJ_DATA *obj;
+	int heat = 0;
+
+	if(room) {
+		if (IS_SET(room->room2_flags, ROOM_FIRE)) heat += 25;
+		if (room->sector_type == SECT_LAVA) heat += 60;
+
+		for (obj = room->contents; obj != NULL; obj = obj->next_content) {
+			if (obj->item_type == ITEM_ROOM_FLAME) heat += 15;
+		}
+
+		heat = URANGE(0,heat,100);
+		heat = heat * (100 - catalyst*catalyst) / 100;	// If they use catalysts, reduce the heat quadratically
+	}
+
+	return heat;
+}
+
+struct glacialwave_data {
+	int level;
+	int catalyst;
+	int depth_scale;
+	bool large;
+	bool do_ice;
+};
+
+
+bool glacialwave_progress(ROOM_INDEX_DATA *room, CHAR_DATA *ch, int depth, int door, void *data )
+{
+	struct glacialwave_data *gw = (struct glacialwave_data *)data;
+	int level, heat, catalyst, i;
+	char buf[MSL];
+
+	if(!gw || !room) return TRUE;
+
+	level = gw->level;
+	catalyst = gw->catalyst;
+	for(i = 0; i < depth; i++) {
+		level = level * gw->depth_scale / 100;
+		if( catalyst > 0 ) catalyst--;
+
+		if(gw->large) gw->large = number_range(0,9) < catalyst;
+	}
+
+	heat = get_room_heat(room, catalyst);
+
+	if( door >= 0 && door < MAX_DIR ) {
+		if(gw->large)
+			sprintf(buf, "{CAn enormous glacial wave rushes in from the %s!{x\n\r", dir_name[ rev_dir[ door ] ]);
+		else
+			sprintf(buf, "{CA glacial wave flies in from the %s!{x\n\r", dir_name[ rev_dir[ door ] ]);
+		room_echo(room, buf);
+	}
+
+	if (gw->large && number_range(0,24) < heat) {
+		gw->large = FALSE;	// It takes little to prevent ice storms
+		room_echo(room,"{RThe intense heat in the area diminishes the glacial wave significantly.{x");
+
+	} else if (number_percent() < heat) {
+		room_echo(room,"{RThe intense heat in the area absorbs the glacial wave.{x");
+		return TRUE;
+	}
+
+	if (gw->do_ice && number_range(0,24) < heat) gw->do_ice = FALSE;	// It takes little to prevent ice storms
+
+	spellassist_room_freeze(room,ch,level,gw->large?8:5,gsn_glacial_wave);
+
+	if( door >= 0 && door < MAX_DIR ) {
+		if(gw->large)
+			sprintf(buf, "{CAn enormous glacial wave rushes %sward!{x\n\r", dir_name[ door ]);
+		else
+			sprintf(buf, "{CA glacial wave flies %sward!{x\n\r", dir_name[ door ]);
+		room_echo(room, buf);
+	}
+
+
+	return FALSE;
+}
+
+void glacialwave_end(ROOM_INDEX_DATA *room, CHAR_DATA *ch, int depth, int door, void *data, bool canceled )
+{
+	struct glacialwave_data *gw = (struct glacialwave_data *)data;
+	int level, catalyst, i;
+	char buf[MSL];
+
+	if(!gw || !room) return;
+
+	level = gw->level;
+	catalyst = gw->catalyst;
+	for(i = 0; i < depth; i++) {
+		level = level * gw->depth_scale / 100;
+		if( catalyst > 0 ) catalyst--;
+
+		if(gw->large) gw->large = number_range(0,9) < catalyst;
+	}
+
+	if(gw->large)
+		sprintf(buf, "{CAn enormous glacial wave explodes in a fury of ice!{x\n\r");
+	else
+		sprintf(buf, "{CA glacial wave explodes in a fury of ice!{x\n\r");
+	room_echo(room, buf);
+
+	if(gw->large) spellassist_room_freeze(room,ch,level,5,gsn_glacial_wave);
+
+}
+
+
 SPELL_FUNC(spell_glacial_wave)
 {
-	ROOM_INDEX_DATA *to_room;
+	struct glacialwave_data data;
 	OBJ_DATA *obj;
-	EXIT_DATA *ex;
 	char *arg = (char *) vo;
-	int depth, depth_scale;
+	int depth_scale;
 	int max_depth;
 	int door;
 	int catalyst, i;
-	int heat;
 	bool do_ice, large = FALSE;
-	char buf[MAX_STRING_LENGTH];
 
 	if (!arg) return FALSE;
 
@@ -223,12 +329,12 @@ SPELL_FUNC(spell_glacial_wave)
 		send_to_char("That's not a direction.\n\r", ch);
 		return FALSE;
 	}
-
+/*
 	if (!ch->in_room->exit[door] || !ch->in_room->exit[door]->u1.to_room || (IS_SET(ch->in_room->exit[door]->exit_info,EX_HIDDEN) && !IS_SET(ch->in_room->exit[door]->exit_info,EX_FOUND)) || IS_SET(ch->in_room->exit[door]->exit_info,EX_CLOSED)) {
 		send_to_char("You need an open direction.\n\r", ch);
 		return FALSE;
 	}
-
+*/
 	if(IS_NPC(ch) && ch->pIndexData->vnum == MOB_VNUM_OBJCASTER) {	// non-mob caster
 		max_depth = 5;
 		depth_scale = 50;
@@ -266,89 +372,15 @@ SPELL_FUNC(spell_glacial_wave)
 		act("{CYou gather cold energy until you hurl it $tward as a glacial wave.{x", ch, NULL, NULL, NULL, NULL, dir_name[door], NULL, TO_CHAR);
 	}
 
-	to_room = ch->in_room;
-	// Count the sources of heat
-	heat = 0;
+	data.level = level;
+	data.catalyst = catalyst;
+	data.depth_scale = depth_scale;
+	data.do_ice = do_ice;
+	data.large = large;
 
-	if (IS_SET(to_room->room2_flags, ROOM_FIRE)) heat += 25;
-	if (to_room->sector_type == SECT_LAVA) heat += 60;
+	if( !glacialwave_progress(ch->in_room, ch, 0, -1, &data ) )
+		visit_room_direction(ch, ch->in_room, max_depth, door, &data, glacialwave_progress, glacialwave_end);
 
-	for (obj = to_room->contents; obj != NULL; obj = obj->next_content) {
-		if (obj->item_type == ITEM_ROOM_FLAME) heat += 15;
-	}
-
-	heat = URANGE(0,heat,100);
-	heat = heat * (100 - catalyst*catalyst) / 100;	// If they use catalysts, reduce the heat quadratically
-
-	if (do_ice && number_range(0,24) < heat) do_ice = FALSE;	// It takes little to prevent ice storms
-
-	if (number_percent() < heat) {
-		act("{RThe intense heat in the area absorbs the glacial wave.{x", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ALL);
-		return FALSE;
-	}
-
-	spellassist_room_freeze(to_room,ch,level,large?8:5,sn);
-
-	level = level * depth_scale / 100;
-	depth = 0;
-	for (ex = to_room->exit[door]; ex; ex = to_room->exit[door]) {
-		level = level * depth_scale / 100;
-		--catalyst;
-		if(large) large = number_range(0,9) < catalyst;
-
-		// If at a closed exit, at the depth limit or there is no exit
-		if (IS_SET(ex->exit_info, EX_CLOSED) || depth >= max_depth || !to_room->exit[door]->u1.to_room) {
-			if(large)
-				sprintf(buf, "{CAn enormous glacial wave explodes in a fury of ice!{x\n\r");
-			else
-				sprintf(buf, "{CA glacial wave explodes in a fury of ice!{x\n\r");
-			room_echo(to_room, buf);
-
-			if(large) spellassist_room_freeze(to_room,ch,level,5,sn);
-			return TRUE;
-		}
-
-		// Get new room
-		to_room = to_room->exit[door]->u1.to_room;
-
-		if(large)
-			sprintf(buf, "{CAn enormous glacial wave rushes in from the %s!{x\n\r", dir_name[ rev_dir[ door ] ]);
-		else
-			sprintf(buf, "{CA glacial wave flies in from the %s!{x\n\r", dir_name[ rev_dir[ door ] ]);
-		room_echo(to_room, buf);
-
-		// Count the sources of heat
-		heat = 0;
-
-		if (IS_SET(to_room->room2_flags, ROOM_FIRE)) heat += 25;
-		if (to_room->sector_type == SECT_LAVA) heat += 60;
-
-		for (obj = to_room->contents; obj != NULL; obj = obj->next_content) {
-			if (obj->item_type == ITEM_ROOM_FLAME) heat += 15;
-		}
-
-		heat = URANGE(0,heat,100);
-		heat = heat * (100 - catalyst*catalyst) / 100;	// If they use catalysts, reduce the heat quadratically
-
-		if (large && number_range(0,24) < heat) {
-			large = FALSE;	// It takes little to prevent ice storms
-			room_echo(to_room,"{RThe intense heat in the area diminishes the glacial wave significantly.{x");
-
-		} else if (number_percent() < heat) {
-			room_echo(to_room,"{RThe intense heat in the area absorbs the glacial wave.{x");
-			return TRUE;
-		}
-
-		spellassist_room_freeze(to_room,ch,level,large?8:5,sn);
-
-		if(large)
-			sprintf(buf, "{CAn enormous glacial wave rushes %sward!{x\n\r", dir_name[ door ]);
-		else
-			sprintf(buf, "{CA glacial wave flies %sward!{x\n\r", dir_name[ door ]);
-		room_echo(to_room, buf);
-
-		++depth;
-	}
 	return TRUE;
 }
 

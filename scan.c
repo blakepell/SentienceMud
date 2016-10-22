@@ -53,99 +53,8 @@ char *const distance[7] =
 
 
 /* local functions */
-void scan_list(ROOM_INDEX_DATA *scan_room, CHAR_DATA *ch, int depth, int door);
+bool scan_list(ROOM_INDEX_DATA *scan_room, CHAR_DATA *ch, int depth, int door, void *data);
 void scan_char(CHAR_DATA *victim, CHAR_DATA *ch, int depth, int door );
-
-void scan_direction(CHAR_DATA *ch, ROOM_INDEX_DATA *start_room, int max_depth, int door)
-{
-	int depth;
-	int to_x, to_y;
-	DESTINATION_DATA dest;
-	EXIT_DATA *pExit;
-	WILDS_VLINK *pVLink = NULL;
-
-	// Initialize current destination data to the start room
-	dest.room = start_room;
-	dest.wilds = NULL;
-	dest.wx = 0;
-	dest.wy = 0;
-
-	for( depth = 1; depth < max_depth; depth++) {
-
-		if( pVLink != NULL ) {
-			// TODO: VLINKS need FROM-WILD side exit flags
-
-			// Hidden exits that haven't been found
-			// Closed exits
-
-			// No room there actually!
-			if( !pVLink->pDestRoom ) {
-				dest.room = get_room_index(pVLink->destvnum);
-
-				if(!dest.room)
-					return;
-
-				if(can_see_room (ch, dest.room))
-					scan_list(dest.room, ch, depth, door);
-
-			} else
-				dest.room = pVLink->pDestRoom;
-
-			pVLink = NULL;
-
-		} else if( dest.room ) {
-			// We have an actual room (static, clone or existing wilds)
-			if ((pExit = dest.room->exit[door])) {
-				// Hidden exits that haven't been found
-				if(IS_SET(pExit->exit_info,EX_HIDDEN) && !IS_SET(pExit->exit_info,EX_FOUND))
-					return;
-
-				// Closed exits
-				if(IS_SET(pExit->exit_info, EX_CLOSED))
-					return;
-
-				if(!exit_destination_data(pExit, &dest))
-					return;
-
-				// We have an actual room
-				if(dest.room) {
-
-					if(can_see_room (ch, dest.room))
-						scan_list(dest.room, ch, depth, door);
-				}
-			}
-		} else if(dest.wilds) {
-			// We have a wilds location, the room has not been loaded
-
-			pVLink = vroom_get_to_vlink(dest.wilds, dest.wx, dest.wy, door);
-			if( pVLink != NULL ) {
-				continue;
-
-			} else {
-				to_x = get_wilds_vroom_x_by_dir(dest.wilds, dest.wx, dest.wy, door);
-				to_y = get_wilds_vroom_y_by_dir(dest.wilds, dest.wx, dest.wy, door);
-
-				// Nothing here to reach, so stop
-				if( !check_for_bad_room(dest.wilds, to_x, to_y) )
-					return;
-
-				dest.room = get_wilds_vroom(dest.wilds, to_x, to_y);
-				dest.wx = to_x;
-				dest.wy = to_y;
-
-				if(dest.room) {
-
-					if(can_see_room (ch, dest.room))
-						scan_list(dest.room, ch, depth, door);
-				}
-
-			}
-		} else
-			return;
-
-	}
-}
-
 
 void do_scan(CHAR_DATA *ch, char *argument)
 {
@@ -166,10 +75,10 @@ void do_scan(CHAR_DATA *ch, char *argument)
 	if (!arg1[0]) {
 		act("$n looks all around.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 		send_to_char("{YLooking around, you see:{x\n\r", ch);
-		scan_list(ch->in_room, ch, 0, -1);
+		scan_list(ch->in_room, ch, 0, -1, NULL);
 
 		for (door = 0; door < MAX_DIR; door++ ) {
-			scan_direction(ch, ch->in_room, max_depth, door);
+			visit_room_direction(ch, ch->in_room, max_depth, door, NULL, scan_list, NULL);
 			/*
 			scan_room = ch->in_room;
 
@@ -208,7 +117,7 @@ void do_scan(CHAR_DATA *ch, char *argument)
 	act("{YLooking $T, you see:{x", ch, NULL, NULL, NULL, NULL, NULL, dir_name[door], TO_CHAR);
 	act("$n peers intently $T.", ch, NULL, NULL, NULL, NULL, NULL, dir_name[door], TO_ROOM);
 
-	scan_direction(ch, ch->in_room, max_depth, door);
+	visit_room_direction(ch, ch->in_room, max_depth, door, NULL, scan_list, NULL);
 
 	/*
 	scan_room = ch->in_room;
@@ -240,24 +149,29 @@ void do_scan(CHAR_DATA *ch, char *argument)
 }
 
 
-void scan_list(ROOM_INDEX_DATA *scan_room, CHAR_DATA *ch, int depth, int door )
+bool scan_list(ROOM_INDEX_DATA *scan_room, CHAR_DATA *ch, int depth, int door, void *data )
 {
    CHAR_DATA *rch;
 
    if ( scan_room == NULL )
-       return;
+		return FALSE;
 
-   for (rch = scan_room->people; rch != NULL; rch=rch->next_in_room)
-   {
-       if (rch == ch)
-           continue;
+	if(!can_see_room (ch, scan_room))
+		return FALSE;
 
-       if (!IS_NPC(rch) && rch->invis_level > get_trust(ch))
-	   continue;
 
-       if (can_see(ch, rch) && rch->position != POS_FEIGN)
-	   scan_char( rch, ch, depth, door );
-   }
+	for (rch = scan_room->people; rch != NULL; rch=rch->next_in_room)
+	{
+		if (rch == ch)
+			continue;
+
+		if (!IS_NPC(rch) && rch->invis_level > get_trust(ch))
+			continue;
+
+		if (can_see(ch, rch) && rch->position != POS_FEIGN)
+			scan_char( rch, ch, depth, door );
+	}
+	return FALSE;
 }
 
 
