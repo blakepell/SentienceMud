@@ -312,6 +312,7 @@ bool script_expression_push_operator(STACK *stk,int op)
 	return script_expression_push(stk,script_expression_tostack[op]);
 }
 
+
 int get_operator(char *keyword)
 {
 	register int i;
@@ -530,6 +531,48 @@ void opc_next_line(SCRIPT_CB *block)
 	block->line++;
 }
 
+void script_loop_cleanup(SCRIPT_CB *block, int level)
+{
+	int i;
+
+	for(i = 0; i < MAX_NESTED_LOOPS; i++)
+	{
+		if(block->loops[i].valid && block->loops[i].level >= level )
+		{
+			switch(block->loops[i].d.l.type) {
+			case ENT_STRING:
+			case ENT_EXIT:
+			case ENT_MOBILE:
+			case ENT_OBJECT:
+			case ENT_TOKEN:
+			case ENT_AFFECT:
+				break;
+
+			case ENT_PLLIST_STR:
+			case ENT_BLLIST_MOB:
+			case ENT_BLLIST_OBJ:
+			case ENT_BLLIST_TOK:
+			case ENT_BLLIST_ROOM:
+			case ENT_BLLIST_EXIT:
+			case ENT_BLLIST_SKILL:
+			case ENT_BLLIST_AREA:
+			case ENT_BLLIST_WILDS:
+			case ENT_PLLIST_CONN:
+			case ENT_PLLIST_MOB:
+			case ENT_PLLIST_OBJ:
+			case ENT_PLLIST_ROOM:
+			case ENT_PLLIST_TOK:
+			case ENT_PLLIST_CHURCH:
+			case ENT_PLLIST_VARIABLE:
+				iterator_stop(&block->loops[i].d.l.list.it);
+				break;
+			}
+
+			block->loops[i].valid = FALSE;
+		}
+	}
+}
+
 // Function: End script execution
 //
 // Formats:
@@ -737,6 +780,7 @@ DECL_OPC_FUN(opc_gotoline)
 	int val;
 	SCRIPT_PARAM arg;
 
+	script_loop_cleanup(block, block->cur_line->level);
 	if(block->cur_line->level > 0 && !block->cond[block->cur_line->level-1])
 		return opc_skip_block(block,block->cur_line->level-1,FALSE);
 
@@ -756,6 +800,7 @@ DECL_OPC_FUN(opc_gotoline)
 		if(val >= 0 && val < block->script->lines) {
 			block->line = val;
 			block->cur_line = &block->script->code[val];
+			script_loop_cleanup(block, block->cur_line->level);
 			if(block->cur_line->level > 0) block->cond[block->cur_line->level-1] = TRUE;
 			return TRUE;
 		}
@@ -882,6 +927,7 @@ DECL_OPC_FUN(opc_endfor)
 
 DECL_OPC_FUN(opc_exitfor)
 {
+	script_loop_cleanup(block, block->cur_line->level);
 	if(block->cur_line->level > 0 && !block->cond[block->cur_line->level-1])
 		return opc_skip_block(block,block->cur_line->level-1,FALSE);
 
@@ -908,6 +954,7 @@ DECL_OPC_FUN(opc_list)
 	ROOM_INDEX_DATA *here;
 	EXIT_DATA *ex;
 	CHURCH_DATA *church;
+	VARIABLE *variable;
 	SCRIPT_PARAM arg;
 
 	if(block->cur_line->level > 0 && !block->cond[block->cur_line->level-1])
@@ -1503,6 +1550,28 @@ DECL_OPC_FUN(opc_list)
 			variables_set_church(block->info.var,block->loops[lp].var_name,church);
 			break;
 
+		case ENT_PLLIST_VARIABLE:
+			log_stringf("opc_list: list type ENT_PLLIST_VARIABLE");
+			if(!arg.d.variables || !*arg.d.variables)
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+
+			block->loops[lp].d.l.type = ENT_PLLIST_VARIABLE;
+			block->loops[lp].d.l.list.lp = variable_copy_tolist(arg.d.variables);
+			iterator_start(&block->loops[lp].d.l.list.it,block->loops[lp].d.l.list.lp);
+			block->loops[lp].d.l.owner = NULL;
+
+			variable = (VARIABLE *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+
+			log_stringf("opc_list: variable(%s)", variable ? variable->name : "<END>");
+
+			if( !variable ) {
+				iterator_stop(&block->loops[lp].d.l.list.it);
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+			}
+
+			// Set the variable
+			variables_set_variable(block->info.var,block->loops[lp].var_name,variable);
+			break;
 		default:
 			log_stringf("opc_list: list_type INVALID");
 			block->ret_val = PRET_BADSYNTAX;
@@ -1510,6 +1579,8 @@ DECL_OPC_FUN(opc_list)
 		}
 
 		block->loops[lp].id = block->cur_line->label;
+		block->loops[lp].valid = TRUE;
+		block->loops[lp].level = block->cur_line->level;
 		block->loop++;
 		block->cond[block->cur_line->level] = TRUE;
 	} else {
@@ -1959,9 +2030,25 @@ DECL_OPC_FUN(opc_list)
 			}
 
 			break;
+		case ENT_PLLIST_VARIABLE:
+			log_stringf("opc_list: list type ENT_PLLIST_VARIABLE");
+			variable = (VARIABLE *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+			log_stringf("opc_list: variable(%s)", variable ? variable->name : "<END>");
+
+			// Set the variable
+			variables_set_variable(block->info.var,block->loops[lp].var_name,variable);
+
+			if( !variable) {
+				iterator_stop(&block->loops[lp].d.l.list.it);
+				skip = TRUE;
+				break;
+			}
+
+			break;
 		}
 
 		if(skip) {
+			block->loops[lp].valid = FALSE;
 			block->loop--;
 			return opc_skip_to_label(block,OP_ENDLIST,block->loops[lp].id,TRUE);
 		}
@@ -1984,6 +2071,7 @@ DECL_OPC_FUN(opc_endlist)
 
 DECL_OPC_FUN(opc_exitlist)
 {
+	script_loop_cleanup(block, block->cur_line->level);
 	if(block->cur_line->level > 0 && !block->cond[block->cur_line->level-1])
 		return opc_skip_block(block,block->cur_line->level-1,FALSE);
 
@@ -2000,6 +2088,7 @@ DECL_OPC_FUN(opc_endwhile)
 
 DECL_OPC_FUN(opc_exitwhile)
 {
+	script_loop_cleanup(block, block->cur_line->level);
 	if(block->cur_line->level > 0 && !block->cond[block->cur_line->level-1])
 		return opc_skip_block(block,block->cur_line->level-1,FALSE);
 
@@ -2184,7 +2273,7 @@ int execute_script(long pvnum, SCRIPT_DATA *script, CHAR_DATA *mob, OBJ_DATA *ob
 	int saved_call_depth;	// Call depth copied
 	int saved_security;	// Security copied
 	bool saved_wiznet;
-	long vnum = 0, level;
+	long vnum = 0, level, i;
 
 	DBG2ENTRY7(NUM,pvnum,PTR,script,PTR,mob,PTR,obj,PTR,room,PTR,token,PTR,ch);
 
@@ -2212,6 +2301,10 @@ int execute_script(long pvnum, SCRIPT_DATA *script, CHAR_DATA *mob, OBJ_DATA *ob
 
 	memset(&block,0,sizeof(block));
 	block.info.block = &block;
+	for(i = 0; i < MAX_NESTED_LOOPS; i++) {
+		block.loops[i].valid = FALSE;
+		block.loops[i].level = -1;
+	}
 
 	saved_wiznet = wiznet_script;
 	wiznet_script = (bool)(int)IS_SET(script->flags,SCRIPT_WIZNET);
@@ -2344,6 +2437,9 @@ int execute_script(long pvnum, SCRIPT_DATA *script, CHAR_DATA *mob, OBJ_DATA *ob
 	script_security = saved_security;
 	script_call_depth = saved_call_depth; // Restore call depth
 	script_call_stack = script_call_stack->next; // Back up call stack
+
+	script_loop_cleanup(&block, 0);
+
 	return block.ret_val;
 }
 

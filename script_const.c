@@ -91,6 +91,7 @@ ENT_FIELD entity_types[] = {
 	{"aff",				ENTITY_VAR_AFFECT,		ENT_AFFECT		},
 	{"conn",			ENTITY_VAR_CONN,		ENT_CONN		},
 	{"church",			ENTITY_VAR_CHURCH,		ENT_CHURCH		},
+	{"var",				ENTITY_VAR_VARIABLE,	ENT_VARIABLE	},
 	{"dynlist_exit",	ENTITY_VAR_BLLIST_EXIT,	ENT_BLLIST_EXIT	},
 	{"dynlist_mob",		ENTITY_VAR_BLLIST_MOB,	ENT_BLLIST_MOB	},
 	{"dynlist_obj",		ENTITY_VAR_BLLIST_OBJ,	ENT_BLLIST_OBJ	},
@@ -267,6 +268,7 @@ ENT_FIELD entity_mobile[] = {
 	{"tokens",			ENTITY_MOB_TOKENS,			ENT_OLLIST_TOK	},
 	{"worn",			ENTITY_MOB_WORN,			ENT_PLLIST_OBJ },
 	{"checkpoint",		ENTITY_MOB_CHECKPOINT,		ENT_ROOM	},
+	{"vars",			ENTITY_MOB_VARIABLES,		ENT_PLLIST_VARIABLE	},
 	{NULL,				0,							ENT_UNKNOWN	}
 };
 
@@ -293,6 +295,7 @@ ENT_FIELD entity_object[] = {
 	{"tokens",		ENTITY_OBJ_TOKENS,	ENT_OLLIST_TOK	},
 	{"user",		ENTITY_OBJ_CARRIER,	ENT_MOBILE	},
 	{"wearer",		ENTITY_OBJ_CARRIER,	ENT_MOBILE	},
+	{"vars",		ENTITY_OBJ_VARIABLES,		ENT_PLLIST_VARIABLE	},
 	{NULL,			0,			ENT_UNKNOWN	}
 };
 
@@ -326,6 +329,7 @@ ENT_FIELD entity_room[] = {
 	{"up",			ENTITY_ROOM_UP,				ENT_EXIT	},
 	{"west",		ENTITY_ROOM_WEST,			ENT_EXIT	},
 	{"wilds",		ENTITY_ROOM_WILDS,			ENT_WILDS	},
+	{"vars",		ENTITY_ROOM_VARIABLES,		ENT_PLLIST_VARIABLE	},
 	{NULL,			0,							ENT_UNKNOWN	}
 };
 
@@ -369,6 +373,7 @@ ENT_FIELD entity_token[] = {
 	{"val6",	ENTITY_TOKEN_VAL6,	ENT_NUMBER	},
 	{"val7",	ENTITY_TOKEN_VAL7,	ENT_NUMBER	},
 	{"next",	ENTITY_TOKEN_NEXT,	ENT_TOKEN	},
+	{"vars",	ENTITY_TOKEN_VARIABLES,		ENT_PLLIST_VARIABLE	},
 	{NULL,		0,			ENT_UNKNOWN	}
 };
 
@@ -489,6 +494,14 @@ ENT_FIELD entity_song[] = {
 	{NULL,		0,			ENT_UNKNOWN	}
 };
 
+ENT_FIELD entity_variable[] = {
+	{"name",	ENTITY_VARIABLE_NAME,	ENT_STRING	},
+	{"type",	ENTITY_VARIABLE_TYPE,	ENT_STRING	},
+	{"save",	ENTITY_VARIABLE_SAVE,	ENT_NUMBER	},
+	{NULL,		0,			ENT_UNKNOWN	}
+
+};
+
 struct _entity_type_info entity_type_info[] = {
 	{ ENT_PRIMARY,		ENT_PRIMARY,		entity_primary,		TRUE	},
 	{ ENT_NUMBER,		ENT_NUMBER,			entity_number,		FALSE	},
@@ -520,6 +533,7 @@ struct _entity_type_info entity_type_info[] = {
 	{ ENT_PLLIST_MIN,	ENT_PLLIST_MAX,		entity_list,		FALSE	},
 	{ ENT_OLLIST_MIN,	ENT_OLLIST_MAX,		entity_list,		FALSE	},
 	{ ENT_NULL,			ENT_NULL,			NULL,				FALSE	},
+	{ ENT_VARIABLE,		ENT_VARIABLE,		entity_variable,	FALSE	},
 	{ ENT_UNKNOWN,		ENT_UNKNOWN,		NULL,				FALSE	},
 };
 
