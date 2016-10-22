@@ -305,6 +305,8 @@ enum variable_enum {
 	VAR_AREA_ID,
 	VAR_WILDS_ID,
 	VAR_CHURCH_ID,
+	VAR_VARIABLE,		// Yo dawg, I heard you like variables...
+
 	VAR_BLLIST_FIRST,
 	////////////////////////
 
@@ -329,6 +331,7 @@ enum variable_enum {
 	VAR_PLLIST_OBJ,
 	VAR_PLLIST_TOK,
 	VAR_PLLIST_CHURCH,
+	VAR_PLLIST_VARIABLE,
 
 	////////////////////////
 	VAR_PLLIST_LAST,
@@ -414,6 +417,7 @@ enum entity_type_enum {
 	ENT_AFFECT,
 	ENT_CHURCH,
 	ENT_SONG,
+	ENT_VARIABLE,
 
 	//////////////////////////////
 	// ALL lists here are designed to be saved
@@ -439,6 +443,7 @@ enum entity_type_enum {
 	ENT_PLLIST_OBJ,
 	ENT_PLLIST_TOK,
 	ENT_PLLIST_CHURCH,
+	ENT_PLLIST_VARIABLE,
 	ENT_PLLIST_MAX,
 	//////////////////////////////
 
@@ -513,6 +518,7 @@ enum entity_variable_types_enum {
 	ENTITY_VAR_CONN,
 	ENTITY_VAR_AFFECT,
 	ENTITY_VAR_CHURCH,
+	ENTITY_VAR_VARIABLE,
 
 	ENTITY_VAR_BLLIST_ROOM,
 	ENTITY_VAR_BLLIST_MOB,
@@ -658,6 +664,7 @@ enum entity_mobile_enum {
 	ENTITY_MOB_WORN,
 	ENTITY_MOB_NEXT,
 	ENTITY_MOB_CHECKPOINT,
+	ENTITY_MOB_VARIABLES,
 };
 
 enum entity_object_enum {
@@ -677,7 +684,8 @@ enum entity_object_enum {
 	ENTITY_OBJ_EXTRADESC,
 	ENTITY_OBJ_CLONEROOMS,
 	ENTITY_OBJ_NEXT,
-	ENTITY_OBJ_AFFECTS
+	ENTITY_OBJ_AFFECTS,
+	ENTITY_OBJ_VARIABLES,
 };
 
 enum entity_room_enum {
@@ -707,6 +715,7 @@ enum entity_room_enum {
 	ENTITY_ROOM_WILDS,
 	ENTITY_ROOM_CLONES,
 	ENTITY_ROOM_CLONEROOMS,
+	ENTITY_ROOM_VARIABLES,
 };
 
 enum entity_exit_enum {
@@ -743,7 +752,8 @@ enum entity_token_enum {
 	ENTITY_TOKEN_VAL5,
 	ENTITY_TOKEN_VAL6,
 	ENTITY_TOKEN_VAL7,
-	ENTITY_TOKEN_NEXT
+	ENTITY_TOKEN_NEXT,
+	ENTITY_TOKEN_VARIABLES,
 };
 
 enum entity_area_enum {
@@ -876,6 +886,12 @@ enum entity_song_enum {
 	ENTITY_SONG_LEVEL,
 };
 
+enum entity_variable_enum {
+	ENTITY_VARIABLE_NAME = ESCAPE_EXTRA,
+	ENTITY_VARIABLE_TYPE,
+	ENTITY_VARIABLE_SAVE,
+};
+
 
 /* Single letter $* codes ($i, $n) */
 #define ESCAPE_UA		0x80
@@ -991,6 +1007,8 @@ struct script_var_type {
 		DESCRIPTOR_DATA *conn;
 		CHURCH_DATA *church;
 		WILDS_DATA *wilds;
+		VARIABLE *variable;
+		VARIABLE **variables;
 		int sn;
 		int song;
 		struct {
@@ -1098,6 +1116,8 @@ struct loop_data {
 	} d;
 	char var_name[MIL];
 	int counter;
+	int level;
+	bool valid;
 	char buf[MSL];
 };
 
@@ -1133,6 +1153,7 @@ struct script_parameter {
 		DESCRIPTOR_DATA *conn;
 		WILDS_DATA *wilds;
 		CHURCH_DATA *church;
+		VARIABLE *variable;
 		int sn;
 		int song;
 		struct {
@@ -1177,7 +1198,7 @@ struct script_parameter {
 			int y;
 			int door;
 		} wdoor;
-
+		VARIABLE **variables;
 		LLIST *blist;
 		long aid;
 		long chid;
@@ -1758,6 +1779,8 @@ bool is_trigger_type(int tindex, int type);
 bool variable_copy(ppVARIABLE list,char *oldname,char *newname);
 bool variable_copylist(ppVARIABLE from,ppVARIABLE to,bool index);
 bool variable_copyto(ppVARIABLE from,ppVARIABLE to,char *oldname,char *newname, bool index);
+pVARIABLE variable_copyvar(pVARIABLE oldv);
+LLIST *variable_copy_tolist(ppVARIABLE vars);
 bool variable_fread(ppVARIABLE vars, int type, FILE *fp);
 bool variable_fread_area_list(ppVARIABLE vars, char *name, FILE *fp);
 bool variable_fread_exit_list(ppVARIABLE vars, char *name, FILE *fp);
@@ -1801,6 +1824,7 @@ bool variables_set_skillinfo(ppVARIABLE list,char *name,CHAR_DATA *owner,int sn,
 bool variables_set_string(ppVARIABLE list,char *name,char *str,bool shared);
 bool variables_set_token(ppVARIABLE list,char *name,TOKEN_DATA *t);
 bool variables_set_wilds (ppVARIABLE list,char *name,WILDS_DATA* wilds);
+bool variables_set_variable (ppVARIABLE list,char *name,pVARIABLE var);
 bool variables_setindex_integer(ppVARIABLE list,char *name,int num, bool saved);
 bool variables_setindex_room(ppVARIABLE list,char *name,long vnum, bool saved);
 bool variables_setindex_string(ppVARIABLE list,char *name,char *str,bool shared, bool saved);
@@ -1817,6 +1841,7 @@ bool variables_setsave_skillinfo(ppVARIABLE list,char *name,CHAR_DATA *owner,int
 bool variables_setsave_string(ppVARIABLE list,char *name,char *str,bool shared, bool save);
 bool variables_setsave_token(ppVARIABLE list,char *name,TOKEN_DATA *t, bool save);
 bool variables_setsave_wilds (ppVARIABLE list, char *name,WILDS_DATA* wilds, bool save);
+bool variables_setsave_variable (ppVARIABLE list, char *name,pVARIABLE var, bool save);
 int variable_fread_type(char *str);
 pVARIABLE variable_create(ppVARIABLE list,char *name, bool index, bool clear);
 pVARIABLE variable_get(pVARIABLE list,char *name);

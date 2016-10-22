@@ -462,6 +462,7 @@ char *compile_entity(char *str,int type, char **store)
 			case ENT_PLLIST_OBJ:	ent = ENT_OBJECT; break;
 			case ENT_PLLIST_TOK:	ent = ENT_TOKEN; break;
 			case ENT_PLLIST_CHURCH:	ent = ENT_CHURCH; break;
+			case ENT_PLLIST_VARIABLE:	ent = ENT_VARIABLE; break;
 
 			default:
 				sprintf(buf,"Line %d: Invalid $() primary '%s'.", compile_current_line, field);

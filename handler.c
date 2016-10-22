@@ -455,19 +455,19 @@ int get_skill(CHAR_DATA *ch, int sn)
     {
         /* AO 092916 -- Making it better, but not perfetc, for now. Based on flags.
 	 * Changed level calculation to the log functio to scale
-	 * well up to lv500  */ 
+	 * well up to lv500  */
 
 	// Account for racial skills.
 	if (skill_table[sn].race != -1 && ch->race != skill_table[sn].race)
 	    skill = 0;
 	if (ch->tot_level < 10)
 	    skill = 10;
- 
+
 	/* Handle spells */
 	if (skill_table[sn].spell_fun != spell_null) {
 		if (ch->max_mana > 0)
 			skill = 40+19 * log10(ch->tot_level)/2;
-		else 
+		else
 			skill = 0;
 	} //thief skills
 	else if (IS_SET(ch->act, ACT_THIEF) && (sn == gsn_sneak || sn == gsn_hide))
@@ -7664,9 +7664,8 @@ void list_purge(LLIST *lp)
 void list_destroy(LLIST *lp)
 {
 	if(lp && lp->valid ) {
-		if( lp->ref > 0 )
-			lp->valid = FALSE;
-		else {
+		lp->valid = FALSE;
+		if( lp->ref < 1 ) {
 			// This point is only ever reached if the list has not references at the time this list is destroyed
 			// If the list is in-use, the purging/freeing is handled when the references are cleared.
 			list_purge(lp);
@@ -7720,8 +7719,9 @@ void list_remref(LLIST *lp)
 		if(lp->ref < 1 && !lp->valid) {
 			list_purge(lp);
 			free(lp);
-		} else if(lp->ref < 1 && lp->purge)
+		} else if(lp->ref < 1 && lp->purge) {
 			list_destroy(lp);
+		}
 	}
 }
 
