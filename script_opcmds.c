@@ -3347,6 +3347,7 @@ SCRIPT_CMD(do_opaltermob)
 	else if(!str_cmp(field,"death"))	{ ptr = (IS_NPC(mob) || !IS_DEAD(mob))?NULL:(int*)&mob->time_left_death; allowpc = TRUE; }
 	else if(!str_cmp(field,"dicenumber"))	{ ptr = IS_NPC(mob)?&mob->damage[DICE_NUMBER]:NULL; }
 	else if(!str_cmp(field,"dicetype"))	{ ptr = IS_NPC(mob)?&mob->damage[DICE_TYPE]:NULL; }
+	else if(!str_cmp(field,"dicebonus"))	{ ptr = IS_NPC(mob)?&mob->damage[DICE_BONUS]:NULL; }
 	else if(!str_cmp(field,"drunk"))	{ ptr = IS_NPC(mob)?NULL:(int*)&mob->pcdata->condition[COND_DRUNK]; allowpc = TRUE; }
 //	else if(!str_cmp(field,"exitdir"))	{ ptr = (int*)&mob->exit_dir; allowpc = TRUE; }
 	else if(!str_cmp(field,"exp"))		{ ptr = (int*)&mob->exp; allowpc = TRUE; }

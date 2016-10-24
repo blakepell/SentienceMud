@@ -1751,7 +1751,7 @@ MOB_INDEX_DATA *new_mob_index( void )
     pMob->mana[DICE_BONUS]	=   0;
     pMob->damage[DICE_NUMBER]	=   0;
     pMob->damage[DICE_TYPE]	=   0;
-    pMob->damage[DICE_NUMBER]	=   0;
+    pMob->damage[DICE_BONUS]	=   0;
     pMob->start_pos             =   POS_STANDING;
     pMob->default_pos           =   POS_STANDING;
     pMob->wealth                =   0;

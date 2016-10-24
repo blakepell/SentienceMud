@@ -91,6 +91,7 @@ const struct flag_stat_type flag_stat_table[] =
     {	instrument_types,	TRUE	},
     {	place_flags,	TRUE	},
     {	corpse_types,	TRUE	},
+    {	variable_types,	TRUE	},
     {   0,			0	}
 };
 

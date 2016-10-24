@@ -342,7 +342,7 @@ char *ifcheck_get_value(SCRIPT_VARINFO *info,IFCHECK_DATA *ifc,char *text,int *r
 	*valid = FALSE;
 
 	// Validate parameters
-	if(!info || !ifc || !ret) return NULL;
+	if(!ifc || !ret) return NULL;
 
 	if(!ifc->func) return NULL;
 
@@ -371,7 +371,7 @@ char *ifcheck_get_value(SCRIPT_VARINFO *info,IFCHECK_DATA *ifc,char *text,int *r
 //		sprintf(buf,"args = %d", i);
 //		wiznet(buf,NULL,NULL,WIZ_SCRIPTS,0,0);
 //	}
-	if((ifc->func)(info,info->mob,info->obj,info->room,info->token,ret,i,argv))
+	if(info && (ifc->func)(info,info->mob,info->obj,info->room,info->token,ret,i,argv))
 		*valid = TRUE;
 
 //	if(wiznet_script) {
@@ -2281,6 +2281,12 @@ int execute_script(long pvnum, SCRIPT_DATA *script, CHAR_DATA *mob, OBJ_DATA *ob
 
 	if (!script || !script->code) {
 		bug("PROGs: No script to execute for vnum %d.", pvnum);
+		return PRET_NOSCRIPT;
+	}
+
+	if (IS_VALID(mob) && !IS_NPC(mob) )
+	{
+		bug("PROGs: Attempting to run a script with a player actor.", pvnum);
 		return PRET_NOSCRIPT;
 	}
 
@@ -4672,7 +4678,12 @@ void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument)
 	if(!vars) return;
 
 	// Get name
-	argument = one_argument(argument,name);
+	if(!(argument = expand_argument(info,argument,&arg)))
+		return;
+
+	if( arg.type != ENT_STRING ) return;
+
+	strcpy(name, arg.d.str);
 	if(!name[0]) return;
 
 	// Get type

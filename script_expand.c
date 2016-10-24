@@ -13,6 +13,9 @@
 //#define DEBUG_MODULE
 #include "debug.h"
 
+char *expand_variable(SCRIPT_VARINFO *info, pVARIABLE vars,char *str,pVARIABLE *var);
+char *expand_string_expression(SCRIPT_VARINFO *info,char *str,char **store);
+
 static bool wiznet_variables = FALSE;
 
 // Check the validity of the script parameters
@@ -131,13 +134,13 @@ static bool process_expession_stack(STACK *stk_op,STACK *stk_opr,int op)
 // $<speed<oretype>>
 //
 // If 'oretype' is 'iron'... it will translate into... speediron
-char *expand_variable_recursive(pVARIABLE vars,char *str,char **store)
+char *expand_variable_recursive(SCRIPT_VARINFO *info, pVARIABLE vars,char *str,char **store)
 {
 //	char esc[MSL];
 //	char msg[MSL*2];
 	char buf[MSL], *p = buf;
 	pVARIABLE var;
-
+	pVARIABLE infovar = info ? *(info->var) : NULL;
 /*
 	{
 		expand_escape2print(str,esc);
@@ -148,7 +151,10 @@ char *expand_variable_recursive(pVARIABLE vars,char *str,char **store)
 
 	while(*str && *str != ESCAPE_END) {
 		if(*str == ESCAPE_VARIABLE) {
-			str = expand_variable_recursive(vars,str+1,&p);
+			str = expand_variable_recursive(info,infovar,str+1,&p);
+			if(!str) return NULL;
+		} else if(*str == ESCAPE_EXPRESSION) {
+			str = expand_string_expression(info,str+1,&p);
 			if(!str) return NULL;
 		} else
 			*p++ = *str++;
@@ -188,9 +194,11 @@ char *expand_variable_recursive(pVARIABLE vars,char *str,char **store)
 	return str+1;
 }
 
-char *expand_variable(pVARIABLE vars,char *str,pVARIABLE *var)
+char *expand_variable(SCRIPT_VARINFO *info, pVARIABLE vars,char *str,pVARIABLE *var)
 {
 	char buf[MIL], *p = buf;
+	bool deref = FALSE;
+	pVARIABLE v;
 
 	if(*str == ESCAPE_VARIABLE && wiznet_variables) {
 		char msg[MSL];
@@ -198,9 +206,14 @@ char *expand_variable(pVARIABLE vars,char *str,pVARIABLE *var)
 		wiznet(msg,NULL,NULL,WIZ_SCRIPTS,0,0);
 	}
 
+	if(*str == '*') {
+		deref = TRUE;
+		++str;
+	}
+
 	while(*str && *str != ESCAPE_END) {
 		if(*str == ESCAPE_VARIABLE) {
-			str = expand_variable_recursive(vars,str+1,&p);
+			str = expand_variable_recursive(info,vars,str+1,&p);
 			if(!str) {
 				if(wiznet_variables) {
 					char msg[MSL];
@@ -210,6 +223,9 @@ char *expand_variable(pVARIABLE vars,char *str,pVARIABLE *var)
 				}
 				return NULL;
 			}
+		} else if(*str == ESCAPE_EXPRESSION) {
+			str = expand_string_expression(info,str+1,&p);
+			if(!str) return NULL;
 		} else
 			*p++ = *str++;
 	}
@@ -230,18 +246,28 @@ char *expand_variable(pVARIABLE vars,char *str,pVARIABLE *var)
 		wiznet(msg,NULL,NULL,WIZ_SCRIPTS,0,0);
 	}
 
-	*var = variable_get(vars,buf);
+	v = variable_get(vars,buf);
+	if(deref) {
+		while(v && v->type == VAR_VARIABLE)
+			v = v->_.variable;
+	}
+
+
+	*var = v;
 
 	return str+1;
 }
 
-char *expand_name(pVARIABLE vars,char *str,char *store)
+char *expand_name(SCRIPT_VARINFO *info,pVARIABLE vars,char *str,char *store)
 {
 	char buf[MSL], *p = buf;
 
 	while(*str && *str != ESCAPE_END) {
 		if(*str == ESCAPE_VARIABLE) {
-			str = expand_variable_recursive(vars,str+1,&p);
+			str = expand_variable_recursive(info,vars,str+1,&p);
+			if(!str) return NULL;
+		} else if(*str == ESCAPE_EXPRESSION) {
+			str = expand_string_expression(info,str+1,&p);
 			if(!str) return NULL;
 		} else
 			*p++ = *str++;
@@ -317,7 +343,7 @@ char *expand_ifcheck(SCRIPT_VARINFO *info,char *str,int *value)
 }
 
 
-char *expand_argument_expression(SCRIPT_VARINFO *info,char *str,int *num)
+char *expand_argument_expression(SCRIPT_VARINFO *info, char *str,int *num)
 {
 	STACK optr,opnd;
 	pVARIABLE var;
@@ -325,9 +351,11 @@ char *expand_argument_expression(SCRIPT_VARINFO *info,char *str,int *num)
 	bool first = TRUE;
 	bool expect = FALSE;	// FALSE = number/open, TRUE = operator/close
 	char *p = str;
+	pVARIABLE vars = info ? *(info->var) : NULL;
 
 	opnd.t = optr.t = 0;
 
+	if(info)
 	while(*str && *str != ESCAPE_END) {
 		str = skip_whitespace(str);
 		if(isdigit(*str)) {	// Constant
@@ -353,7 +381,7 @@ char *expand_argument_expression(SCRIPT_VARINFO *info,char *str,int *num)
 				break;
 			}
 
-			str = expand_variable(*(info->var),str+1,&var);
+			str = expand_variable(info,vars,str+1,&var);
 			if(!str) {
 				break;
 			}
@@ -439,7 +467,7 @@ char *expand_argument_variable(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 {
 	pVARIABLE var;
 
-	str = expand_variable(*(info->var),str,&var);
+	str = expand_variable(info,(info?*(info->var):NULL),str,&var);
 	if(!str) return NULL;
 
 	if(!var) {
@@ -629,17 +657,17 @@ void expand_argument_simple_code(SCRIPT_VARINFO *info,unsigned char code,SCRIPT_
 	}
 }
 
-char *expand_escape_variable(pVARIABLE vars,char *str,SCRIPT_PARAM *arg)
+char *expand_escape_variable(SCRIPT_VARINFO *info, pVARIABLE vars,char *str,SCRIPT_PARAM *arg)
 {
 	int type;
 	pVARIABLE var, orig;
-	str = expand_variable(vars,str,&var);
+	str = expand_variable(info,vars,str,&var);
 	if(!str) return NULL;
 
 	// Descend down the rabbit hole, fully redirecting down
 	orig = var;
-	while(var && var->type == VAR_VARIABLE)
-		var = var->_.variable;
+//	while(var && var->type == VAR_VARIABLE)
+//		var = var->_.variable;
 
 	switch(*str) {
 	case ENTITY_VAR_NUM:
@@ -888,42 +916,44 @@ char *expand_entity_primary(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 	switch(*str) {
 	case ENTITY_ENACTOR:
 		arg->type = ENT_MOBILE;
-		arg->d.mob = info->ch;
+		arg->d.mob = info ? info->ch : NULL;
 		break;
 	case ENTITY_OBJ1:
 		arg->type = ENT_OBJECT;
-		arg->d.obj = info->obj1;
+		arg->d.obj = info ? info->obj1 : NULL;
 		break;
 	case ENTITY_OBJ2:
 		arg->type = ENT_OBJECT;
-		arg->d.obj = info->obj2;
+		arg->d.obj = info ? info->obj2 : NULL;
 		break;
 	case ENTITY_VICTIM:
 		arg->type = ENT_MOBILE;
-		arg->d.mob = info->vch;
+		arg->d.mob = info ? info->vch : NULL;
 		break;
 	case ENTITY_VICTIM2:
 		arg->type = ENT_MOBILE;
-		arg->d.mob = info->vch2;
+		arg->d.mob = info ? info->vch2 : NULL;
 		break;
 	case ENTITY_TARGET:
 		arg->type = ENT_MOBILE;
-		arg->d.mob = info->targ ? *info->targ : NULL;
+		arg->d.mob = (info && info->targ) ? *info->targ : NULL;
 		break;
 	case ENTITY_RANDOM:
 		arg->type = ENT_MOBILE;
-		arg->d.mob = info->rch;
+		arg->d.mob = info ? info->rch : NULL;
 		break;
 	case ENTITY_HERE:
-		if(info->mob)
-			arg->d.room = info->mob->in_room;
-		else if(info->obj)
-			arg->d.room = obj_room(info->obj);
-		else if(info->room)
-			arg->d.room = info->room;
-		else if(info->token)
-			arg->d.room = token_room(info->token);
-		else return NULL;
+		arg->d.room = NULL;
+		if(info) {
+			if(info->mob)
+				arg->d.room = info->mob->in_room;
+			else if(info->obj)
+				arg->d.room = obj_room(info->obj);
+			else if(info->room)
+				arg->d.room = info->room;
+			else if(info->token)
+				arg->d.room = token_room(info->token);
+		}
 		arg->type = ENT_ROOM;
 		break;
 	case ENTITY_SELF:
@@ -973,7 +1003,7 @@ char *expand_entity_primary(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		break;
 
 	case ESCAPE_VARIABLE:
-		str = expand_escape_variable(*(info->var),str+1,arg);
+		str = expand_escape_variable(info,(info?*(info->var):NULL),str+1,arg);
 		if(!str) return NULL;
 		break;
 
@@ -1650,7 +1680,7 @@ char *expand_entity_mobile(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->d.mob = (arg->d.mob && arg->d.mob->in_room)?arg->d.mob->next_in_room:NULL;
 		break;
 	case ESCAPE_VARIABLE:
-		str = expand_escape_variable((arg->d.mob && IS_NPC(arg->d.mob))?arg->d.mob->progs->vars:NULL,str+1,arg);
+		str = expand_escape_variable(info,(arg->d.mob && IS_NPC(arg->d.mob))?arg->d.mob->progs->vars:NULL,str+1,arg);
 		if(!str) return NULL;
 		break;
 	case ENTITY_MOB_CASTSPELL:
@@ -1881,7 +1911,7 @@ char *expand_entity_mobile_id(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->d.mob = NULL;
 		break;
 	case ESCAPE_VARIABLE:
-		str = expand_escape_variable(NULL,str+1,arg);
+		str = expand_escape_variable(info,NULL,str+1,arg);
 		if(!str) return NULL;
 		break;
 
@@ -2014,7 +2044,7 @@ char *expand_entity_object(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->d.ed = arg->d.obj?arg->d.obj->extra_descr:NULL;
 		break;
 	case ESCAPE_VARIABLE:
-		str = expand_escape_variable(arg->d.obj?arg->d.obj->progs->vars:NULL,str+1,arg);
+		str = expand_escape_variable(info,arg->d.obj?arg->d.obj->progs->vars:NULL,str+1,arg);
 		if(!str) return NULL;
 		break;
 	case ENTITY_OBJ_CLONEROOMS:
@@ -2096,7 +2126,7 @@ char *expand_entity_object_id(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->d.ed = NULL;
 		break;
 	case ESCAPE_VARIABLE:
-		str = expand_escape_variable(NULL,str+1,arg);
+		str = expand_escape_variable(info,NULL,str+1,arg);
 		if(!str) return NULL;
 		break;
 	case ENTITY_OBJ_CLONEROOMS:
@@ -2203,7 +2233,7 @@ char *expand_entity_room(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		break;
 
 	case ESCAPE_VARIABLE:
-		str = expand_escape_variable(arg->d.room?arg->d.room->progs->vars:NULL,str+1,arg);
+		str = expand_escape_variable(info,arg->d.room?arg->d.room->progs->vars:NULL,str+1,arg);
 		if(!str) return NULL;
 		break;
 	case ENTITY_ROOM_VARIABLES:
@@ -2328,7 +2358,7 @@ char *expand_entity_token(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->d.token = arg->d.token?arg->d.token->next:NULL;
 		break;
 	case ESCAPE_VARIABLE:
-		str = expand_escape_variable(arg->d.token?arg->d.token->progs->vars:NULL,str+1,arg);
+		str = expand_escape_variable(info,arg->d.token?arg->d.token->progs->vars:NULL,str+1,arg);
 		if(!str) return NULL;
 		break;
 	case ENTITY_TOKEN_VARIABLES:
@@ -2379,7 +2409,7 @@ char *expand_entity_token_id(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->d.token = NULL;
 		break;
 	case ESCAPE_VARIABLE:
-		str = expand_escape_variable(NULL,str+1,arg);
+		str = expand_escape_variable(info,NULL,str+1,arg);
 		if(!str) return NULL;
 		break;
 	case ENTITY_TOKEN_VARIABLES:
@@ -3000,7 +3030,7 @@ char *expand_entity_clone_room(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		break;
 
 	case ESCAPE_VARIABLE:
-		str = expand_escape_variable(NULL,str+1,arg);
+		str = expand_escape_variable(info,NULL,str+1,arg);
 		if(!str) return NULL;
 		break;
 	default: return NULL;
@@ -3094,7 +3124,7 @@ char *expand_entity_wilds_room(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		break;
 
 	case ESCAPE_VARIABLE:
-		str = expand_escape_variable(NULL,str+1,arg);
+		str = expand_escape_variable(info,NULL,str+1,arg);
 		if(!str) return NULL;
 		break;
 	default: return NULL;
@@ -4122,7 +4152,7 @@ char *expand_entity_extradesc(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 */
 
 		wiznet_variables = TRUE;
-		str = expand_name(*info->var,str+1,buf);
+		str = expand_name(info,(info?*(info->var):NULL),str+1,buf);
 		wiznet_variables = FALSE;
 		if(!str) return NULL;
 
@@ -4539,21 +4569,21 @@ char *expand_string_variable(SCRIPT_VARINFO *info,char *str,char **store)
 	pVARIABLE var;
 	char buf[MIL];
 
-	str = expand_variable(*(info->var),str, &var);
+	str = expand_variable(info,(info ? *(info->var) : NULL),str, &var);
 	if(!str) return NULL;
 
 	if(!var) {
 		strcpy(*store,"(null-var)");
 		*store += 10;
 	} else {
-		while(var->type == VAR_VARIABLE) {
-			var = var->_.variable;
-			if( !var ) {
-				strcpy(*store,"(null-var)");
-				*store += 10;
-				return str;
-			}
-		}
+//		while(var->type == VAR_VARIABLE) {
+//			var = var->_.variable;
+//			if( !var ) {
+//				strcpy(*store,"(null-var)");
+//				*store += 10;
+//				return str;
+//			}
+//		}
 
 		switch(var->type) {
 		case VAR_INTEGER:

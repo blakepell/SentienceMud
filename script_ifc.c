@@ -4271,3 +4271,161 @@ DECL_IFC_FUN(ifc_istoken)
 	*ret = ISARG_TOK(0) && TRUE;
 	return TRUE;
 }
+
+// mobclones[ ROOM] VNUM|MOBILE|MOBIDX == NUMBER
+DECL_IFC_FUN(ifc_mobclones)
+{
+	ROOM_INDEX_DATA *location = NULL;
+	MOB_INDEX_DATA *index = NULL;
+	CHAR_DATA *m;
+	int count;
+
+	if(ISARG_ROOM(0)) {
+		location = ARG_ROOM(0);
+
+		if(ISARG_NUM(1)) index = get_mob_index(ARG_NUM(1));
+		else if(VALID_NPC(1)) index = ARG_MOB(1)->pIndexData;
+		//if(ISARG_MOBIDX(1)) index = ARG_MOBIDX(1);
+		else
+			return FALSE;
+
+
+	} else if(ISARG_NUM(0)) {
+		if(mob) location = mob->in_room;
+		else if(obj) location = obj_room(obj);
+		else if(room) location = room;
+		else if(token) location = token_room(token);
+		else
+			return FALSE;
+
+		index = get_mob_index(ARG_NUM(0));
+	} else if(VALID_NPC(0)) {
+		if(mob) location = mob->in_room;
+		else if(obj) location = obj_room(obj);
+		else if(room) location = room;
+		else if(token) location = token_room(token);
+		else
+			return FALSE;
+
+		index = ARG_MOB(0)->pIndexData;
+/*	} else if(ISARG_MOBIDX(0)) {
+		if(mob) location = mob->in_room;
+		else if(obj) location = obj_room(obj);
+		else if(room) location = room;
+		else if(token) location = token_room(token);
+		else
+			return FALSE;
+
+		index = ISARG_MOBIDX(0);
+*/
+	} else
+		return FALSE;
+
+	if( location == NULL || index == NULL )
+		return FALSE;
+
+
+	count = 0;
+	for(m = location->people; m; m = m->next_in_room)
+	{
+		if(IS_NPC(m) && m->pIndexData == index)
+			++count;
+	}
+
+	*ret = count;
+	return TRUE;
+}
+
+// objclones[ ROOM] VNUM|OBJECT|OBJIDX == NUMBER
+DECL_IFC_FUN(ifc_objclones)
+{
+	ROOM_INDEX_DATA *location = NULL;
+	OBJ_INDEX_DATA *index = NULL;
+	OBJ_DATA *o;
+	int count;
+
+	if(ISARG_ROOM(0)) {
+		location = ARG_ROOM(0);
+
+		if(ISARG_NUM(1)) index = get_obj_index(ARG_NUM(1));
+		else if(ISARG_OBJ(1)) index = ARG_OBJ(1)->pIndexData;
+		//if(ISARG_OBJIDX(1)) index = ARG_OBJIDX(1);
+		else
+			return FALSE;
+
+
+	} else if(ISARG_NUM(0)) {
+		if(mob) location = mob->in_room;
+		else if(obj) location = obj_room(obj);
+		else if(room) location = room;
+		else if(token) location = token_room(token);
+		else
+			return FALSE;
+
+		index = get_obj_index(ARG_NUM(0));
+	} else if(ISARG_OBJ(0)) {
+		if(mob) location = mob->in_room;
+		else if(obj) location = obj_room(obj);
+		else if(room) location = room;
+		else if(token) location = token_room(token);
+		else
+			return FALSE;
+
+		index = ARG_OBJ(0)->pIndexData;
+/*	} else if(ISARG_OBJIDX(0)) {
+		if(mob) location = mob->in_room;
+		else if(obj) location = obj_room(obj);
+		else if(room) location = room;
+		else if(token) location = token_room(token);
+		else
+			return FALSE;
+
+		index = ISARG_OBJIDX(0);
+*/
+	} else
+		return FALSE;
+
+	if( location == NULL || index == NULL )
+		return FALSE;
+
+
+	count = 0;
+	for(o = location->contents; o; o = o->next_content)
+	{
+		if(o->pIndexData == index)
+			++count;
+	}
+
+	*ret = count;
+	return TRUE;
+}
+
+// hitdicebonus MOBILE == NUMBER
+DECL_IFC_FUN(ifc_hitdicebonus)
+{
+	*ret = VALID_NPC(0) ? ARG_MOB(0)->damage[DICE_BONUS] : 0;
+	return TRUE;
+}
+
+// hitdicenumber MOBILE == NUMBER
+DECL_IFC_FUN(ifc_hitdicenumber)
+{
+	*ret = VALID_NPC(0) ? ARG_MOB(0)->damage[DICE_NUMBER] : 0;
+	return TRUE;
+}
+
+// hitdicetype MOBILE == NUMBER
+DECL_IFC_FUN(ifc_hitdicetype)
+{
+	*ret = VALID_NPC(0) ? ARG_MOB(0)->damage[DICE_TYPE] : 0;
+	return TRUE;
+}
+
+// strprefix STRING1 STRING2
+// if STRING2 prefixes STRING1
+DECL_IFC_FUN(ifc_strprefix)
+{
+	*ret = ISARG_STR(0) && ISARG_STR(1) && !str_prefix(ARG_STR(1), ARG_STR(0));
+	return TRUE;
+}
+
