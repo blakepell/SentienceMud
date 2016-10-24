@@ -3760,7 +3760,7 @@ SCRIPT_CMD(do_mpvarclear)
 {
 	if(!info || !info->mob || !info->var) return;
 
-	script_varclearon(info->var, argument);
+	script_varclearon(info,info->var, argument);
 }
 
 SCRIPT_CMD(do_mpvarcopy)
@@ -5917,7 +5917,7 @@ SCRIPT_CMD(do_mpvarclearon)
 	default: vars = NULL; break;
 	}
 
-	script_varclearon(vars,argument);
+	script_varclearon(info,vars,argument);
 }
 
 SCRIPT_CMD(do_mpvarsaveon)

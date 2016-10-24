@@ -1222,6 +1222,7 @@ const struct flag_type interrupt_action_types[] = {
 	{	"resurrect",	INTERRUPT_RESURRECT,	TRUE },
 	{	"reverie",	INTERRUPT_REVERIE,	TRUE },
 	{	"scribe",	INTERRUPT_SCRIBE,	TRUE },
+	{	"script",	INTERRUPT_SCRIPT,	TRUE },
 	{	"trance",	INTERRUPT_TRANCE,	TRUE },
 	{	"silent",	INTERRUPT_SILENT,	TRUE },
 	{	NULL,		0,			FALSE }

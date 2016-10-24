@@ -1855,7 +1855,7 @@ int variable_fread_type(char *str);
 pVARIABLE variable_create(ppVARIABLE list,char *name, bool index, bool clear);
 pVARIABLE variable_get(pVARIABLE list,char *name);
 pVARIABLE variable_new(void);
-void script_varclearon(ppVARIABLE vars, char *argument);
+void script_varclearon(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument);
 void variable_add(ppVARIABLE list,pVARIABLE var);
 void variable_clearfield(int type, void *ptr);
 void variable_dynamic_fix_church (CHURCH_DATA *church);

@@ -2259,15 +2259,9 @@ SCRIPT_CMD(do_rpvarset)
 
 SCRIPT_CMD(do_rpvarclear)
 {
-	char name[MIL];
-
 	if(!info || !info->room || !info->var) return;
 
-	// Get name
-	argument = one_argument(argument,name);
-	if(!name[0]) return;
-
-	variable_remove(info->var,name);
+	script_varclearon(info, info->var, argument);
 }
 
 SCRIPT_CMD(do_rpvarcopy)
@@ -4383,7 +4377,6 @@ SCRIPT_CMD(do_rpvarseton)
 
 SCRIPT_CMD(do_rpvarclearon)
 {
-	char name[MIL];
 	SCRIPT_PARAM arg;
 	VARIABLE **vars;
 
@@ -4401,14 +4394,7 @@ SCRIPT_CMD(do_rpvarclearon)
 	default: vars = NULL; break;
 	}
 
-	if(!vars) return;
-
-
-	// Get name
-	argument = one_argument(argument,name);
-	if(!name[0]) return;
-
-	variable_remove(vars,name);
+	script_varclearon(info,vars,argument);
 }
 
 SCRIPT_CMD(do_rpvarsaveon)
