@@ -5225,6 +5225,32 @@ void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument)
 		if(tokens) token = token_find_match(info,tokens, rest);
 		variables_set_token(vars,name,token);
 
+	// VARIABLE MOBILE NAME
+	// VARIABLE OBJECT NAME
+	// VARIABLE ROOM NAME
+	// VARIABLE TOKEN NAME
+	} else if(!str_cmp(buf,"variable")) {
+		pVARIABLE their_vars, their_var;
+		switch(arg.type) {
+		case ENT_MOBILE:   their_vars = (arg.d.mob && IS_NPC(arg.d.mob) && arg.d.mob->progs) ? arg.d.mob->progs->vars : NULL; break;
+		case ENT_OBJECT:   their_vars = (arg.d.obj && arg.d.obj->progs) ? arg.d.obj->progs->vars : NULL; break;
+		case ENT_ROOM:     their_vars = (arg.d.room && arg.d.room->progs) ? arg.d.room->progs->vars : NULL; break;
+		case ENT_TOKEN:    their_vars = (arg.d.token && arg.d.token->progs) ? arg.d.token->progs->vars : NULL; break;
+		default: return;
+		}
+
+		if(!their_vars) return;
+
+		if(!expand_argument(info,rest,&arg))
+			return;
+
+		if(arg.type != ENT_STRING) return;
+
+		their_var = variable_get(their_vars, arg.d.str);
+
+		variables_set_variable(vars,name,their_var);
+
+
 	// Format: IDMOBILE <IDa> <IDb>
 	} else if(!str_cmp(buf,"idmobile")) {
 		switch(arg.type) {
