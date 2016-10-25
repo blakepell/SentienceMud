@@ -57,8 +57,6 @@
 #define DECLARE_ROOM_FUN( fun )		ROOM_FUN  fun
 #define SPELL_FUNC(s)	bool s (int sn, int level, CHAR_DATA *ch, void *vo, int target, int obj_wear_loc)
 
-
-
 /* System calls */
 int unlink();
 int system();
@@ -354,6 +352,8 @@ typedef struct location_type {
 
 typedef struct skill_entry_type {
 	struct skill_entry_type *next;
+	bool scripted;		// Whether it's given by a script
+	bool isspell;		// Whether this is a spell;
 	sh_int sn;			// Skill Number
 	sh_int song;		// Song Number
 	TOKEN_DATA *token;	// Skill/Spell Token, NULL if this is a built-in skill
@@ -389,6 +389,7 @@ struct script_varinfo {
 	CHAR_DATA *vch2;
 	CHAR_DATA *rch;
 	CHAR_DATA **targ;
+	TOKEN_DATA *tok;
 	int registers[5];
 	char phrase[MSL];
 	char trigger[MSL];
@@ -2413,6 +2414,7 @@ struct affliction_type {
 #define GATE_SNEAK		(M)	/* @@@NIB : 20070126 */
 #define GATE_TURBULENT		(N)	/* @@@NIB : 20070126 */
 #define GATE_CANDRAGITEMS	(O)
+#define GATE_FORCE_BRIEF	(P)
 
 /* furniture flags */
 #define STAND_AT		(A)
@@ -3257,7 +3259,8 @@ struct token_index_data
 #define TOKVAL_SPELL_DIFFICULTY	1
 #define TOKVAL_SPELL_TARGET	2
 #define TOKVAL_SPELL_POSITION	3
-
+#define TOKVAL_SPELL_MANA	4
+#define TOKVAL_SPELL_LEARN	5
 
 struct token_data
 {
@@ -3433,6 +3436,7 @@ struct	char_data
     ROOM_INDEX_DATA *	in_room;
     ROOM_INDEX_DATA *	was_in_room;
     WILDS_DATA *was_in_wilds;
+	ROOM_INDEX_DATA *	checkpoint;
 
     /* VIZZWILDS */
     CHAR_DATA *        prev_in_wilds;
@@ -3710,6 +3714,7 @@ struct	char_data
     bool 		pk_question;
     bool 		cross_zone_question;
     bool 		personal_pk_question;
+    bool		remort_question;
 
     bool 		in_war;
 
@@ -3752,7 +3757,7 @@ struct	char_data
 
 	// Sorted skills and spells (merging skills and tokens)
 	SKILL_ENTRY *sorted_skills;
-	SKILL_ENTRY *sorted_spells;
+//	SKILL_ENTRY *sorted_spells;
 	SKILL_ENTRY *sorted_songs;
 
 	LOCATION		recall;
@@ -4991,7 +4996,10 @@ enum trigger_index_enum {
 	TRIG_LORE_EX,
 	TRIG_MOON,
 	TRIG_MOUNT,
+	TRIG_MULTICLASS,	// Called when a player multiclasses
 	TRIG_OPEN,
+	TRIG_PRACTICE,
+	TRIG_PRACTICETOKEN,
 	TRIG_PREANIMATE,
 	TRIG_PREASSIST,
 	TRIG_PREBITE,
@@ -5012,6 +5020,7 @@ enum trigger_index_enum {
 	TRIG_PREPRACTICE,
 	TRIG_PREPRACTICEOTHER,
 	TRIG_PREPRACTICETHAT,
+	TRIG_PREPRACTICETOKEN,
 	TRIG_PREPUT,
 	TRIG_PRERECALL,
 	TRIG_PRERECKONING,
@@ -5026,8 +5035,10 @@ enum trigger_index_enum {
 	TRIG_PRESPELL,
 	TRIG_PRESTAND,
 	TRIG_PRETRAIN,
+	TRIG_PRETRAINTOKEN,
 	TRIG_PREWAKE,
 	TRIG_PREWEAR,
+	TRIG_PREWIMPY,
 	TRIG_PULL,
 	TRIG_PULL_ON,		/* NIB : 20070121 */
 	TRIG_PUSH,
@@ -5042,9 +5053,11 @@ enum trigger_index_enum {
 	TRIG_REGEN_HP,		/* Modification on ALL hp regens */
 	TRIG_REGEN_MANA,	/* Modification on ALL mana regens */
 	TRIG_REGEN_MOVE,	/* Modification on ALL move regens */
+	TRIG_REMORT,		// Called when a player remorts
 	TRIG_REMOVE,		/* NIB : 20070120 */
 	TRIG_REPOP,
 	TRIG_REST,
+	TRIG_RESTORE,
 	TRIG_RESURRECT,
 	TRIG_SAVE,
 	TRIG_SAYTO,		/* NIB : 20070121 */
@@ -5067,7 +5080,6 @@ enum trigger_index_enum {
 	TRIG_STRIPAFFECT,
 	TRIG_TAKEOFF,
 	TRIG_THROW,
-	TRIG_TOKENPRACTICE,
 	TRIG_TOUCH,
 	TRIG_TURN,
 	TRIG_TURN_ON,		/* NIB : 20070121 */
@@ -5082,6 +5094,7 @@ enum trigger_index_enum {
 	TRIG_WEAPON_PARRIED,
 	TRIG_WEAR,
 	TRIG_WHISPER,
+	TRIG_WIMPY,
 	TRIG_XPGAIN,
 	TRIG_ZAP
 };
@@ -5115,6 +5128,7 @@ enum trigger_index_enum {
 struct trigger_type {
 	char *name;		// Cannonical name
 	char *alias;	// Aliases for the trigger
+	int type;		// Trigger type
 	int slot;		// Trigger slot for grouping similar triggers together
 	bool mob;
 	bool obj;
@@ -7078,6 +7092,7 @@ int p_act_trigger(char *argument, CHAR_DATA *mob, OBJ_DATA *obj, ROOM_INDEX_DATA
 int p_exact_trigger(char *argument, CHAR_DATA *mob, OBJ_DATA *obj, ROOM_INDEX_DATA *room, CHAR_DATA *ch, CHAR_DATA *victim, CHAR_DATA *victim2, OBJ_DATA *obj1, OBJ_DATA *obj2, int type);
 int p_name_trigger(char *argument, CHAR_DATA *mob, OBJ_DATA *obj, ROOM_INDEX_DATA *room, CHAR_DATA *ch, CHAR_DATA *victim, CHAR_DATA *victim2, OBJ_DATA *obj1, OBJ_DATA *obj2, int type);
 int p_percent_trigger(CHAR_DATA *mob, OBJ_DATA *obj, ROOM_INDEX_DATA *room, TOKEN_DATA *token, CHAR_DATA *ch, CHAR_DATA *victim, CHAR_DATA *victim2, OBJ_DATA *obj1, OBJ_DATA *obj2, int type, char *phrase);
+int p_percent_token_trigger(CHAR_DATA *mob, OBJ_DATA *obj, ROOM_INDEX_DATA *room, TOKEN_DATA *token, CHAR_DATA *ch, CHAR_DATA *victim, CHAR_DATA *victim2, OBJ_DATA *obj1, OBJ_DATA *obj2, TOKEN_DATA *tok, int type, char *phrase);
 int p_number_trigger(int number, CHAR_DATA *mob, OBJ_DATA *obj, ROOM_INDEX_DATA *room, TOKEN_DATA *token, CHAR_DATA *ch, CHAR_DATA *victim, CHAR_DATA *victim2, OBJ_DATA *obj1, OBJ_DATA *obj2, int type, char *phrase);
 int p_bribe_trigger(CHAR_DATA *mob, CHAR_DATA *ch, int amount);
 int p_exit_trigger(CHAR_DATA *ch, int dir, int type);
@@ -7574,11 +7589,15 @@ void skill_entry_addsong (CHAR_DATA *ch, int song, TOKEN_DATA *token);
 void skill_entry_removeskill (CHAR_DATA *ch, int sn, TOKEN_DATA *token);
 void skill_entry_removespell (CHAR_DATA *ch, int sn, TOKEN_DATA *token);
 void skill_entry_removesong (CHAR_DATA *ch, int song, TOKEN_DATA *token);
-int token_skill_rating( CHAR_DATA *ch, TOKEN_DATA *token);
+int token_skill_rating( TOKEN_DATA *token);
+int token_skill_mana( TOKEN_DATA *token);
 int skill_entry_rating (CHAR_DATA *ch, SKILL_ENTRY *entry);
 int skill_entry_mod(CHAR_DATA *ch, SKILL_ENTRY *entry);
 int skill_entry_level (CHAR_DATA *ch, SKILL_ENTRY *entry);
-
+int skill_entry_mana (CHAR_DATA *ch, SKILL_ENTRY *entry);
+int skill_entry_learn (CHAR_DATA *ch, SKILL_ENTRY *entry);
+char *skill_entry_name (SKILL_ENTRY *entry);
+void remort_player(CHAR_DATA *ch, int remort_class);
 
 void persist_addmobile(CHAR_DATA *mob);
 void persist_addobject(OBJ_DATA *obj);
@@ -7616,19 +7635,6 @@ bool list_isvalid(LLIST *lp);
 AREA_DATA *get_area_data args ((long anum));
 AREA_DATA *get_area_from_uid args ((long uid));
 
-char *skill_entry_name (SKILL_ENTRY *entry);
-int skill_entry_compare (SKILL_ENTRY *a, SKILL_ENTRY *b);
-void skill_entry_insert (SKILL_ENTRY **list, int sn, int song, TOKEN_DATA *token);
-void skill_entry_remove (SKILL_ENTRY **list, int sn, int song, TOKEN_DATA *token);
-SKILL_ENTRY *skill_entry_findname( SKILL_ENTRY *list, char *str );
-SKILL_ENTRY *skill_entry_findsn( SKILL_ENTRY *list, int sn );
-SKILL_ENTRY *skill_entry_findtoken( SKILL_ENTRY *list, TOKEN_DATA *token );
-void skill_entry_addskill (CHAR_DATA *ch, int sn, TOKEN_DATA *token);
-void skill_entry_addspell (CHAR_DATA *ch, int sn, TOKEN_DATA *token);
-void skill_entry_removeskill (CHAR_DATA *ch, int sn, TOKEN_DATA *token);
-void skill_entry_removespell (CHAR_DATA *ch, int sn, TOKEN_DATA *token);
-int token_skill_rating( CHAR_DATA *ch, TOKEN_DATA *token);
-
 void sacrifice_obj(CHAR_DATA *ch, OBJ_DATA *obj, char *name);
 void give_money(CHAR_DATA *ch, OBJ_DATA *container, int gold, int silver, bool indent);
 void get_money_from_obj(CHAR_DATA *ch, OBJ_DATA *container);
@@ -7638,5 +7644,10 @@ void loot_corpse(CHAR_DATA *ch, OBJ_DATA *corpse);
 int music_lookup( char *name);
 bool is_char_busy(CHAR_DATA *ch);
 bool obj_has_spell(OBJ_DATA *obj, char *name);
+void restore_char(CHAR_DATA *ch, CHAR_DATA *whom);
+
+typedef bool (*pVISIT_ROOM_LINE_FUNC)(ROOM_INDEX_DATA *room, CHAR_DATA *ch, int depth, int door, void *data );
+typedef void (*pVISIT_ROOM_END_FUNC)(ROOM_INDEX_DATA *room, CHAR_DATA *ch, int depth, int door, void *data, bool canceled );
+void visit_room_direction(CHAR_DATA *ch, ROOM_INDEX_DATA *start_room, int max_depth, int door, void *data, pVISIT_ROOM_LINE_FUNC func, pVISIT_ROOM_END_FUNC end_func);
 
 #endif /* !def __MERC_H__ */

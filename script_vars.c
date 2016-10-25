@@ -217,6 +217,8 @@ void variable_freedata (pVARIABLE v)
 {
 	//ITERATOR it;
 
+	variable_clearfield(VAR_VARIABLE, v);
+
 	switch( v->type ) {
 	case VAR_STRING:
 		if( v->_.s ) free_string(v->_.s);
@@ -349,6 +351,31 @@ static void variable_dump_list(pVARIABLE list, char *prefix)
 }
 */
 
+pVARIABLE variable_alloc(char *name, bool index)
+{
+	pVARIABLE var;
+	var = variable_new();
+	if(var) {
+		var->name = str_dup(name);
+		var->save = FALSE;
+		var->index = index;
+
+		if(index) {
+			if(variable_index_tail) variable_index_tail->global_next = var;
+			else variable_index_head = var;
+			var->global_prev = variable_index_tail;
+			variable_index_tail = var;
+		} else {
+			if(variable_tail) variable_tail->global_next = var;
+			else variable_head = var;
+			var->global_prev = variable_tail;
+			variable_tail = var;
+		}
+	}
+
+	return var;
+}
+
 pVARIABLE variable_create(ppVARIABLE list,char *name, bool index, bool clear)
 {
 	pVARIABLE var;
@@ -357,25 +384,8 @@ pVARIABLE variable_create(ppVARIABLE list,char *name, bool index, bool clear)
 	if(var) {
 		if(clear) variable_freedata(var);
 	} else {
-		var = variable_new();
-		if(var) {
-			var->name = str_dup(name);
-			variable_add(list,var);
-			var->save = FALSE;
-			var->index = index;
-
-			if(index) {
-				if(variable_index_tail) variable_index_tail->global_next = var;
-				else variable_index_head = var;
-				var->global_prev = variable_index_tail;
-				variable_index_tail = var;
-			} else {
-				if(variable_tail) variable_tail->global_next = var;
-				else variable_head = var;
-				var->global_prev = variable_tail;
-				variable_tail = var;
-			}
-		}
+		var = variable_alloc(name, index);
+		variable_add(list,var);
 	}
 
 	return var;
@@ -411,6 +421,7 @@ varset(area,AREA,AREA_DATA*,a,a)
 varset(wilds,WILDS,WILDS_DATA*,wilds,wilds)
 varset(church,CHURCH,CHURCH_DATA*,church,church)
 varset(affect,AFFECT,AFFECT_DATA*,aff,aff)
+varset(variable,VARIABLE,pVARIABLE,v,variable)
 
 bool variables_set_door (ppVARIABLE list,char *name, ROOM_INDEX_DATA *room, int door, bool save)
 {
@@ -1300,6 +1311,7 @@ bool variable_copy(ppVARIABLE list,char *oldname,char *newname)
 	case VAR_CONNECTION:	newv->_.conn = oldv->_.conn; break;
 	case VAR_WILDS:			newv->_.wilds = oldv->_.wilds; break;
 	case VAR_CHURCH:		newv->_.church = oldv->_.church; break;
+	case VAR_VARIABLE:		newv->_.variable = oldv->_.variable; break;
 
 	case VAR_PLLIST_STR:
 	case VAR_PLLIST_CONN:
@@ -1308,6 +1320,7 @@ bool variable_copy(ppVARIABLE list,char *oldname,char *newname)
 	case VAR_PLLIST_OBJ:
 	case VAR_PLLIST_TOK:
 	case VAR_PLLIST_CHURCH:
+	case VAR_PLLIST_VARIABLE:
 	case VAR_BLLIST_ROOM:
 	case VAR_BLLIST_MOB:
 	case VAR_BLLIST_OBJ:
@@ -1356,6 +1369,7 @@ bool variable_copyto(ppVARIABLE from,ppVARIABLE to,char *oldname,char *newname, 
 	case VAR_CONNECTION:	newv->_.conn = oldv->_.conn; break;
 	case VAR_WILDS:			newv->_.wilds = oldv->_.wilds; break;
 	case VAR_CHURCH:		newv->_.church = oldv->_.church; break;
+	case VAR_VARIABLE:		newv->_.variable = oldv->_.variable; break;
 
 	case VAR_PLLIST_STR:
 	case VAR_PLLIST_CONN:
@@ -1364,6 +1378,7 @@ bool variable_copyto(ppVARIABLE from,ppVARIABLE to,char *oldname,char *newname, 
 	case VAR_PLLIST_OBJ:
 	case VAR_PLLIST_TOK:
 	case VAR_PLLIST_CHURCH:
+	case VAR_PLLIST_VARIABLE:
 	case VAR_BLLIST_ROOM:
 	case VAR_BLLIST_MOB:
 	case VAR_BLLIST_OBJ:
@@ -1410,6 +1425,7 @@ bool variable_copylist(ppVARIABLE from,ppVARIABLE to,bool index)
 		case VAR_CONNECTION:	newv->_.conn = oldv->_.conn; break;
 		case VAR_WILDS:			newv->_.wilds = oldv->_.wilds; break;
 		case VAR_CHURCH:		newv->_.church = oldv->_.church; break;
+		case VAR_VARIABLE:		newv->_.variable = oldv->_.variable; break;
 
 		case VAR_PLLIST_STR:
 		case VAR_PLLIST_CONN:
@@ -1418,6 +1434,7 @@ bool variable_copylist(ppVARIABLE from,ppVARIABLE to,bool index)
 		case VAR_PLLIST_OBJ:
 		case VAR_PLLIST_TOK:
 		case VAR_PLLIST_CHURCH:
+		case VAR_PLLIST_VARIABLE:
 		case VAR_BLLIST_ROOM:
 		case VAR_BLLIST_MOB:
 		case VAR_BLLIST_OBJ:
@@ -1434,6 +1451,85 @@ bool variable_copylist(ppVARIABLE from,ppVARIABLE to,bool index)
 	}
 
 	return TRUE;
+}
+
+pVARIABLE variable_copyvar(pVARIABLE oldv)
+{
+	pVARIABLE newv = variable_alloc(oldv->name, oldv->index);
+
+	if(!newv) return NULL;
+
+	newv->type = oldv->type;
+	newv->save = oldv->index ? oldv->save : FALSE;
+
+	switch(newv->type) {
+	case VAR_UNKNOWN:		break;
+	case VAR_INTEGER:		newv->_.i = oldv->_.i; break;
+	case VAR_STRING:		newv->_.s = str_dup(oldv->_.s); break;
+	case VAR_STRING_S:		newv->_.s = oldv->_.s; break;
+	case VAR_ROOM:			newv->_.r = oldv->_.r; break;
+	case VAR_EXIT:			newv->_.door.r = oldv->_.door.r; newv->_.door.door = oldv->_.door.door; break;
+	case VAR_MOBILE:		newv->_.m = oldv->_.m; break;
+	case VAR_OBJECT:		newv->_.o = oldv->_.o; break;
+	case VAR_TOKEN:			newv->_.t = oldv->_.t; break;
+	case VAR_AREA:			newv->_.a = oldv->_.a; break;
+	case VAR_SKILL:			newv->_.sn = oldv->_.sn; break;
+	case VAR_SKILLINFO:		newv->_.sk.owner = oldv->_.sk.owner; newv->_.sk.sn = oldv->_.sk.sn; break;
+	case VAR_AFFECT:		newv->_.aff = oldv->_.aff; break;
+
+	case VAR_CONNECTION:	newv->_.conn = oldv->_.conn; break;
+	case VAR_WILDS:			newv->_.wilds = oldv->_.wilds; break;
+	case VAR_CHURCH:		newv->_.church = oldv->_.church; break;
+	case VAR_VARIABLE:		newv->_.variable = oldv->_.variable; break;
+
+	case VAR_PLLIST_STR:
+	case VAR_PLLIST_CONN:
+	case VAR_PLLIST_ROOM:
+	case VAR_PLLIST_MOB:
+	case VAR_PLLIST_OBJ:
+	case VAR_PLLIST_TOK:
+	case VAR_PLLIST_CHURCH:
+	case VAR_PLLIST_VARIABLE:
+	case VAR_BLLIST_ROOM:
+	case VAR_BLLIST_MOB:
+	case VAR_BLLIST_OBJ:
+	case VAR_BLLIST_TOK:
+	case VAR_BLLIST_EXIT:
+	case VAR_BLLIST_SKILL:
+	case VAR_BLLIST_AREA:
+	case VAR_BLLIST_WILDS:
+		// All of the lists that require special allocation will be handled auto-magically by list_copy
+		newv->_.list = list_copy(oldv->_.list);
+		break;
+
+	}
+
+	return newv;
+}
+
+// Deleter for list using variable copies
+void list_free_variable(void *data)
+{
+//	static char lfv_buf[MIL];
+
+	pVARIABLE var = (pVARIABLE)data;
+
+//	sprintf(lfv_buf, "list_free_variable - called for %s", (var ? var->name : "(null-var)"));
+//	wiznet(lfv_buf,NULL,NULL,WIZ_TESTING,0,0);
+
+	variable_free(var);
+}
+
+
+LLIST *variable_copy_tolist(ppVARIABLE vars)
+{
+	LLIST *lst = list_createx(TRUE, NULL, list_free_variable);
+	pVARIABLE oldv;
+
+	for(oldv = *vars; oldv; oldv = oldv->next)
+		list_appendlink(lst, variable_copyvar(oldv));
+
+	return lst;
 }
 
 bool variable_setsave(pVARIABLE vars,char *name,bool state)
@@ -2780,14 +2876,21 @@ bool variable_fread(ppVARIABLE vars, int type, FILE *fp)
 	return TRUE;
 }
 
-void script_varclearon(VARIABLE **vars, char *argument)
+void script_varclearon(SCRIPT_VARINFO *info, VARIABLE **vars, char *argument)
 {
+	SCRIPT_PARAM arg;
 	char name[MIL];
 
 	if(!vars) return;
 
 	// Get name
-	argument = one_argument(argument,name);
+	if(!(argument = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_STRING) return;
+
+	strcpy(name, arg.d.str);
+
 	if(!name[0]) return;
 
 	variable_remove(vars,name);

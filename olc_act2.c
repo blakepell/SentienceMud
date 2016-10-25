@@ -2729,6 +2729,24 @@ TEDIT(tedit_value)
 
 			send_to_char("Minimum position set.\n\r", ch);
 			break;
+		case TOKVAL_SPELL_MANA:			// Mana cost
+			value_value = atoi(arg2);
+			if(value_value < 0 || value_value > 1000000) {
+				send_to_char("Mana cost must be within range of 0 to 1000000.\n\r", ch);
+				return FALSE;
+			}
+
+			send_to_char("Mana cost set.\n\r", ch);
+			break;
+		case TOKVAL_SPELL_LEARN:			// Learn cost
+			value_value = atoi(arg2);
+			if(value_value < 0 || value_value > 1000000) {
+				send_to_char("Learn cost must be within range of 0 to 1000000.\n\r", ch);
+				return FALSE;
+			}
+
+			send_to_char("Learn cost set.\n\r", ch);
+			break;
 		default:
 			// Need to check for various things.
 			value_value = atol(arg2);
@@ -2759,6 +2777,15 @@ TEDIT(tedit_value)
 
 			send_to_char("Difficulty set.\n\r", ch);
 			break;
+		case TOKVAL_SPELL_LEARN:			// Learn cost
+			value_value = atoi(arg2);
+			if(value_value < 0 || value_value > 1000000) {
+				send_to_char("Learn cost must be within range of 0 to 1000000.\n\r", ch);
+				return FALSE;
+			}
+
+			send_to_char("Learn cost set.\n\r", ch);
+			break;
 		default:
 			// Need to check for various things.
 			value_value = atol(arg2);
@@ -2785,6 +2812,24 @@ TEDIT(tedit_value)
 
 
 			send_to_char("Target type set.\n\r", ch);
+			break;
+		case TOKVAL_SPELL_MANA:			// Mana cost
+			value_value = atoi(arg2);
+			if(value_value < 0 || value_value > 1000000) {
+				send_to_char("Mana cost must be within range of 0 to 1000000.\n\r", ch);
+				return FALSE;
+			}
+
+			send_to_char("Mana cost set.\n\r", ch);
+			break;
+		case TOKVAL_SPELL_LEARN:			// Learn cost
+			value_value = atoi(arg2);
+			if(value_value < 0 || value_value > 1000000) {
+				send_to_char("Learn cost must be within range of 0 to 1000000.\n\r", ch);
+				return FALSE;
+			}
+
+			send_to_char("Learn cost set.\n\r", ch);
 			break;
 		default:
 			// Need to check for various things.
@@ -3048,15 +3093,20 @@ char *token_index_getvaluename(TOKEN_INDEX_DATA *token, int v)
 		else if( v == TOKVAL_SPELL_DIFFICULTY ) return "Difficulty";
 		else if( v == TOKVAL_SPELL_TARGET ) return "Spell Target";
 		else if( v == TOKVAL_SPELL_POSITION ) return "Min Position";
+		else if( v == TOKVAL_SPELL_MANA ) return "Mana Cost";
+		else if( v == TOKVAL_SPELL_LEARN ) return "Learn Cost";
 	}
 	else if( token->type == TOKEN_SKILL )
 	{
 		if( v == TOKVAL_SPELL_RATING ) return "Rating";
 		else if( v == TOKVAL_SPELL_DIFFICULTY ) return "Difficulty";
+		else if( v == TOKVAL_SPELL_LEARN ) return "Learn Cost";
 	}
 	else if( token->type == TOKEN_SONG )
 	{
 		if( v == TOKVAL_SPELL_TARGET ) return "Song Target";
+		else if( v == TOKVAL_SPELL_MANA ) return "Mana Cost";
+		else if( v == TOKVAL_SPELL_LEARN ) return "Learn Cost";
 	}
 
 	return token->value_name[v];

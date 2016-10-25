@@ -46,11 +46,22 @@
 #include "wilds.h"
 
 #define MAX_BACKSTAB_DAMAGE 15000
-#define MAX_FLEE_ATTEMPTS 10 
+#define MAX_FLEE_ATTEMPTS 10
+
+void char_id(CHAR_DATA *ch, long *id)
+{
+	id[0] = ch->id[0];
+	id[1] = ch->id[1];
+}
 
 bool is_combatant_valid(CHAR_DATA *ch, long id1, long id2)
 {
 	return IS_VALID(ch) && (ch->id[0] == id1) && (ch->id[1] == id2);
+}
+
+bool is_char_stillvalid(CHAR_DATA *ch, long *id)
+{
+	return IS_VALID(ch) && (ch->id[0] == id[0]) && (ch->id[1] == id[1]);
 }
 
 /*
@@ -65,6 +76,23 @@ void violence_update(void)
 	char buf[MSL];
 	ITERATOR ait;
 	long aid[2], vid[2];
+
+	// MK 100316 - Handle all combatants that are fighting to fire PREROUND before any combat is done each round.
+	iterator_start(&ait, loaded_chars);
+	while(( ch = (CHAR_DATA *)iterator_nextdata(&ait)))
+	{
+		if( !IS_VALID(ch) || ch->in_room == NULL) continue;
+
+		if ((victim = ch->fighting) == NULL || !IS_VALID(victim))
+			continue;
+
+		if (!IS_AWAKE(ch) || ch->in_room != victim->in_room)
+			continue;
+
+		p_percent_trigger(ch, NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_PREROUND, NULL);
+	}
+	iterator_stop(&ait);
+
 
 	iterator_start(&ait, loaded_chars);
 	while(( ch = (CHAR_DATA *)iterator_nextdata(&ait)))
@@ -127,23 +155,21 @@ void violence_update(void)
 		if ((victim = ch->fighting) == NULL || ch->in_room == NULL)
 			continue;
 
-		if ((victim = ch->fighting) == NULL)
-			continue;
-
 		aid[0] = ch->id[0]; aid[1] = ch->id[1];
 		vid[0] = victim->id[0]; vid[1] = victim->id[1];
 
 		if (IS_AWAKE(ch) && ch->in_room == victim->in_room)
 			multi_hit(ch, victim, TYPE_UNDEFINED);
 
+		if(!is_combatant_valid(victim, vid[0], vid[1])) continue;
+
 		if (ch->in_room != victim->in_room) {
 			stop_fighting(ch, TRUE);
 			continue;
 		}
-	
+
 
 		if(!is_combatant_valid(ch, aid[0], aid[1])) continue;
-		if(!is_combatant_valid(victim, vid[0], vid[1])) continue;
 
 		check_assist(ch,victim);
 
@@ -617,7 +643,7 @@ bool one_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt, bool secondary)
 	}
 
 	// If the attacker of one_hit is not fighting and is not what the attacker is fighting
-	if( !ch->fighting && !set_fighting(ch, victim)) {
+	if( (!ch->fighting || !victim->fighting) && !set_fighting(ch, victim)) {
 
 		// If for some reason, fighting could not be established, bail out.
 		victim->set_death_type = DEATHTYPE_ALIVE;
@@ -1189,6 +1215,7 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 	int corpse_type = RAWKILL_NORMAL;
 	bool immune;
 	bool kill_in_room = FALSE;
+	long vid[2], cid[2];
 
 	if (victim->in_damage_function) {
 		victim->set_death_type = DEATHTYPE_ALIVE;
@@ -1214,6 +1241,12 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 		victim->set_death_type = DEATHTYPE_ALIVE;
 		return FALSE;
 	}
+
+	vid[0] = victim->id[0];
+	vid[1] = victim->id[1];
+
+	cid[0] = ch->id[0];
+	cid[1] = ch->id[1];
 
 	victim->in_damage_function = TRUE;
 
@@ -1375,7 +1408,7 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 
 	// Apply immunity/resistant/vuln
 	switch(check_immune(victim,dam_type)) {
-	case(IS_IMMUNE): immune = TRUE; dam = 0; break;
+	case(IS_IMMUNE): immune = TRUE; break;
 	case(IS_RESISTANT): dam = dam * 3/4; break;		// Reduces damage by 25%
 	case(IS_VULNERABLE): dam = dam * 6/5; break;		// Boosts damage by 20%
 	}
@@ -1387,14 +1420,11 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 		//  This has a damage at the deepest level, the last stop before it is be applied to the victim
 		victim->hit_damage = dam;
 		victim->hit_type = dt;
-		if(p_percent_trigger(victim,NULL, NULL, NULL, ch, NULL, NULL, weapon, NULL, TRIG_DAMAGE, show?"visible":"hidden")) {
-			victim->hit_damage = 0;
+		victim->hit_class = dam_type;
 
-			// the damage script should have posted messages if code reaches here.
-			victim->in_damage_function = FALSE;
-			tail_chain();
-			return FALSE;
-		}
+		// If the trigger returns non-zero, it will silence default messages, but not further processing of damage.
+		if(p_percent_trigger(victim,NULL, NULL, NULL, ch, NULL, NULL, weapon, NULL, TRIG_DAMAGE, show?"visible":"hidden"))
+			show = FALSE;
 
 		// Only allow reduction in damage
 		if( victim->hit_damage < dam )
@@ -1406,8 +1436,13 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 	// READ-ONLY access to damage and damage type
 	victim->hit_damage = dam;
 	victim->hit_type = dt;
+	victim->hit_class = dam_type;
 	p_percent_trigger(victim,NULL, NULL, NULL, ch, NULL, NULL, weapon, NULL, TRIG_CHECK_DAMAGE, show?"visible":"hidden");
+
+	// Reset the damage down to zero if immune
+	if( immune ) dam = 0;
 	victim->hit_damage = dam;
+
 
 	if (show) dam_message(ch, victim, dam, dt, immune);
 
@@ -1421,7 +1456,7 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 	}
 
 	// Barrier spells bounce back damage
-	if (dam > 0 && ch != victim && dam_type != DAM_POISON && ch->in_room == victim->in_room) {
+	if (!ch->in_damage_function && dam > 0 && ch != victim && dam_type != DAM_POISON && ch->in_room == victim->in_room) {
 		AFFECT_DATA *af;
 		int level, bdam;
 
@@ -1450,7 +1485,8 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 				} else
 					victim->hit_damage = 0;
 
-				p_percent_trigger(victim,NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_BARRIER,"electrical post");
+				if(is_combatant_valid(victim, vid[0], vid[1]) && is_combatant_valid(ch, cid[0], cid[1]))
+					p_percent_trigger(victim,NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_BARRIER,"electrical post");
 			}
 		}
 
@@ -1479,7 +1515,8 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 				} else
 					victim->hit_damage = 0;
 
-				p_percent_trigger(victim,NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_BARRIER,"fire post");
+				if(is_combatant_valid(victim, vid[0], vid[1]) && is_combatant_valid(ch, cid[0], cid[1]))
+					p_percent_trigger(victim,NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_BARRIER,"fire post");
 			}
 		}
 
@@ -1508,7 +1545,8 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 				} else
 					victim->hit_damage = 0;
 
-				p_percent_trigger(victim,NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_BARRIER,"frost post");
+				if(is_combatant_valid(victim, vid[0], vid[1]) && is_combatant_valid(ch, cid[0], cid[1]))
+					p_percent_trigger(victim,NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_BARRIER,"frost post");
 			}
 		}
 	}
@@ -1570,8 +1608,11 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 
 	// Gain experience if victim is killed.
 	if (victim->position == POS_DEAD) {
-		if (ch != victim)
+		if (ch != victim) {
 			group_gain(ch, victim);
+			if( ch->fighting == victim )
+				stop_fighting(ch, FALSE);
+		}
 
 		// If invasion mob then check if quest point is earned
 		if (!IS_NPC(ch) && IS_NPC(victim) && IS_SET(victim->act2, ACT2_INVASION_MOB) && number_percent() < 5) {
@@ -1703,40 +1744,39 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 	}
 
 	victim->set_death_type = DEATHTYPE_ALIVE;
+	victim->in_damage_function = FALSE;
 
 	if (victim == ch) {
-		victim->in_damage_function = FALSE;
 		return TRUE;
 	}
 
-	victim->in_damage_function = FALSE;
 
 	// Take care of link dead newbs.
 	if (!IS_NPC(victim) && victim->desc == NULL && victim->tot_level < 31 && !number_range(0, victim->wait)) {
 		do_function(victim, &do_recall, "");
 		return TRUE;
 	}
-	
-	/* 
-	 * mobs automatically flee in terror if there is too large a level difference 
+
+	/*
+	 * mobs automatically flee in terror if there is too large a level difference
 	 * */
-        if (IS_NPC(victim) && !IS_NPC(ch) && abs(ch->tot_level - victim->tot_level > 90) && number_percent() < 75) {
+	if (IS_NPC(victim) && !IS_NPC(ch) && abs(ch->tot_level - victim->tot_level > 90) && number_percent() < 75) {
 		char buf[MAX_STRING_LENGTH];
 		sprintf(buf, "%s balks with fear at the sight of your approach!\n\r", victim->short_descr);
 		send_to_char(buf,ch);
-		do_function (victim, &do_flee, ""); 
+		do_function (victim, &do_flee, "");
 	}
 
 	// Wimpy - Mobiles
 	if (IS_NPC(victim) && dam > 0 && victim->wait < PULSE_VIOLENCE / 2 &&
 		((IS_SET(victim->act, ACT_WIMPY)  /* && !number_bits(2) */ && victim->hit < victim->max_hit / 3) ||
 		(IS_AFFECTED(victim, AFF_CHARM) && victim->master && victim->master->in_room != victim->in_room)))
-		do_function(victim, &do_flee, "");
+		do_function(victim, &do_flee, NULL);
 
 	// Wimpy - Players
 	if (!IS_NPC(victim) && victim->hit > 0 && victim->hit <= victim->wimpy &&
 		victim->wait < PULSE_VIOLENCE / 2 && victim->paralyzed <= 0 && !IS_AFFECTED2(victim, AFF2_PARALYSIS) && !IS_AFFECTED2(victim, AFF2_IMMOBILE))
-		do_function (victim, &do_flee, "");
+		do_function (victim, &do_flee, NULL);
 
 	/* if fled successfully, return false so it doesn't keep position at fighting AO 092516 */
 	if (victim->in_room != ch->in_room)
@@ -2707,46 +2747,24 @@ void update_pos(CHAR_DATA *victim)
 	else                          victim->position = POS_STUNNED;
 }
 
-
-// Start a fight.
-bool set_fighting(CHAR_DATA *ch, CHAR_DATA *victim)
+bool can_start_combat(CHAR_DATA *ch)
 {
-	OBJ_DATA *obj;
-
-	if (ch->in_room == NULL || victim->in_room == NULL)
-		return FALSE;
+	if( ch->in_room == NULL ) return FALSE;
 
 	// Fix for do_opcast. Make sure the dummy mob is not attacked.
-	if ((IS_NPC(ch) && ch->pIndexData->vnum == MOB_VNUM_OBJCASTER) ||
-		(IS_NPC(victim) && victim->pIndexData->vnum == MOB_VNUM_OBJCASTER))
-		return FALSE;
+	if( IS_NPC(ch) && ch->pIndexData->vnum == MOB_VNUM_OBJCASTER) return FALSE;
 
-	if (ch->fighting != NULL)
-	{
-		/*
-		sprintf(buf, "Set_fighting: already fighting, ch %s in room %s (%ld), victim %s in room %s (%ld)",
-			 ch->name, ch->in_room->name, ch->in_room->vnum,
-			 IS_NPC(victim) ? victim->short_descr : victim->name,
-			 victim->in_room->name, victim->in_room->vnum);
-		bug(buf, 0);
-		*/
-		return FALSE;
-	}
-
-	// Mount character
 	if (IS_NPC(ch) && IS_SET(ch->act, ACT_MOUNT) && MOUNTED(ch))
 	{
 		if (IS_NPC(MOUNTED(ch)) || get_profession(MOUNTED(ch), SECOND_SUBCLASS_WARRIOR) != CLASS_WARRIOR_CRUSADER)
 			return FALSE;
 	}
 
-	// Mount victim
-	if (IS_NPC(victim) && IS_SET(victim->act, ACT_MOUNT) && MOUNTED(victim))
-	{
-		if (IS_NPC(MOUNTED(victim)) || get_profession(MOUNTED(victim), SECOND_SUBCLASS_WARRIOR) != CLASS_WARRIOR_CRUSADER)
-			return FALSE;
-	}
+	return TRUE;
+}
 
+void enter_combat(CHAR_DATA *ch, CHAR_DATA *victim)
+{
 	if (IS_AFFECTED(ch, AFF_SLEEP))
 	{
 		affect_strip(ch, gsn_sleep);
@@ -2781,9 +2799,34 @@ bool set_fighting(CHAR_DATA *ch, CHAR_DATA *victim)
 	*/
 
 	act("$N begins attacking $n!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
+}
+
+// Start a fight.
+bool set_fighting(CHAR_DATA *ch, CHAR_DATA *victim)
+{
+	OBJ_DATA *obj;
+
+	if( !can_start_combat(ch) ) return FALSE;
+
+	// They were already fighting the victim, just resume combat without any of the precombat stuff
+	if( ch->fighting == victim )
+	{
+		if( victim->fighting == NULL ) {
+//			send_to_char("Resuming combat...\n\r", victim);
+			enter_combat(victim, ch);
+		}
+		return TRUE;
+	}
+
+	if( ch->fighting != NULL ) return FALSE;
+
+	if( !can_start_combat(victim) ) return FALSE;
+
+	enter_combat(ch, victim);
 
 	// Wilderness spear style kicks in here too
-	if (get_skill(victim, gsn_wilderness_spear_style) > 0)
+	// MK 100316 - Changed so that the victim must be standing to do this defense.
+	if (victim->position == POS_STANDING && get_skill(victim, gsn_wilderness_spear_style) > 0)
 	{
 		bool found = FALSE;
 		int chance;
@@ -2807,7 +2850,9 @@ bool set_fighting(CHAR_DATA *ch, CHAR_DATA *victim)
 	}
 
 	/* AO 092516 Make sure to initiate combat on a successful defense. Hackish but oh well. */
-	damage_new(ch,victim,NULL,0,0,0,FALSE);
+	//damage_new(ch,victim,NULL,0,0,0,FALSE);	// MK couldn't you just... set the victim's fighting if it's null?
+	if( victim->fighting == NULL )
+		enter_combat(victim, ch);
 
 	p_percent_trigger(victim, NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_START_COMBAT, NULL);
 	p_percent_trigger(ch, NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_START_COMBAT, NULL);
@@ -2836,7 +2881,7 @@ void stop_fighting(CHAR_DATA *ch, bool fBoth)
 	iterator_start(&it, loaded_chars);
 	while(( fch = (CHAR_DATA *)iterator_nextdata(&it)))
 	{
-		if (fch == ch || (fBoth && fch->fighting == ch))
+		if (fch == ch || (fBoth && ch->fighting == fch))
 		{
 			if (fch->reverie == -1)
 				fch->reverie = 0;
@@ -4011,12 +4056,20 @@ void dam_message(CHAR_DATA *ch, CHAR_DATA *victim, int dam,int dt,bool immune)
 	CHAR_DATA *gch;
 	char punct;
 	float percent;
+//	char msg[MSL];
+
+//	sprintf(msg, "dam_message: '%s' vs '%s', dam = %d, dt = %d, immune = %s",
+//		(ch ? ch->name : "(null)"),
+//		(victim ? victim->name: "(null"),
+//		dam, dt, (immune ? "TRUE" : "FALSE"));
+//	wiznet(msg,NULL,NULL,WIZ_TESTING,0,0);
+
+	if (ch == NULL || victim == NULL)
+		return;
 
 	percent = (float) dam / victim->hit;
 	percent *= 100;
 
-	if (ch == NULL || victim == NULL)
-	return;
 
 	if (dam <   0) { vs = "miss";	vp = "misses";		}
 	else if (dam == 0) { vs = "do nothing to";	vp = "does nothing to";		}
@@ -5211,6 +5264,11 @@ void do_dirt(CHAR_DATA *ch, char *argument)
 
 		p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_DIRTKICK,"attack_pass");
 	} else {
+		long cid[2], vid[2];
+
+		char_id(ch, cid);
+		char_id(victim, vid);
+
 		if (number_percent() < 5) {
 			AFFECT_DATA af;
 			memset(&af,0,sizeof(af));
@@ -5236,9 +5294,14 @@ void do_dirt(CHAR_DATA *ch, char *argument)
 		}
 
 		damage(ch,victim,0,gsn_dirt,DAM_NONE,TRUE);
-		check_improve(ch,gsn_dirt,FALSE,2);
-		WAIT_STATE(ch,skill_table[gsn_dirt].beats);
-		p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_DIRTKICK,"attack_fail");
+		if( is_char_stillvalid(ch, cid) )
+		{
+			check_improve(ch,gsn_dirt,FALSE,2);
+			WAIT_STATE(ch,skill_table[gsn_dirt].beats);
+
+			if( is_char_stillvalid(victim, vid) )
+				p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_DIRTKICK,"attack_fail");
+		}
 	}
 }
 
@@ -5679,6 +5742,7 @@ void do_blackjack(CHAR_DATA *ch, char *argument)
 	CHAR_DATA *victim;
 	OBJ_DATA *helmet, *weapon;
 	int chance, skill;
+	long cid[2], vid[2];
 
 	one_argument(argument, arg);
 
@@ -5732,6 +5796,9 @@ void do_blackjack(CHAR_DATA *ch, char *argument)
 		return;
 	}
 
+	char_id(ch, cid);
+	char_id(victim, vid);
+
 	// Make sure victim doesn't have a super strong helmet
 	helmet = get_eq_char(victim, WEAR_HEAD);
 	if (helmet && IS_SET(helmet->extra2_flags, ITEM_SUPER_STRONG)) {
@@ -5739,7 +5806,8 @@ void do_blackjack(CHAR_DATA *ch, char *argument)
 		act("Your weapon bounces off $N's strong helmet!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 		act("Your helmet protects you from $n's blackjack!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
 		multi_hit(victim, ch, TYPE_UNDEFINED);
-		WAIT_STATE(ch, skill_table[gsn_blackjack].beats);
+		if( is_char_stillvalid(ch, cid) )
+			WAIT_STATE(ch, skill_table[gsn_blackjack].beats);
 		return;
 	}
 
@@ -5748,7 +5816,8 @@ void do_blackjack(CHAR_DATA *ch, char *argument)
 		act("Shrouded in your relaxed state of mind, you catch $n attempt to blackjack you!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
 		act("While in $S relaxed state, $N notices $n's attempted blackjack!", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
 		multi_hit(victim, ch, TYPE_UNDEFINED);
-		WAIT_STATE(ch, skill_table[gsn_blackjack].beats);
+		if( is_char_stillvalid(ch, cid) )
+			WAIT_STATE(ch, skill_table[gsn_blackjack].beats);
 		return;
 	}
 
@@ -5769,7 +5838,8 @@ void do_blackjack(CHAR_DATA *ch, char *argument)
 			act("{R$n notices $N sneaking around and kicks $M with $s hind legs!{x", mount, ch, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
 			act("{R$n notices you sneaking around and kicks you with $s hind legs!{x", mount, ch, NULL, NULL, NULL, NULL, NULL, TO_VICT);
 			damage(mount, ch, dam, gsn_kick, DAM_BASH, TRUE);
-			check_improve(victim, gsn_riding, TRUE, 10);
+			if( is_char_stillvalid(victim, vid) )
+				check_improve(victim, gsn_riding, TRUE, 10);
 			return;
 		}
 	}
@@ -5844,7 +5914,8 @@ void do_blackjack(CHAR_DATA *ch, char *argument)
 			multi_hit(victim, ch, TYPE_UNDEFINED);
 		}
 	}
-	WAIT_STATE(ch, skill_table[gsn_blackjack].beats);
+	if( is_char_stillvalid(ch, cid) )
+		WAIT_STATE(ch, skill_table[gsn_blackjack].beats);
 }
 
 
@@ -5877,8 +5948,8 @@ void do_flee(CHAR_DATA *ch, char *argument)
 	if (ch->fighting != NULL && !IS_NPC(ch->fighting))
 		flee_lag = TRUE;
 
-	if (p_percent_trigger(ch->fighting,NULL,NULL,NULL,ch,NULL,NULL, NULL, NULL,TRIG_PREFLEE,argument?argument:"anyway") ||
-		p_percent_trigger(ch,NULL,NULL,NULL,ch,NULL,NULL, NULL, NULL,TRIG_PREFLEE,argument?argument:"anyway"))
+	if (p_percent_trigger(ch,NULL,NULL,NULL,ch,ch->fighting,NULL, NULL, NULL,argument?TRIG_PREFLEE:TRIG_PREWIMPY,argument) ||
+		p_percent_trigger(ch->fighting,NULL,NULL,NULL,ch,NULL,NULL, NULL, NULL,argument?TRIG_PREFLEE:TRIG_PREWIMPY,argument))
 		return;
 
 	if (IS_AFFECTED(ch,AFF_BLIND))
@@ -5923,10 +5994,10 @@ void do_flee(CHAR_DATA *ch, char *argument)
 			{
 				plogf("fight.c, do_flee(): char is fleeing from a static room.");
 				// Check if door is a valid exit for this char
-				if (!(pexit = was_in->exit[door]) 
-					|| (!pexit->u1.to_room && pexit->wilds.wilds_uid == 0) 
-					|| (IS_SET(pexit->exit_info, EX_CLOSED) && !IS_AFFECTED(ch, AFF_PASS_DOOR)) 
-					|| number_range(0,ch->daze) != 0 
+				if (!(pexit = was_in->exit[door])
+					|| (!pexit->u1.to_room && pexit->wilds.wilds_uid == 0)
+					|| (IS_SET(pexit->exit_info, EX_CLOSED) && !IS_AFFECTED(ch, AFF_PASS_DOOR))
+					|| number_range(0,ch->daze) != 0
 					|| (IS_NPC(ch) && (IS_SET(pexit->u1.to_room->room_flags, ROOM_NO_MOB) || IS_SET(pexit->u1.to_room->room_flags, ROOM_SAFE))))
 					continue;
 			}
@@ -5951,11 +6022,11 @@ void do_flee(CHAR_DATA *ch, char *argument)
 		send_to_char("{RPANIC! You couldn't escape!{x\n\r", ch);
 		return;
 	}
-	else
+
 	/* if an NPC and was killed in the move_char procedure, e.g. by room flames,
 	   the char data will have been freed and the in_room will be null, so bail out here. */
-		if (IS_NPC(ch) && !ch->in_room)
-			return;
+	if (IS_NPC(ch) && !ch->in_room)
+		return;
 
 	char_from_room(ch);
 	char_to_room(ch, was_in);
@@ -5965,7 +6036,13 @@ void do_flee(CHAR_DATA *ch, char *argument)
 
 	sprintf(buf, "{RYou flee to the %s!{x\n\r", dir_name[door]);
 	send_to_char(buf, ch);
+
+	p_percent_trigger(ch->fighting,NULL,NULL,NULL,ch,NULL,NULL, NULL, NULL,argument?TRIG_FLEE:TRIG_WIMPY,argument);
+	p_percent_trigger(ch,NULL,NULL,NULL,ch,ch->fighting,NULL, NULL, NULL,argument?TRIG_FLEE:TRIG_WIMPY,argument);
+
 	stop_fighting(ch, TRUE);
+
+
 
 /* 05-29-2006 Syn - Disabling this for now. I originally added this because Nopraptor reported
    a bug of flee <direction> sending you elsewhere than the stated direction, causing him to get
@@ -6116,6 +6193,7 @@ void do_tail_kick(CHAR_DATA *ch, char *argument)
 	CHAR_DATA *victim;
 	int this_class, chance, dam;
 	char arg[MAX_INPUT_LENGTH];
+	long cid[2], vid[2];
 
 	argument = one_argument(argument, arg);
 
@@ -6154,22 +6232,32 @@ void do_tail_kick(CHAR_DATA *ch, char *argument)
 		return;
 
 	WAIT_STATE(ch, skill_table[gsn_tail_kick].beats);
+	char_id(ch, cid);
+	char_id(victim, vid);
+
 	if (chance > number_percent()) {
 		victim->hit_damage = number_range(ch->tot_level/2, ch->tot_level)*3;
 		p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_TAILKICK,"damage");
 		dam = victim->hit_damage;
 		victim->hit_damage = 0;
 		damage(ch,victim, dam, gsn_tail_kick,DAM_BASH,TRUE);
-		check_improve(ch,gsn_tail_kick,TRUE,1);
+		if(is_char_stillvalid(ch, cid)) {
+			check_improve(ch,gsn_tail_kick,TRUE,1);
 
-
-		p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_TAILKICK,"attack_pass");
-		p_percent_trigger(ch,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_TAILKICK,"attack_pass");
+			if(is_char_stillvalid(victim, vid)) {
+				p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_TAILKICK,"attack_pass");
+				p_percent_trigger(ch,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_TAILKICK,"attack_pass");
+			}
+		}
 	} else {
 		damage(ch, victim, 0, gsn_tail_kick,DAM_BASH,TRUE);
-		check_improve(ch,gsn_tail_kick,FALSE,1);
-		p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_TAILKICK,"attack_fail");
-		p_percent_trigger(ch,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_TAILKICK,"attack_fail");
+		if(is_char_stillvalid(ch, cid)) {
+			check_improve(ch,gsn_tail_kick,FALSE,1);
+			if(is_char_stillvalid(victim, vid)) {
+				p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_TAILKICK,"attack_fail");
+				p_percent_trigger(ch,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_TAILKICK,"attack_fail");
+			}
+		}
 	}
 }
 
@@ -6178,6 +6266,7 @@ void do_kick(CHAR_DATA *ch, char *argument)
 {
 	CHAR_DATA *victim;
 	int skill;
+	long vid[2], cid[2];
 
 	if (is_dead(ch)) return;
 
@@ -6193,7 +6282,7 @@ void do_kick(CHAR_DATA *ch, char *argument)
 		send_to_char("You can't kick while riding!\n\r", ch);
 		return;
 	}
-	
+
         if ((victim = get_char_room(ch, NULL, argument)) == NULL) {
                 if ((victim = ch->fighting) == NULL) {
 			send_to_char("Kick whom?\n\r", ch);
@@ -6209,6 +6298,9 @@ void do_kick(CHAR_DATA *ch, char *argument)
 	if(p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_KICK,"pretest") ||
 		p_percent_trigger(ch,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_KICK,"pretest"))
 		return;
+
+	char_id(ch, cid);
+	char_id(victim, vid);
 
 	WAIT_STATE(ch, skill_table[gsn_kick].beats);
 
@@ -6228,9 +6320,15 @@ void do_kick(CHAR_DATA *ch, char *argument)
 		victim->hit_damage = 0;
 
 		if(dam > 0) damage(ch,victim,dam, gsn_kick,DAM_BASH,TRUE);
-		check_improve(ch,gsn_kick,TRUE,1);
-		p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_KICK,"attack_pass");
-		p_percent_trigger(ch,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_KICK,"attack_pass");
+
+		if(is_char_stillvalid(ch, cid)) {
+			check_improve(ch,gsn_kick,TRUE,1);
+
+			if(is_char_stillvalid(victim, vid)) {
+				p_percent_trigger(victim,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_KICK,"attack_pass");
+				p_percent_trigger(ch,NULL, NULL, NULL, ch, victim, NULL, NULL, NULL, TRIG_ATTACK_KICK,"attack_pass");
+			}
+		}
 	} else {
 		damage(ch, victim, 0, gsn_kick,DAM_BASH,TRUE);
 		check_improve(ch,gsn_kick,FALSE,1);

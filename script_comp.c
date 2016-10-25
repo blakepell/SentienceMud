@@ -276,14 +276,17 @@ char *compile_expression(char *str,int type, char **store)
 	return str+1;
 }
 
-char *compile_variable(char *str, char **store, bool bracket, bool anychar)
+char *compile_variable(char *str, char **store, int type, bool bracket, bool anychar)
 {
 	char *p = *store;
 	*p++ = ESCAPE_VARIABLE;
 	while(str && *str && *str != '>') {
 		if(isalpha(*str)) *p++ = *str++;
 		else if(*str == '<') {
-			str = compile_variable(str+1,&p,TRUE,TRUE);
+			str = compile_variable(str+1,&p, type,TRUE,TRUE);
+			if(!str) return NULL;
+		} else if(*str == '[') {
+			str = compile_expression(str+1,type,&p);
 			if(!str) return NULL;
 		} else if(anychar && isprint(*str)) *p++ = *str++;
 		else {
@@ -385,7 +388,7 @@ char *compile_entity(char *str,int type, char **store)
 				compile_error_show(buf);
 				return NULL;
 			}
-			if(!compile_variable(field,&p,FALSE,TRUE))
+			if(!compile_variable(field,&p,type,FALSE,TRUE))
 				return NULL;
 			*p++ = ENTITY_VAR_STR;
 			next_ent = ENT_STRING;
@@ -406,7 +409,7 @@ char *compile_entity(char *str,int type, char **store)
 					return NULL;
 				}
 
-				if(!compile_variable(field,&p,FALSE,TRUE))
+				if(!compile_variable(field,&p,type,FALSE,TRUE))
 					return NULL;
 				*p++ = ftype->code;
 				next_ent = ftype->type;
@@ -462,6 +465,7 @@ char *compile_entity(char *str,int type, char **store)
 			case ENT_PLLIST_OBJ:	ent = ENT_OBJECT; break;
 			case ENT_PLLIST_TOK:	ent = ENT_TOKEN; break;
 			case ENT_PLLIST_CHURCH:	ent = ENT_CHURCH; break;
+			case ENT_PLLIST_VARIABLE:	ent = ENT_VARIABLE; break;
 
 			default:
 				sprintf(buf,"Line %d: Invalid $() primary '%s'.", compile_current_line, field);
@@ -504,7 +508,7 @@ char *compile_substring(char *str, int type, char **store, bool ifc, bool doquot
 			else if(str[1] == '(')
 				str = compile_entity(str+2,type,&p);
 			else if(str[1] == '<') {
-				str = compile_variable(str+2,&p,TRUE,TRUE);
+				str = compile_variable(str+2,&p,type,TRUE,TRUE);
 			} else if(isalpha(str[1])) {
 				*p++ = ESCAPE_UA + str[1] - 'A';
 				str += 2;

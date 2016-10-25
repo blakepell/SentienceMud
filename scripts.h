@@ -141,10 +141,11 @@ enum ifcheck_enum {
 	CHK_GROUPSTR,CHK_GROUPWIS,CHK_GRPSIZE,
 
 	/* H */
-	CHK_HANDSFULL,CHK_HAS,CHK_HASCATALYST,CHK_HASENVIRONMENT,CHK_HASPROMPT,CHK_HASQUEUE,
+	CHK_HANDSFULL,CHK_HAS,CHK_HASCATALYST,CHK_HASCHECKPOINT,CHK_HASENVIRONMENT,CHK_HASPROMPT,CHK_HASQUEUE,
 	CHK_HASSHIP,CHK_HASSPELL,CHK_HASSUBCLASS,
 	CHK_HASTARGET,CHK_HASTOKEN,
-	CHK_HASVLINK,CHK_HEALREGEN,CHK_HITDAMAGE,CHK_HITDAMCLASS,CHK_HITDAMTYPE,CHK_HITSKILLTYPE,
+	CHK_HASVLINK,CHK_HEALREGEN,CHK_HITDAMAGE,CHK_HITDAMCLASS,CHK_HITDAMTYPE,
+	CHK_HITDICEBONUS,CHK_HITDICENUMBER,CHK_HITDICETYPE,CHK_HITSKILLTYPE,
 	CHK_HOUR,CHK_HPCNT,CHK_HUNGER,
 
 
@@ -170,14 +171,14 @@ enum ifcheck_enum {
 		CHK_ISIMMORT,
 		CHK_ISKEY,
 		CHK_ISLEADER,
-		CHK_ISMOONUP,CHK_ISMORPHED,CHK_ISMYSTIC,
+		CHK_ISMOBILE,CHK_ISMOONUP,CHK_ISMORPHED,CHK_ISMYSTIC,
 		CHK_ISNEUTRAL,CHK_ISNPC,
-		CHK_ISON,
+		CHK_ISOBJECT,CHK_ISON,
 		CHK_ISPC,CHK_ISPERSIST,CHK_ISPK,CHK_ISPREY,CHK_ISPULLING,CHK_ISPULLINGRELIC,
 		CHK_ISQUESTING,
-		CHK_ISREMORT,CHK_ISREPAIRABLE,CHK_ISRESTRUNG,CHK_ISRIDDEN,CHK_ISRIDER,CHK_ISRIDING,CHK_ISROOMDARK,
+		CHK_ISREMORT,CHK_ISREPAIRABLE,CHK_ISRESTRUNG,CHK_ISRIDDEN,CHK_ISRIDER,CHK_ISRIDING,CHK_ISROOM,CHK_ISROOMDARK,
 		CHK_ISSAFE,CHK_ISSCRIBING,CHK_ISSHIFTED,CHK_ISSHOOTING,CHK_ISSHOPKEEPER,CHK_ISSPELL,CHK_ISSUBCLASS,CHK_ISSUSTAINED,
-		CHK_ISTARGET,CHK_ISTREASUREROOM,
+		CHK_ISTARGET,CHK_ISTREASUREROOM,CHK_ISTOKEN,
 		CHK_ISVISIBLE,CHK_ISVISIBLETO,
 		CHK_ISWORN,
 
@@ -192,7 +193,7 @@ enum ifcheck_enum {
 	CHK_MAXCARRY,CHK_MAXHIT,CHK_MAXMANA,CHK_MAXMOVE,
 	CHK_MAXWEIGHT,CHK_MAXXP,
 	CHK_MIN,
-	CHK_MOBEXISTS,CHK_MOBHERE,CHK_MOBS,CHK_MOBSIZE,CHK_MONEY,CHK_MONKILLS,
+	CHK_MOBCLONES,CHK_MOBEXISTS,CHK_MOBHERE,CHK_MOBS,CHK_MOBSIZE,CHK_MONEY,CHK_MONKILLS,
 	CHK_MONTH,CHK_MOONPHASE,CHK_MOVEREGEN,
 
 
@@ -200,7 +201,7 @@ enum ifcheck_enum {
 	CHK_NAME,CHK_NUMENCHANTS,
 
 	/* O */
-	CHK_OBJCOND,CHK_OBJCORPSE,CHK_OBJCOST,CHK_OBJEXISTS,
+	CHK_OBJCLONES,CHK_OBJCOND,CHK_OBJCORPSE,CHK_OBJCOST,CHK_OBJEXISTS,
 	CHK_OBJEXTRA,CHK_OBJEXTRA2,CHK_OBJEXTRA3,CHK_OBJEXTRA4,CHK_OBJFRAG,CHK_OBJHERE,
 	CHK_OBJMAXWEIGHT,CHK_OBJRANGED,CHK_OBJTIMER,CHK_OBJTYPE,CHK_OBJVAL0,CHK_OBJVAL1,CHK_OBJVAL2,
 	CHK_OBJVAL3,CHK_OBJVAL4,CHK_OBJVAL5,CHK_OBJVAL6,CHK_OBJVAL7,CHK_OBJWEAPON,
@@ -212,8 +213,8 @@ enum ifcheck_enum {
 	CHK_PARTS,
 	CHK_PEOPLE,CHK_PERMCON,CHK_PERMDEX,CHK_PERMINT,CHK_PERMSTR,CHK_PERMWIS,
 	CHK_PGROUPCON,CHK_PGROUPDEX,CHK_PGROUPINT,CHK_PGROUPSTR,CHK_PGROUPWIS,
-	CHK_PKFIGHTS,CHK_PKLOSS,CHK_PKRATIO,CHK_PKWINS,CHK_PLAYERS,CHK_PNEUMA,
-	CHK_PORTAL,CHK_PORTALEXIT,CHK_POS,CHK_PRACTICES,
+	CHK_PKFIGHTS,CHK_PKLOSS,CHK_PKRATIO,CHK_PKWINS,CHK_PLAYEREXISTS,CHK_PLAYERS,
+	CHK_PNEUMA,CHK_PORTAL,CHK_PORTALEXIT,CHK_POS,CHK_PRACTICES,
 
 
 	/* Q */
@@ -231,7 +232,7 @@ enum ifcheck_enum {
 	CHK_SCRIPTSECURITY,
 	CHK_SECTOR,CHK_SEX,CHK_SIGN,CHK_SILVER,CHK_SIN,CHK_SKEYWORD,CHK_SKILL,
 	CHK_STATCON,CHK_STATDEX,CHK_STATINT,CHK_STATSTR,CHK_STATWIS,
-	CHK_STONED,CHK_STRLEN,
+	CHK_STONED,CHK_STRLEN,CHK_STRPREFIX,
 	CHK_SUBLEVEL,CHK_SUNLIGHT,CHK_SYSTEMTIME,
 
 
@@ -305,6 +306,8 @@ enum variable_enum {
 	VAR_AREA_ID,
 	VAR_WILDS_ID,
 	VAR_CHURCH_ID,
+	VAR_VARIABLE,		// Yo dawg, I heard you like variables...
+
 	VAR_BLLIST_FIRST,
 	////////////////////////
 
@@ -329,6 +332,7 @@ enum variable_enum {
 	VAR_PLLIST_OBJ,
 	VAR_PLLIST_TOK,
 	VAR_PLLIST_CHURCH,
+	VAR_PLLIST_VARIABLE,
 
 	////////////////////////
 	VAR_PLLIST_LAST,
@@ -414,6 +418,7 @@ enum entity_type_enum {
 	ENT_AFFECT,
 	ENT_CHURCH,
 	ENT_SONG,
+	ENT_VARIABLE,
 
 	//////////////////////////////
 	// ALL lists here are designed to be saved
@@ -439,6 +444,7 @@ enum entity_type_enum {
 	ENT_PLLIST_OBJ,
 	ENT_PLLIST_TOK,
 	ENT_PLLIST_CHURCH,
+	ENT_PLLIST_VARIABLE,
 	ENT_PLLIST_MAX,
 	//////////////////////////////
 
@@ -479,6 +485,7 @@ enum entity_primary_enum {
 	ENTITY_OBJ1,
 	ENTITY_OBJ2,
 	ENTITY_VICTIM,
+	ENTITY_VICTIM2,
 	ENTITY_TARGET,
 	ENTITY_RANDOM,
 	ENTITY_HERE,
@@ -489,6 +496,7 @@ enum entity_primary_enum {
 	ENTITY_GAME,
 	ENTITY_HELP,
 	ENTITY_NULL,
+	ENTITY_TOKEN,
 	ENTITY_REGISTER1,
 	ENTITY_REGISTER2,
 	ENTITY_REGISTER3,
@@ -511,6 +519,7 @@ enum entity_variable_types_enum {
 	ENTITY_VAR_CONN,
 	ENTITY_VAR_AFFECT,
 	ENTITY_VAR_CHURCH,
+	ENTITY_VAR_VARIABLE,
 
 	ENTITY_VAR_BLLIST_ROOM,
 	ENTITY_VAR_BLLIST_MOB,
@@ -655,6 +664,8 @@ enum entity_mobile_enum {
 	ENTITY_MOB_INSTRUMENT,
 	ENTITY_MOB_WORN,
 	ENTITY_MOB_NEXT,
+	ENTITY_MOB_CHECKPOINT,
+	ENTITY_MOB_VARIABLES,
 };
 
 enum entity_object_enum {
@@ -674,7 +685,8 @@ enum entity_object_enum {
 	ENTITY_OBJ_EXTRADESC,
 	ENTITY_OBJ_CLONEROOMS,
 	ENTITY_OBJ_NEXT,
-	ENTITY_OBJ_AFFECTS
+	ENTITY_OBJ_AFFECTS,
+	ENTITY_OBJ_VARIABLES,
 };
 
 enum entity_room_enum {
@@ -704,6 +716,7 @@ enum entity_room_enum {
 	ENTITY_ROOM_WILDS,
 	ENTITY_ROOM_CLONES,
 	ENTITY_ROOM_CLONEROOMS,
+	ENTITY_ROOM_VARIABLES,
 };
 
 enum entity_exit_enum {
@@ -740,7 +753,8 @@ enum entity_token_enum {
 	ENTITY_TOKEN_VAL5,
 	ENTITY_TOKEN_VAL6,
 	ENTITY_TOKEN_VAL7,
-	ENTITY_TOKEN_NEXT
+	ENTITY_TOKEN_NEXT,
+	ENTITY_TOKEN_VARIABLES,
 };
 
 enum entity_area_enum {
@@ -783,6 +797,7 @@ enum entity_church_enum {
 	ENTITY_CHURCH_SIZE,
 	ENTITY_CHURCH_FLAG,
 	ENTITY_CHURCH_FOUNDER,
+	ENTITY_CHURCH_FOUNDER_NAME,
 	ENTITY_CHURCH_MOTD,
 	ENTITY_CHURCH_RULES,
 	ENTITY_CHURCH_INFO,
@@ -870,6 +885,12 @@ enum entity_song_enum {
 	ENTITY_SONG_BEATS,
 	ENTITY_SONG_MANA,
 	ENTITY_SONG_LEVEL,
+};
+
+enum entity_variable_enum {
+	ENTITY_VARIABLE_NAME = ESCAPE_EXTRA,
+	ENTITY_VARIABLE_TYPE,
+	ENTITY_VARIABLE_SAVE,
 };
 
 
@@ -987,6 +1008,8 @@ struct script_var_type {
 		DESCRIPTOR_DATA *conn;
 		CHURCH_DATA *church;
 		WILDS_DATA *wilds;
+		VARIABLE *variable;
+		VARIABLE **variables;
 		int sn;
 		int song;
 		struct {
@@ -1094,6 +1117,8 @@ struct loop_data {
 	} d;
 	char var_name[MIL];
 	int counter;
+	int level;
+	bool valid;
 	char buf[MSL];
 };
 
@@ -1129,6 +1154,7 @@ struct script_parameter {
 		DESCRIPTOR_DATA *conn;
 		WILDS_DATA *wilds;
 		CHURCH_DATA *church;
+		VARIABLE *variable;
 		int sn;
 		int song;
 		struct {
@@ -1173,7 +1199,7 @@ struct script_parameter {
 			int y;
 			int door;
 		} wdoor;
-
+		VARIABLE **variables;
 		LLIST *blist;
 		long aid;
 		long chid;
@@ -1347,6 +1373,7 @@ DECL_IFC_FUN(ifc_grpsize);
 DECL_IFC_FUN(ifc_handsfull);
 DECL_IFC_FUN(ifc_has);
 DECL_IFC_FUN(ifc_hascatalyst);
+DECL_IFC_FUN(ifc_hascheckpoint);
 DECL_IFC_FUN(ifc_hasenvironment);
 DECL_IFC_FUN(ifc_hasprompt);
 DECL_IFC_FUN(ifc_hasqueue);
@@ -1640,8 +1667,21 @@ DECL_IFC_FUN(ifc_isaffectwhere);
 
 
 DECL_IFC_FUN(ifc_hasspell);
+DECL_IFC_FUN(ifc_playerexists);
 
+DECL_IFC_FUN(ifc_ismobile);
+DECL_IFC_FUN(ifc_isobject);
+DECL_IFC_FUN(ifc_isroom);
+DECL_IFC_FUN(ifc_istoken);
 
+DECL_IFC_FUN(ifc_mobclones);
+DECL_IFC_FUN(ifc_objclones);
+
+DECL_IFC_FUN(ifc_hitdicebonus);
+DECL_IFC_FUN(ifc_hitdicenumber);
+DECL_IFC_FUN(ifc_hitdicetype);
+
+DECL_IFC_FUN(ifc_strprefix);
 
 /* Opcode functions */
 DECL_OPC_FUN(opc_end);
@@ -1674,10 +1714,12 @@ DECL_OPC_FUN(opc_tokenother);
 
 
 /* General */
+long script_flag_value( const struct flag_type *flag_table, char *argument);
 char *ifcheck_get_value(SCRIPT_VARINFO *info,IFCHECK_DATA *ifc,char *text,int *ret,bool *valid);
 int execute_script(long pvnum, SCRIPT_DATA *script, CHAR_DATA *mob, OBJ_DATA *obj,
 	ROOM_INDEX_DATA *room, TOKEN_DATA *token, CHAR_DATA *ch,
-	OBJ_DATA *obj1,OBJ_DATA *obj2,CHAR_DATA *vch,CHAR_DATA *vch2,CHAR_DATA *rch, char *phrase, char *trigger,
+	OBJ_DATA *obj1,OBJ_DATA *obj2,CHAR_DATA *vch,CHAR_DATA *vch2,CHAR_DATA *rch,
+	TOKEN_DATA *tok, char *phrase, char *trigger,
 	int number1, int number2, int number3, int number4, int number5);
 void get_level_damage(int level, int *num, int *type, bool fRemort, bool fTwo);
 CHAR_DATA *get_random_char(CHAR_DATA *mob, OBJ_DATA *obj, ROOM_INDEX_DATA *room, TOKEN_DATA *token);
@@ -1746,6 +1788,8 @@ bool is_trigger_type(int tindex, int type);
 bool variable_copy(ppVARIABLE list,char *oldname,char *newname);
 bool variable_copylist(ppVARIABLE from,ppVARIABLE to,bool index);
 bool variable_copyto(ppVARIABLE from,ppVARIABLE to,char *oldname,char *newname, bool index);
+pVARIABLE variable_copyvar(pVARIABLE oldv);
+LLIST *variable_copy_tolist(ppVARIABLE vars);
 bool variable_fread(ppVARIABLE vars, int type, FILE *fp);
 bool variable_fread_area_list(ppVARIABLE vars, char *name, FILE *fp);
 bool variable_fread_exit_list(ppVARIABLE vars, char *name, FILE *fp);
@@ -1789,6 +1833,7 @@ bool variables_set_skillinfo(ppVARIABLE list,char *name,CHAR_DATA *owner,int sn,
 bool variables_set_string(ppVARIABLE list,char *name,char *str,bool shared);
 bool variables_set_token(ppVARIABLE list,char *name,TOKEN_DATA *t);
 bool variables_set_wilds (ppVARIABLE list,char *name,WILDS_DATA* wilds);
+bool variables_set_variable (ppVARIABLE list,char *name,pVARIABLE var);
 bool variables_setindex_integer(ppVARIABLE list,char *name,int num, bool saved);
 bool variables_setindex_room(ppVARIABLE list,char *name,long vnum, bool saved);
 bool variables_setindex_string(ppVARIABLE list,char *name,char *str,bool shared, bool saved);
@@ -1805,11 +1850,12 @@ bool variables_setsave_skillinfo(ppVARIABLE list,char *name,CHAR_DATA *owner,int
 bool variables_setsave_string(ppVARIABLE list,char *name,char *str,bool shared, bool save);
 bool variables_setsave_token(ppVARIABLE list,char *name,TOKEN_DATA *t, bool save);
 bool variables_setsave_wilds (ppVARIABLE list, char *name,WILDS_DATA* wilds, bool save);
+bool variables_setsave_variable (ppVARIABLE list, char *name,pVARIABLE var, bool save);
 int variable_fread_type(char *str);
 pVARIABLE variable_create(ppVARIABLE list,char *name, bool index, bool clear);
 pVARIABLE variable_get(pVARIABLE list,char *name);
 pVARIABLE variable_new(void);
-void script_varclearon(ppVARIABLE vars, char *argument);
+void script_varclearon(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument);
 void variable_add(ppVARIABLE list,pVARIABLE var);
 void variable_clearfield(int type, void *ptr);
 void variable_dynamic_fix_church (CHURCH_DATA *church);
@@ -2202,6 +2248,31 @@ SCRIPT_CMD(do_tpaddspell);
 SCRIPT_CMD(do_tpremspell);
 SCRIPT_CMD(do_tpalteraffect);
 SCRIPT_CMD(do_tpcrier);
+
+SCRIPT_CMD(do_mpsaveplayer);
+SCRIPT_CMD(do_opsaveplayer);
+SCRIPT_CMD(do_rpsaveplayer);
+SCRIPT_CMD(do_tpsaveplayer);
+
+SCRIPT_CMD(do_mpcheckpoint);
+SCRIPT_CMD(do_opcheckpoint);
+SCRIPT_CMD(do_rpcheckpoint);
+SCRIPT_CMD(do_tpcheckpoint);
+
+SCRIPT_CMD(do_mpfixaffects);
+SCRIPT_CMD(do_opfixaffects);
+SCRIPT_CMD(do_rpfixaffects);
+SCRIPT_CMD(do_tpfixaffects);
+
+SCRIPT_CMD(do_mpremort);
+SCRIPT_CMD(do_opremort);
+SCRIPT_CMD(do_rpremort);
+SCRIPT_CMD(do_tpremort);
+
+SCRIPT_CMD(do_mprestore);
+SCRIPT_CMD(do_oprestore);
+SCRIPT_CMD(do_rprestore);
+SCRIPT_CMD(do_tprestore);
 
 
 #include "tables.h"

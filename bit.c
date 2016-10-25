@@ -91,6 +91,7 @@ const struct flag_stat_type flag_stat_table[] =
     {	instrument_types,	TRUE	},
     {	place_flags,	TRUE	},
     {	corpse_types,	TRUE	},
+    {	variable_types,	TRUE	},
     {   0,			0	}
 };
 
@@ -126,6 +127,8 @@ long flag_value( const struct flag_type *flag_table, char *argument)
     long bit;
     long marked = 0;
     bool found = FALSE;
+
+    if ( flag_table == NULL ) return NO_FLAG;
 
     if ( is_stat( flag_table ) )
     {

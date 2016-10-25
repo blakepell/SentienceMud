@@ -3297,23 +3297,22 @@ void do_affects(CHAR_DATA * ch, char *argument)
         send_to_char("{yYou are sneaking.{x\n\r", ch);
     }
 
-    if (race_table[ch->race].imm != 0)
+    if (ch->imm_flags != 0)
     {
-	sprintf(buf, "{BImmune: {G%s\n\r{x", imm_bit_name(ch->imm_flags));
-	send_to_char(buf, ch);
+		sprintf(buf, "{BImmune: {G%s\n\r{x", imm_bit_name(ch->imm_flags));
+		send_to_char(buf, ch);
     }
 
-    if (race_table[ch->race].res != 0)
+    if (ch->res_flags != 0)
     {
-	sprintf(buf, "{BResist: {G%s\n\r{x", imm_bit_name(ch->res_flags));
-	send_to_char(buf, ch);
+		sprintf(buf, "{BResist: {G%s\n\r{x", imm_bit_name(ch->res_flags));
+		send_to_char(buf, ch);
     }
 
-    if (race_table[ch->race].vuln != 0)
+    if (ch->vuln_flags != 0)
     {
-	sprintf(buf, "{BVulnerable: {G%s\n\r{x",
-		imm_bit_name(ch->vuln_flags));
-	send_to_char(buf, ch);
+		sprintf(buf, "{BVulnerable: {G%s\n\r{x", imm_bit_name(ch->vuln_flags));
+		send_to_char(buf, ch);
     }
 
     if (IS_SAGE(ch))
@@ -6643,7 +6642,7 @@ char *find_desc_for_room(ROOM_INDEX_DATA *room, CHAR_DATA *viewer)
 			case CONDITION_SCRIPT:
 				script = get_script_index(cd->phrase,PRG_RPROG);
 
-				if (script && execute_script(cd->phrase,script,NULL,NULL,room,NULL,viewer,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0) > 0)
+				if (script && execute_script(cd->phrase,script,NULL,NULL,room,NULL,viewer,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0,0,0,0) > 0)
 					best_cd = cd;
 				break;
 			}

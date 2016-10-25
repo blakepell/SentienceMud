@@ -498,7 +498,7 @@ SPELL_FUNC(spell_withering_cloud)
 
 	for (dir = 0; dir < MAX_DIR; dir++)
 		if (ch->in_room->exit[dir] && !IS_SET(ch->in_room->exit[dir]->exit_info, EX_CLOSED)) {
-			room = ch->in_room->exit[dir]->u1.to_room;
+			if(!(room = exit_destination(ch->in_room->exit[dir]))) continue;
 
 			for (obj = room->contents; obj; obj = obj->next_content) {
 				if (obj->item_type == ITEM_WITHERING_CLOUD) {

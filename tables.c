@@ -37,6 +37,7 @@
 #include <time.h>
 #include "merc.h"
 #include "tables.h"
+#include "scripts.h"
 
 const struct hint_type hintsTable[] =
 {
@@ -1733,6 +1734,7 @@ const struct flag_type portal_flags[]=
 {
     {	"arearandom",	GATE_AREARANDOM,	TRUE	},
     {	"candragitems",	GATE_CANDRAGITEMS,	TRUE	},
+    {	"force_brief",	GATE_FORCE_BRIEF,	TRUE	},
     {	"gravity",		GATE_GRAVITY,		FALSE	},	// @@@NIB : 20070126 : Not imped yet
     {	"no_curse",		GATE_NOCURSE,		TRUE	},
     {	"noprivacy",	GATE_NOPRIVACY,		TRUE	},	// @@@NIB : 20070126
@@ -2646,5 +2648,53 @@ const struct flag_type corpse_object_flags[] = {
 	{ "immortal",	CORPSE_IMMORTAL,		TRUE },
 	{ NULL,			0,						FALSE }
 
+};
+
+const struct flag_type variable_types[] = {
+	{"integer",			VAR_INTEGER,			TRUE},
+	{"string",			VAR_STRING,				TRUE},
+	{"string_s",		VAR_STRING_S,			TRUE},
+	{"room",			VAR_ROOM,				TRUE},
+	{"exit",			VAR_EXIT,				TRUE},
+	{"mobile",			VAR_MOBILE,				TRUE},
+	{"object",			VAR_OBJECT,				TRUE},
+	{"token",			VAR_TOKEN,				TRUE},
+	{"area",			VAR_AREA,				TRUE},
+	{"skill",			VAR_SKILL,				TRUE},
+	{"skillinfo",		VAR_SKILLINFO,			TRUE},
+	{"connection",		VAR_CONNECTION,			TRUE},
+	{"affect",			VAR_AFFECT,				TRUE},
+	{"wilds",			VAR_WILDS,				TRUE},
+	{"church",			VAR_CHURCH,				TRUE},
+	{"clone_room",		VAR_CLONE_ROOM,			TRUE},
+	{"wilds_room",		VAR_WILDS_ROOM,			TRUE},
+	{"door",			VAR_DOOR,				TRUE},
+	{"clone_door",		VAR_CLONE_DOOR,			TRUE},
+	{"wilds_door",		VAR_WILDS_DOOR,			TRUE},
+	{"mobile_id",		VAR_MOBILE_ID,			TRUE},
+	{"object_id",		VAR_OBJECT_ID,			TRUE},
+	{"token_id",		VAR_TOKEN_ID,			TRUE},
+	{"skillinfo_id",	VAR_SKILLINFO_ID,		TRUE},
+	{"area_id",			VAR_AREA_ID,			TRUE},
+	{"wilds_id",		VAR_WILDS_ID,			TRUE},
+	{"church_id",		VAR_CHURCH_ID,			TRUE},
+	{"variable",		VAR_VARIABLE,			TRUE},
+	{"bllist_room",		VAR_BLLIST_ROOM,		TRUE},
+	{"bllist_mob",		VAR_BLLIST_MOB,			TRUE},
+	{"bllist_obj",		VAR_BLLIST_OBJ,			TRUE},
+	{"bllist_tok",		VAR_BLLIST_TOK,			TRUE},
+	{"bllist_exit",		VAR_BLLIST_EXIT,		TRUE},
+	{"bllist_skill",	VAR_BLLIST_SKILL,		TRUE},
+	{"bllist_area",		VAR_BLLIST_AREA,		TRUE},
+	{"bllist_wilds",	VAR_BLLIST_WILDS,		TRUE},
+	{"pllist_str",		VAR_PLLIST_STR,			TRUE},
+	{"pllist_conn",		VAR_PLLIST_CONN,		TRUE},
+	{"pllist_room",		VAR_PLLIST_ROOM,		TRUE},
+	{"pllist_mob",		VAR_PLLIST_MOB,			TRUE},
+	{"pllist_obj",		VAR_PLLIST_OBJ,			TRUE},
+	{"pllist_tok",		VAR_PLLIST_TOK,			TRUE},
+	{"pllist_church",	VAR_PLLIST_CHURCH,		TRUE},
+	{"pllist_variable",	VAR_PLLIST_VARIABLE,	TRUE},
+	{ NULL,				VAR_UNKNOWN,			FALSE }
 
 };
