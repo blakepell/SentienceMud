@@ -2274,6 +2274,8 @@ MOB_INDEX_DATA *read_mobile_new(FILE *fp, AREA_DATA *area)
 	}
     }
 
+	// Remove this bit, JIC
+	REMOVE_BIT(mob->act, ACT_ANIMATED);
 
     /* Syn - make any fixes or changes to the mob here. Mainly for
        updating formats of area files, moving flags around, and such. */

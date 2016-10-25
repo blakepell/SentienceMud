@@ -1927,7 +1927,7 @@ bool change_exit(CHAR_DATA *ch, char *argument, int door)
     if (!str_cmp(command, "room"))
     {
 	EXIT_DATA *pExit;
-	
+
 	if (arg[0] == '\0' || !is_number(arg))
 	{
 	    send_to_char("Syntax:  [direction] room [vnum]\n\r", ch);
@@ -6353,6 +6353,8 @@ MEDIT(medit_show)
 		pMob->player_name,
 		!pMob->area ? -1        : pMob->area->anum,
 		!pMob->area ? "No Area" : pMob->area->name);
+	add_buf(buffer, buf);
+	sprintf(buf, "Loaded:       {C[{x%d{C]{x\n\r", pMob->count);
 	add_buf(buffer, buf);
 
 	sprintf(buf, "Sig:          {C[{x%s{C]{x   Creator: {C[{x%s{C]{x\n\r",
