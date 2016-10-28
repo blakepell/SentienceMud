@@ -57,6 +57,8 @@
 #define DECLARE_ROOM_FUN( fun )		ROOM_FUN  fun
 #define SPELL_FUNC(s)	bool s (int sn, int level, CHAR_DATA *ch, void *vo, int target, int obj_wear_loc)
 
+
+
 /* System calls */
 int unlink();
 int system();
@@ -7561,7 +7563,7 @@ void obj_update_nest_clones(OBJ_DATA *obj);
 void show_room(CHAR_DATA *ch, ROOM_INDEX_DATA *room, bool remote, bool silent, bool automatic);
 
 void log_stringf(const char *fmt,...);
-int interrupt_script( CHAR_DATA *ch, bool silent );
+bool interrupt_script( CHAR_DATA *ch, bool silent );
 CHAR_DATA *obj_carrier(OBJ_DATA *obj);
 
 bool area_has_read_access(CHAR_DATA *ch, AREA_DATA *area);
@@ -7644,7 +7646,7 @@ void loot_corpse(CHAR_DATA *ch, OBJ_DATA *corpse);
 int music_lookup( char *name);
 bool is_char_busy(CHAR_DATA *ch);
 bool obj_has_spell(OBJ_DATA *obj, char *name);
-void restore_char(CHAR_DATA *ch, CHAR_DATA *whom);
+void restore_char(CHAR_DATA *ch, CHAR_DATA *whom, int percent);
 
 typedef bool (*pVISIT_ROOM_LINE_FUNC)(ROOM_INDEX_DATA *room, CHAR_DATA *ch, int depth, int door, void *data );
 typedef void (*pVISIT_ROOM_END_FUNC)(ROOM_INDEX_DATA *room, CHAR_DATA *ch, int depth, int door, void *data, bool canceled );

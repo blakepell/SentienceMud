@@ -78,6 +78,7 @@ const struct script_cmd_type room_cmd_table[] = {
 	{ "skillgroup",			do_rpskillgroup,			TRUE	},
 	{ "skimprove",			do_rpskimprove,		TRUE	},
 	{ "startcombat",		do_rpstartcombat,	FALSE	},
+	{ "stopcombat",			do_rpstopcombat,		FALSE	},
 	{ "stringmob",			do_rpstringmob,		TRUE	},
 	{ "stringobj",			do_rpstringobj,		TRUE	},
 	{ "stripaffect",		do_rpstripaffect,	TRUE	},
@@ -6252,6 +6253,8 @@ SCRIPT_CMD(do_rprestore)
 {
 	char *rest;
 	SCRIPT_PARAM arg;
+	CHAR_DATA *mob;
+	int amount = 100;
 
 	if(!info || !info->room || IS_NULLSTR(argument)) return;
 
@@ -6260,5 +6263,51 @@ SCRIPT_CMD(do_rprestore)
 
 	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
 
-	restore_char(arg.d.mob, NULL);
+	mob = arg.d.mob;
+
+	if(*rest) {
+		if(!(rest = expand_argument(info,rest,&arg)))
+			return;
+
+		if(arg.type != ENT_NUMBER) return;
+
+		amount = URANGE(1,arg.d.num,100);
+	}
+
+	restore_char(arg.d.mob, NULL, amount);
 }
+
+// STOPCOMBAT $MOBILE[ bool(BOTH)]
+// Silently stops combat.
+// BOTH: causes both sides to stop fighting, defaults to false
+SCRIPT_CMD(do_rpstopcombat)
+{
+	char *rest;
+	SCRIPT_PARAM arg;
+	CHAR_DATA *mob;
+	bool fBoth = FALSE;
+
+	if(!info || !info->room || IS_NULLSTR(argument)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+	mob = arg.d.mob;
+
+	if(*rest)
+	{
+		if(!(rest = expand_argument(info,rest,&arg)))
+			return;
+
+		if( arg.type == ENT_NUMBER ) {
+			fBoth = (arg.d.num != 0);
+		} else if( arg.type == ENT_STRING ) {
+			fBoth = (!str_cmp(arg.d.str,"yes") || !str_cmp(arg.d.str,"true"));
+		}
+	}
+
+	stop_fighting(mob, fBoth);
+}
+

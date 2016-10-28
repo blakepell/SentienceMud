@@ -2274,6 +2274,11 @@ SCRIPT_CMD(do_oprestore);
 SCRIPT_CMD(do_rprestore);
 SCRIPT_CMD(do_tprestore);
 
+SCRIPT_CMD(do_mpstopcombat);
+SCRIPT_CMD(do_opstopcombat);
+SCRIPT_CMD(do_rpstopcombat);
+SCRIPT_CMD(do_tpstopcombat);
+
 
 #include "tables.h"
 

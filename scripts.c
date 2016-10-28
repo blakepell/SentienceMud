@@ -4645,9 +4645,19 @@ SCRIPT_VARINFO *script_get_prior(SCRIPT_VARINFO *info)
 	return ((info && info->block && info->block->next) ? &(info->block->next->info) : NULL);
 }
 
-int interrupt_script( CHAR_DATA *ch, bool silent )
+bool interrupt_script( CHAR_DATA *ch, bool silent )
 {
-	return p_percent_trigger(ch, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_INTERRUPT, silent?"silent":NULL);
+	bool ret = FALSE;
+
+	if(p_percent_trigger(ch, NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_INTERRUPT, silent?"silent":NULL))
+		ret = TRUE;
+
+	if( ch->script_wait > 0) {
+		script_end_failure(ch, !silent);
+		ret = TRUE;
+	}
+
+	return ret;
 }
 
 

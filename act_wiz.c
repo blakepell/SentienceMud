@@ -3530,7 +3530,7 @@ void do_restore(CHAR_DATA *ch, char *argument)
 
         for (vch = ch->in_room->people; vch != NULL; vch = vch->next_in_room)
         {
-			restore_char(vch, ch);
+			restore_char(vch, ch, 100);
         }
 
 
@@ -3551,7 +3551,7 @@ void do_restore(CHAR_DATA *ch, char *argument)
 
 		    if (victim == NULL || IS_NPC(victim) || IS_IMMORTAL(victim))
 				continue;
-			restore_char(victim, ch);
+			restore_char(victim, ch, 100);
         }
 
 		send_to_char("All active players restored.\n\r",ch);
@@ -3564,7 +3564,7 @@ void do_restore(CHAR_DATA *ch, char *argument)
 		return;
     }
 
-	restore_char(victim, ch);
+	restore_char(victim, ch, 100);
     act("Restored $N.", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
     sprintf(buf, "$N restored %s.", IS_NPC(victim) ? victim->short_descr : victim->name);

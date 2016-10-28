@@ -74,7 +74,6 @@ const struct script_cmd_type obj_cmd_table[] = {
 	{ "resetdice",			do_opresetdice,		TRUE	},
 	{ "restore",			do_oprestore,		TRUE	},
 	{ "saveplayer",			do_opsaveplayer,		FALSE	},
-	{ "scriptwait",			do_opscriptwait,		TRUE	},
 	{ "selfdestruct",		do_opselfdestruct,	FALSE	},
 	{ "settimer",			do_opsettimer,		FALSE	},
 	{ "scriptwait",			do_opscriptwait,		FALSE	},
@@ -83,6 +82,7 @@ const struct script_cmd_type obj_cmd_table[] = {
 	{ "skillgroup",			do_opskillgroup,			TRUE	},
 	{ "skimprove",			do_opskimprove,		TRUE	},
 	{ "startcombat",		do_opstartcombat,	FALSE	},
+	{ "stopcombat",			do_opstopcombat,		FALSE	},
 	{ "stringmob",			do_opstringmob,		TRUE	},
 	{ "stringobj",			do_opstringobj,		TRUE	},
 	{ "stripaffect",		do_opstripaffect,	TRUE	},
@@ -6501,7 +6501,7 @@ SCRIPT_CMD(do_opscriptwait)
 
 	mob = arg.d.mob;
 
-	if( !mob/* || IS_NPC(mob)*/ ) return;	// only players
+	if( !mob ) return;	// only players
 
 	// Check that the mob is not busy
 	if( is_char_busy( mob ) ) {
@@ -6753,6 +6753,8 @@ SCRIPT_CMD(do_oprestore)
 {
 	char *rest;
 	SCRIPT_PARAM arg;
+	CHAR_DATA *mob;
+	int amount = 100;
 
 	if(!info || !info->obj || IS_NULLSTR(argument)) return;
 
@@ -6761,5 +6763,51 @@ SCRIPT_CMD(do_oprestore)
 
 	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
 
-	restore_char(arg.d.mob, NULL);
+	mob = arg.d.mob;
+
+	if(*rest) {
+		if(!(rest = expand_argument(info,rest,&arg)))
+			return;
+
+		if(arg.type != ENT_NUMBER) return;
+
+		amount = URANGE(1,arg.d.num,100);
+	}
+
+	restore_char(arg.d.mob, NULL, amount);
 }
+
+// STOPCOMBAT $MOBILE[ bool(BOTH)]
+// Silently stops combat.
+// BOTH: causes both sides to stop fighting, defaults to false
+SCRIPT_CMD(do_opstopcombat)
+{
+	char *rest;
+	SCRIPT_PARAM arg;
+	CHAR_DATA *mob;
+	bool fBoth = FALSE;
+
+	if(!info || !info->obj || IS_NULLSTR(argument)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+	mob = arg.d.mob;
+
+	if(*rest)
+	{
+		if(!(rest = expand_argument(info,rest,&arg)))
+			return;
+
+		if( arg.type == ENT_NUMBER ) {
+			fBoth = (arg.d.num != 0);
+		} else if( arg.type == ENT_STRING ) {
+			fBoth = (!str_cmp(arg.d.str,"yes") || !str_cmp(arg.d.str,"true"));
+		}
+	}
+
+	stop_fighting(mob, fBoth);
+}
+
