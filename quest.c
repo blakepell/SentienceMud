@@ -94,6 +94,7 @@ const long quest_item_token_table[] =
     100102,
     100103,
     100104,
+    100105,
     0
 };
 
@@ -759,7 +760,7 @@ void do_quest(CHAR_DATA *ch, char *argument)
 	    if (part->complete)
 	    {
 		reward += number_range(500, 1000);
-		pointreward += 10;
+		pointreward += number_range(10,20);
 		expreward += number_range(ch->tot_level*25,
 			ch->tot_level*75);
 		pracreward += 1;
@@ -829,6 +830,12 @@ void do_quest(CHAR_DATA *ch, char *argument)
 	    sprintf(buf, "You gain %d practices!\n\r", pracreward);
 	    send_to_char(buf, ch);
 	    ch->practice += pracreward;
+	} else { /* AO don't nerf it completely */
+		pracreward /= number_range(1,4);
+	    
+		sprintf(buf, "You gain %d practices!\n\r", pracreward);
+		send_to_char(buf, ch);
+		ch->practice += pracreward;
 	}
 
 	if(ch->tot_level < 120)
@@ -872,11 +879,15 @@ bool generate_quest(CHAR_DATA *ch, CHAR_DATA *questman)
     if (ch->tot_level <= 30)
         parts = number_range(1, 3);
     else if (ch->tot_level <= 60)
-        parts = number_range(2, 4);
-    else if (ch->tot_level <= 90)
         parts = number_range(3, 6);
+    else if (ch->tot_level <= 90)
+        parts = number_range(7, 9);
     else
-        parts = number_range(4, 9);
+        parts = number_range(8, 15);
+
+    /* fun */
+    if (number_percent() < 10)
+	    parts = parts * 2;
 
     // create the scroll
     scroll = create_object(get_obj_index(OBJ_VNUM_QUEST_SCROLL), 0, TRUE);
@@ -954,7 +965,7 @@ bool generate_quest_part(CHAR_DATA *ch, CHAR_DATA *questman, int partnum, OBJ_DA
 		    item->short_descr, item->in_room->name, item->in_room->area->name);
 	    strcat(buf2, buf);
 	    */
-	    rand = number_range(0,4);
+	    rand = number_range(0,5);
 
 	    item = create_object(get_obj_index(quest_item_token_table[rand]),
 			    0, FALSE);
