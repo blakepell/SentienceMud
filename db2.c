@@ -365,7 +365,7 @@ CHAR_DATA *get_random_mob( CHAR_DATA *ch, int continent )
 	default:		area = get_random_area(BOTH_CONTINENTS);	break;
     }
 
-    for (attempts = 0; attempts < 200; attempts++)
+    for (attempts = 0; attempts < 1000; attempts++)
     {
         /* grab a pIndexData first to increase diversity */
 	mIndex = get_mob_index( number_range( area->min_vnum, area->max_vnum));
