@@ -1760,7 +1760,7 @@ bool damage_new(CHAR_DATA *ch, CHAR_DATA *victim, OBJ_DATA *weapon, int dam, int
 	/*
 	 * mobs automatically flee in terror if there is too large a level difference
 	 * */
-	if (IS_NPC(victim) && !IS_NPC(ch) && abs(ch->tot_level - victim->tot_level > 90) && number_percent() < 75) {
+	if (IS_NPC(victim) && !IS_NPC(ch) && abs(ch->tot_level - victim->tot_level > 90) && number_percent() < 20) {
 		char buf[MAX_STRING_LENGTH];
 		sprintf(buf, "%s balks with fear at the sight of your approach!\n\r", victim->short_descr);
 		send_to_char(buf,ch);

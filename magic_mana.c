@@ -76,6 +76,8 @@ SPELL_FUNC(spell_channel)
 	victim->mana -= dam;
 
 	// Steal some mana?
+	ch->mana += dam;
+
 
 	send_to_char("{YYou feel your mana channeled away!{x\n\r",victim);
 	act("{YYou feel more powerful as you channel mana from $N!{x",ch, victim, NULL, NULL, NULL, NULL, NULL, TO_CHAR);

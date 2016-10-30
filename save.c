@@ -2002,6 +2002,7 @@ void fwrite_obj_new(CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest)
     /*
      * Castrate storage characters.
      */
+    /* AO Disabling. This doesn't really apply to us, but I'll keep the code here for other things that shouldn't save *
     if (ch != NULL && !obj->locker && ((ch->tot_level < obj->level - 25 &&
          obj->item_type != ITEM_CONTAINER &&
          obj->item_type != ITEM_WEAPON_CONTAINER &&
@@ -2016,7 +2017,7 @@ void fwrite_obj_new(CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest)
 	sprintf(buf, "{R%s will not be saved!{x\n\r", buf2);
         send_to_char(buf, ch);
 	return;
-    }
+    } */
 
     fprintf(fp, "#O\n");
 

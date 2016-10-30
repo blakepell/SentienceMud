@@ -2019,8 +2019,8 @@ const   struct  sub_class_type  sub_class_table [] =
     /* Remorts*/
 
     {
-	{"warlord",	"warlord",	"warlady"	},
-	{"  Warlord   ", "  Warlord   ", "  Warlady   "	},
+	{"warlord",	"warlord",	"warlord"	},
+	{"  Warlord   ", "  Warlord   ", "  Warlord   "	},
 	CLASS_WARRIOR, 	"warlord skills",
 	ALIGN_NONE,	TRUE,
 	{CLASS_WARRIOR_MARAUDER, CLASS_WARRIOR_PALADIN	},
