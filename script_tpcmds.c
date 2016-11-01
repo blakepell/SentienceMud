@@ -87,6 +87,7 @@ const struct script_cmd_type token_cmd_table[] = {
 	{ "skillgroup",			do_tpskillgroup,		TRUE	},
 	{ "skimprove",			do_tpskimprove,			TRUE	},
 	{ "startcombat",		do_tpstartcombat,		FALSE	},
+	{ "stopcombat",			do_tpstopcombat,		FALSE	},
 	{ "stringmob",			do_tpstringmob,			TRUE	},
 	{ "stringobj",			do_tpstringobj,			TRUE	},
 	{ "stripaffect",		do_tpstripaffect,		TRUE	},
@@ -6470,7 +6471,7 @@ SCRIPT_CMD(do_tpscriptwait)
 
 	mob = arg.d.mob;
 
-	if( !mob/* || IS_NPC(mob)*/ ) return;	// only players
+	if( !mob ) return;
 
 	// Check that the mob is not busy
 	if( is_char_busy( mob ) ) {
@@ -7234,11 +7235,13 @@ SCRIPT_CMD(do_tpremort)
 	info->token->progs->lastreturn = 1;
 }
 
-// Syntax: restore $MOBILE
+// Syntax: restore $MOBILE[ PERCENT]
 SCRIPT_CMD(do_tprestore)
 {
 	char *rest;
 	SCRIPT_PARAM arg;
+	CHAR_DATA *mob;
+	int amount = 100;
 
 	if(!info || !info->token || IS_NULLSTR(argument)) return;
 
@@ -7247,5 +7250,51 @@ SCRIPT_CMD(do_tprestore)
 
 	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
 
-	restore_char(arg.d.mob, NULL);
+	mob = arg.d.mob;
+
+	if(*rest) {
+		if(!(rest = expand_argument(info,rest,&arg)))
+			return;
+
+		if(arg.type != ENT_NUMBER) return;
+
+		amount = URANGE(1,arg.d.num,100);
+	}
+
+	restore_char(arg.d.mob, NULL, amount);
 }
+
+// STOPCOMBAT $MOBILE[ bool(BOTH)]
+// Silently stops combat.
+// BOTH: causes both sides to stop fighting, defaults to false
+SCRIPT_CMD(do_tpstopcombat)
+{
+	char *rest;
+	SCRIPT_PARAM arg;
+	CHAR_DATA *mob;
+	bool fBoth = FALSE;
+
+	if(!info || !info->token || IS_NULLSTR(argument)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+	mob = arg.d.mob;
+
+	if(*rest)
+	{
+		if(!(rest = expand_argument(info,rest,&arg)))
+			return;
+
+		if( arg.type == ENT_NUMBER ) {
+			fBoth = (arg.d.num != 0);
+		} else if( arg.type == ENT_STRING ) {
+			fBoth = (!str_cmp(arg.d.str,"yes") || !str_cmp(arg.d.str,"true"));
+		}
+	}
+
+	stop_fighting(mob, fBoth);
+}
+

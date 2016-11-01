@@ -8138,8 +8138,9 @@ bool obj_has_spell(OBJ_DATA *obj, char *name)
 	return FALSE;
 }
 
-void restore_char(CHAR_DATA *ch, CHAR_DATA *whom)
+void restore_char(CHAR_DATA *ch, CHAR_DATA *whom, int percent)
 {
+	int restored;
 	affect_strip(ch,gsn_plague);
 	affect_strip(ch,gsn_poison);
 	affect_strip(ch,gsn_blindness);
@@ -8149,6 +8150,17 @@ void restore_char(CHAR_DATA *ch, CHAR_DATA *whom)
 	ch->hit 	= ch->max_hit;
 	ch->mana	= ch->max_mana;
 	ch->move	= ch->max_move;
+
+	percent = URANGE(1, percent, 100);	// Clamp to usable values
+
+	restored = percent * ch->max_hit / 100;
+	ch->hit 	= UMAX(ch->hit, restored);
+
+	restored = percent * ch->max_mana / 100;
+	ch->mana	= UMAX(ch->mana, restored);
+
+	restored = percent * ch->max_move / 100;
+	ch->move	= UMAX(ch->move, restored);
 
 	if (IS_DEAD(ch))
 		resurrect_pc(ch);

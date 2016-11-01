@@ -534,6 +534,7 @@ struct _entity_type_info entity_type_info[] = {
 	{ ENT_OLLIST_MIN,	ENT_OLLIST_MAX,		entity_list,		FALSE	},
 	{ ENT_NULL,			ENT_NULL,			NULL,				FALSE	},
 	{ ENT_VARIABLE,		ENT_VARIABLE,		entity_variable,	FALSE	},
+	{ ENT_PERSIST,		ENT_PERSIST,		entity_persist,		FALSE	},
 	{ ENT_UNKNOWN,		ENT_UNKNOWN,		NULL,				FALSE	},
 };
 
