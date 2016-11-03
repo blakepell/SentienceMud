@@ -53,6 +53,7 @@ const struct script_cmd_type obj_cmd_table[] = {
 	{ "gecho",       		do_opgecho,		FALSE	},
 	{ "gforce",				do_opgforce,		FALSE	},
 	{ "goto",				do_opgoto,		FALSE	},
+	{ "group",				do_opgroup,			FALSE	},
 	{ "gtransfer",			do_opgtransfer,		FALSE	},
 	{ "input",				do_opinput,		FALSE	},
 	{ "interrupt",			do_opinterrupt,		FALSE	},
@@ -74,9 +75,9 @@ const struct script_cmd_type obj_cmd_table[] = {
 	{ "resetdice",			do_opresetdice,		TRUE	},
 	{ "restore",			do_oprestore,		TRUE	},
 	{ "saveplayer",			do_opsaveplayer,		FALSE	},
+	{ "scriptwait",			do_opscriptwait,		FALSE	},
 	{ "selfdestruct",		do_opselfdestruct,	FALSE	},
 	{ "settimer",			do_opsettimer,		FALSE	},
-	{ "scriptwait",			do_opscriptwait,		FALSE	},
 	{ "showroom",			do_opshowroom,		TRUE	},
 	{ "skill",				do_opskill,						TRUE	},
 	{ "skillgroup",			do_opskillgroup,			TRUE	},
@@ -88,6 +89,7 @@ const struct script_cmd_type obj_cmd_table[] = {
 	{ "stripaffect",		do_opstripaffect,	TRUE	},
 	{ "stripaffectname",	do_opstripaffectname,	TRUE	},
 	{ "transfer",			do_optransfer,		FALSE	},
+	{ "ungroup",			do_opungroup,		FALSE	},
 	{ "usecatalyst",		do_opusecatalyst,	FALSE	},
 	{ "varclear",			do_opvarclear,		FALSE	},
 	{ "varclearon",			do_opvarclearon,	FALSE	},
@@ -3339,9 +3341,9 @@ SCRIPT_CMD(do_opaltermob)
 	else if(!str_cmp(field,"danger"))	{ ptr = IS_NPC(mob)?NULL:(int*)&mob->pcdata->danger_range; allowpc = TRUE; }
 	else if(!str_cmp(field,"daze"))		ptr = (int*)&mob->daze;
 	else if(!str_cmp(field,"death"))	{ ptr = (IS_NPC(mob) || !IS_DEAD(mob))?NULL:(int*)&mob->time_left_death; allowpc = TRUE; }
-	else if(!str_cmp(field,"dicenumber"))	{ ptr = IS_NPC(mob)?&mob->damage[DICE_NUMBER]:NULL; }
-	else if(!str_cmp(field,"dicetype"))	{ ptr = IS_NPC(mob)?&mob->damage[DICE_TYPE]:NULL; }
-	else if(!str_cmp(field,"dicebonus"))	{ ptr = IS_NPC(mob)?&mob->damage[DICE_BONUS]:NULL; }
+	else if(!str_cmp(field,"dicenumber"))	{ ptr = IS_NPC(mob)?&mob->damage.number:NULL; }
+	else if(!str_cmp(field,"dicetype"))	{ ptr = IS_NPC(mob)?&mob->damage.size:NULL; }
+	else if(!str_cmp(field,"dicebonus"))	{ ptr = IS_NPC(mob)?&mob->damage.bonus:NULL; }
 	else if(!str_cmp(field,"drunk"))	{ ptr = IS_NPC(mob)?NULL:(int*)&mob->pcdata->condition[COND_DRUNK]; allowpc = TRUE; }
 //	else if(!str_cmp(field,"exitdir"))	{ ptr = (int*)&mob->exit_dir; allowpc = TRUE; }
 	else if(!str_cmp(field,"exp"))		{ ptr = (int*)&mob->exp; allowpc = TRUE; }
@@ -6811,3 +6813,102 @@ SCRIPT_CMD(do_opstopcombat)
 	stop_fighting(mob, fBoth);
 }
 
+
+// GROUP npc(FOLLOWER) mobile(LEADER)[ bool(SHOW=true)]
+// Follower will only work on an NPC
+// LASTRETURN:
+// 0 = grouping failed
+// 1 = grouping succeeded
+SCRIPT_CMD(do_opgroup)
+{
+	char *rest;
+	SCRIPT_PARAM arg;
+	CHAR_DATA *follower, *leader;
+	bool fShow = TRUE;
+
+	if(!info || !info->obj || IS_NULLSTR(argument)) return;
+
+	info->obj->progs->lastreturn = 0;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob || !IS_NPC(arg.d.mob)) return;
+
+	follower = arg.d.mob;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+	leader = arg.d.mob;
+
+	if( *rest ) {
+		if(!(rest = expand_argument(info,rest,&arg)))
+			return;
+
+		if( arg.type == ENT_NUMBER )
+		{
+			fShow = (arg.d.num != 0);
+		}
+		else if( arg.type == ENT_STRING )
+		{
+			fShow = !str_cmp(arg.d.str, "yes") || !str_cmp(arg.d.str, "true") || !str_cmp(arg.d.str, "show");
+		}
+		else
+			return;
+	}
+
+	if(add_grouped(follower, leader, fShow))
+		info->obj->progs->lastreturn = 1;
+}
+
+// UNGROUP mobile[ bool(ALL=false)]
+SCRIPT_CMD(do_opungroup)
+{
+	char *rest;
+	SCRIPT_PARAM arg;
+	CHAR_DATA *mob;
+	bool fAll = FALSE;
+
+	if(!info || !info->obj || IS_NULLSTR(argument)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+	mob = arg.d.mob;
+
+	if( *rest ) {
+		if( arg.type == ENT_NUMBER )
+		{
+			fAll = (arg.d.num != 0);
+		}
+		else if( arg.type == ENT_STRING )
+		{
+			fAll = !str_cmp(arg.d.str, "yes") || !str_cmp(arg.d.str, "true") || !str_cmp(arg.d.str, "all");
+		}
+		else
+			return;
+	}
+
+	if( fAll ) {
+		ITERATOR git;
+		CHAR_DATA *leader = (arg.d.mob->leader != NULL) ? arg.d.mob->leader : arg.d.mob;
+		CHAR_DATA *follower;
+
+		if( leader->num_grouped < 1 )
+			return;
+
+		iterator_start(&git, leader->lgroup);
+		while((follower = (CHAR_DATA *)iterator_nextdata(&git)))
+			stop_grouped(follower);
+		iterator_stop(&git);
+	}
+	else
+	{
+		stop_grouped(arg.d.mob);
+	}
+}

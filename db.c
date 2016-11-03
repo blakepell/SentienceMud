@@ -1864,18 +1864,16 @@ CHAR_DATA *create_mobile(MOB_INDEX_DATA *pMobIndex, bool persistLoad)
     mob->level		= pMobIndex->level;
     mob->tot_level		= pMobIndex->level;
     mob->hitroll		= pMobIndex->hitroll;
-    mob->damroll		= pMobIndex->damage[DICE_BONUS];
-    mob->max_hit		= dice(pMobIndex->hit[DICE_NUMBER],
-	    pMobIndex->hit[DICE_TYPE])
-	+ pMobIndex->hit[DICE_BONUS];
+    mob->damroll		= pMobIndex->damage.bonus;
+    mob->max_hit		= dice_roll(&pMobIndex->hit);
     mob->hit		= mob->max_hit;
-    mob->max_mana		= dice(pMobIndex->mana[DICE_NUMBER],
-	    pMobIndex->mana[DICE_TYPE])
-	+ pMobIndex->mana[DICE_BONUS];
+    mob->max_mana		= dice_roll(&pMobIndex->mana);
     mob->mana		= mob->max_mana;
     mob->move		= pMobIndex->move;
-    mob->damage[DICE_NUMBER]= pMobIndex->damage[DICE_NUMBER];
-    mob->damage[DICE_TYPE]	= pMobIndex->damage[DICE_TYPE];
+    mob->damage.number  = pMobIndex->damage.number;
+    mob->damage.size	= pMobIndex->damage.size;
+    mob->damage.bonus   = 0;
+    mob->damage.last_roll = -1;
     mob->dam_type		= pMobIndex->dam_type;
     if (mob->dam_type == 0)
     {
@@ -2362,8 +2360,10 @@ CHAR_DATA *clone_mobile(CHAR_DATA *parent)
 		clone->dirty_stat[i] = TRUE;
     }
 
-    for (i = 0; i < 3; i++)
-	clone->damage[i]	= parent->damage[i];
+	clone->damage.number = parent->damage.number;
+	clone->damage.size = parent->damage.size;
+	clone->damage.bonus = parent->damage.bonus;
+	clone->damage.last_roll = -1;
 
     /* now add the affects */
     for (paf = parent->affected; paf != NULL; paf = paf->next)
@@ -2436,7 +2436,6 @@ OBJ_DATA *create_object_noid(OBJ_INDEX_DATA *pObjIndex, int level, bool affects)
     obj->weight		= pObjIndex->weight;
     obj->cost           = pObjIndex->cost;
     obj->timer		= pObjIndex->timer;
-
 
     /*
      * Mess with object properties.

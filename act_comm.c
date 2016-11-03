@@ -1921,10 +1921,15 @@ bool add_grouped(CHAR_DATA *ch, CHAR_DATA *master, bool show)
 	return FALSE;
 	}
 
-	if (ch != master)
-	master->num_grouped++;
+	if (ch != master) {
+		master->num_grouped++;
+		if( !list_hasdata(master->lgroup, ch))
+			list_appendlink(master->lgroup, ch);
+	}
 
 	ch->leader = master;
+
+
 
 	p_percent_trigger( ch, NULL, NULL, NULL, master, NULL, NULL, NULL, NULL, TRIG_GROUPED, NULL);
 
@@ -1944,8 +1949,12 @@ void stop_grouped(CHAR_DATA *ch)
 
 
 	if (ch->leader != ch)
-	if (ch->leader != NULL)
-	ch->leader->num_grouped--;
+		if (ch->leader != NULL) {
+			ch->leader->num_grouped--;
+			if( list_hasdata(ch->leader->lgroup, ch))
+				list_appendlink(ch->leader->lgroup, ch);
+
+		}
 
 	leader = ch->leader;
 

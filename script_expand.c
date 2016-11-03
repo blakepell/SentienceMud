@@ -1736,8 +1736,17 @@ char *expand_entity_mobile(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->d.room = (arg->d.mob && !IS_NPC(arg->d.mob)) ? arg->d.mob->checkpoint : NULL;
 		break;
 	case ENTITY_MOB_VARIABLES:
-		arg->type = ENT_PLLIST_VARIABLE;
+		arg->type = ENT_ILLIST_VARIABLE;
 		arg->d.variables = (arg->d.mob && arg->d.mob->progs) ? &arg->d.mob->progs->vars : NULL;
+		break;
+	case ENTITY_MOB_GROUP:
+		arg->type = ENT_GROUP;
+		arg->d.group_owner = arg->d.mob;
+		break;
+
+	case ENTITY_MOB_DAMAGEDICE:
+		arg->type = ENT_DICE;
+		arg->d.dice = arg->d.mob ? &arg->d.mob->damage : NULL;;
 		break;
 	default: return NULL;
 	}
@@ -1970,8 +1979,18 @@ char *expand_entity_mobile_id(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		break;
 
 	case ENTITY_MOB_VARIABLES:
-		arg->type = ENT_PLLIST_VARIABLE;
+		arg->type = ENT_ILLIST_VARIABLE;
 		arg->d.variables = NULL;
+
+	case ENTITY_MOB_GROUP:
+		arg->type = ENT_GROUP;
+		arg->d.mob = NULL;
+		break;
+
+	case ENTITY_MOB_DAMAGEDICE:
+		arg->type = ENT_DICE;
+		arg->d.dice = NULL;
+		break;
 
 	default: return NULL;
 	}
@@ -2057,8 +2076,13 @@ char *expand_entity_object(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->d.list.owner = self;
 		break;
 
+	case ENTITY_OBJ_INDEX:
+		arg->type = ENT_OBJINDEX;
+		arg->d.objindex = arg->d.obj ? arg->d.obj->pIndexData : NULL;
+		break;
+
 	case ENTITY_OBJ_VARIABLES:
-		arg->type = ENT_PLLIST_VARIABLE;
+		arg->type = ENT_ILLIST_VARIABLE;
 		arg->d.variables = (arg->d.obj && arg->d.obj->progs) ? &arg->d.obj->progs->vars : NULL;
 	// SPELLS?
 	default: return NULL;
@@ -2138,8 +2162,14 @@ char *expand_entity_object_id(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->d.list.ptr.aff = NULL;
 		arg->d.list.owner = NULL;
 		break;
+
+	case ENTITY_OBJ_INDEX:
+		arg->type = ENT_OBJINDEX;
+		arg->d.objindex = NULL;
+		break;
+
 	case ENTITY_OBJ_VARIABLES:
-		arg->type = ENT_PLLIST_VARIABLE;
+		arg->type = ENT_ILLIST_VARIABLE;
 		arg->d.variables = NULL;
 	default: return NULL;
 	}
@@ -2237,7 +2267,7 @@ char *expand_entity_room(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		if(!str) return NULL;
 		break;
 	case ENTITY_ROOM_VARIABLES:
-		arg->type = ENT_PLLIST_VARIABLE;
+		arg->type = ENT_ILLIST_VARIABLE;
 		arg->d.variables = (arg->d.room && arg->d.room->progs) ? &arg->d.room->progs->vars : NULL;
 	default: return NULL;
 	}
@@ -2362,7 +2392,7 @@ char *expand_entity_token(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		if(!str) return NULL;
 		break;
 	case ENTITY_TOKEN_VARIABLES:
-		arg->type = ENT_PLLIST_VARIABLE;
+		arg->type = ENT_ILLIST_VARIABLE;
 		arg->d.variables = (arg->d.token && arg->d.token->progs) ? &arg->d.token->progs->vars : NULL;
 	default: return NULL;
 	}
@@ -2413,7 +2443,7 @@ char *expand_entity_token_id(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		if(!str) return NULL;
 		break;
 	case ENTITY_TOKEN_VARIABLES:
-		arg->type = ENT_PLLIST_VARIABLE;
+		arg->type = ENT_ILLIST_VARIABLE;
 		arg->d.variables = NULL;
 	default: return NULL;
 	}
@@ -3989,6 +4019,91 @@ char *expand_entity_plist_variable(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *
 }
 
 
+char *expand_entity_group(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
+{
+	register CHAR_DATA *rch;
+	register int count;
+
+	switch(*str) {
+	case ENTITY_GROUP_OWNER:
+		arg->type = ENT_MOBILE;
+		arg->d.mob = arg->d.group_owner;
+		break;
+
+	case ENTITY_GROUP_LEADER:
+		arg->type = ENT_MOBILE;
+		arg->d.mob = (arg->d.group_owner ? arg->d.group_owner->leader : arg->d.group_owner);
+		break;
+
+	case ENTITY_GROUP_ALLY:
+		arg->type = ENT_MOBILE;
+		if(arg->d.group_owner && arg->d.group_owner->in_room)
+		{
+			for(count = 0, rch = arg->d.group_owner->in_room->people; rch; rch = rch->next_in_room)
+			{
+				if(rch != arg->d.group_owner && arg->d.group_owner->leader == rch->leader)
+					++count;
+			}
+
+			count = number_range(1, count);
+			for(rch = arg->d.group_owner->in_room->people; rch && count > 0; rch = rch->next_in_room)
+			{
+				if(rch != arg->d.group_owner && arg->d.group_owner->leader == rch->leader) {
+					--count;
+
+					if( count < 1)
+						break;
+				}
+			}
+
+			arg->d.mob = rch;
+		}
+		else
+			arg->d.mob = NULL;
+		break;
+
+	case ENTITY_GROUP_MEMBER:
+		arg->type = ENT_MOBILE;
+		if(arg->d.group_owner && arg->d.group_owner->in_room)
+		{
+			for(count = 0, rch = arg->d.group_owner->in_room->people; rch; rch = rch->next_in_room)
+			{
+				if(arg->d.group_owner->leader == rch->leader)
+					++count;
+			}
+
+			count = number_range(1, count);
+			for(rch = arg->d.group_owner->in_room->people; rch && count > 0; rch = rch->next_in_room)
+			{
+				if(arg->d.group_owner->leader == rch->leader) {
+					--count;
+
+					if( count < 1)
+						break;
+				}
+			}
+
+			arg->d.mob = rch;
+		}
+		else
+			arg->d.mob = NULL;
+		break;
+
+	case ENTITY_GROUP_MEMBERS:
+		arg->type = ENT_ILLIST_MOB_GROUP;
+		break;
+
+	case ENTITY_GROUP_SIZE:
+		arg->type = ENT_NUMBER;
+
+		break;
+
+	default: return NULL;
+	}
+
+	return str+1;
+}
+
 char *expand_entity_song(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 {
 	const struct music_type* pSong = NULL;
@@ -4133,6 +4248,91 @@ char *expand_entity_prior(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 	return str+1;
 }
 
+char *expand_entity_dice(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
+{
+	info = arg->d.info;
+
+	switch(*str) {
+	case ENTITY_DICE_NUMBER:
+		arg->type = ENT_NUMBER;
+		arg->d.num = arg->d.dice ? arg->d.dice->number : 0;
+		break;
+
+	case ENTITY_DICE_SIZE:
+		arg->type = ENT_NUMBER;
+		arg->d.num = arg->d.dice ? arg->d.dice->size : 0;
+		break;
+
+	case ENTITY_DICE_BONUS:
+		arg->type = ENT_NUMBER;
+		arg->d.num = arg->d.dice ? arg->d.dice->bonus: 0;
+		break;
+
+	case ENTITY_DICE_ROLL:
+		arg->type = ENT_NUMBER;
+		arg->d.num = arg->d.dice ? dice_roll(arg->d.dice) : 0;
+		break;
+
+	case ENTITY_DICE_LAST:
+		arg->type = ENT_NUMBER;
+		if( arg->d.dice ) {
+			if( arg->d.dice->last_roll > 0 )
+				arg->d.num = arg->d.dice->last_roll;
+			else
+				arg->d.num = dice_roll(arg->d.dice);
+		}
+		else
+			arg->d.num = 0;
+		break;
+
+	default: return NULL;
+	}
+
+	return str+1;
+}
+
+
+char *expand_entity_objindex(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
+{
+	info = arg->d.info;
+
+	switch(*str) {
+	case ENTITY_OBJINDEX_VNUM:
+		arg->type = ENT_NUMBER;
+		arg->d.num = arg->d.objindex ? arg->d.objindex->vnum: 0;
+		break;
+	case ENTITY_OBJINDEX_LOADED:
+		arg->type = ENT_NUMBER;
+		arg->d.num = arg->d.objindex ? arg->d.objindex->count : 0;
+		break;
+	case ENTITY_OBJINDEX_INROOMS:
+		arg->type = ENT_NUMBER;
+		arg->d.num = arg->d.objindex ? arg->d.objindex->inrooms : 0;
+		break;
+	case ENTITY_OBJINDEX_INMAIL:
+		arg->type = ENT_NUMBER;
+		arg->d.num = arg->d.objindex ? arg->d.objindex->inmail : 0;
+		break;
+	case ENTITY_OBJINDEX_CARRIED:
+		arg->type = ENT_NUMBER;
+		arg->d.num = arg->d.objindex ? arg->d.objindex->carried : 0;
+		break;
+	case ENTITY_OBJINDEX_LOCKERED:
+		arg->type = ENT_NUMBER;
+		arg->d.num = arg->d.objindex ? arg->d.objindex->lockered : 0;
+		break;
+	case ENTITY_OBJINDEX_INCONTAINER:
+		arg->type = ENT_NUMBER;
+		arg->d.num = arg->d.objindex ? arg->d.objindex->incontainer : 0;
+		break;
+
+	default: return NULL;
+	}
+
+	return str+1;
+}
+
+
 char *expand_entity_extradesc(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 {
 //	EXTRA_DESCR_DATA *ed;
@@ -4224,7 +4424,6 @@ char *expand_argument_entity(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		case ENT_PLLIST_OBJ:		next = expand_entity_plist_obj(info,str,arg); break;
 		case ENT_PLLIST_TOK:		next = expand_entity_plist_token(info,str,arg); break;
 		case ENT_PLLIST_CHURCH:	next = expand_entity_plist_church(info,str,arg); break;
-		case ENT_PLLIST_VARIABLE:	next = expand_entity_plist_variable(info,str,arg); break;
 
 		case ENT_MOBILE_ID:		next = expand_entity_mobile_id(info,str,arg); break;
 		case ENT_OBJECT_ID:		next = expand_entity_object_id(info,str,arg); break;
@@ -4237,6 +4436,9 @@ char *expand_argument_entity(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		case ENT_PERSIST:		next = expand_entity_persist(info,str,arg); break;
 		case ENT_PRIOR:			next = expand_entity_prior(info,str,arg); break;
 		case ENT_VARIABLE:		next = expand_entity_variable(info,str,arg); break;
+		case ENT_GROUP:			next = expand_entity_group(info,str,arg); break;
+		case ENT_DICE:			next = expand_entity_dice(info,str,arg); break;
+		case ENT_OBJINDEX:		next = expand_entity_objindex(info,str,arg); break;
 		case ENT_NULL:
 			next = str+1;
 			arg->type = ENT_NULL;

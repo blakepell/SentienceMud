@@ -465,7 +465,8 @@ char *compile_entity(char *str,int type, char **store)
 			case ENT_PLLIST_OBJ:	ent = ENT_OBJECT; break;
 			case ENT_PLLIST_TOK:	ent = ENT_TOKEN; break;
 			case ENT_PLLIST_CHURCH:	ent = ENT_CHURCH; break;
-			case ENT_PLLIST_VARIABLE:	ent = ENT_VARIABLE; break;
+
+			case ENT_ILLIST_VARIABLE:	ent = ENT_VARIABLE; break;
 
 			default:
 				sprintf(buf,"Line %d: Invalid $() primary '%s'.", compile_current_line, field);
@@ -786,14 +787,20 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 						++line;
 					}
 
-					line = one_argument(line,buf);
-					code[i].opcode = neg ? OP_IFNOT : OP_IF;
-					code[i].param = ifcheck_lookup(buf,type);
-					if(code[i].param < 0) {
-						sprintf(rbuf,"Line %d: Invalid ifcheck '%s'.", rline, buf);
-						compile_error_show(rbuf);
-						linevalid = FALSE;
-						break;
+					if(*line == '$') {
+						code[i].opcode = neg ? OP_IFNOT : OP_IF;
+						code[i].param = -1;
+
+					} else {
+						line = one_argument(line,buf);
+						code[i].opcode = neg ? OP_IFNOT : OP_IF;
+						code[i].param = ifcheck_lookup(buf,type);
+						if(code[i].param < 0) {
+							sprintf(rbuf,"Line %d: Invalid ifcheck '%s'.", rline, buf);
+							compile_error_show(rbuf);
+							linevalid = FALSE;
+							break;
+						}
 					}
 
 					state[level] = END_BLOCK;
@@ -818,15 +825,21 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 						++line;
 					}
 
-					line = one_argument(line,buf);
-					code[i].opcode = neg ? OP_ELSEIFNOT : OP_ELSEIF;
-					code[i].param = ifcheck_lookup(buf,type);
-					if(code[i].param < 0) {
-						sprintf(rbuf,"Line %d: Invalid ifcheck '%s'.", rline, buf);
-						compile_error_show(rbuf);
-						linevalid = FALSE;
-						break;
+					if(*line == '$') {
+						code[i].opcode = neg ? OP_ELSEIFNOT : OP_ELSEIF;
+						code[i].param = -1;	// Escape
+					} else {
+						line = one_argument(line,buf);
+						code[i].opcode = neg ? OP_ELSEIFNOT : OP_ELSEIF;
+						code[i].param = ifcheck_lookup(buf,type);
+						if(code[i].param < 0) {
+							sprintf(rbuf,"Line %d: Invalid ifcheck '%s'.", rline, buf);
+							compile_error_show(rbuf);
+							linevalid = FALSE;
+							break;
+						}
 					}
+
 
 					state[level] = END_BLOCK;
 				} else if(!str_cmp(buf,"while")) {
@@ -912,17 +925,21 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 						neg = !neg;
 						++line;
 					}
-
-					line = one_argument(line,buf);
-
 					code[i].level = level-1;
-					code[i].opcode = neg ? OP_NOR : OP_OR;
-					code[i].param = ifcheck_lookup(buf,type);
-					if(code[i].param < 0) {
-						sprintf(rbuf,"Line %d: Invalid ifcheck '%s'.", rline, buf);
-						compile_error_show(rbuf);
-						linevalid = FALSE;
-						break;
+
+					if(*line == '$') {
+						code[i].opcode = neg ? OP_NOR : OP_OR;
+						code[i].param = -1;
+					} else {
+						line = one_argument(line,buf);
+						code[i].opcode = neg ? OP_NOR : OP_OR;
+						code[i].param = ifcheck_lookup(buf,type);
+						if(code[i].param < 0) {
+							sprintf(rbuf,"Line %d: Invalid ifcheck '%s'.", rline, buf);
+							compile_error_show(rbuf);
+							linevalid = FALSE;
+							break;
+						}
 					}
 				} else if(!str_cmp(buf,"and")) {
 					if (!level || (state[level-1] != BEGIN_BLOCK && state[level-1] != IN_WHILE)) {
@@ -943,16 +960,21 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 						++line;
 					}
 
-					line = one_argument(line,buf);
-
 					code[i].level = level-1;
-					code[i].opcode = neg ? OP_NAND : OP_AND;
-					code[i].param = ifcheck_lookup(buf,type);
-					if(code[i].param < 0) {
-						sprintf(rbuf,"Line %d: Invalid ifcheck '%s'.", rline, buf);
-						compile_error_show(rbuf);
-						linevalid = FALSE;
-						break;
+
+					if(*line == '$') {
+						code[i].opcode = neg ? OP_NAND : OP_AND;
+						code[i].param = -1;
+					} else {
+						line = one_argument(line,buf);
+						code[i].opcode = neg ? OP_NAND : OP_AND;
+						code[i].param = ifcheck_lookup(buf,type);
+						if(code[i].param < 0) {
+							sprintf(rbuf,"Line %d: Invalid ifcheck '%s'.", rline, buf);
+							compile_error_show(rbuf);
+							linevalid = FALSE;
+							break;
+						}
 					}
 				} else if(!str_cmp(buf,"else")) {
 					if (!level || state[level-1] != BEGIN_BLOCK) {

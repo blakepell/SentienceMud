@@ -581,6 +581,7 @@ CHAR_DATA *new_char( void )
     ch->lworn			= list_create(FALSE);
     ch->ltokens			= list_create(FALSE);
     ch->lclonerooms		= list_create(FALSE);
+    ch->lgroup			= list_create(FALSE);
 
     ch->deathsight_vision = 0;
     ch->in_damage_function = FALSE;
@@ -672,6 +673,7 @@ void free_char( CHAR_DATA *ch )
     list_destroy(ch->lworn);
     list_destroy(ch->ltokens);
     list_destroy(ch->lclonerooms);
+    list_destroy(ch->lgroup);
 
 	if( !IS_NPC(ch))
 	{
@@ -1743,15 +1745,15 @@ MOB_INDEX_DATA *new_mob_index( void )
     pMob->ac[AC_BASH]	=   0;
     pMob->ac[AC_SLASH]	=   0;
     pMob->ac[AC_EXOTIC]	=   0;
-    pMob->hit[DICE_NUMBER]	=   0;
-    pMob->hit[DICE_TYPE]	=   0;
-    pMob->hit[DICE_BONUS]	=   0;
-    pMob->mana[DICE_NUMBER]	=   0;
-    pMob->mana[DICE_TYPE]	=   0;
-    pMob->mana[DICE_BONUS]	=   0;
-    pMob->damage[DICE_NUMBER]	=   0;
-    pMob->damage[DICE_TYPE]	=   0;
-    pMob->damage[DICE_BONUS]	=   0;
+    pMob->hit.number	=   0;
+    pMob->hit.size	=   0;
+    pMob->hit.bonus	=   0;
+    pMob->mana.number	=   0;
+    pMob->mana.size	=   0;
+    pMob->mana.bonus	=   0;
+    pMob->damage.number	=   0;
+    pMob->damage.size	=   0;
+    pMob->damage.bonus	=   0;
     pMob->start_pos             =   POS_STANDING;
     pMob->default_pos           =   POS_STANDING;
     pMob->wealth                =   0;

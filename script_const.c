@@ -107,6 +107,7 @@ ENT_FIELD entity_types[] = {
 	{"list_str",		ENTITY_VAR_PLLIST_STR,	ENT_PLLIST_STR	},
 	{"list_token",		ENTITY_VAR_PLLIST_TOK,	ENT_PLLIST_TOK	},
 	{"list_church",		ENTITY_VAR_PLLIST_CHURCH,	ENT_PLLIST_CHURCH	},
+	{"dice",			ENTITY_VAR_DICE,		ENT_DICE	},
 	{NULL,				0,						ENT_UNKNOWN	}
 };
 
@@ -181,6 +182,7 @@ ENT_FIELD entity_mobile[] = {
 	{"castspell",		ENTITY_MOB_CASTSPELL,		ENT_SKILL	},
 	{"casttarget",		ENTITY_MOB_CASTTARGET,		ENT_STRING	},
 	{"casttoken",		ENTITY_MOB_CASTTOKEN,		ENT_TOKEN	},
+	{"checkpoint",		ENTITY_MOB_CHECKPOINT,		ENT_ROOM	},
 	{"church",			ENTITY_MOB_CHURCH,			ENT_CHURCH	},
 	{"clonerooms",		ENTITY_MOB_CLONEROOMS,		ENT_BLLIST_ROOM	},
 	{"connection",		ENTITY_MOB_CONNECTION,		ENT_CONN	},
@@ -215,19 +217,19 @@ ENT_FIELD entity_mobile[] = {
 	{"eq_ring",			ENTITY_MOB_EQ_RING,			ENT_OBJECT	},
 	{"eq_shield",		ENTITY_MOB_EQ_SHIELD,		ENT_OBJECT	},
 	{"eq_shoulder",		ENTITY_MOB_EQ_SHOULDER,		ENT_OBJECT	},
+	{"eq_tattoo_back",     ENTITY_MOB_EQ_TATTOO_BACK,     ENT_OBJECT      },
+	{"eq_tattoo_head",	ENTITY_MOB_EQ_TATTOO_HEAD,	ENT_OBJECT	},
+	{"eq_tattoo_lower_arm1",        ENTITY_MOB_EQ_TATTOO_LOWER_ARM1,      ENT_OBJECT      },
+	{"eq_tattoo_lower_arm2",        ENTITY_MOB_EQ_TATTOO_LOWER_ARM2,      ENT_OBJECT      },
+	{"eq_tattoo_lower_leg1",        ENTITY_MOB_EQ_TATTOO_LOWER_LEG1,      ENT_OBJECT      },
+	{"eq_tattoo_lower_leg2",     ENTITY_MOB_EQ_TATTOO_LOWER_LEG2,     ENT_OBJECT      },
+	{"eq_tattoo_shoulder1",      ENTITY_MOB_EQ_TATTOO_SHOULDER1,      ENT_OBJECT      },
+	{"eq_tattoo_shoulder2",        ENTITY_MOB_EQ_TATTOO_SHOULDER2,      ENT_OBJECT      },
+	{"eq_tattoo_torso",	ENTITY_MOB_EQ_TATTOO_TORSO,	ENT_OBJECT	},
 	{"eq_tattoo_upper_arm1",	ENTITY_MOB_EQ_TATTOO_UPPER_ARM1,	ENT_OBJECT	},
 	{"eq_tattoo_upper_arm2",	ENTITY_MOB_EQ_TATTOO_UPPER_ARM2,	ENT_OBJECT	},
-	{"eq_tattoo_head",	ENTITY_MOB_EQ_TATTOO_HEAD,	ENT_OBJECT	},
 	{"eq_tattoo_upper_leg1",	ENTITY_MOB_EQ_TATTOO_UPPER_LEG1,	ENT_OBJECT	},
 	{"eq_tattoo_upper_leg2",	ENTITY_MOB_EQ_TATTOO_UPPER_LEG2,	ENT_OBJECT	},
-	{"eq_tattoo_torso",	ENTITY_MOB_EQ_TATTOO_TORSO,	ENT_OBJECT	},
-        {"eq_tattoo_lower_arm1",        ENTITY_MOB_EQ_TATTOO_LOWER_ARM1,      ENT_OBJECT      },
-        {"eq_tattoo_lower_arm2",        ENTITY_MOB_EQ_TATTOO_LOWER_ARM2,      ENT_OBJECT      },
-        {"eq_tattoo_shoulder1",      ENTITY_MOB_EQ_TATTOO_SHOULDER1,      ENT_OBJECT      },
-        {"eq_tattoo_shoulder2",        ENTITY_MOB_EQ_TATTOO_SHOULDER2,      ENT_OBJECT      },
-        {"eq_tattoo_lower_leg1",        ENTITY_MOB_EQ_TATTOO_LOWER_LEG1,      ENT_OBJECT      },
-        {"eq_tattoo_lower_leg2",     ENTITY_MOB_EQ_TATTOO_LOWER_LEG2,     ENT_OBJECT      },
-        {"eq_tattoo_back",     ENTITY_MOB_EQ_TATTOO_BACK,     ENT_OBJECT      },
 	{"eq_waist",		ENTITY_MOB_EQ_WAIST,		ENT_OBJECT	},
 	{"eq_wield1",		ENTITY_MOB_EQ_WIELD1,		ENT_OBJECT	},
 	{"eq_wield2",		ENTITY_MOB_EQ_WIELD2,		ENT_OBJECT	},
@@ -235,6 +237,7 @@ ENT_FIELD entity_mobile[] = {
 	{"eq_wrist2",		ENTITY_MOB_EQ_WRIST2,		ENT_OBJECT	},
 	{"fulldesc",		ENTITY_MOB_FULLDESC,		ENT_STRING	},
 	{"gender",			ENTITY_MOB_SEX,				ENT_STRING	},
+	{"group",			ENTITY_MOB_GROUP,			ENT_GROUP },
 	{"he",				ENTITY_MOB_HE,				ENT_STRING	},
 	{"him",				ENTITY_MOB_HIM,				ENT_STRING	},
 	{"himself",			ENTITY_MOB_HIMSELF,			ENT_STRING	},
@@ -266,9 +269,8 @@ ENT_FIELD entity_mobile[] = {
 	{"songtoken",		ENTITY_MOB_SONGTOKEN,		ENT_TOKEN	},
 	{"target",			ENTITY_MOB_TARGET,			ENT_MOBILE	},
 	{"tokens",			ENTITY_MOB_TOKENS,			ENT_OLLIST_TOK	},
+	{"vars",			ENTITY_MOB_VARIABLES,		ENT_ILLIST_VARIABLE	},
 	{"worn",			ENTITY_MOB_WORN,			ENT_PLLIST_OBJ },
-	{"checkpoint",		ENTITY_MOB_CHECKPOINT,		ENT_ROOM	},
-	{"vars",			ENTITY_MOB_VARIABLES,		ENT_PLLIST_VARIABLE	},
 	{NULL,				0,							ENT_UNKNOWN	}
 };
 
@@ -295,7 +297,8 @@ ENT_FIELD entity_object[] = {
 	{"tokens",		ENTITY_OBJ_TOKENS,	ENT_OLLIST_TOK	},
 	{"user",		ENTITY_OBJ_CARRIER,	ENT_MOBILE	},
 	{"wearer",		ENTITY_OBJ_CARRIER,	ENT_MOBILE	},
-	{"vars",		ENTITY_OBJ_VARIABLES,		ENT_PLLIST_VARIABLE	},
+	{"vars",		ENTITY_OBJ_VARIABLES,		ENT_ILLIST_VARIABLE	},
+	{"index",		ENTITY_OBJ_INDEX,			ENT_OBJINDEX },
 	{NULL,			0,			ENT_UNKNOWN	}
 };
 
@@ -329,7 +332,7 @@ ENT_FIELD entity_room[] = {
 	{"up",			ENTITY_ROOM_UP,				ENT_EXIT	},
 	{"west",		ENTITY_ROOM_WEST,			ENT_EXIT	},
 	{"wilds",		ENTITY_ROOM_WILDS,			ENT_WILDS	},
-	{"vars",		ENTITY_ROOM_VARIABLES,		ENT_PLLIST_VARIABLE	},
+	{"vars",		ENTITY_ROOM_VARIABLES,		ENT_ILLIST_VARIABLE	},
 	{NULL,			0,							ENT_UNKNOWN	}
 };
 
@@ -373,7 +376,7 @@ ENT_FIELD entity_token[] = {
 	{"val6",	ENTITY_TOKEN_VAL6,	ENT_NUMBER	},
 	{"val7",	ENTITY_TOKEN_VAL7,	ENT_NUMBER	},
 	{"next",	ENTITY_TOKEN_NEXT,	ENT_TOKEN	},
-	{"vars",	ENTITY_TOKEN_VARIABLES,		ENT_PLLIST_VARIABLE	},
+	{"vars",	ENTITY_TOKEN_VARIABLES,		ENT_ILLIST_VARIABLE	},
 	{NULL,		0,			ENT_UNKNOWN	}
 };
 
@@ -502,6 +505,38 @@ ENT_FIELD entity_variable[] = {
 
 };
 
+ENT_FIELD entity_group[] = {
+	{"owner",			ENTITY_GROUP_OWNER,				ENT_MOBILE	},
+	{"leader",			ENTITY_GROUP_LEADER,			ENT_MOBILE	},
+	{"ally",			ENTITY_GROUP_ALLY,				ENT_MOBILE	},
+	{"member",			ENTITY_GROUP_MEMBER,			ENT_MOBILE		},
+	{"members",			ENTITY_GROUP_MEMBERS,			ENT_ILLIST_MOB_GROUP	},
+	{"size",			ENTITY_GROUP_SIZE,				ENT_NUMBER	},
+	{NULL,		0,						ENT_UNKNOWN	}
+
+};
+
+ENT_FIELD entity_dice[] = {
+	{"number",		ENTITY_DICE_NUMBER,	ENT_NUMBER },
+	{"size",		ENTITY_DICE_SIZE,	ENT_NUMBER },
+	{"bonus",		ENTITY_DICE_BONUS,	ENT_NUMBER },
+	{"roll",		ENTITY_DICE_ROLL,	ENT_NUMBER },
+	{"last",		ENTITY_DICE_LAST,	ENT_NUMBER },
+	{NULL,		0,						ENT_UNKNOWN	}
+
+};
+
+ENT_FIELD entity_objindex[] = {
+	{"vnum",			ENTITY_OBJINDEX_VNUM,			ENT_NUMBER },
+	{"loaded",			ENTITY_OBJINDEX_LOADED,			ENT_NUMBER },
+	{"inrooms",			ENTITY_OBJINDEX_INROOMS,		ENT_NUMBER },
+	{"inmail",			ENTITY_OBJINDEX_INMAIL,			ENT_NUMBER },
+	{"carried",			ENTITY_OBJINDEX_CARRIED,		ENT_NUMBER },
+	{"lockered",		ENTITY_OBJINDEX_LOCKERED,		ENT_NUMBER },
+	{"incontainer",		ENTITY_OBJINDEX_INCONTAINER,	ENT_NUMBER },
+	{NULL,				0,								ENT_UNKNOWN	}
+};
+
 struct _entity_type_info entity_type_info[] = {
 	{ ENT_PRIMARY,		ENT_PRIMARY,		entity_primary,		TRUE	},
 	{ ENT_NUMBER,		ENT_NUMBER,			entity_number,		FALSE	},
@@ -532,8 +567,12 @@ struct _entity_type_info entity_type_info[] = {
 	{ ENT_BLLIST_MIN,	ENT_BLLIST_MAX,		entity_list,		FALSE	},
 	{ ENT_PLLIST_MIN,	ENT_PLLIST_MAX,		entity_list,		FALSE	},
 	{ ENT_OLLIST_MIN,	ENT_OLLIST_MAX,		entity_list,		FALSE	},
+	{ ENT_ILLIST_MIN,	ENT_ILLIST_MAX,		NULL,				FALSE	},
 	{ ENT_NULL,			ENT_NULL,			NULL,				FALSE	},
 	{ ENT_VARIABLE,		ENT_VARIABLE,		entity_variable,	FALSE	},
+	{ ENT_GROUP,		ENT_GROUP,			entity_group,		FALSE	},
+	{ ENT_DICE,			ENT_DICE,			entity_dice,		FALSE	},
+	{ ENT_OBJINDEX,		ENT_OBJINDEX,		entity_objindex,	FALSE	},
 	{ ENT_UNKNOWN,		ENT_UNKNOWN,		NULL,				FALSE	},
 };
 
@@ -1037,6 +1076,7 @@ IFCHECK_DATA ifcheck_table[] = {
 	{ "reckoningchance",	IFC_ANY,	"",		TRUE,	ifc_reckoningchance,	"ifcheck reckoningchance" },
 	{ "register",			IFC_ANY,	"N",	TRUE,	ifc_register,			"ifcheck register" },
 	{ "res",				IFC_ANY,	"ES",	FALSE,	ifc_res,				"ifcheck res" },
+	{ "roll",				IFC_ANY,	"E",	FALSE,	ifc_roll,				"ifcheck roll" },
 	{ "room",				IFC_ANY,	"E",	TRUE,	ifc_room,				"ifcheck room" },
 	{ "roomflag",			IFC_ANY,	"ES",	FALSE,	ifc_roomflag,			"ifcheck roomflag" },
 	{ "roomflag2",			IFC_ANY,	"ES",	FALSE,	ifc_roomflag2,			"ifcheck roomflag2" },

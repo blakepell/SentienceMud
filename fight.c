@@ -769,7 +769,7 @@ bool one_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt, bool secondary)
 	// Hit, calc damage.
 	if (IS_NPC(ch)) {
 		if (!wield)
-			dam = dice(ch->damage[DICE_NUMBER],ch->damage[DICE_TYPE]) + ch->damage[DICE_BONUS];
+			dam = dice_roll(&ch->damage);
 		else {
 			dam = dice(wield->value[1], wield->value[2]) * skill/100;
 
@@ -789,7 +789,7 @@ bool one_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt, bool secondary)
 				dam = dam * (200 - percent) / 200;
 			}
 
-			dam += (dice(ch->damage[DICE_NUMBER], ch->damage[DICE_TYPE]) + ch->damage[DICE_BONUS]);
+			dam += dice_roll(&ch->damage);
 		}
 	} else {
 		if (sn != -1) check_improve(ch, sn, TRUE, 6);
@@ -894,7 +894,7 @@ bool one_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt, bool secondary)
 
 	// mobs wielding a weapon get the weapon damage + their damdice/2
 	if (IS_NPC(ch))
-		dam += dice(ch->pIndexData->damage[DICE_NUMBER],ch->pIndexData->damage[DICE_TYPE]) / 2;
+		dam += dice_roll(&ch->pIndexData->damage) / 2;
 
 	// apply armour class
 	dam += victim_ac/10;

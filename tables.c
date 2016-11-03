@@ -2651,6 +2651,7 @@ const struct flag_type corpse_object_flags[] = {
 };
 
 const struct flag_type variable_types[] = {
+	{"bool",			VAR_BOOLEAN,			TRUE},
 	{"integer",			VAR_INTEGER,			TRUE},
 	{"string",			VAR_STRING,				TRUE},
 	{"string_s",		VAR_STRING_S,			TRUE},

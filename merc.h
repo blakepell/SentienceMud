@@ -305,6 +305,8 @@ typedef struct olc_point_boost_data OLC_POINT_BOOST;
 typedef struct olc_point_usage_data OLC_POINT_USAGE;
 typedef struct olc_point_area_data OLC_POINT_AREA;
 
+typedef struct dice_data DICE_DATA;
+
 
 /* VIZZWILDS */
 typedef struct    wilds_vlink      WILDS_VLINK;
@@ -544,6 +546,12 @@ struct list_link_skill_data {
 	unsigned long tid[2];
 };
 
+struct dice_data {
+	int number;
+	int size;
+	int bonus;
+	long last_roll;
+};
 
 #define OLC_PNT_MOBILE		'M'
 #define OLC_PNT_OBJECT		'O'
@@ -3065,9 +3073,9 @@ struct	mob_index_data
     sh_int		alignment;
     sh_int		level;
     sh_int		hitroll;
-    int 		hit[3];
-    int 		mana[3];
-    int 		damage[3];
+    DICE_DATA	hit;
+    DICE_DATA	mana;
+    DICE_DATA	damage;
     sh_int		ac[4];
     sh_int 		dam_type;
     long		off_flags;
@@ -3632,7 +3640,7 @@ struct	char_data
 
     /* for mobs */
     long		off_flags;
-    int			damage[3];
+    DICE_DATA	damage;
     int			dam_type;
     int			start_pos;
     int			default_pos;
@@ -3772,6 +3780,8 @@ struct	char_data
     LLIST *		lquests;	// Eventually, we will have a quest log of sorts
     LLIST *		lclonerooms;
     LLIST *		laffected;
+
+    LLIST *		lgroup;
 
     int			deathsight_vision;
     int			cast_successful;	// Flag set when the casting is started indicating whether the result is successful
@@ -4026,6 +4036,12 @@ struct	obj_index_data
 	int alpha;		/* Transparency of object [0,1000] (0.0% to 100.0%) */
 	int heat;		/* How much heat is in it [0,100000] */
 	int moisture;		/* How much moisture is in it [0,1000] */
+
+	long inrooms;
+	long inmail;
+	long carried;
+	long lockered;
+	long incontainer;
 };
 
 
@@ -7651,5 +7667,8 @@ void restore_char(CHAR_DATA *ch, CHAR_DATA *whom, int percent);
 typedef bool (*pVISIT_ROOM_LINE_FUNC)(ROOM_INDEX_DATA *room, CHAR_DATA *ch, int depth, int door, void *data );
 typedef void (*pVISIT_ROOM_END_FUNC)(ROOM_INDEX_DATA *room, CHAR_DATA *ch, int depth, int door, void *data, bool canceled );
 void visit_room_direction(CHAR_DATA *ch, ROOM_INDEX_DATA *start_room, int max_depth, int door, void *data, pVISIT_ROOM_LINE_FUNC func, pVISIT_ROOM_END_FUNC end_func);
+
+long dice_roll(DICE_DATA *d);
+void dice_copy(DICE_DATA *a, DICE_DATA *b);
 
 #endif /* !def __MERC_H__ */

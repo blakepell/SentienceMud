@@ -786,9 +786,9 @@ void save_mobile_new(FILE *fp, MOB_INDEX_DATA *mob)
 
     fprintf(fp, "Hitroll %d Hit %d %d %d Mana %d %d %d Damage %d %d %d Movement %ld\n",
         mob->hitroll,
-	mob->hit[DICE_NUMBER], mob->hit[DICE_TYPE], mob->hit[DICE_BONUS],
-	mob->mana[DICE_NUMBER], mob->mana[DICE_TYPE], mob->mana[DICE_BONUS],
-	mob->damage[DICE_NUMBER], mob->damage[DICE_TYPE], mob->damage[DICE_BONUS], mob->move);
+	mob->hit.number, mob->hit.size, mob->hit.bonus,
+	mob->mana.number, mob->mana.size, mob->mana.bonus,
+	mob->damage.number, mob->damage.size, mob->damage.bonus, mob->move);
     fprintf(fp, "AttackType %d\n", mob->dam_type);
     fprintf(fp, "Attacks %d\n", mob->attacks);
     fprintf(fp, "OffFlags %ld ImmFlags %ld ResFlags %ld VulnFlags %d\n",
@@ -2075,9 +2075,9 @@ MOB_INDEX_DATA *read_mobile_new(FILE *fp, AREA_DATA *area)
 		KEY("DefaultPos",	mob->default_pos,	fread_number(fp));
 
 	        if (!str_cmp(word, "Damage")) {
-		    mob->damage[DICE_NUMBER] = fread_number(fp);
-		    mob->damage[DICE_TYPE] = fread_number(fp);
-		    mob->damage[DICE_BONUS] = fread_number(fp);
+		    mob->damage.number = fread_number(fp);
+		    mob->damage.size = fread_number(fp);
+		    mob->damage.bonus = fread_number(fp);
 		    fMatch = TRUE;
 		}
 
@@ -2091,9 +2091,9 @@ MOB_INDEX_DATA *read_mobile_new(FILE *fp, AREA_DATA *area)
 	        KEY("Hitroll",	mob->hitroll,	fread_number(fp));
 
 		if (!str_cmp(word, "Hit")) {
-		    mob->hit[DICE_NUMBER] = fread_number(fp);
-		    mob->hit[DICE_TYPE] = fread_number(fp);
-		    mob->hit[DICE_BONUS] = fread_number(fp);
+		    mob->hit.number = fread_number(fp);
+		    mob->hit.size = fread_number(fp);
+		    mob->hit.bonus = fread_number(fp);
 		    fMatch = TRUE;
 		}
 
@@ -2113,9 +2113,9 @@ MOB_INDEX_DATA *read_mobile_new(FILE *fp, AREA_DATA *area)
 		KEY("Movement",	mob->move,	fread_number(fp));
 
 		if (!str_cmp(word, "Mana")) {
-		    mob->mana[DICE_NUMBER] = fread_number(fp);
-		    mob->mana[DICE_TYPE] = fread_number(fp);
-		    mob->mana[DICE_BONUS] = fread_number(fp);
+		    mob->mana.number = fread_number(fp);
+		    mob->mana.size = fread_number(fp);
+		    mob->mana.bonus = fread_number(fp);
 		    fMatch = TRUE;
 		}
 

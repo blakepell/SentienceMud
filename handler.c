@@ -2069,6 +2069,8 @@ void obj_to_locker(OBJ_DATA *obj, CHAR_DATA *ch)
     obj->in_obj          = NULL;
     obj->locker	 	 = TRUE;
 
+    obj->pIndexData->lockered++;
+
     list_addlink(ch->llocker, obj);
 
 }
@@ -2125,6 +2127,8 @@ void obj_to_char(OBJ_DATA *obj, CHAR_DATA *ch)
 
     if (!IS_NPC(ch))
         check_quest_retrieve_obj(ch, obj);
+
+    obj->pIndexData->carried++;
 
     if (objRepop == TRUE)
     {
@@ -2189,6 +2193,8 @@ void obj_from_locker(OBJ_DATA *obj)
             bug("locker get: obj not in list.", 0);
     }
 
+    --obj->pIndexData->lockered;
+
     obj->in_room         = NULL;
     obj->carried_by      = NULL;
     obj->next_content    = NULL;
@@ -2233,6 +2239,8 @@ void obj_from_char(OBJ_DATA *obj)
 	if (prev == NULL && !obj->locker)
 	    bug("Obj_from_char: obj not in list.", 0);
     }
+
+    --obj->pIndexData->carried;
 
     obj->carried_by	 = NULL;
     obj->next_content	 = NULL;
@@ -2569,6 +2577,8 @@ void obj_from_room(OBJ_DATA *obj)
             destroy_wilds_vroom(obj->in_room);
     }
 
+    --obj->pIndexData->inrooms;
+
     obj->in_wilds     = NULL;
     obj->in_room      = NULL;
     obj->next_content = NULL;
@@ -2593,6 +2603,8 @@ void obj_to_room(OBJ_DATA *obj, ROOM_INDEX_DATA *pRoomIndex)
 
     if (pRoomIndex == NULL)
 	bug("obj_to_room: ERROR IN_ROOM WAS NULL", 0);
+
+    obj->pIndexData->inrooms++;
 
     if (objRepop == TRUE)
     {
@@ -2642,6 +2654,9 @@ void obj_to_vroom(OBJ_DATA *obj, WILDS_DATA *pWilds, int x, int y)
     obj->y                      = y;
     pWilds->loaded_objs++;
 
+    obj->pIndexData->inrooms++;
+
+
     if (objRepop == TRUE)
     {
 	p_percent_trigger(NULL, obj, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_REPOP, NULL);
@@ -2669,6 +2684,9 @@ void obj_to_obj(OBJ_DATA *obj, OBJ_DATA *obj_to)
 
 	if(obj->clone_rooms || obj->nest_clones > 0)
 		obj_set_nest_clones(obj_to,true);
+
+    obj->pIndexData->incontainer++;
+
 }
 
 
@@ -2709,6 +2727,8 @@ void obj_from_obj(OBJ_DATA *obj)
 	    return;
 	}
     }
+
+    --obj->pIndexData->incontainer;
 
     obj->in_room      = NULL;
     obj->next_content = NULL;
@@ -7626,7 +7646,7 @@ LLIST *list_copy(LLIST *src)
 					data = (*cpy->copier)(data);
 
 				if( !data || !list_appendlink(cpy, data) ) {
-					if( data && cpy->deleter )
+					if( data && cpy->copier && cpy->deleter )
 						(*cpy->deleter)(data);
 
 					valid = FALSE;
@@ -8352,3 +8372,20 @@ void visit_room_direction(CHAR_DATA *ch, ROOM_INDEX_DATA *start_room, int max_de
 		(*end_func)(last_room, ch, depth, door, data);
 */
 }
+
+
+long dice_roll(DICE_DATA *d)
+{
+	d->last_roll = dice(d->number, d->size) + d->bonus;
+
+	return d->last_roll;
+}
+
+void dice_copy(DICE_DATA *a, DICE_DATA *b)
+{
+	b->number = a->number;
+	b->size = a->size;
+	b->bonus = a->bonus;
+	b->last_roll = -1;
+}
+

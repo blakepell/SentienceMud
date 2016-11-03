@@ -1903,9 +1903,14 @@ void do_mstat(CHAR_DATA *ch, char *argument)
 
     if (IS_NPC(victim))
     {
-	sprintf(buf, "{BDamage:{x %dd%d  {BMessage:{x  %s\n\r",
-	    victim->damage[DICE_NUMBER],victim->damage[DICE_TYPE],
-	    attack_table[victim->dam_type].noun);
+		if( victim->damage.bonus > 0 )
+			sprintf(buf, "{BDamage:{x %dd%d+%d  {BMessage:{x  %s\n\r",
+			    victim->damage.number,victim->damage.size,victim->damage.bonus,
+			    attack_table[victim->dam_type].noun);
+		else
+			sprintf(buf, "{BDamage:{x %dd%d  {BMessage:{x  %s\n\r",
+			    victim->damage.number,victim->damage.size,
+			    attack_table[victim->dam_type].noun);
 	send_to_char(buf,ch);
     }
 

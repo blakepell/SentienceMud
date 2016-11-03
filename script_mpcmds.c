@@ -73,6 +73,7 @@ const struct script_cmd_type mob_cmd_table[] = {
 	{ "gecho",				do_mpgecho,			FALSE	},
 	{ "gforce",				do_mpgforce,			FALSE	},
 	{ "goto",				do_mpgoto,			FALSE	},
+	{ "group",				do_mpgroup,			FALSE	},
 	{ "gtransfer",			do_mpgtransfer,			FALSE	},
 	{ "hunt",				do_mphunt,			FALSE	},
 	{ "input",				do_mpinput,			FALSE	},
@@ -113,6 +114,7 @@ const struct script_cmd_type mob_cmd_table[] = {
 	{ "take",				do_mptake,			FALSE	},
 	{ "teleport", 			do_mpteleport,			FALSE	},
 	{ "transfer",			do_mptransfer,			FALSE	},
+	{ "ungroup",			do_mpungroup,		FALSE	},
 	{ "usecatalyst",		do_mpusecatalyst,		FALSE	},
 	{ "varclear",			do_mpvarclear,			FALSE	},
 	{ "varclearon",			do_mpvarclearon,		FALSE	},
@@ -4496,9 +4498,9 @@ SCRIPT_CMD(do_mpaltermob)
 	else if(!str_cmp(field,"danger"))	{ ptr = IS_NPC(mob)?NULL:(int*)&mob->pcdata->danger_range; allowpc = TRUE; }
 	else if(!str_cmp(field,"daze"))		ptr = (int*)&mob->daze;
 	else if(!str_cmp(field,"death"))	{ ptr = (IS_NPC(mob) || !IS_DEAD(mob))?NULL:(int*)&mob->time_left_death; allowpc = TRUE; }
-	else if(!str_cmp(field,"dicenumber"))	{ ptr = IS_NPC(mob)?&mob->damage[DICE_NUMBER]:NULL; }
-	else if(!str_cmp(field,"dicetype"))	{ ptr = IS_NPC(mob)?&mob->damage[DICE_TYPE]:NULL; }
-	else if(!str_cmp(field,"dicebonus"))	{ ptr = IS_NPC(mob)?&mob->damage[DICE_BONUS]:NULL; }
+	else if(!str_cmp(field,"dicenumber"))	{ ptr = IS_NPC(mob)?&mob->damage.number:NULL; }
+	else if(!str_cmp(field,"dicetype"))	{ ptr = IS_NPC(mob)?&mob->damage.size:NULL; }
+	else if(!str_cmp(field,"dicebonus"))	{ ptr = IS_NPC(mob)?&mob->damage.bonus:NULL; }
 	else if(!str_cmp(field,"drunk"))	{ ptr = IS_NPC(mob)?NULL:(int*)&mob->pcdata->condition[COND_DRUNK]; allowpc = TRUE; }
 //	else if(!str_cmp(field,"exitdir"))	{ ptr = (int*)&mob->exit_dir; allowpc = TRUE; }
 	else if(!str_cmp(field,"exp"))		{ ptr = (int*)&mob->exp; allowpc = TRUE; }
@@ -8009,5 +8011,118 @@ SCRIPT_CMD(do_mpstopcombat)
 	}
 
 	stop_fighting(mob, fBoth);
+}
+
+// GROUP npc(FOLLOWER)[ mobile(LEADER=self)][ bool(SHOW=true)]
+// Follower will only work on an NPC
+// LASTRETURN:
+// 0 = grouping failed
+// 1 = grouping succeeded
+SCRIPT_CMD(do_mpgroup)
+{
+	char *rest;
+	SCRIPT_PARAM arg;
+	CHAR_DATA *follower, *leader;
+	bool fShow = TRUE;
+
+	if(!info || !info->mob || IS_NULLSTR(argument)) return;
+
+	info->mob->progs->lastreturn = 0;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob || !IS_NPC(arg.d.mob)) return;
+
+	follower = arg.d.mob;
+	leader = info->mob;
+
+	if( *rest ) {
+		if(!(rest = expand_argument(info,rest,&arg)))
+			return;
+
+		if( arg.type == ENT_NUMBER )
+		{
+			fShow = (arg.d.num != 0);
+		}
+		else if( arg.type == ENT_STRING )
+		{
+			fShow = !str_cmp(arg.d.str, "yes") || !str_cmp(arg.d.str, "true") || !str_cmp(arg.d.str, "show");
+		}
+		else if( arg.type == ENT_MOBILE && arg.d.mob )
+		{
+			leader = arg.d.mob;
+
+			if( *rest ) {
+				if(!(rest = expand_argument(info,rest,&arg)))
+					return;
+
+				if( arg.type == ENT_NUMBER )
+				{
+					fShow = (arg.d.num != 0);
+				}
+				else if( arg.type == ENT_STRING )
+				{
+					fShow = !str_cmp(arg.d.str, "yes") || !str_cmp(arg.d.str, "true") || !str_cmp(arg.d.str, "show");
+				}
+				else
+					return;
+			}
+		}
+		else
+			return;
+	}
+
+	if(add_grouped(follower, leader, fShow))
+		info->mob->progs->lastreturn = 1;
+}
+
+// UNGROUP mobile[ bool(ALL=false)]
+SCRIPT_CMD(do_mpungroup)
+{
+	char *rest;
+	SCRIPT_PARAM arg;
+	CHAR_DATA *mob;
+	bool fAll = FALSE;
+
+	if(!info || !info->mob || IS_NULLSTR(argument)) return;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+	mob = arg.d.mob;
+
+	if( *rest ) {
+		if( arg.type == ENT_NUMBER )
+		{
+			fAll = (arg.d.num != 0);
+		}
+		else if( arg.type == ENT_STRING )
+		{
+			fAll = !str_cmp(arg.d.str, "yes") || !str_cmp(arg.d.str, "true") || !str_cmp(arg.d.str, "all");
+		}
+		else
+			return;
+	}
+
+	if( fAll ) {
+		ITERATOR git;
+		CHAR_DATA *leader = (arg.d.mob->leader != NULL) ? arg.d.mob->leader : arg.d.mob;
+		CHAR_DATA *follower;
+
+		if( leader->num_grouped < 1 )
+			return;
+
+		iterator_start(&git, leader->lgroup);
+		while((follower = (CHAR_DATA *)iterator_nextdata(&git)))
+			stop_grouped(follower);
+		iterator_stop(&git);
+	}
+	else
+	{
+		stop_grouped(arg.d.mob);
+	}
 }
 

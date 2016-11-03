@@ -394,23 +394,35 @@ int ifcheck_comparison(SCRIPT_CB *block)
 	if(!block) return -1;	// Error
 
 	code = block->cur_line;
-	if(!code || code->param < 0 || code->param >= CHK_MAXIFCHECKS)
+	if(!code || code->param < -1 || code->param >= CHK_MAXIFCHECKS)
 		 return -1;
 
-	ifc = &ifcheck_table[code->param];
+	if(code->param == -1) {
+		text = expand_argument(&block->info,block->cur_line->rest,&arg);
+		if(!text) return -1;
 
-	if(wiznet_script) {
-		sprintf(buf2,"Doing ifcheck: %d, '%s'", code->param, ifc->name);
-		wiznet(buf2,NULL,NULL,WIZ_SCRIPTS,0,0);
+		if( arg.type == ENT_BOOLEAN )
+			return arg.d.boolean ? 1 : 0;
+
+		if( arg.type != ENT_NUMBER )
+			return -1;
+
+		lhs = arg.d.num;
+
+	} else {
+		ifc = &ifcheck_table[code->param];
+
+		if(wiznet_script) {
+			sprintf(buf2,"Doing ifcheck: %d, '%s'", code->param, ifc->name);
+			wiznet(buf2,NULL,NULL,WIZ_SCRIPTS,0,0);
+		}
+
+		text = ifcheck_get_value(&block->info,ifc,block->cur_line->rest,&lhs,&valid);
+
+		if(!valid) return FALSE;
+
+		if(!ifc->numeric) return (lhs > 0);
 	}
-
-	text = ifcheck_get_value(&block->info,ifc,block->cur_line->rest,&lhs,&valid);
-
-	if(!text) return -1;
-
-	if(!valid) return FALSE;
-
-	if(!ifc->numeric) return (lhs > 0);
 
 	text = one_argument(text, buf);
 
@@ -563,7 +575,7 @@ void script_loop_cleanup(SCRIPT_CB *block, int level)
 			case ENT_PLLIST_ROOM:
 			case ENT_PLLIST_TOK:
 			case ENT_PLLIST_CHURCH:
-			case ENT_PLLIST_VARIABLE:
+			case ENT_ILLIST_VARIABLE:
 				iterator_stop(&block->loops[i].d.l.list.it);
 				break;
 			}
@@ -941,6 +953,7 @@ DECL_OPC_FUN(opc_list)
 	int lp, i;
 	char *str1,*str2, *str;
 	char buf[MSL];
+	LLIST *list;
 	LLIST_UID_DATA *uid;
 	LLIST_ROOM_DATA *lrd;
 	LLIST_EXIT_DATA *led;
@@ -1550,12 +1563,51 @@ DECL_OPC_FUN(opc_list)
 			variables_set_church(block->info.var,block->loops[lp].var_name,church);
 			break;
 
-		case ENT_PLLIST_VARIABLE:
-			log_stringf("opc_list: list type ENT_PLLIST_VARIABLE");
+		case ENT_ILLIST_MOB_GROUP:
+			log_stringf("opc_list: list type ENT_ILLIST_MOB_GROUP");
+			if(!arg.d.group_owner || !arg.d.group_owner->in_room)
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+
+			ch = arg.d.group_owner->leader ? arg.d.group_owner->leader : arg.d.group_owner;
+
+			list = list_copy(ch->lgroup);
+			if( !list )
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+
+			if( !list_addlink(list, ch) ) {
+				list_destroy(list);
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+			}
+
+			block->loops[lp].d.l.type = ENT_ILLIST_MOB_GROUP;
+			block->loops[lp].d.l.list.lp = list;
+			iterator_start(&block->loops[lp].d.l.list.it,block->loops[lp].d.l.list.lp);
+			block->loops[lp].d.l.owner = NULL;
+
+			ch = (CHAR_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+
+			if(ch) {
+				if(!IS_NPC(ch))
+					log_stringf("opc_list: player(%s,%ld,%ld)", ch->name, ch->id[0], ch->id[1]);
+				else
+					log_stringf("opc_list: mobile(%ld,%ld,%ld)", ch->pIndexData->vnum, ch->id[0], ch->id[1]);
+			} else
+				log_stringf("opc_list: mobile(<END>)");
+
+			if( !ch ) {
+				iterator_stop(&block->loops[lp].d.l.list.it);
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+			}
+
+			// Set the variable
+			variables_set_mobile(block->info.var,block->loops[lp].var_name,ch);
+
+		case ENT_ILLIST_VARIABLE:
+			log_stringf("opc_list: list type ENT_ILLIST_VARIABLE");
 			if(!arg.d.variables || !*arg.d.variables)
 				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
 
-			block->loops[lp].d.l.type = ENT_PLLIST_VARIABLE;
+			block->loops[lp].d.l.type = ENT_ILLIST_VARIABLE;
 			block->loops[lp].d.l.list.lp = variable_copy_tolist(arg.d.variables);
 			iterator_start(&block->loops[lp].d.l.list.it,block->loops[lp].d.l.list.lp);
 			block->loops[lp].d.l.owner = NULL;
@@ -1572,6 +1624,7 @@ DECL_OPC_FUN(opc_list)
 			// Set the variable
 			variables_set_variable(block->info.var,block->loops[lp].var_name,variable);
 			break;
+
 		default:
 			log_stringf("opc_list: list_type INVALID");
 			block->ret_val = PRET_BADSYNTAX;
@@ -2030,8 +2083,8 @@ DECL_OPC_FUN(opc_list)
 			}
 
 			break;
-		case ENT_PLLIST_VARIABLE:
-			log_stringf("opc_list: list type ENT_PLLIST_VARIABLE");
+		case ENT_ILLIST_VARIABLE:
+			log_stringf("opc_list: list type ENT_ILLIST_VARIABLE");
 			variable = (VARIABLE *)iterator_nextdata(&block->loops[lp].d.l.list.it);
 			log_stringf("opc_list: variable(%s)", variable ? variable->name : "<END>");
 
@@ -2045,6 +2098,29 @@ DECL_OPC_FUN(opc_list)
 			}
 
 			break;
+
+		case ENT_ILLIST_MOB_GROUP:
+			log_stringf("opc_list: list type ENT_ILLIST_MOB_GROUP");
+			ch = (CHAR_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+			if(ch) {
+				if(!IS_NPC(ch))
+					log_stringf("opc_list: player(%s,%ld,%ld)", ch->name, ch->id[0], ch->id[1]);
+				else
+					log_stringf("opc_list: mobile(%ld,%ld,%ld)", ch->pIndexData->vnum, ch->id[0], ch->id[1]);
+			} else
+				log_stringf("opc_list: mobile(<END>)");
+
+			// Set the variable
+			variables_set_mobile(block->info.var,block->loops[lp].var_name,ch);
+
+			if( !ch ) {
+				iterator_stop(&block->loops[lp].d.l.list.it);
+				skip = TRUE;
+				break;
+			}
+
+			break;
+
 		}
 
 		if(skip) {
@@ -4703,10 +4779,30 @@ void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument)
 	if(!(rest = expand_argument(info,argument,&arg)))
 		return;
 
+	// Saves a boolean
+	// Format: BOOL <boolean>
+	// Format: BOOL <number>
+	// Format: BOOL <numerical string>
+	if(!str_cmp(buf,"bool")) {
+		switch(arg.type) {
+		case ENT_BOOLEAN: variables_set_boolean(vars,name,arg.d.boolean); break;
+		case ENT_NUMBER: variables_set_boolean(vars,name,(arg.d.num != 0)); break;
+		case ENT_STRING:
+			if(is_number(arg.d.str))
+				variables_set_boolean(vars,name,(atoi(arg.d.str) != 0));
+			else if(!str_cmp(arg.d.str, "true") || !str_cmp(arg.d.str, "yes") || !str_cmp(arg.d.str, "on"))
+				variables_set_boolean(vars,name,TRUE);
+			else if(!str_cmp(arg.d.str, "false") || !str_cmp(arg.d.str, "no") || !str_cmp(arg.d.str, "off"))
+				variables_set_boolean(vars,name,FALSE);
+
+			break;
+
+		}
+
 	// Saves a number
 	// Format: INTEGER <number>
 	// Format: INTEGER <numerical string>
-	if(!str_cmp(buf,"integer") || !str_cmp(buf,"number")) {
+	} else if(!str_cmp(buf,"integer") || !str_cmp(buf,"number")) {
 		switch(arg.type) {
 		case ENT_NUMBER: variables_set_integer(vars,name,arg.d.num); break;
 		case ENT_STRING:
@@ -5235,6 +5331,13 @@ void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument)
 		if(tokens) token = token_find_match(info,tokens, rest);
 		variables_set_token(vars,name,token);
 
+	// Format: DICE <DICE>
+	} else if(!str_cmp(buf,"DICE")) {
+		switch(arg.type) {
+		case ENT_DICE:   if(arg.d.dice) variables_set_dice(vars,name,arg.d.dice);
+		default: return;
+		}
+
 	// VARIABLE MOBILE NAME
 	// VARIABLE OBJECT NAME
 	// VARIABLE ROOM NAME
@@ -5612,3 +5715,4 @@ long script_flag_value( const struct flag_type *flag_table, char *argument)
     else
 	return NO_FLAG;
 }
+

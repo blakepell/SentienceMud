@@ -1066,11 +1066,11 @@ void show_char_to_char_1(CHAR_DATA * victim, CHAR_DATA * ch)
 			    vuln_bit_name(victim->vuln_flags));
 	    send_to_char(buf, ch);
 
-	    avg = (victim->damage[DICE_NUMBER] * victim->damage[DICE_TYPE])
-		    + (victim->damage[DICE_NUMBER]);
+	    avg = (victim->damage.number * victim->damage.size)
+		    + (victim->damage.number);
 	    avg /= 2;
 
-	    avg += victim->damage[DICE_BONUS];
+	    avg += victim->damage.bonus;
 
 	    sprintf(buf, "{MHealth:{x %s%.0f%%{x {MAverage Damage:{x %ld\n\r",
 			    victim->hit < victim->max_hit / 2 ? "{R" :
