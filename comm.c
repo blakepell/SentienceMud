@@ -3035,7 +3035,7 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 	}
 	}
 
-	act("$n has entered the game.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+	act("$$n has entered the game.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
         MXPSendTag(d,"<VERSION>");
 	for (d2 = descriptor_list; d2 != NULL; d2 = d2->next)
 	{
@@ -3043,7 +3043,7 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 	&& !IS_IMMORTAL(d->character)
 	&& d2->character != ch
 	&& IS_SET(d2->character->comm, COMM_NOTIFY))
-	act("{B$N has entered the game.{x", d2->character, ch, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+	act("{B$$N has entered the game.{x", d2->character, ch, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 	}
 
 	/* Kick chars of wrong align out of their church*/

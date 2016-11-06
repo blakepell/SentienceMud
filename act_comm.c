@@ -331,7 +331,7 @@ void do_ooc(CHAR_DATA *ch, char *argument)
 				else
 					sprintf(msg, "{G%s", buf);
 
-				act_new("{g$n says OOC: {G$t{x", ch, d->character,NULL,NULL,NULL, msg,NULL, TO_VICT,POS_SLEEPING,NULL);
+				act_new("{g$$n says OOC: {G$t{x", ch, d->character,NULL,NULL,NULL, msg,NULL, TO_VICT,POS_SLEEPING,NULL);
 			}
 		}
 	}
@@ -420,7 +420,7 @@ void do_gossip(CHAR_DATA *ch, char *argument)
 					sprintf(msg, "%s {M%s", ch->pcdata->flag, buf);
 				else
 					sprintf(msg, "%s", buf);
-				act_new("{M$n gossips '$t{M'{x", ch, d->character,NULL,NULL,NULL, msg,NULL, TO_VICT,POS_SLEEPING,NULL);
+				act_new("{M$$n gossips '$t{M'{x", ch, d->character,NULL,NULL,NULL, msg,NULL, TO_VICT,POS_SLEEPING,NULL);
 			}
 		}
 	}
@@ -469,7 +469,7 @@ void do_flame(CHAR_DATA *ch, char *argument)
 					sprintf(msg, "%s {r%s", ch->pcdata->flag, buf);
 				else
 					sprintf(msg, "{r%s", buf);
-				act_new("{r({WF{r): $n flames '$t{r'{x", ch, d->character,NULL,NULL,NULL,msg,NULL, TO_VICT,POS_SLEEPING,NULL);
+				act_new("{r({WF{r): $$n flames '$t{r'{x", ch, d->character,NULL,NULL,NULL,msg,NULL, TO_VICT,POS_SLEEPING,NULL);
 			}
 		}
 	}
@@ -588,7 +588,7 @@ void do_music(CHAR_DATA *ch, char *argument)
 				else
 					sprintf(msg, "%s", buf);
 
-				act_new("{Y($n): o/~ $t{x", ch,d->character,NULL,NULL,NULL, msg,NULL,TO_VICT,POS_SLEEPING,NULL);
+				act_new("{Y($$n): o/~ $t{x", ch,d->character,NULL,NULL,NULL, msg,NULL,TO_VICT,POS_SLEEPING,NULL);
 			}
 		}
 	}
@@ -615,7 +615,7 @@ void do_immtalk(CHAR_DATA *ch, char *argument)
 		for (d = descriptor_list; d; d = d->next) {
 			if (d->connected == CON_PLAYING && IS_IMMORTAL(d->character) &&
 				!IS_SET(d->character->comm,COMM_NOWIZ))
-				act_new("{B[{G$n{B]: $t{x",ch,d->character,NULL,NULL,NULL,argument,NULL,TO_VICT,POS_DEAD,NULL);
+				act_new("{B[{G$$n{B]: $t{x",ch,d->character,NULL,NULL,NULL,argument,NULL,TO_VICT,POS_DEAD,NULL);
 		}
 	}
 }
@@ -897,9 +897,12 @@ void do_tell(CHAR_DATA *ch, char *argument)
 	{
 		act("$N has lost $S link... try again later.", ch,victim,NULL, NULL, NULL, NULL, NULL,TO_CHAR);
 
-		if (!IS_NPC(ch) && ch->pcdata->flag != NULL && SHOW_CHANNEL_FLAG(victim, FLAG_TELLS))
-			sprintf(msg, "{R%s tells you '%s {R%s'{x\n\r", pers(ch, victim), ch->pcdata->flag, buf);
-		else
+		if (!IS_NPC(ch)) {
+				if(ch->pcdata->flag != NULL && SHOW_CHANNEL_FLAG(victim, FLAG_TELLS))
+					sprintf(msg, "{R%s tells you '%s {R%s'{x\n\r", ch->name, ch->pcdata->flag, buf);
+				else
+					sprintf(msg, "{R%s tells you '%s'{x\n\r", ch->name, buf);
+		} else
 			sprintf(msg, "{R%s tells you '%s'{x\n\r", pers(ch, victim), buf);
 
 		msg[2] = UPPER(msg[2]);
@@ -918,13 +921,16 @@ void do_tell(CHAR_DATA *ch, char *argument)
 
 	if (IS_SET(victim->comm,COMM_AFK))
 	{
-		if (!IS_NPC(ch) && ch->pcdata->flag != NULL && SHOW_CHANNEL_FLAG(victim, FLAG_TELLS))
-			sprintf(msg, "{R%s tells you '%s {R%s'{x\n\r", pers(ch, victim), ch->pcdata->flag, buf);
-		else
+		if (!IS_NPC(ch)) {
+				if(ch->pcdata->flag != NULL && SHOW_CHANNEL_FLAG(victim, FLAG_TELLS))
+					sprintf(msg, "{R%s tells you '%s {R%s'{x\n\r", ch->name, ch->pcdata->flag, buf);
+				else
+					sprintf(msg, "{R%s tells you '%s'{x\n\r", ch->name, buf);
+		} else
 			sprintf(msg, "{R%s tells you '%s'{x\n\r", pers(ch, victim), buf);
 
 		msg[2] = UPPER(msg[2]);
-			add_buf(victim->pcdata->buffer,msg);
+		add_buf(victim->pcdata->buffer,msg);
 
 		sprintf(buf, "{R$E is AFK, and has been idle for %d minutes.{x", victim->timer);
 		act(buf, ch,victim,NULL, NULL, NULL, NULL, NULL,TO_CHAR);
@@ -941,9 +947,12 @@ void do_tell(CHAR_DATA *ch, char *argument)
 
 	send_to_char(msg, ch);
 
-	if (!IS_NPC(victim) && !IS_NPC(ch) && ch->pcdata->flag != NULL && IS_SET(victim->pcdata->channel_flags, FLAG_TELLS))
-		sprintf(msg, "{R%s tells you '%s {R%s'{x\n\r", pers(ch, victim), ch->pcdata->flag, buf);
-	else
+	if (!IS_NPC(ch)) {
+			if(ch->pcdata->flag != NULL && SHOW_CHANNEL_FLAG(victim, FLAG_TELLS))
+				sprintf(msg, "{R%s tells you '%s {R%s'{x\n\r", ch->name, ch->pcdata->flag, buf);
+			else
+				sprintf(msg, "{R%s tells you '%s'{x\n\r", ch->name, buf);
+	} else
 		sprintf(msg, "{R%s tells you '%s'{x\n\r", pers(ch, victim), buf);
 
 	msg[2] = UPPER(msg[2]);
@@ -1209,7 +1218,7 @@ void do_quit(CHAR_DATA *ch, char *argument)
 	send_to_char(
 	"{MWe hope you enjoyed your stay and see you again soon!{x\n\r", ch);
 
-	act("$n has left the game.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+	act("$$n has left the game.", ch, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
 	sprintf(log_buf, "%s has quit.", ch->name);
 
@@ -1839,7 +1848,7 @@ void do_gtell(CHAR_DATA *ch, char *argument)
 	while(( gch = (CHAR_DATA *)iterator_nextdata(&it)))
 	{
 		if (is_same_group(gch, ch)) {
-			act_new("{C$n tells the group '$t'{x", ch,gch,NULL,NULL,NULL,argument,NULL,TO_VICT,POS_SLEEPING,NULL);
+			act_new("{C$$n tells the group '$t'{x", ch,gch,NULL,NULL,NULL,argument,NULL,TO_VICT,POS_SLEEPING,NULL);
 			if (gch != ch)
 				another_person = TRUE;
 		}
@@ -2673,7 +2682,7 @@ void do_quote(CHAR_DATA *ch, char *argument)
 	sprintf(msg, "%s {W%s", ch->pcdata->flag, buf);
 	else
 	sprintf(msg, "%s", buf);
-	act_new("{x$n quotes {D\"{W$t{D\"{x", ch, d->character,NULL,NULL,NULL, msg,NULL, TO_VICT,POS_SLEEPING,NULL);
+	act_new("{x$$n quotes {D\"{W$t{D\"{x", ch, d->character,NULL,NULL,NULL, msg,NULL, TO_VICT,POS_SLEEPING,NULL);
 	}
 	}
 	}
