@@ -3706,6 +3706,7 @@ void act_new(char *format, CHAR_DATA *ch,
     char 		fname[ MAX_INPUT_LENGTH  ];
     bool		fColour = FALSE;
     bool		to_upper = FALSE;
+    bool		see_all;
 
 
     /*
@@ -3771,7 +3772,16 @@ void act_new(char *format, CHAR_DATA *ch,
                 continue;
             }
 	    fColour = TRUE;
+	    see_all = FALSE;
             ++str;
+
+            if( *str == '$' )
+            {
+				see_all = TRUE;
+	            ++str;
+			}
+
+
 
 //            if (!arg2 && *str >= 'A' && *str <= 'Z')
 //            {
@@ -3783,25 +3793,29 @@ void act_new(char *format, CHAR_DATA *ch,
                 switch (*str)
                 {
                 default:  bug("Act: bad code %d.", *str);
-                          i = " <@@@> ";                                break;
+                          i = " <@@@> ";
+                          break;
                 /* Thx alex for 't' idea */
                 case 't': if (arg1) i = (char *) arg1;
                           else bug("Act: bad code $t for 'arg1'",0);
                           break;
                 case 'T': if (arg2) i = (char *) arg2;
-			      else bug("Act: bad code $T for 'arg2'",0);
+                          else bug("Act: bad code $T for 'arg2'",0);
                           break;
                 case 'n': if (ch&&to) {
-			    if (to->tot_level >= 150 && !IS_NPC(ch))
-				i = ch->name;
-			    else
-				i = pers(ch,  to );
-		/*          if (to_upper && i != NULL)*/
-		/*		*i[0] = UPPER(i[0]);*/
+                          if (see_all || (to->tot_level >= 150 && !IS_NPC(ch)))
+							i = ch->name;
+                          else
+							i = pers(ch,  to );
                           }
                           else bug("Act: bad code $n for 'ch' or 'to'",0);
                           break;
-                case 'N': if (vch&&to) i = pers(vch, to );
+                case 'N': if (vch&&to) {
+                          if (see_all || (to->tot_level >= 150 && !IS_NPC(vch)))
+							i = vch->name;
+                          else
+							i = pers(vch,  to );
+                          }
                           else bug("Act: bad code $N for 'ch' or 'to'",0);
                           break;
                 case 'e': if (ch) i = he_she  [URANGE(0, ch  ->sex, 2)];
@@ -3823,13 +3837,13 @@ void act_new(char *format, CHAR_DATA *ch,
                           else bug("Act: bad code $S for 'ch'",0);
                           break;
 
-                case 'p': if (to&&obj1) i = can_see_obj(to, obj1)
+                case 'p': if (to&&obj1) i = (see_all || can_see_obj(to, obj1))
                             ? obj1->short_descr
                             : "something";
                           else bug("Act: bad code $p for 'to' or 'obj1'",0);
                     break;
 
-                case 'P': if (to&&obj2) i = can_see_obj(to, obj2)
+                case 'P': if (to&&obj2) i = (see_all || can_see_obj(to, obj2))
                             ? obj2->short_descr
                             : "something";
                           else bug("Act: bad code $P for 'to' or 'obj2'",0);
