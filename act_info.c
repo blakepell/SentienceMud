@@ -103,6 +103,7 @@ char *const where_name[] = {
     "{c<left shoulder>       {x",
     "{c<right shoulder>      {x",
     "{c<back>                {x",
+    "{Y<tabard>              {x",
 
 };
 
@@ -143,8 +144,8 @@ int wear_params[MAX_WEAR][7] = {
 	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE }, // Arm Tattoo
 	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE }, // Leg Tattoo
 	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE }, // Leg Tattoo
-	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE }, // Loged in Head
-	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE }, // Loged in Body
+	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE }, // Lodged in Head
+	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE }, // Lodged in Body
 	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE }, // Lodged in Arm
 	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE }, // Lodged in Arm
 	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE }, // Lodged in Leg
@@ -152,13 +153,14 @@ int wear_params[MAX_WEAR][7] = {
 	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE }, // Entangled
 	{ FALSE,	FALSE,		TRUE,		FALSE,		FALSE,		TRUE,		TRUE },  // Concealed
 	{ TRUE,		FALSE,		TRUE,		TRUE,		FALSE,		FALSE,		TRUE },  // Floating
-        { TRUE,         FALSE,          FALSE,          FALSE,          TRUE,           FALSE,          FALSE }, // Arm Tattoo
-        { TRUE,         FALSE,          FALSE,          FALSE,          TRUE,           FALSE,          FALSE }, // Arm Tattoo
-        { TRUE,         FALSE,          FALSE,          FALSE,          TRUE,           FALSE,          FALSE }, // Leg Tattoo
-        { TRUE,         FALSE,          FALSE,          FALSE,          TRUE,           FALSE,          FALSE }, // Leg Tattoo
-        { TRUE,         FALSE,          FALSE,          FALSE,          TRUE,           FALSE,          FALSE }, // Shoulder Tattoo
-        { TRUE,         FALSE,          FALSE,          FALSE,          TRUE,           FALSE,          FALSE }, // Shoulder Tattoo
-        { TRUE,         FALSE,          FALSE,          FALSE,          TRUE,           FALSE,          FALSE }  // BACK Tattoo
+	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE }, // Arm Tattoo
+	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE }, // Arm Tattoo
+	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE }, // Leg Tattoo
+	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE }, // Leg Tattoo
+	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE }, // Shoulder Tattoo
+	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE }, // Shoulder Tattoo
+	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE }, // BACK Tattoo
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Tabard
 
 
 };
@@ -208,13 +210,14 @@ int wear_concealed[] = {
 	WEAR_NONE,
 	WEAR_NONE,
 	WEAR_NONE,
-        WEAR_ARMS,
-        WEAR_ARMS,
-        WEAR_LEGS,
-        WEAR_LEGS,
-        WEAR_NONE,
-        WEAR_NONE,
-        WEAR_NONE,
+	WEAR_ARMS,
+	WEAR_ARMS,
+	WEAR_LEGS,
+	WEAR_LEGS,
+	WEAR_NONE,
+	WEAR_NONE,
+	WEAR_NONE,
+	WEAR_NONE,
 
 };
 
@@ -257,6 +260,7 @@ int wear_view_order[] = {
 	WEAR_ANKLE_R,
 	WEAR_FEET,
 	WEAR_ABOUT,
+	WEAR_TABARD,
 	WEAR_WAIST,
 	WEAR_SHIELD,
 	WEAR_WIELD,

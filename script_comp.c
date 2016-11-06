@@ -393,6 +393,17 @@ char *compile_entity(char *str,int type, char **store)
 			*p++ = ENTITY_VAR_STR;
 			next_ent = ENT_STRING;
 
+		} else if(ent == ENT_BITVECTOR) {
+			if(suffix[0]) {
+				sprintf(buf,"Line %d: type suffix is only allowed for variable fields.", compile_current_line);
+				compile_error_show(buf);
+				return NULL;
+			}
+			if(!compile_variable(field,&p,type,FALSE,TRUE))
+				return NULL;
+			*p++ = ENTITY_VAR_BOOLEAN;
+			next_ent = ENT_BOOLEAN;
+
 		// Is this a variable call?
 		} else if(suffix[0]) {
 			if(script_entity_allow_vars(ent)) {

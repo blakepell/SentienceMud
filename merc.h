@@ -2273,33 +2273,34 @@ struct affliction_type {
 /*
  * Wear flags.
  */
-#define ITEM_TAKE		(A)
-#define ITEM_WEAR_FINGER	(B)
-#define ITEM_WEAR_NECK		(C)
-#define ITEM_WEAR_BODY		(D)
-#define ITEM_WEAR_HEAD		(E)
-#define ITEM_WEAR_LEGS		(F)
-#define ITEM_WEAR_FEET		(G)
-#define ITEM_WEAR_HANDS		(H)
-#define ITEM_WEAR_ARMS		(I)
-#define ITEM_WEAR_SHIELD	(J)
-#define ITEM_WEAR_ABOUT		(K)
-#define ITEM_WEAR_WAIST		(L)
-#define ITEM_WEAR_WRIST		(M)
-#define ITEM_WIELD		(N)
-#define ITEM_HOLD		(O)
-#define ITEM_NO_SAC		(P)
-#define ITEM_WEAR_FLOAT		(Q)
+#define ITEM_TAKE				(A)
+#define ITEM_WEAR_FINGER		(B)
+#define ITEM_WEAR_NECK			(C)
+#define ITEM_WEAR_BODY			(D)
+#define ITEM_WEAR_HEAD			(E)
+#define ITEM_WEAR_LEGS			(F)
+#define ITEM_WEAR_FEET			(G)
+#define ITEM_WEAR_HANDS			(H)
+#define ITEM_WEAR_ARMS			(I)
+#define ITEM_WEAR_SHIELD		(J)
+#define ITEM_WEAR_ABOUT			(K)
+#define ITEM_WEAR_WAIST			(L)
+#define ITEM_WEAR_WRIST			(M)
+#define ITEM_WIELD				(N)
+#define ITEM_HOLD				(O)
+#define ITEM_NO_SAC				(P)
+#define ITEM_WEAR_FLOAT			(Q)
 #define ITEM_WEAR_RING_FINGER   (R)
-#define ITEM_WEAR_BACK		(S)
-#define ITEM_WEAR_SHOULDER	(T)
-#define ITEM_WEAR_FACE		(U)
-#define ITEM_WEAR_EYES		(V)
-#define ITEM_WEAR_EAR		(W)
-#define ITEM_WEAR_ANKLE		(X)
-#define ITEM_CONCEALS		(Y)
+#define ITEM_WEAR_BACK			(S)
+#define ITEM_WEAR_SHOULDER		(T)
+#define ITEM_WEAR_FACE			(U)
+#define ITEM_WEAR_EYES			(V)
+#define ITEM_WEAR_EAR			(W)
+#define ITEM_WEAR_ANKLE			(X)
+#define ITEM_CONCEALS			(Y)
+#define ITEM_WEAR_TABARD		(Z)
 
-#define ITEM_NONWEAR		(ITEM_TAKE|ITEM_NO_SAC|ITEM_CONCEALS)
+#define ITEM_NONWEAR			(ITEM_TAKE|ITEM_NO_SAC|ITEM_CONCEALS)
 
 
 /* trade items */
@@ -2824,7 +2825,8 @@ enum {
 #define WEAR_TATTOO_SHOULDER_L	47
 #define WEAR_TATTOO_SHOULDER_R	48
 #define WEAR_TATTOO_BACK	49
-#define MAX_WEAR		50
+#define WEAR_TABARD			50
+#define MAX_WEAR		51
 
 /*
  * Conditions.
@@ -4097,6 +4099,7 @@ struct	obj_data
     char *		short_descr;
     char *		description;
     char *		full_description;
+    char *		old_name;
     char *		old_short_descr;
     char *		old_description;
     char *		old_full_description;
@@ -6541,7 +6544,8 @@ long     number_mm       args( ( void ) );
 long	dice		args( ( int number, int size ) );
 int	interpolate	args( ( int level, int value_00, int value_32 ) );
 void	smash_tilde	args( ( char *str ) );
-int	str_cmp		args( ( const char *astr, const char *bstr ) );
+int	str_cmp				args( ( const char *astr, const char *bstr ) );
+int str_cmp_nocolour	args( ( const char *astr, const char *bstr ) );
 bool	str_prefix	args( ( const char *astr, const char *bstr ) );
 bool	str_infix	args( ( const char *astr, const char *bstr ) );
 bool	str_suffix	args( ( const char *astr, const char *bstr ) );
@@ -6920,7 +6924,8 @@ OD *	get_obj_vnum_carry	args( ( CHAR_DATA *ch, long vnum, CHAR_DATA *viewer ) );
 OD *	get_obj_locker	args( ( CHAR_DATA *ch, char *argument ) );
 OD *	get_obj_wear	args( ( CHAR_DATA *ch, char *argument, bool character ));
 OD *	get_obj_wear_number	args( ( CHAR_DATA *ch, char *argument, int *nth, bool character ));
-OD *	get_obj_inv		args( (CHAR_DATA *ch, char *argument, bool worn));
+OD *	get_obj_inv			args( (CHAR_DATA *ch, char *argument, bool worn));
+OD *	get_obj_inv_only	args( (CHAR_DATA *ch, char *argument, bool worn));
 OD *	get_obj_here	args( ( CHAR_DATA *ch, ROOM_INDEX_DATA *room, char *argument ) );
 OD *	get_obj_here_number	args( ( CHAR_DATA *ch, ROOM_INDEX_DATA *room, char *argument, int *nth ) );
 OD *	get_obj_world	args( ( CHAR_DATA *ch, char *argument ) );

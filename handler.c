@@ -3617,6 +3617,42 @@ OBJ_DATA *get_obj_inv(CHAR_DATA *ch, char *argument, bool worn)
     return obj;
 }
 
+OBJ_DATA *get_obj_inv_only(CHAR_DATA *ch, char *argument, bool worn)
+{
+    OBJ_DATA *obj;
+    char arg[MAX_INPUT_LENGTH];
+    int number;
+    int count;
+
+    if (!ch)
+    {
+		bug("get_obj_inv received NULL ch",0);
+		return NULL;
+	}
+
+    number = number_argument(argument, arg);
+    count = 0;
+
+	if (worn)
+	{
+		if ((obj = get_obj_wear_number(ch, arg, &number, TRUE)) != NULL)
+			return obj;
+
+		if ((obj = get_obj_carry_number(ch, arg, &number, ch)) != NULL)
+			return obj;
+	}
+	else
+	{
+		if ((obj = get_obj_carry_number(ch, arg, &number, ch)) != NULL)
+			return obj;
+
+		if ((obj = get_obj_wear_number(ch, arg, &number, TRUE)) != NULL)
+			return obj;
+	}
+
+    return NULL;
+}
+
 
 /*
  * Find an obj in the world.

@@ -9,6 +9,7 @@
 #include "merc.h"
 #include "scripts.h"
 #include "wilds.h"
+#include "tables.h"
 
 //#define DEBUG_MODULE
 #include "debug.h"
@@ -1748,6 +1749,55 @@ char *expand_entity_mobile(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->type = ENT_DICE;
 		arg->d.dice = arg->d.mob ? &arg->d.mob->damage : NULL;;
 		break;
+
+	case ENTITY_MOB_ACT:
+		arg->type = ENT_BITVECTOR;
+		arg->d.bv.value = arg->d.mob ? arg->d.mob->act : 0;
+		arg->d.bv.table = arg->d.mob ? (IS_NPC(arg->d.mob) ? act_flags : plr_flags) : NULL;
+		break;
+
+	case ENTITY_MOB_ACT2:
+		arg->type = ENT_BITVECTOR;
+		arg->d.bv.value = arg->d.mob ? arg->d.mob->act2 : 0;
+		arg->d.bv.table = arg->d.mob ? (IS_NPC(arg->d.mob) ? act2_flags : plr2_flags) : NULL;
+		break;
+
+	case ENTITY_MOB_AFFECT:
+		arg->type = ENT_BITVECTOR;
+		arg->d.bv.value = arg->d.mob ? arg->d.mob->affected_by : 0;
+		arg->d.bv.table = arg->d.mob ? affect_flags : NULL;
+		break;
+
+	case ENTITY_MOB_AFFECT2:
+		arg->type = ENT_BITVECTOR;
+		arg->d.bv.value = arg->d.mob ? arg->d.mob->affected_by2 : 0;
+		arg->d.bv.table = arg->d.mob ? affect2_flags : NULL;
+		break;
+
+	case ENTITY_MOB_OFF:
+		arg->type = ENT_BITVECTOR;
+		arg->d.bv.value = (arg->d.mob && IS_NPC(arg->d.mob)) ? arg->d.mob->off_flags : 0;
+		arg->d.bv.table = (arg->d.mob && IS_NPC(arg->d.mob)) ? off_flags : NULL;
+		break;
+
+	case ENTITY_MOB_IMMUNE:
+		arg->type = ENT_BITVECTOR;
+		arg->d.bv.value = arg->d.mob ? arg->d.mob->imm_flags : 0;
+		arg->d.bv.table = arg->d.mob ? imm_flags : NULL;
+		break;
+
+	case ENTITY_MOB_RESIST:
+		arg->type = ENT_BITVECTOR;
+		arg->d.bv.value = arg->d.mob ? arg->d.mob->res_flags : 0;
+		arg->d.bv.table = arg->d.mob ? res_flags : NULL;
+		break;
+
+	case ENTITY_MOB_VULN:
+		arg->type = ENT_BITVECTOR;
+		arg->d.bv.value = arg->d.mob ? arg->d.mob->vuln_flags : 0;
+		arg->d.bv.table = arg->d.mob ? vuln_flags : NULL;
+		break;
+
 	default: return NULL;
 	}
 
@@ -1992,6 +2042,19 @@ char *expand_entity_mobile_id(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->d.dice = NULL;
 		break;
 
+	case ENTITY_MOB_ACT:
+	case ENTITY_MOB_ACT2:
+	case ENTITY_MOB_AFFECT:
+	case ENTITY_MOB_AFFECT2:
+	case ENTITY_MOB_OFF:
+	case ENTITY_MOB_IMMUNE:
+	case ENTITY_MOB_RESIST:
+	case ENTITY_MOB_VULN:
+		arg->type = ENT_BITVECTOR;
+		arg->d.bv.value = 0;
+		arg->d.bv.table = NULL;
+		break;
+
 	default: return NULL;
 	}
 
@@ -2081,6 +2144,36 @@ char *expand_entity_object(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		arg->d.objindex = arg->d.obj ? arg->d.obj->pIndexData : NULL;
 		break;
 
+	case ENTITY_OBJ_EXTRA:
+		arg->type = ENT_BITVECTOR;
+		arg->d.bv.value = arg->d.obj ? arg->d.obj->extra_flags : 0;
+		arg->d.bv.table = extra_flags;
+		break;
+
+	case ENTITY_OBJ_EXTRA2:
+		arg->type = ENT_BITVECTOR;
+		arg->d.bv.value = arg->d.obj ? arg->d.obj->extra2_flags : 0;
+		arg->d.bv.table = extra2_flags;
+		break;
+
+	case ENTITY_OBJ_EXTRA3:
+		arg->type = ENT_BITVECTOR;
+		arg->d.bv.value = arg->d.obj ? arg->d.obj->extra3_flags : 0;
+		arg->d.bv.table = extra3_flags;
+		break;
+
+	case ENTITY_OBJ_EXTRA4:
+		arg->type = ENT_BITVECTOR;
+		arg->d.bv.value = arg->d.obj ? arg->d.obj->extra4_flags : 0;
+		arg->d.bv.table = extra4_flags;
+		break;
+
+	case ENTITY_OBJ_WEAR:
+		arg->type = ENT_BITVECTOR;
+		arg->d.bv.value = arg->d.obj ? arg->d.obj->wear_flags : 0;
+		arg->d.bv.table = wear_flags;
+		break;
+
 	case ENTITY_OBJ_VARIABLES:
 		arg->type = ENT_ILLIST_VARIABLE;
 		arg->d.variables = (arg->d.obj && arg->d.obj->progs) ? &arg->d.obj->progs->vars : NULL;
@@ -2166,6 +2259,16 @@ char *expand_entity_object_id(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 	case ENTITY_OBJ_INDEX:
 		arg->type = ENT_OBJINDEX;
 		arg->d.objindex = NULL;
+		break;
+
+	case ENTITY_OBJ_EXTRA:
+	case ENTITY_OBJ_EXTRA2:
+	case ENTITY_OBJ_EXTRA3:
+	case ENTITY_OBJ_EXTRA4:
+	case ENTITY_OBJ_WEAR:
+		arg->type = ENT_BITVECTOR;
+		arg->d.bv.value = 0;
+		arg->d.bv.table = NULL;
 		break;
 
 	case ENTITY_OBJ_VARIABLES:
@@ -4374,6 +4477,39 @@ char *expand_entity_extradesc(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 	return str+1;
 }
 
+char *expand_entity_bitvector(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
+{
+	char buf[MSL];
+	switch(*str) {
+	case ESCAPE_VARIABLE:
+		arg->type = ENT_BOOLEAN;
+
+		if(arg->d.bv.table && arg->d.bv.value)
+		{
+			int bit;
+			str = expand_name(info,(info?*(info->var):NULL),str+1,buf);
+			if(!str) {
+				arg->d.boolean = FALSE;
+				return NULL;
+			}
+
+
+			bit = flag_lookup(buf, arg->d.bv.table);
+
+			arg->d.boolean = IS_SET(arg->d.bv.value, bit) && TRUE;
+		}
+		else
+		{
+			arg->d.boolean = FALSE;
+		}
+		break;
+	default: return NULL;
+	}
+
+	return str+1;
+}
+
+
 char *expand_argument_entity(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 {
 	char *next;
@@ -4439,6 +4575,7 @@ char *expand_argument_entity(SCRIPT_VARINFO *info,char *str,SCRIPT_PARAM *arg)
 		case ENT_GROUP:			next = expand_entity_group(info,str,arg); break;
 		case ENT_DICE:			next = expand_entity_dice(info,str,arg); break;
 		case ENT_OBJINDEX:		next = expand_entity_objindex(info,str,arg); break;
+		case ENT_BITVECTOR:		next = expand_entity_bitvector(info,str,arg); break;
 		case ENT_NULL:
 			next = str+1;
 			arg->type = ENT_NULL;
@@ -4788,6 +4925,15 @@ char *expand_string_variable(SCRIPT_VARINFO *info,char *str,char **store)
 //		}
 
 		switch(var->type) {
+		case VAR_BOOLEAN:
+			if(var->_.boolean) {
+				strcpy(*store,"true");
+				*store += 4;
+			} else {
+				strcpy(*store,"false");
+				*store += 5;
+			}
+			break;
 		case VAR_INTEGER:
 			*store += sprintf(*store,"%d",var->_.i); break;
 		case VAR_STRING:

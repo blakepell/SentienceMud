@@ -2063,6 +2063,8 @@ void fwrite_obj_new(CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest)
         fprintf(fp, "Fixed %d\n",      obj->times_fixed	    );
     if (obj->owner != NULL)
 	fprintf(fp, "Owner %s~\n",      obj->owner            );
+    if (obj->old_name != NULL)
+	fprintf(fp, "OldName %s~\n",   obj->old_name  );
     if (obj->old_short_descr != NULL)
 	fprintf(fp, "OldShort %s~\n",   obj->old_short_descr  );
     if (obj->old_description != NULL)
@@ -2823,6 +2825,7 @@ OBJ_DATA *fread_obj_new(FILE *fp)
 	    KEY("Owner",	obj->owner,	       fread_string(fp));
 	    KEY("OwnerName",	obj->owner_name,	       fread_string(fp));
 	    KEY("OwnerShort",	obj->owner_short,	       fread_string(fp));
+	    KEY("OldName",	obj->old_name,  fread_string(fp));
 	    KEY("OldShort",	obj->old_short_descr,  fread_string(fp));
 	    KEY("OldDescr",	obj->old_description,  fread_string(fp));
 	    KEY("OldFullDescr", obj->old_full_description, fread_string(fp));

@@ -2412,6 +2412,7 @@ OBJ_DATA *create_object_noid(OBJ_INDEX_DATA *pObjIndex, int level, bool affects)
 	obj->full_description = str_dup(pObjIndex->full_description);
     else
 	obj->full_description = str_dup(pObjIndex->description);
+    obj->old_name 	= NULL;
     obj->old_short_descr 	= NULL;
     obj->old_description        = NULL;
     obj->loaded_by      = NULL;
@@ -3748,6 +3749,39 @@ int str_cmp(const char *astr, const char *bstr)
 	    return ch;
     }
 
+    return 0;
+}
+
+// str_cmp, ignoring color codes
+int str_cmp_nocolour(const char *astr, const char *bstr)
+{
+	char *ncastr, *ncbstr, *nca, *ncb;
+    char ch;
+    if (astr == NULL)
+    {
+	bug("Str_cmp: null astr.", 0);
+	return -1;
+    }
+
+    if (bstr == NULL)
+    {
+	bug("Str_cmp: null bstr.", 0);
+	return 1;
+    }
+
+    nca = ncastr = nocolour(astr);
+    ncb = ncbstr = nocolour(bstr);
+
+    for (; *ncastr || *ncbstr; ncastr++, ncbstr++) {
+		if ((ch = (LOWER(*ncastr) - LOWER(*ncbstr)))) {
+			free_string(nca);
+			free_string(ncb);
+		    return ch;
+		}
+    }
+
+	free_string(nca);
+	free_string(ncb);
     return 0;
 }
 
@@ -5095,6 +5129,7 @@ void persist_save_object(FILE *fp, OBJ_DATA *obj, bool multiple)
 	fprintf(fp, "Fixed %d\n", obj->times_fixed);		// **
 
 	if (obj->owner)			fprintf(fp, "Owner %s~\n", obj->owner);				// **
+	if (obj->old_name)	fprintf(fp, "OldName %s~\n", obj->old_name);		// **
 	if (obj->old_short_descr)	fprintf(fp, "OldShort %s~\n", obj->old_short_descr);		// **
 	if (obj->old_description)	fprintf(fp, "OldDescr %s~\n", obj->old_description);		// **
 	if (obj->old_full_description)	fprintf(fp, "OldFullDescr %s~\n", obj->old_full_description);	// **
@@ -6177,6 +6212,7 @@ OBJ_DATA *persist_load_object(FILE *fp)
 			case 'O':
 				KEY("OldDescr",		obj->old_description,		fread_string(fp));
 				KEY("OldFullDescr",	obj->old_full_description,	fread_string(fp));
+				KEY("OldName",		obj->old_name,				fread_string(fp));
 				KEY("OldShort",		obj->old_short_descr,		fread_string(fp));
 				KEY("Owner",		obj->owner,					fread_string(fp));
 				KEY("OwnerName",	obj->owner_name,			fread_string(fp));

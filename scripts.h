@@ -424,6 +424,7 @@ enum entity_type_enum {
 	ENT_VARIABLE,
 	ENT_GROUP,
 	ENT_DICE,
+	ENT_BITVECTOR,
 
 	ENT_MOBINDEX,
 	ENT_OBJINDEX,
@@ -536,6 +537,7 @@ enum entity_variable_types_enum {
 	ENTITY_VAR_CHURCH,
 	ENTITY_VAR_VARIABLE,
 	ENTITY_VAR_DICE,
+	ENTITY_VAR_BOOLEAN,
 
 	ENTITY_VAR_BLLIST_ROOM,
 	ENTITY_VAR_BLLIST_MOB,
@@ -685,6 +687,14 @@ enum entity_mobile_enum {
 	ENTITY_MOB_GROUP,
 	ENTITY_MOB_DAMAGEDICE,
 	ENTITY_MOB_INDEX,
+	ENTITY_MOB_ACT,
+	ENTITY_MOB_ACT2,
+	ENTITY_MOB_AFFECT,
+	ENTITY_MOB_AFFECT2,
+	ENTITY_MOB_OFF,
+	ENTITY_MOB_IMMUNE,
+	ENTITY_MOB_RESIST,
+	ENTITY_MOB_VULN,
 };
 
 enum entity_object_enum {
@@ -707,6 +717,11 @@ enum entity_object_enum {
 	ENTITY_OBJ_AFFECTS,
 	ENTITY_OBJ_VARIABLES,
 	ENTITY_OBJ_INDEX,
+	ENTITY_OBJ_EXTRA,
+	ENTITY_OBJ_EXTRA2,
+	ENTITY_OBJ_EXTRA3,
+	ENTITY_OBJ_EXTRA4,
+	ENTITY_OBJ_WEAR,
 };
 
 enum entity_room_enum {
@@ -1258,6 +1273,10 @@ struct script_parameter {
 			int y;
 			int door;
 		} wdoor;
+		struct {
+			long value;
+			const struct flag_type *table;
+		} bv;
 		DICE_DATA *dice;
 		VARIABLE **variables;
 		LLIST *blist;

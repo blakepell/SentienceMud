@@ -1327,6 +1327,7 @@ const struct flag_type wear_flags[] =
     {   "ear",			ITEM_WEAR_EAR,		TRUE	},
     {   "ankle",		ITEM_WEAR_ANKLE,	TRUE	},
     {   "conceals",		ITEM_CONCEALS,		TRUE	},
+    {	"tabard",		ITEM_WEAR_TABARD,	TRUE	},
     {	NULL,			0,			0	}
 };
 

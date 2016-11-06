@@ -2044,6 +2044,7 @@ void do_restring(CHAR_DATA *ch, char *argument)
     char arg2[MAX_STRING_LENGTH];
     char buf[MAX_STRING_LENGTH];
     long cost;
+    bool norestring = FALSE;
 
     argument = one_argument(argument, arg1);
     argument = one_argument(argument, arg2);
@@ -2060,109 +2061,124 @@ void do_restring(CHAR_DATA *ch, char *argument)
         return;
     }
 
-    if (arg1[0] == '\0' || arg2[0] == '\0'
-    || (argument[0] == '\0' && str_cmp(arg2, "desc")))
+    if (arg1[0] == '\0' || arg2[0] == '\0' || (argument[0] == '\0' && str_cmp(arg2, "desc")))
     {
-	send_to_char("Syntax: restring item short <new name>\n\r", ch);
-	send_to_char("        restring item long  <new name>\n\r", ch);
-	send_to_char("        restring item desc  (for the description)\n\r", ch);
+		send_to_char("Syntax: restring item short <new name>\n\r", ch);
+		send_to_char("        restring item long  <new name>\n\r", ch);
+		send_to_char("        restring item desc  (for the description)\n\r", ch);
         return;
     }
 
     if (str_cmp(arg2, "desc") && strlen_no_colours(argument) < 5)
     {
-	act("{R$N tells you, 'Surely you can think of a better name than that! It's too short!'{x", ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
-	return;
+		act("{R$N tells you, 'Surely you can think of a better name than that! It's too short!'{x", ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		return;
     }
 
-    if ((obj = get_obj_carry(ch, arg1, ch)) == NULL)
+    if ((obj = get_obj_inv_only(ch, arg1, TRUE)) == NULL)
     {
-	act("{R$N tells you, 'You don't have that item.'{x", ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
-	return;
+		act("{R$N tells you, 'You don't have that item.'{x", ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		return;
     }
 
-    if (IS_SET(obj->extra_flags, ITEM_NORESTRING))
+    if (IS_SET(obj->extra_flags, ITEM_NORESTRING) || CAN_WEAR(obj, ITEM_WEAR_TABARD))
     {
-    	act("{R$N tells you, 'Sorry, but you can't restring $p.'{x", ch, mob, NULL, obj, NULL, NULL, NULL, TO_CHAR);
-	return;
+		// Allow color changes to SHORTS on NORESTRING.
+		if( str_cmp(arg2, "short") || str_cmp_nocolour(obj->short_descr, argument)) {
+	    	act("{R$N tells you, 'Sorry, but you can't restring $p.'{x", ch, mob, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+			return;
+		}
+
+    	norestring = TRUE;
     }
 
     cost = 99 + UMAX(1, obj->pIndexData->cost/ 1000 + obj->level / 10);
     if ((ch->gold * 100 + ch->silver) < cost)
     {
-	sprintf(buf, "{R$N tells you, 'You don't have enough money. It would cost %ld silver coins to restring it.'{x", cost);
- 	act (buf, ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		sprintf(buf, "{R$N tells you, 'You don't have enough money. It would cost %ld silver coins to restring it.'{x", cost);
+	 	act (buf, ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
         return;
     }
 
     if (!str_cmp(arg2, "long"))
     {
-        if (obj->old_description == NULL)
-	    obj->old_description = obj->description;
+		if (obj->old_description == NULL)
+			obj->old_description = obj->description;
+		else
+			free_string(obj->description);	// The object has already been restrung
 
-	act("You give $p to $N.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_CHAR);
-	act("$n gives $p to $N.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_ROOM);
+		act("You give $p to $N.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+		act("$n gives $p to $N.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 
-	act("$n spins a 360 on $s heel.", mob, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+		act("$n spins a 360 on $s heel.", mob, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+		strcat(argument, "{x");
 
-	strcat(argument, "{x");
-        obj->description = str_dup(argument);
+		obj->description = str_dup(argument);
+		act("$N gives you $p.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+		act("$N gives $n $p.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 
-	act("$N gives you $p.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_CHAR);
-	act("$N gives $n $p.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_ROOM);
+		sprintf(buf, "The long description has been changed to %s\n\r", obj->description);
+		send_to_char(buf, ch);
 
-        sprintf(buf, "The long description has been changed to %s\n\r", obj->description);
-	send_to_char(buf, ch);
+		do_say(mob, "Nice doin' business with ya bub.");
 
-	do_say(mob, "Nice doin' business with ya bub.");
+		deduct_cost(ch, cost);
+		return;
+	}
 
-	deduct_cost(ch, cost);
-        return;
-    }
+	if (!str_cmp("short", arg2))
+	{
+		act("You give $p to $N.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+		act("$n gives $p to $N.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_ROOM);
+		act("$n spins a 360 on $s heel.", mob, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
-    if (!str_cmp("short", arg2))
-    {
-	act("You give $p to $N.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_CHAR);
-	act("$n gives $p to $N.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_ROOM);
-	act("$n spins a 360 on $s heel.", mob, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+		if (obj->old_short_descr == NULL)
+			obj->old_short_descr = obj->short_descr;
+		else
+			free_string(obj->short_descr);	// The object has already been restrung
 
-	if (obj->old_short_descr == NULL)
-	    obj->old_short_descr = obj->short_descr;
+		strcat(argument, "{x");
 
-	strcat(argument, "{x");
+		obj->short_descr = str_dup(argument);
+		act("$N gives you $p.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+		act("$N gives $n $p.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 
-        obj->short_descr = str_dup(argument);
-	act("$N gives you $p.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_CHAR);
-	act("$N gives $n $p.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_ROOM);
+		sprintf(buf, "The short description has been changed to %s\n\r",
+			obj->short_descr);
+		send_to_char(buf, ch);
 
-	sprintf(buf, "The short description has been changed to %s\n\r",
-		obj->short_descr);
-	send_to_char(buf, ch);
+		do_say(mob, "Nice doin' business with ya bub.");
 
-	do_say(mob, "Nice doin' business with ya bub.");
+		deduct_cost(ch, cost);
 
-	deduct_cost(ch, cost);
+		// NORESTRING objects PRESERVE the name.
+		if (!norestring) {
+			if (obj->old_name == NULL)
+				obj->old_name = obj->name;
+			else
+				free_string(obj->name);	// The object has already been restrung
 
-	free_string(obj->name);
-	obj->name = short_to_name(obj->short_descr);
-	return;
+			obj->name = short_to_name(obj->short_descr);
+		}
+		return;
     }
 
     if (!str_cmp(arg2, "desc"))
     {
-	act("You give $p to $N.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_CHAR);
-	act("$n gives $p to $N.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_ROOM);
-	act("$n spins a 360 on $s heel.", mob, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
+		act("You give $p to $N.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+		act("$n gives $p to $N.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_ROOM);
+		act("$n spins a 360 on $s heel.", mob, NULL, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
 
-	if (obj->old_short_descr == NULL)
-	    obj->old_full_description = obj->full_description;
+		if (obj->old_short_descr == NULL)
+			obj->old_full_description = obj->full_description;
+		else
+			free_string(obj->full_description);
 
-	free_string(obj->full_description);
-	obj->full_description = str_dup("");
-	string_append(ch, &obj->full_description);
+		obj->full_description = str_dup("");
+		string_append(ch, &obj->full_description);
 
-	deduct_cost(ch, cost);
-	return;
+		deduct_cost(ch, cost);
+		return;
     }
 
     send_to_char("Syntax: restring item short <new name>\n\r", ch);
@@ -2206,17 +2222,16 @@ void do_unrestring(CHAR_DATA *ch, char *argument)
         return;
     }
 
-    if ((obj = get_obj_carry(ch, arg, ch)) == NULL)
+    if ((obj = get_obj_inv_only(ch, arg, TRUE)) == NULL)
     {
-	act("{R$N tells you, 'You don't have that item.'{x",
-		ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
-	return;
+		act("{R$N tells you, 'You don't have that item.'{x", ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+		return;
     }
 
-    if (obj->item_type == ITEM_SCROLL || obj->item_type == ITEM_POTION) {
-	act("You cannot unrestring $p without destroying it.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
-	return;
-    }
+    //if (obj->item_type == ITEM_SCROLL || obj->item_type == ITEM_POTION) {
+	//	act("You cannot unrestring $p without destroying it.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+	//	return;
+    //}
 
     act("You hand $p to $N.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_CHAR);
     act("$n hands $p to $N.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_ROOM);
@@ -2224,20 +2239,34 @@ void do_unrestring(CHAR_DATA *ch, char *argument)
     act("$N tinkers with $p.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 
     cost = 500;
-    free_string(obj->name);
-    free_string(obj->short_descr);
-    free_string(obj->description);
-    free_string(obj->full_description);
-    free_string(obj->old_short_descr);
-    free_string(obj->old_description);
-    free_string(obj->old_full_description);
-    obj->old_short_descr = NULL;
-    obj->old_description = NULL;
-    obj->old_full_description = NULL;
-    obj->name = str_dup(obj->pIndexData->name);
-    obj->short_descr = str_dup(obj->pIndexData->short_descr);
-    obj->description = str_dup(obj->pIndexData->description);
-    obj->full_description = str_dup(obj->pIndexData->full_description);
+    if( obj->old_name )
+    {
+	    free_string(obj->name);
+	    obj->name = obj->old_name;
+	    obj->old_name = NULL;
+	}
+
+    if( obj->old_short_descr )
+    {
+	    free_string(obj->short_descr);
+	    obj->short_descr = obj->old_short_descr;
+	    obj->old_short_descr = NULL;
+	}
+
+    if( obj->old_description )
+    {
+	    free_string(obj->description);
+	    obj->description = obj->old_description;
+	    obj->old_description = NULL;
+	}
+
+    if( obj->old_full_description )
+    {
+	    free_string(obj->full_description);
+	    obj->full_description = obj->old_full_description;
+	    obj->old_full_description = NULL;
+	}
+
     act("$N gives you $p.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_CHAR);
     act("$N gives $n $p.", ch, mob, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 }
@@ -2886,6 +2915,10 @@ int get_wear_loc(CHAR_DATA *ch, OBJ_DATA *obj)
     if (CAN_WEAR(obj, ITEM_HOLD))
     	return WEAR_HOLD;
 
+    if (CAN_WEAR(obj, ITEM_WEAR_TABARD))
+		return WEAR_TABARD;
+
+
 	return WEAR_NONE;
 }
 
@@ -2999,6 +3032,16 @@ void wear_obj(CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace)
 		act("$n wears $p on $s torso.",   ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
 		act("You wear $p on your torso.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
 		equip_char(ch, obj, WEAR_BODY);
+		return;
+    }
+
+    if (CAN_WEAR(obj, ITEM_WEAR_TABARD))
+    {
+		if (!remove_obj(ch, WEAR_TABARD, fReplace))
+			return;
+		act("$n drapes $p down the front of $s torso.",   ch, NULL, NULL, obj, NULL, NULL, NULL, TO_ROOM);
+		act("You drape $p down the front of your torso.", ch, NULL, NULL, obj, NULL, NULL, NULL, TO_CHAR);
+		equip_char(ch, obj, WEAR_TABARD);
 		return;
     }
 

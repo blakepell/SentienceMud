@@ -763,6 +763,7 @@ char *wear_bit_name(int wear_flags)
     if (wear_flags & ITEM_WEAR_EYES	) strcat(buf, " eyes");
     if (wear_flags & ITEM_WEAR_EAR	) strcat(buf, " ear");
     if (wear_flags & ITEM_WEAR_ANKLE	) strcat(buf, " ankle");
+    if (wear_flags & ITEM_WEAR_TABARD	) strcat(buf, " tabard");
     return ( buf[0] != '\0' ) ? buf+1 : "none";
 }
 

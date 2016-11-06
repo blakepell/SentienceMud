@@ -271,6 +271,16 @@ ENT_FIELD entity_mobile[] = {
 	{"tokens",			ENTITY_MOB_TOKENS,			ENT_OLLIST_TOK	},
 	{"vars",			ENTITY_MOB_VARIABLES,		ENT_ILLIST_VARIABLE	},
 	{"worn",			ENTITY_MOB_WORN,			ENT_PLLIST_OBJ },
+
+	{"act",				ENTITY_MOB_ACT,				ENT_BITVECTOR },
+	{"act2",			ENTITY_MOB_ACT2,			ENT_BITVECTOR },
+	{"affected",		ENTITY_MOB_AFFECT,			ENT_BITVECTOR },
+	{"affected2",		ENTITY_MOB_AFFECT2,			ENT_BITVECTOR },
+	{"offense",			ENTITY_MOB_OFF,				ENT_BITVECTOR },
+	{"immune",			ENTITY_MOB_IMMUNE,			ENT_BITVECTOR },
+	{"resist",			ENTITY_MOB_RESIST,			ENT_BITVECTOR },
+	{"vuln",			ENTITY_MOB_VULN,			ENT_BITVECTOR },
+
 	{NULL,				0,							ENT_UNKNOWN	}
 };
 
@@ -299,6 +309,11 @@ ENT_FIELD entity_object[] = {
 	{"wearer",		ENTITY_OBJ_CARRIER,	ENT_MOBILE	},
 	{"vars",		ENTITY_OBJ_VARIABLES,		ENT_ILLIST_VARIABLE	},
 	{"index",		ENTITY_OBJ_INDEX,			ENT_OBJINDEX },
+	{"extra",		ENTITY_OBJ_EXTRA,			ENT_BITVECTOR },
+	{"extra2",		ENTITY_OBJ_EXTRA2,			ENT_BITVECTOR },
+	{"extra3",		ENTITY_OBJ_EXTRA3,			ENT_BITVECTOR },
+	{"extra4",		ENTITY_OBJ_EXTRA4,			ENT_BITVECTOR },
+	{"wear",		ENTITY_OBJ_WEAR,			ENT_BITVECTOR },
 	{NULL,			0,			ENT_UNKNOWN	}
 };
 

@@ -418,6 +418,9 @@ void free_obj(OBJ_DATA *obj)
     free_string( obj->owner     );
     free_string( obj->material );
 
+    if ( obj->old_name != NULL )
+	free_string( obj->old_name );
+
     if ( obj->old_short_descr != NULL )
 	free_string( obj->old_short_descr );
 
