@@ -7525,6 +7525,7 @@ extern LLIST *persist_mobs;
 extern LLIST *persist_objs;
 extern LLIST *persist_rooms;
 extern TOKEN_DATA *global_tokens;
+extern LLIST *loaded_players;
 extern LLIST *loaded_chars;
 extern LLIST *loaded_objects;
 

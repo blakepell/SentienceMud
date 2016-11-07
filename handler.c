@@ -3074,6 +3074,7 @@ void extract_char(CHAR_DATA *ch, bool fPull)
     }
     iterator_stop(&it);
     list_remlink(loaded_chars, ch);
+    list_remlink(loaded_players, ch);
 
 
     if (ch->desc != NULL)
@@ -3963,6 +3964,35 @@ bool has_light(CHAR_DATA *ch)
 	}
 
 	return FALSE;
+}
+
+bool can_see_imm(CHAR_DATA *ch, CHAR_DATA *victim)
+{
+	STRING_DATA *string;
+
+	if (victim == NULL || ch == NULL)
+		return FALSE;
+
+	/* allow imms to be vis to some people */
+	if (!IS_NPC(victim))
+	{
+		for (string = victim->pcdata->vis_to_people; string != NULL; string = string->next)
+		{
+			if (!str_cmp(ch->name, string->string))
+				return TRUE;
+		}
+	}
+
+	if (ch->tot_level < victim->invis_level)
+		return FALSE;
+
+	if (!IS_IMMORTAL(ch) && IS_NPC(victim) && IS_SET(victim->act2, ACT2_WIZI_MOB) && !IS_SET(ch->act2, ACT2_SEE_WIZI))
+		return FALSE;
+
+	if (get_trust(ch) < victim->incog_level && ch->in_room != victim->in_room)
+		return FALSE;
+
+	return TRUE;
 }
 
 /*

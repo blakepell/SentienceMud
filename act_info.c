@@ -50,6 +50,7 @@
 #include "wilds.h"
 #include "scripts.h"
 
+bool can_see_imm(CHAR_DATA *ch, CHAR_DATA *victim);
 
 /* MOVED: equip.c */
 char *const where_name[] = {
@@ -3874,11 +3875,10 @@ void do_who_new(CHAR_DATA * ch, char *argument)
 
 	if (wch)
 	{
-	    if (wch->invis_level >= 150
-	    &&  !can_see(ch, wch))
-		continue;
+	    if (IS_IMMORTAL(wch) && !can_see_imm(ch, wch))
+			continue;
 	    else
-		nMatch2++;
+			nMatch2++;
 	}
     }
 
@@ -3886,13 +3886,16 @@ void do_who_new(CHAR_DATA * ch, char *argument)
     output = new_buf();
     for (d = descriptor_list; d != NULL; d = d->next)
     {
-	if (d->connected != CON_PLAYING || !can_see(ch, d->character))
-	    continue;
+		wch = (d->original != NULL) ? d->original : d->character;
 
-	wch = (d->original != NULL) ? d->original : d->character;
+		if (d->connected != CON_PLAYING || (IS_IMMORTAL(wch) && !can_see_imm(ch, wch))) {
+		    continue;
+		}
 
-	if (!can_see(ch, wch))
-	    continue;
+
+//	if (!can_see(ch, wch)) {
+//	    continue;
+//	}
 
 	if ((iLevelLower != 0
 	     &&  wch->tot_level >= iLevelLower && wch->tot_level <= iLevelUpper)
