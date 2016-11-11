@@ -354,9 +354,23 @@ typedef struct location_type {
 	 if wuid==0 and id[0] != 0 and id[1:2] == 0, static room */
 } LOCATION;
 
+#define SKILLSRC_NORMAL			0	// Gained through normal acquisition (Impossible for tokens)
+#define SKILLSRC_SCRIPT			1	// Gained via script - can be given/revoked by GRANTSKILL/REVOKESKILL
+#define SKILLSRC_SCRIPT_PERM	2	// Similar to SCRIPT but cannot be revoked once set.
+#define SKILLSRC_AFFECT			3	// Gained from an affect - can be given by an affect that gives such a thing
+
+#define SKILL_SPELL				(A)
+#define SKILL_PRACTICE			(B)
+#define SKILL_IMPROVE			(C)
+
+#define SKILL_AUTOMATIC			(SKILL_PRACTICE|SKILL_IMPROVE)
+
 typedef struct skill_entry_type {
 	struct skill_entry_type *next;
-	bool scripted;		// Whether it's given by a script
+	char source;		// Source of the skill
+	long flags;
+	bool practice;		// Can this be practiced/trained?
+	bool improve;		// Can this improve through use?
 	bool isspell;		// Whether this is a spell;
 	sh_int sn;			// Skill Number
 	sh_int song;		// Song Number
@@ -394,6 +408,7 @@ struct script_varinfo {
 	CHAR_DATA *rch;
 	CHAR_DATA **targ;
 	TOKEN_DATA *tok;
+	PROG_DATA *progs;
 	int registers[5];
 	char phrase[MSL];
 	char trigger[MSL];
@@ -2269,6 +2284,7 @@ struct affliction_type {
 #define ITEM_CAN_DISPEL		(E)	// Allows the 'dispel room' spell to target it.
 #define ITEM_KEEP_EQUIPPED	(F)	// Item will not be unequipped on death.
 #define ITEM_NO_ANIMATE		(G)	// Similar to ITEM_NO_RESURRECT, but designed for animate dead, instead
+#define ITEM_RIFT_UPDATE	(H)	// Allows the item to update in the rift.
 
 /*
  * Wear flags.
@@ -3300,6 +3316,8 @@ struct token_data
 	long		value[MAX_TOKEN_VALUES];
 
 	EXTRA_DESCR_DATA	*ed;
+
+	SKILL_ENTRY *skill;		// Is the token used in a skill entry?
 };
 
 
@@ -7010,6 +7028,7 @@ bool can_clear_exit(ROOM_INDEX_DATA *room);
 TOKEN_DATA *give_token(TOKEN_INDEX_DATA *token_index, CHAR_DATA *ch, OBJ_DATA *obj, ROOM_INDEX_DATA *room);
 void token_from_char(TOKEN_DATA *token);
 void token_to_char(TOKEN_DATA *token, CHAR_DATA *ch);
+void token_to_char_ex(TOKEN_DATA *token, CHAR_DATA *ch, char source, long flags);
 TOKEN_DATA *get_token_list(LLIST *tokens, long vnum, int count);
 TOKEN_DATA *get_token_char(CHAR_DATA *ch, long vnum, int count);
 void token_from_obj(TOKEN_DATA *token);
@@ -7168,8 +7187,9 @@ void read_permanent_objs ( );
 void save_char_obj	args( ( CHAR_DATA *ch ) );
 void write_permanent_objs ( );
 void fwrite_token(TOKEN_DATA *token, FILE *fp);
+void fwrite_skills(CHAR_DATA *ch, FILE *fp);
 TOKEN_DATA *fread_token(FILE *fp);
-
+void fread_skill(FILE *fp, CHAR_DATA *ch);
 
 
 /* skills.c */
@@ -7607,9 +7627,12 @@ SKILL_ENTRY *skill_entry_findname( SKILL_ENTRY *list, char *str );
 SKILL_ENTRY *skill_entry_findsong( SKILL_ENTRY *list, int song );
 SKILL_ENTRY *skill_entry_findsn( SKILL_ENTRY *list, int sn );
 SKILL_ENTRY *skill_entry_findtoken( SKILL_ENTRY *list, TOKEN_DATA *token );
-void skill_entry_addskill (CHAR_DATA *ch, int sn, TOKEN_DATA *token);
-void skill_entry_addspell (CHAR_DATA *ch, int sn, TOKEN_DATA *token);
-void skill_entry_addsong (CHAR_DATA *ch, int song, TOKEN_DATA *token);
+SKILL_ENTRY *skill_entry_findtokenindex( SKILL_ENTRY *list, TOKEN_INDEX_DATA *token_index );
+void skill_entry_addskill (CHAR_DATA *ch, int sn, TOKEN_DATA *token, char source, long flags);
+void skill_entry_addspell (CHAR_DATA *ch, int sn, TOKEN_DATA *token, char source, long flags);
+void skill_entry_addsong (CHAR_DATA *ch, int song, TOKEN_DATA *token, char source);
+void skill_entry_remove (SKILL_ENTRY **list, int sn, int song, TOKEN_DATA *token, bool isspell);
+void skill_entry_removeentry (SKILL_ENTRY **list, SKILL_ENTRY *entry);
 void skill_entry_removeskill (CHAR_DATA *ch, int sn, TOKEN_DATA *token);
 void skill_entry_removespell (CHAR_DATA *ch, int sn, TOKEN_DATA *token);
 void skill_entry_removesong (CHAR_DATA *ch, int song, TOKEN_DATA *token);
@@ -7676,5 +7699,7 @@ void visit_room_direction(CHAR_DATA *ch, ROOM_INDEX_DATA *start_room, int max_de
 
 long dice_roll(DICE_DATA *d);
 void dice_copy(DICE_DATA *a, DICE_DATA *b);
+
+TOKEN_DATA *create_token(TOKEN_INDEX_DATA *token_index);
 
 #endif /* !def __MERC_H__ */

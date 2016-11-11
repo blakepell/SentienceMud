@@ -1292,6 +1292,7 @@ const struct flag_type extra3_flags[] =
     {	"can_dispel",		ITEM_CAN_DISPEL,	TRUE	},
     {	"keep_equipped",	ITEM_KEEP_EQUIPPED,	TRUE	},
     {   "no_animate",		ITEM_NO_ANIMATE,	FALSE   },
+    {	"rift_update",		ITEM_RIFT_UPDATE,	TRUE	},
     {   NULL,			0,			0	}
 };
 
@@ -2699,4 +2700,11 @@ const struct flag_type variable_types[] = {
 	{"pllist_variable",	VAR_PLLIST_VARIABLE,	TRUE},
 	{ NULL,				VAR_UNKNOWN,			FALSE }
 
+};
+
+
+const struct flag_type skill_flags[] = {
+	{"practice",		SKILL_PRACTICE,			TRUE},
+	{"improve",			SKILL_IMPROVE,			TRUE},
+	{ NULL,				0,			FALSE }
 };

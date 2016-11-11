@@ -51,6 +51,51 @@
 #include "scripts.h"
 #include "wilds.h"
 
+#if defined(KEY)
+#undef KEY
+#endif
+
+#define IS_KEY(literal)		(!str_cmp(word,literal))
+
+#define KEY(literal, field, value) \
+	if (IS_KEY(literal)) { \
+		field = value; \
+		fMatch = TRUE; \
+		break; \
+	}
+
+#define SKEY(literal, field) \
+	if (IS_KEY(literal)) { \
+		free_string(field); \
+		field = fread_string(fp); \
+		fMatch = TRUE; \
+		break; \
+	}
+
+#define FKEY(literal, field) \
+	if (IS_KEY(literal)) { \
+		field = TRUE; \
+		fMatch = TRUE; \
+		break; \
+	}
+
+#define FVKEY(literal, field, string, tbl) \
+	if (IS_KEY(literal)) { \
+		field = flag_value(tbl, string); \
+		fMatch = TRUE; \
+		break; \
+	}
+
+#define FVDKEY(literal, field, string, tbl, bad, def) \
+	if (!str_cmp(word, literal)) { \
+		field = flag_value(tbl, string); \
+		if( field == bad ) { \
+			field = def; \
+		} \
+		fMatch = TRUE; \
+		break; \
+	}
+
 // External functions
 
 // Globals.
@@ -148,23 +193,31 @@ void save_char_obj(CHAR_DATA *ch)
     else
     {
 	    // Used to do SAVE checks
-	p_percent_trigger( ch,NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_SAVE, NULL );
+		p_percent_trigger( ch,NULL, NULL, NULL, ch, NULL, NULL, NULL, NULL, TRIG_SAVE, NULL );
 
-	fwrite_char(ch, fp);
+		fwrite_char(ch, fp);
 
-	if (ch->carrying != NULL)
-	    fwrite_obj_new(ch, ch->carrying, fp, 0);
+		if (ch->carrying != NULL)
+			fwrite_obj_new(ch, ch->carrying, fp, 0);
 
-	if (ch->locker != NULL)
-	    fwrite_obj_new(ch, ch->locker, fp, 0);
+		if (ch->locker != NULL)
+			fwrite_obj_new(ch, ch->locker, fp, 0);
 
-	if (ch->tokens != NULL)
-	    fwrite_token(ch->tokens, fp);
+		if (ch->tokens != NULL) {
+			TOKEN_DATA *token;
+			for(token = ch->tokens; token; token = token->next)
+				if( !token->skill )
+					fwrite_token(token, fp);
+		}
 
-        fprintf(fp, "#END\n");
+		fwrite_skills(ch, fp);
+
+	    fprintf(fp, "#END\n");
         fprintf(fp, "#END\n");
 
     }
+
+
     fclose(fp);
     rename(TEMP_FILE,strsave);
     fpReserve = fopen(NULL_FILE, "r");
@@ -177,7 +230,7 @@ void save_char_obj(CHAR_DATA *ch)
 void fwrite_char(CHAR_DATA *ch, FILE *fp)
 {
     AFFECT_DATA *paf;
-    int sn, gn, pos;
+    int gn, pos;
     int i = 0;
     COMMAND_DATA *cmd;
 
@@ -553,6 +606,7 @@ void fwrite_char(CHAR_DATA *ch, FILE *fp)
 		    ch->pcdata->alias_sub[pos]);
 	}
 
+	/*
 	// Save song list
 	for (sn = 0; sn < MAX_SONGS && music_table[sn].name; sn++)
 		if( ch->pcdata->songs_learned[sn] )
@@ -571,6 +625,7 @@ void fwrite_char(CHAR_DATA *ch, FILE *fp)
 		    ch->pcdata->mod_learned[sn], skill_table[sn].name);
 	    }
 	}
+	*/
 
 	for (gn = 0; gn < MAX_GROUP; gn++)
         {
@@ -752,6 +807,8 @@ bool load_char_obj(DESCRIPTOR_DATA *d, char *name)
 			} else if (!str_cmp(word, "TOKEN")) {
 				token = fread_token(fp);
 				token_to_char(token, ch);
+			} else if (!str_cmp(word, "SKILL")) {
+				fread_skill(fp, ch);
 			} else if (!str_cmp(word, "END"))
 				break;
 			else {
@@ -1314,10 +1371,10 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
 		    log_string(buf);
                 }
                 else
-		    gn_add(ch,gn);
+                	ch->pcdata->group_known[gn] = TRUE;
 
-		fMatch = TRUE;
-		break;
+				fMatch = TRUE;
+				break;
             }
 
 	    break;
@@ -1797,9 +1854,9 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
 			{
 				ch->pcdata->learned[sn] = value;
 				if( skill_table[sn].spell_fun == spell_null)
-					skill_entry_addskill(ch, sn, NULL);
+					skill_entry_addskill(ch, sn, NULL, SKILLSRC_NORMAL, SKILL_AUTOMATIC);
 				else
-					skill_entry_addspell(ch, sn, NULL);
+					skill_entry_addspell(ch, sn, NULL, SKILLSRC_NORMAL, SKILL_AUTOMATIC);
 			}
 
 			fMatch = TRUE;
@@ -1840,7 +1897,7 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
 			else
 			{
 				ch->pcdata->songs_learned[song] = TRUE;
-				skill_entry_addsong(ch, song, NULL);
+				skill_entry_addsong(ch, song, NULL, SKILLSRC_NORMAL);
 			}
 
 			fMatch = TRUE;
@@ -2262,8 +2319,11 @@ void fwrite_obj_new(CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest)
     if( !IS_NULLSTR(obj->owner_short) )
     	fprintf(fp, "OwnerShort %s~\n", obj->owner_short);
 
-	if(obj->tokens != NULL)
-		fwrite_token(obj->tokens, fp);
+	if(obj->tokens != NULL) {
+		TOKEN_DATA *token;
+		for(token = obj->tokens; token; token = token->next)
+			fwrite_token(obj->tokens, fp);
+	}
 
 
     fprintf(fp, "End\n\n");
@@ -3481,9 +3541,15 @@ void fix_character(CHAR_DATA *ch)
     ch->size = pc_race_table[ch->race].size;
     ch->dam_type = 17; /*punch */
 
+	// Add groups it should know
+    for(i=0;i < MAX_GROUP; i++)
+    	if( ch->pcdata->group_known[i] )
+    		gn_add(ch, i);
+
     /* make sure they have any new race skills */
     for (i = 0; pc_race_table[ch->race].skills[i] != NULL; i++)
-	group_add(ch,pc_race_table[ch->race].skills[i],FALSE);
+		group_add(ch,pc_race_table[ch->race].skills[i],FALSE);
+
 
 	// TODO: Readd checks for dealing with racial affects, affects2, imm, res and vuln
 
@@ -3932,31 +3998,25 @@ bool find_class_skill(CHAR_DATA *ch, int class)
 /* write a token */
 void fwrite_token(TOKEN_DATA *token, FILE *fp)
 {
-    int i;
+	int i;
 
-    /* recursion so that lists read in correct order instead of flipping */
-    if (token->next != NULL)
-	fwrite_token(token->next, fp);
+	fprintf(fp, "#TOKEN %ld\n", token->pIndexData->vnum);
+	fprintf(fp, "UId %d\n", (int)token->id[0]);
+	fprintf(fp, "UId2 %d\n", (int)token->id[1]);
+	fprintf(fp, "Timer %d\n", token->timer);
+	for (i = 0; i < MAX_TOKEN_VALUES; i++)
+		fprintf(fp, "Value %d %ld\n", i, token->value[i]);
 
-    fprintf(fp, "#TOKEN %ld\n", token->pIndexData->vnum);
-
-    fprintf(fp, "UId %d\n", (int)token->id[0]);
-    fprintf(fp, "UId2 %d\n", (int)token->id[1]);
-    fprintf(fp, "Timer %d\n", token->timer);
-    for (i = 0; i < MAX_TOKEN_VALUES; i++)
-	fprintf(fp, "Value %d %ld\n", i, token->value[i]);
-
-    if(token->progs && token->progs->vars) {
+	if(token->progs && token->progs->vars) {
 		pVARIABLE var;
 
 		for(var = token->progs->vars; var; var = var->next) {
-			if(var->save) {
+			if(var->save)
 				variable_fwrite(var, fp);
-			}
 		}
-    }
+	}
 
-    fprintf(fp, "End\n\n");
+	fprintf(fp, "End\n\n");
 }
 
 
@@ -4041,3 +4101,139 @@ TOKEN_DATA *fread_token(FILE *fp)
 
     return token;
 }
+
+void fwrite_skill(CHAR_DATA *ch, SKILL_ENTRY *entry, FILE *fp)
+{
+		fprintf(fp, "#SKILL\n");
+		switch(entry->source) {
+		case SKILLSRC_SCRIPT:		fprintf(fp, "TypeScript\n"); break;
+		case SKILLSRC_SCRIPT_PERM:	fprintf(fp, "TypeScriptPerm\n"); break;
+		case SKILLSRC_AFFECT:		fprintf(fp, "TypeAffect\n"); break;
+		// Normal is default
+		}
+
+		// Only save if it's
+		if( (entry->flags & ~SKILL_SPELL) != SKILL_AUTOMATIC)
+			fprintf(fp, "Flags %s\n", flag_string( skill_flags, entry->flags));
+		if( IS_VALID(entry->token) ) {
+			fwrite_token(entry->token, fp);
+		}
+
+		if( entry->sn > 0 && entry->sn < MAX_SKILL ) {
+			fprintf(fp, "Sk %d %d %s~\n",
+			    ch->pcdata->learned[entry->sn],
+			    ch->pcdata->mod_learned[entry->sn],
+			    skill_table[entry->sn].name);
+		}
+
+		if( entry->song >= 0 && entry->song < MAX_SONGS ) {
+			fprintf(fp, "Song %s~\n", music_table[entry->song].name);
+		}
+/*
+	for (sn = 0; sn < MAX_SONGS && music_table[sn].name; sn++)
+		if( ch->pcdata->songs_learned[sn] )
+			fprintf(fp, "Song '%s'\n", music_table[sn].name);
+
+	for (sn = 0; sn < MAX_SKILL && skill_table[sn].name; sn++)
+	{
+	    if (skill_table[sn].name != NULL && ch->pcdata->learned[sn] != 0)
+	    {
+		fprintf(fp, "Sk %d '%s'\n",
+		    ch->pcdata->learned[sn], skill_table[sn].name);
+	    }
+	    if (skill_table[sn].name != NULL && ch->pcdata->mod_learned[sn] != 0)
+	    {
+		fprintf(fp, "SkMod %d '%s'\n",
+		    ch->pcdata->mod_learned[sn], skill_table[sn].name);
+	    }
+	}
+*/
+		fprintf(fp, "End\n\n");
+}
+
+void fwrite_skills(CHAR_DATA *ch, FILE *fp)
+{
+	SKILL_ENTRY *entry;
+
+	for(entry = ch->sorted_skills; entry; entry = entry->next)
+		fwrite_skill(ch, entry, fp);
+
+	for(entry = ch->sorted_songs; entry; entry = entry->next)
+		fwrite_skill(ch, entry, fp);
+}
+
+void fread_skill(FILE *fp, CHAR_DATA *ch)
+{
+    TOKEN_DATA *token = NULL;
+    int sn = -1;
+    int song = -1;
+    long flags = SKILL_AUTOMATIC;
+    int rating = -1, mod = 0;	// For built-in skills
+    char source = SKILLSRC_NORMAL;
+    char buf[MSL];
+    char *word;
+    bool fMatch;
+
+    for (; ;)
+    {
+		word   = feof(fp) ? "End" : fread_word(fp);
+		fMatch = FALSE;
+
+		if (!str_cmp(word, "End")) {
+			if( song >= 0 ) {
+				ch->pcdata->songs_learned[song] = TRUE;
+				skill_entry_addsong(ch, song, NULL, source);
+			} else if(sn > 0) {
+				ch->pcdata->learned[sn] = rating;
+				ch->pcdata->mod_learned[sn] = mod;
+				if( skill_table[sn].spell_fun == spell_null)
+					skill_entry_addskill(ch, sn, NULL, source, flags);
+				else
+					skill_entry_addspell(ch, sn, NULL, source, flags);
+			} else if(IS_VALID(token))
+				token_to_char_ex(token, ch, source, flags);
+
+		    fMatch = TRUE;
+			return;
+		}
+
+		switch (UPPER(word[0]))
+		{
+		case '#':
+			if( IS_KEY("#TOKEN") ) {
+				token = fread_token(fp);
+				fMatch = TRUE;
+			}
+			break;
+
+		case 'F':
+			FVKEY("Flags",	flags, fread_string_eol(fp), skill_flags);
+			break;
+
+		case 'S':
+			if(IS_KEY("Sk")) {
+				rating = fread_number(fp);
+				mod = fread_number(fp);
+				sn = skill_lookup(fread_string(fp));
+				fMatch = TRUE;
+				break;
+			}
+
+			if(IS_KEY("Song")) {
+				song = music_lookup(fread_string(fp));
+				fMatch = TRUE;
+				break;
+			}
+
+			break;
+		}
+
+	    if (!fMatch) {
+			sprintf(buf, "fread_skill: no match for word %s", word);
+			bug(buf, 0);
+			fread_to_eol(fp);
+	    }
+	}
+
+}
+

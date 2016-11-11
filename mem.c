@@ -129,9 +129,11 @@ SKILL_ENTRY *new_skill_entry()
 		skill_entry_free = skill_entry_free->next;
 	}
 
-	entry->scripted = FALSE;
+	entry->source = SKILLSRC_NORMAL;
 	entry->isspell = FALSE;
 	entry->song = -1;
+	entry->practice = TRUE;
+	entry->improve = TRUE;
 
 	return entry;
 }

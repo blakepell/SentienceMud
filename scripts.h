@@ -1293,6 +1293,7 @@ struct script_cmd_type {
 	char *name;
 	void (*func) (SCRIPT_VARINFO *info, char *argument);
 	bool restricted;
+	bool required;		// Indicates whether the argument must exist
 };
 
 struct _entity_type_info {
@@ -1965,7 +1966,7 @@ void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument);
 void script_end_success(CHAR_DATA *ch);
 void script_end_failure(CHAR_DATA *ch, bool messages);
 void script_end_pulse(CHAR_DATA *ch);
-
+CHAR_DATA *script_get_char_room(SCRIPT_VARINFO *info, char *name, bool see_all);
 
 /* Commands */
 int mpcmd_lookup(char *command);
@@ -2372,6 +2373,15 @@ SCRIPT_CMD(do_rpungroup);
 SCRIPT_CMD(do_tpgroup);
 SCRIPT_CMD(do_tpungroup);
 
+
+
+
+
+
+SCRIPT_CMD(scriptcmd_award);
+SCRIPT_CMD(scriptcmd_deduct);
+SCRIPT_CMD(scriptcmd_grantskill);
+SCRIPT_CMD(scriptcmd_revokeskill);
 
 
 #include "tables.h"

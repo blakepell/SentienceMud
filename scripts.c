@@ -2189,9 +2189,11 @@ DECL_OPC_FUN(opc_mob)
 		char buf[MIL];
 		sprintf(buf, "Attempted execution of a restricted mob command '%s' with nulled security.",mob_cmd_table[block->cur_line->param].name);
 		bug(buf, 0);
-	} else {
-		(*mob_cmd_table[block->cur_line->param].func) (&block->info,block->cur_line->rest);
-		tail_chain();
+	} else if(IS_VALID(block->info.mob)) {
+		if( !mob_cmd_table[block->cur_line->param].required || !IS_NULLSTR(block->cur_line->rest) ) {
+			(*mob_cmd_table[block->cur_line->param].func) (&block->info,block->cur_line->rest);
+			tail_chain();
+		}
 	}
 
 
@@ -2216,9 +2218,11 @@ DECL_OPC_FUN(opc_obj)
 		char buf[MIL];
 		sprintf(buf, "Attempted execution of a restricted obj command '%s' with nulled security.",obj_cmd_table[block->cur_line->param].name);
 		bug(buf, 0);
-	} else {
-		(*obj_cmd_table[block->cur_line->param].func) (&block->info,block->cur_line->rest);
-		tail_chain();
+	} else if(IS_VALID(block->info.obj)) {
+		if( !obj_cmd_table[block->cur_line->param].required || !IS_NULLSTR(block->cur_line->rest) ) {
+			(*obj_cmd_table[block->cur_line->param].func) (&block->info,block->cur_line->rest);
+			tail_chain();
+		}
 	}
 	opc_next_line(block);
 	return TRUE;
@@ -2241,9 +2245,11 @@ DECL_OPC_FUN(opc_room)
 		char buf[MIL];
 		sprintf(buf, "Attempted execution of a restricted room command '%s' with nulled security.",room_cmd_table[block->cur_line->param].name);
 		bug(buf, 0);
-	} else {
-		(*room_cmd_table[block->cur_line->param].func) (&block->info,block->cur_line->rest);
-		tail_chain();
+	} else if(block->info.room) {
+		if( !room_cmd_table[block->cur_line->param].required || !IS_NULLSTR(block->cur_line->rest) ) {
+			(*room_cmd_table[block->cur_line->param].func) (&block->info,block->cur_line->rest);
+			tail_chain();
+		}
 	}
 	opc_next_line(block);
 	return TRUE;
@@ -2266,10 +2272,13 @@ DECL_OPC_FUN(opc_token)
 		char buf[MIL];
 		sprintf(buf, "Attempted execution of a restricted token command '%s' with nulled security.",token_cmd_table[block->cur_line->param].name);
 		bug(buf, 0);
-	} else {
-		(*token_cmd_table[block->cur_line->param].func) (&block->info,block->cur_line->rest);
-		tail_chain();
+	} else if(IS_VALID(block->info.token)) {
+		if( !token_cmd_table[block->cur_line->param].required || !IS_NULLSTR(block->cur_line->rest) ) {
+			(*token_cmd_table[block->cur_line->param].func) (&block->info,block->cur_line->rest);
+			tail_chain();
+		}
 	}
+
 	opc_next_line(block);
 	return TRUE;
 }
@@ -2292,8 +2301,10 @@ DECL_OPC_FUN(opc_tokenother)
 		sprintf(buf, "Attempted execution of a restricted tokenother command '%s' with nulled security.",tokenother_cmd_table[block->cur_line->param].name);
 		bug(buf, 0);
 	} else {
-		(*tokenother_cmd_table[block->cur_line->param].func) (&block->info,block->cur_line->rest);
-		tail_chain();
+		if( !tokenother_cmd_table[block->cur_line->param].required || !IS_NULLSTR(block->cur_line->rest) ) {
+			(*tokenother_cmd_table[block->cur_line->param].func) (&block->info,block->cur_line->rest);
+			tail_chain();
+		}
 	}
 	opc_next_line(block);
 	return TRUE;
@@ -2395,6 +2406,7 @@ int execute_script(long pvnum, SCRIPT_DATA *script, CHAR_DATA *mob, OBJ_DATA *ob
 		mob->progs->lastreturn = PRET_EXECUTED;
 		vnum = mob->pIndexData->vnum;
 		block.type = IFC_M;
+		block.info.progs = mob->progs;
 		block.info.var = &mob->progs->vars;
 		block.info.targ = &mob->progs->target;
 
@@ -2402,18 +2414,21 @@ int execute_script(long pvnum, SCRIPT_DATA *script, CHAR_DATA *mob, OBJ_DATA *ob
 		obj->progs->lastreturn = PRET_EXECUTED;
 		vnum = obj->pIndexData->vnum;
 		block.type = IFC_O;
+		block.info.progs = obj->progs;
 		block.info.var = &obj->progs->vars;
 		block.info.targ = &obj->progs->target;
 	} else if (room) {
 		room->progs->lastreturn = PRET_EXECUTED;
 		vnum = room->vnum;
 		block.type = IFC_R;
+		block.info.progs = room->progs;
 		block.info.var = &room->progs->vars;
 		block.info.targ = &room->progs->target;
 	} else if (token) {
 		token->progs->lastreturn = PRET_EXECUTED;
 		vnum = token->pIndexData->vnum;
 		block.type = IFC_T;
+		block.info.progs = token->progs;
 		block.info.var = &token->progs->vars;
 		block.info.targ = &token->progs->target;
 	} else {
@@ -5716,3 +5731,20 @@ long script_flag_value( const struct flag_type *flag_table, char *argument)
 	return NO_FLAG;
 }
 
+
+CHAR_DATA *script_get_char_room(SCRIPT_VARINFO *info, char *name, bool see_all)
+{
+	if( !info ) return NULL;
+
+	if( info->mob ) {
+		if( see_all )	// If see_all, bypass ALL vision checks
+			return get_char_room(NULL, info->mob->in_room, name);
+		else
+			return get_char_room(info->mob, NULL, name);
+	}
+	if( info->obj ) return get_char_room(NULL, obj_room(info->obj), name);
+	if( info->room ) return get_char_room(NULL, info->room, name);
+	if( info->token ) return get_char_room(NULL, token_room(info->token), name);
+
+	return NULL;
+}

@@ -6368,16 +6368,10 @@ bool can_clear_exit(ROOM_INDEX_DATA *room)
     return TRUE;
 }
 
-
-/* set up a token and give it to a char */
-TOKEN_DATA *give_token(TOKEN_INDEX_DATA *token_index, CHAR_DATA *ch, OBJ_DATA *obj, ROOM_INDEX_DATA *room)
+TOKEN_DATA *create_token(TOKEN_INDEX_DATA *token_index)
 {
 	TOKEN_DATA *token;
 	int i;
-
-	if(!ch && !obj && !room) return NULL;
-
-	if( (ch && obj) || (ch && room) || (obj && room) ) return NULL;
 
 	token = new_token();
 	token->pIndexData = token_index;
@@ -6399,6 +6393,21 @@ TOKEN_DATA *give_token(TOKEN_INDEX_DATA *token_index, CHAR_DATA *ch, OBJ_DATA *o
 
 	for (i = 0; i < MAX_TOKEN_VALUES; i++)
 		token->value[i] = token_index->value[i];
+
+	return token;
+}
+
+
+/* set up a token and give it to a char */
+TOKEN_DATA *give_token(TOKEN_INDEX_DATA *token_index, CHAR_DATA *ch, OBJ_DATA *obj, ROOM_INDEX_DATA *room)
+{
+	TOKEN_DATA *token;
+
+	if(!ch && !obj && !room) return NULL;
+
+	if( (ch && obj) || (ch && room) || (obj && room) ) return NULL;
+
+	token = create_token(token_index);
 
 	if(ch)
 		token_to_char(token, ch);
@@ -6454,9 +6463,8 @@ void token_from_char(TOKEN_DATA *token)
 	token->player = NULL;
 }
 
-
 /* transfers a token to a char */
-void token_to_char(TOKEN_DATA *token, CHAR_DATA *ch)
+void token_to_char_ex(TOKEN_DATA *token, CHAR_DATA *ch, char source, long flags)
 {
 	char buf[MSL];
 
@@ -6474,14 +6482,19 @@ void token_to_char(TOKEN_DATA *token, CHAR_DATA *ch)
 	list_addlink(ch->ltokens, token);
 
 	// Do sorted lists
-	if(token->type == TOKEN_SKILL) skill_entry_addskill(token->player, 0, token);
-	else if(token->type == TOKEN_SPELL) skill_entry_addspell(token->player, 0, token);
-	else if(token->type == TOKEN_SONG) skill_entry_addsong(token->player,-1,token);
+	if(token->type == TOKEN_SKILL) skill_entry_addskill(token->player, 0, token, source, flags);
+	else if(token->type == TOKEN_SPELL) skill_entry_addspell(token->player, 0, token, source, flags);
+	else if(token->type == TOKEN_SONG) skill_entry_addsong(token->player,-1,token, source);
 
 	sprintf(buf, "token_to_char: gave token %s(%ld) to char %s(%ld)",
 		token->name, token->pIndexData->vnum,
 		HANDLE(ch), IS_NPC(ch) ? ch->pIndexData->vnum : 0);
 	log_string(buf);
+}
+
+void token_to_char(TOKEN_DATA *token, CHAR_DATA *ch)
+{
+	token_to_char_ex(token, ch, SKILLSRC_SCRIPT, SKILL_AUTOMATIC);
 }
 
 TOKEN_DATA *get_token_list(LLIST *tokens, long vnum, int count)

@@ -4270,15 +4270,40 @@ void do_sset(CHAR_DATA *ch, char *argument)
 
     if (fAll)
     {
-	for (sn = 0; sn < MAX_SKILL; sn++)
-	{
-	    if (skill_table[sn].name != NULL
-            &&   str_cmp(skill_table[sn].name, "none"))
-		victim->pcdata->learned[sn]	= value;
-	}
+		for (sn = 0; sn < MAX_SKILL; sn++)
+		{
+			if (skill_table[sn].name != NULL && str_cmp(skill_table[sn].name, "none")) {
+				if( value == 0 ) {
+					if( skill_table[sn].spell_fun == spell_null )
+						skill_entry_removeskill(victim,sn, NULL);
+					else
+						skill_entry_removespell(victim,sn, NULL);
+				} else if( skill_entry_findsn( ch->sorted_skills, sn) == NULL) {
+					if( skill_table[sn].spell_fun == spell_null ) {
+						skill_entry_addskill(ch, sn, NULL, SKILLSRC_NORMAL, SKILL_AUTOMATIC);
+					} else {
+						skill_entry_addspell(ch, sn, NULL, SKILLSRC_NORMAL, SKILL_AUTOMATIC);
+					}
+				}
+			}
+			victim->pcdata->learned[sn]	= value;
+		}
     }
-    else
-	victim->pcdata->learned[sn] = value;
+    else {
+		if( value == 0 ) {
+			if( skill_table[sn].spell_fun == spell_null )
+				skill_entry_removeskill(victim,sn, NULL);
+			else
+				skill_entry_removespell(victim,sn, NULL);
+		} else if( skill_entry_findsn( ch->sorted_skills, sn) == NULL) {
+			if( skill_table[sn].spell_fun == spell_null ) {
+				skill_entry_addskill(ch, sn, NULL, SKILLSRC_NORMAL, SKILL_AUTOMATIC);
+			} else {
+				skill_entry_addspell(ch, sn, NULL, SKILLSRC_NORMAL, SKILL_AUTOMATIC);
+			}
+		}
+		victim->pcdata->learned[sn] = value;
+	}
 
     if (!fAll)
 	sprintf(buf, "Set %s's %s skill to %d%%\n\r", victim->name, skill_table[sn].name, value);

@@ -2224,9 +2224,12 @@ void obj_update(void)
 	iterator_start(&it, loaded_objects);
 	while(( obj = (OBJ_DATA *)iterator_nextdata(&it))) {
 
-		// Objects in the rift will not update.
+		if( !IS_VALID(obj) ) continue;
+
+		// Unmarked objects in the rift will not update.
+		// Principle objects that are normally allowed to tick in the rift: room spell objects
 		ROOM_INDEX_DATA *cur_room = obj_room(obj);
-		if( cur_room != NULL && cur_room->area->area_who == AREA_CHAT )
+		if( cur_room != NULL && cur_room->area->area_who == AREA_CHAT && !IS_SET(obj->extra3_flags, ITEM_RIFT_UPDATE))
 			continue;
 
 

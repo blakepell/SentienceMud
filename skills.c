@@ -990,8 +990,8 @@ void list_skill_entries(CHAR_DATA *ch, char *argument, bool show_skills, bool sh
 	// Show spells people lost
  	if (!str_cmp(arg, "negated")) {
 		for(entry = ch->sorted_skills; entry; entry = entry->next) {
-			if( !show_skills && !entry->isspell ) continue;
-			if( !show_spells && entry->isspell ) continue;
+			if( !show_skills && !IS_SET(entry->flags, SKILL_SPELL) ) continue;
+			if( !show_spells && IS_SET(entry->flags, SKILL_SPELL) ) continue;
 
 			rating = skill_entry_rating(ch, entry);
 
@@ -1009,8 +1009,8 @@ void list_skill_entries(CHAR_DATA *ch, char *argument, bool show_skills, bool sh
 	} else {
 		char min_mana[MIL];
 		for(entry = ch->sorted_skills; entry; entry = entry->next) {
-			if( !show_skills && !entry->isspell ) continue;
-			if( !show_spells && entry->isspell ) continue;
+			if( !show_skills && !IS_SET(entry->flags, SKILL_SPELL) ) continue;
+			if( !show_spells && IS_SET(entry->flags, SKILL_SPELL) ) continue;
 
 			skill = skill_entry_rating(ch, entry);
 			mod = skill_entry_mod(ch, entry);
@@ -1129,12 +1129,20 @@ void check_improve( CHAR_DATA *ch, int sn, bool success, int multiplier )
     int chance;
     char buf[100];
     int this_class;
+    SKILL_ENTRY *entry;
 
     if (IS_NPC(ch))
-	return;
+		return;
 
     if (IS_SOCIAL(ch))
-	return;
+		return;
+
+	entry = skill_entry_findsn(ch->sorted_skills, sn);
+	if(!entry)
+		return;
+
+	if(!IS_SET(entry->flags, SKILL_IMPROVE))
+		return;
 
     this_class = get_this_class(ch, sn);
 
@@ -1247,14 +1255,14 @@ void group_add( CHAR_DATA *ch, const char *name, bool deduct)
 			ch->pcdata->learned[sn] = 1;
 
 			if( skill_entry_findsn( ch->sorted_skills, sn) == NULL)
-				skill_entry_addskill(ch, sn, NULL);
+				skill_entry_addskill(ch, sn, NULL, SKILLSRC_NORMAL, SKILL_AUTOMATIC);
 
 			if( skill_entry_findsn( ch->sorted_skills, sn) == NULL)
 			{
 				if( skill_table[sn].spell_fun == spell_null ) {
-					skill_entry_addskill(ch, sn, NULL);
+					skill_entry_addskill(ch, sn, NULL, SKILLSRC_NORMAL, SKILL_AUTOMATIC);
 				} else {
-					skill_entry_addspell(ch, sn, NULL);
+					skill_entry_addspell(ch, sn, NULL, SKILLSRC_NORMAL, SKILL_AUTOMATIC);
 				}
 			}
 		}
@@ -1569,7 +1577,7 @@ void do_rehearse( CHAR_DATA *ch, char *argument )
 	}
 
 	ch->pcdata->songs_learned[sn] = TRUE;
-	skill_entry_addsong(ch, sn, NULL);
+	skill_entry_addsong(ch, sn, NULL, SKILLSRC_NORMAL);
 	ch->practice -= 3;
 
 	act("You rehearse {W$T{x.", ch, NULL, NULL, NULL, NULL, NULL, music_table[sn].name, TO_CHAR);
@@ -1945,7 +1953,7 @@ int skill_entry_compare (SKILL_ENTRY *a, SKILL_ENTRY *b)
 	return cmp;
 }
 
-void skill_entry_insert (SKILL_ENTRY **list, int sn, int song, TOKEN_DATA *token, bool isspell)
+void skill_entry_insert (SKILL_ENTRY **list, int sn, int song, TOKEN_DATA *token, long flags, char source)
 {
 	SKILL_ENTRY *cur, *prev, *entry;
 
@@ -1955,7 +1963,12 @@ void skill_entry_insert (SKILL_ENTRY **list, int sn, int song, TOKEN_DATA *token
 	entry->sn = sn;
 	entry->token = token;
 	entry->song = song;
-	entry->isspell = isspell;
+	entry->source = source;
+	entry->flags = flags;
+
+	// Link the token to the skill
+	if( IS_VALID(token) )
+		token->skill = entry;
 
 	cur = *list;
 	prev = NULL;
@@ -1985,14 +1998,46 @@ void skill_entry_remove (SKILL_ENTRY **list, int sn, int song, TOKEN_DATA *token
 		if ( ((IS_VALID(token) && (cur->token == token)) ||
 			(sn > 0 && (cur->sn == sn)) ||
 			((song >= 0) && (cur->song == song))) &&
-			(cur->isspell == isspell)) {
+			(!IS_SET(cur->flags, SKILL_SPELL) == !isspell)) {
 
 			if(prev)
 				prev->next = cur->next;
 			else
 				*list = cur->next;
 
+			// Unlink the token from the skill
+			if( IS_VALID(token) )
+				token->skill = NULL;
+
 			free_skill_entry(cur);
+			return;
+		}
+
+		prev = cur;
+		cur = cur->next;
+	}
+}
+
+void skill_entry_removeentry (SKILL_ENTRY **list, SKILL_ENTRY *entry)
+{
+	SKILL_ENTRY *cur, *prev;
+
+	cur = *list;
+	prev = NULL;
+	while(cur) {
+		if ( cur == entry ) {
+
+			if(prev)
+				prev->next = cur->next;
+			else
+				*list = cur->next;
+
+			// Unlink the token from the skill
+			if( IS_VALID(cur->token) )
+				cur->token->skill = NULL;
+
+			free_skill_entry(cur);
+			return;
 		}
 
 		prev = cur;
@@ -2050,7 +2095,15 @@ SKILL_ENTRY *skill_entry_findtoken( SKILL_ENTRY *list, TOKEN_DATA *token )
 	return list;
 }
 
-void skill_entry_addskill (CHAR_DATA *ch, int sn, TOKEN_DATA *token)
+SKILL_ENTRY *skill_entry_findtokenindex( SKILL_ENTRY *list, TOKEN_INDEX_DATA *token_index )
+{
+	while (list && (!list->token || list->token->pIndexData != token_index))
+		list = list->next;
+
+	return list;
+}
+
+void skill_entry_addskill (CHAR_DATA *ch, int sn, TOKEN_DATA *token, char source, long flags)
 {
 	if( !ch ) return;
 
@@ -2062,25 +2115,25 @@ void skill_entry_addskill (CHAR_DATA *ch, int sn, TOKEN_DATA *token)
 */
 	if( !sn && (!token || token->type != TOKEN_SKILL)) return;
 
-	skill_entry_insert( &ch->sorted_skills, sn, -1, token, FALSE );
+	skill_entry_insert( &ch->sorted_skills, sn, -1, token, (flags & ~SKILL_SPELL), source );
 }
 
-void skill_entry_addspell (CHAR_DATA *ch, int sn, TOKEN_DATA *token)
+void skill_entry_addspell (CHAR_DATA *ch, int sn, TOKEN_DATA *token, char source, long flags)
 {
 	if( !ch ) return;
 
 	if( !sn && (!token || token->type != TOKEN_SPELL)) return;
 
-	skill_entry_insert( &ch->sorted_skills, sn, -1, token, TRUE );
+	skill_entry_insert( &ch->sorted_skills, sn, -1, token, (SKILL_SPELL | (flags & ~SKILL_SPELL)), source );
 }
 
-void skill_entry_addsong (CHAR_DATA *ch, int song, TOKEN_DATA *token)
+void skill_entry_addsong (CHAR_DATA *ch, int song, TOKEN_DATA *token, char source)
 {
 	if( !ch ) return;
 
 	if( song < 0 && (!token || token->type != TOKEN_SONG)) return;
 
-	skill_entry_insert( &ch->sorted_songs, 0, song, token, FALSE );
+	skill_entry_insert( &ch->sorted_songs, 0, song, token, 0, source );
 }
 
 void skill_entry_removeskill (CHAR_DATA *ch, int sn, TOKEN_DATA *token)
@@ -2209,6 +2262,8 @@ int skill_entry_mana (CHAR_DATA *ch, SKILL_ENTRY *entry)
 int skill_entry_learn (CHAR_DATA *ch, SKILL_ENTRY *entry)
 {
 	int amount = 0;
+
+	if(!IS_SET(entry->flags, SKILL_PRACTICE)) return 0;
 
 	if( IS_VALID(entry->token) ) {
 		amount = entry->token->value[TOKVAL_SPELL_LEARN];
