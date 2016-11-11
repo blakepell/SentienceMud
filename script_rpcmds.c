@@ -80,8 +80,8 @@ const struct script_cmd_type room_cmd_table[] = {
 	{ "settimer",			do_rpsettimer,			FALSE,	TRUE	},
 	{ "showroom",			do_rpshowroom,			FALSE,	TRUE	},
 	{ "skimprove",			do_rpskimprove,			TRUE,	TRUE	},
-	{ "startcombat",		do_rpstartcombat,		FALSE,	TRUE	},
-	{ "stopcombat",			do_rpstopcombat,		FALSE,	TRUE	},
+	{ "startcombat",		scriptcmd_startcombat,	FALSE,	TRUE	},
+	{ "stopcombat",			scriptcmd_stopcombat,	FALSE,	TRUE	},
 	{ "stringmob",			do_rpstringmob,			TRUE,	TRUE	},
 	{ "stringobj",			do_rpstringobj,			TRUE,	TRUE	},
 	{ "stripaffect",		do_rpstripaffect,		TRUE,	TRUE	},
@@ -5294,73 +5294,6 @@ SCRIPT_CMD(do_rpclearrecall)
 	victim->recall.id[2] = 0;
 }
 
-SCRIPT_CMD(do_rpstartcombat)
-{
-	char *rest;
-	CHAR_DATA *attacker = NULL;
-	CHAR_DATA *victim = NULL;
-	SCRIPT_PARAM arg;
-
-	if(!info || !info->room) return;
-
-	if(!(rest = expand_argument(info,argument,&arg))) {
-		bug("RpStartCombat - Error in parsing from vnum %ld.", info->room->vnum);
-		return;
-	}
-
-	switch(arg.type) {
-	case ENT_STRING: victim = get_char_room(NULL, info->room, arg.d.str); break;
-	case ENT_MOBILE: victim = arg.d.mob; break;
-	default: victim = NULL; break;
-	}
-
-	if (!victim) {
-		bug("RpStartCombat - Null victim from vnum %ld.", info->room->vnum);
-		return;
-	}
-
-	if(*rest) {
-		if(!expand_argument(info,rest,&arg)) {
-			bug("RpStartCombat - Error in parsing from vnum %ld.", info->room->vnum);
-			return;
-		}
-
-		attacker = victim;
-		switch(arg.type) {
-		case ENT_STRING: victim = get_char_room(NULL, info->room, arg.d.str); break;
-		case ENT_MOBILE: victim = arg.d.mob; break;
-		default: victim = NULL; break;
-		}
-
-		if (!victim) {
-		bug("RpStartCombat - Null victim from vnum %ld.", info->room->vnum);
-		return;
-		}
-	} else {
-		bug("RpStartCombat - Null victim from vnum %ld.", info->room->vnum);
-		return;
-	}
-
-	// Attacker is fighting already
-	if(attacker->fighting)
-		return;
-
-	// The victim is fighting someone else in a singleplay room
-	if(!IS_NPC(attacker) && victim->fighting != attacker && !IS_SET(attacker->in_room->room2_flags, ROOM_MULTIPLAY))
-		return;
-
-	// They are not in the same room
-	if(attacker->in_room != victim->in_room)
-		return;
-
-	// The victim is safe
-	if(is_safe(attacker, victim, FALSE)) return;
-
-	// Set them to fighting!
-	set_fighting(attacker, victim);
-	return;
-}
-
 // HUNT <HUNTER> <PREY>
 SCRIPT_CMD(do_rphunt)
 {
@@ -6279,40 +6212,6 @@ SCRIPT_CMD(do_rprestore)
 	}
 
 	restore_char(arg.d.mob, NULL, amount);
-}
-
-// STOPCOMBAT $MOBILE[ bool(BOTH)]
-// Silently stops combat.
-// BOTH: causes both sides to stop fighting, defaults to false
-SCRIPT_CMD(do_rpstopcombat)
-{
-	char *rest;
-	SCRIPT_PARAM arg;
-	CHAR_DATA *mob;
-	bool fBoth = FALSE;
-
-	if(!info || !info->room || IS_NULLSTR(argument)) return;
-
-	if(!(rest = expand_argument(info,argument,&arg)))
-		return;
-
-	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
-
-	mob = arg.d.mob;
-
-	if(*rest)
-	{
-		if(!(rest = expand_argument(info,rest,&arg)))
-			return;
-
-		if( arg.type == ENT_NUMBER ) {
-			fBoth = (arg.d.num != 0);
-		} else if( arg.type == ENT_STRING ) {
-			fBoth = (!str_cmp(arg.d.str,"yes") || !str_cmp(arg.d.str,"true"));
-		}
-	}
-
-	stop_fighting(mob, fBoth);
 }
 
 // GROUP npc(FOLLOWER) mobile(LEADER)[ bool(SHOW=true)]

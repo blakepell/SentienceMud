@@ -2382,7 +2382,8 @@ SCRIPT_CMD(scriptcmd_award);
 SCRIPT_CMD(scriptcmd_deduct);
 SCRIPT_CMD(scriptcmd_grantskill);
 SCRIPT_CMD(scriptcmd_revokeskill);
-
+SCRIPT_CMD(scriptcmd_startcombat);
+SCRIPT_CMD(scriptcmd_stopcombat);
 
 #include "tables.h"
 

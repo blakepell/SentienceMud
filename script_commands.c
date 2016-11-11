@@ -403,4 +403,107 @@ SCRIPT_CMD(scriptcmd_revokeskill)
 	info->progs->lastreturn = 1;
 }
 
+// STARTCOMBAT[ $ATTACKER] $VICTIM
+SCRIPT_CMD(scriptcmd_startcombat)
+{
+	char *rest;
+	CHAR_DATA *attacker = NULL;
+	CHAR_DATA *victim = NULL;
+	SCRIPT_PARAM arg;
+
+	info->progs->lastreturn = 0;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("MpStartCombat - Error in parsing from vnum %ld.", VNUM(info->mob));
+		return;
+	}
+
+
+
+	switch(arg.type) {
+	case ENT_STRING: victim = script_get_char_room(info, arg.d.str, FALSE); break;
+	case ENT_MOBILE: victim = arg.d.mob; break;
+	default: victim = NULL; break;
+	}
+
+	if (!victim)
+		return;
+
+	if(*rest) {
+		if(!expand_argument(info,rest,&arg))
+			return;
+
+		attacker = victim;
+		switch(arg.type) {
+		case ENT_STRING: victim = script_get_char_room(info, arg.d.str, FALSE); break;
+		case ENT_MOBILE: victim = arg.d.mob; break;
+		default: victim = NULL; break;
+		}
+
+		if (!victim)
+			return;
+	} else if(!info->mob)
+		return;
+	else
+		attacker = info->mob;
+
+
+	// Attacker is fighting already
+	if(attacker->fighting)
+		return;
+
+	// The victim is fighting someone else in a singleplay room
+	if(!IS_NPC(attacker) && victim->fighting != NULL && victim->fighting != attacker && !IS_SET(attacker->in_room->room2_flags, ROOM_MULTIPLAY))
+		return;
+
+	// They are not in the same room
+	if(attacker->in_room != victim->in_room)
+		return;
+
+	// The victim is safe
+	if(is_safe(attacker, victim, FALSE)) return;
+
+	// Set them to fighting!
+	if(set_fighting(attacker, victim))
+		info->progs->lastreturn = 1;
+}
+
+
+// STOPCOMBAT $MOBILE[ bool(BOTH)]
+// Silently stops combat.
+// BOTH: causes both sides to stop fighting, defaults to false
+SCRIPT_CMD(scriptcmd_stopcombat)
+{
+	char *rest;
+	SCRIPT_PARAM arg;
+	CHAR_DATA *mob;
+	bool fBoth = FALSE;
+
+	info->progs->lastreturn = 0;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+	mob = arg.d.mob;
+
+	if(*rest)
+	{
+		if(!(rest = expand_argument(info,rest,&arg)))
+			return;
+
+		if( arg.type == ENT_BOOLEAN )
+			fBoth = arg.d.boolean;
+		else if( arg.type == ENT_NUMBER )
+			fBoth = (arg.d.num != 0);
+		else if( arg.type == ENT_STRING )
+			fBoth = (!str_cmp(arg.d.str,"yes") || !str_cmp(arg.d.str,"true"));
+	}
+
+	stop_fighting(mob, fBoth);
+
+	if( mob->fighting == NULL )
+		info->progs->lastreturn = 1;
+}
 
