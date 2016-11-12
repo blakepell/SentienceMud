@@ -5504,6 +5504,24 @@ void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument)
 		else
 			variables_set_exit(vars,name,start_room->exit[dir]);
 
+	// AREA uid
+	// AREA name
+	// AREA room
+	// AREA area
+	} else if(!str_cmp(buf,"area")) {
+		AREA_DATA *area;
+
+		switch(arg.type) {
+		case ENT_NUMBER:	area = get_area_from_uid(arg.d.num); break;
+		case ENT_STRING:	area = find_area(arg.d.str); break;
+		case ENT_ROOM:		area = arg.d.room ? arg.d.room->area : NULL; break;
+		case ENT_AREA:		area = arg.d.area; break;
+		default:			area = NULL; break;
+		}
+
+		if( area )
+			variables_set_area(vars,name,area);
+
 	} else
 		return;
 }
