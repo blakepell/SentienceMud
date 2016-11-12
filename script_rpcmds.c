@@ -23,6 +23,7 @@ const struct script_cmd_type room_cmd_table[] = {
 	{ "altermob",			do_rpaltermob,			TRUE,	TRUE	},
 	{ "alterobj",			do_rpalterobj,			TRUE,	TRUE	},
 	{ "alterroom",			do_rpalterroom,			TRUE,	TRUE	},
+	{ "applytoxin",			scriptcmd_applytoxin,	FALSE,	TRUE	},
 	{ "asound",				do_rpasound,			FALSE,	TRUE	},
 	{ "at",					do_rpat,				FALSE,	TRUE	},
 	{ "award",				scriptcmd_award,		TRUE,	TRUE	},

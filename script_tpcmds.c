@@ -22,6 +22,7 @@ const struct script_cmd_type token_cmd_table[] = {
 	{ "altermob",			do_tpaltermob,			TRUE,	TRUE	},
 	{ "alterobj",			do_tpalterobj,			TRUE,	TRUE	},
 	{ "alterroom",			do_tpalterroom,			TRUE,	TRUE	},
+	{ "applytoxin",			scriptcmd_applytoxin,	FALSE,	TRUE	},
 	{ "asound",				do_tpasound,			FALSE,	TRUE	},
 	{ "award",				scriptcmd_award,		TRUE,	TRUE	},
 	{ "call",				do_tpcall,				FALSE,	TRUE	},

@@ -13,6 +13,68 @@
 //#define DEBUG_MODULE
 #include "debug.h"
 
+
+// APPLYTOXIN mobile string(toxin) int(level) int(duration)
+SCRIPT_CMD(scriptcmd_applytoxin)
+{
+	char *rest;
+	CHAR_DATA *victim = NULL;
+	int level, duration, toxin;
+	SCRIPT_PARAM arg;
+
+	info->progs->lastreturn = 0;
+
+	if (!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_STRING: victim = script_get_char_room(info, arg.d.str, FALSE); break;
+	case ENT_MOBILE: victim = arg.d.mob; break;
+	default: victim = NULL; break;
+	}
+
+	if (!victim) return;
+
+	if (!(rest = expand_argument(info,rest,&arg)))
+		return;
+
+	if( arg.type != ENT_STRING ) return;
+	if( (toxin = toxin_lookup(arg.d.str)) < 0) return;
+
+	if (!(rest = expand_argument(info,rest,&arg)))
+		return;
+
+	if( arg.type != ENT_NUMBER ) return;
+	level = UMAX(arg.d.num, 1);
+
+	if (!(rest = expand_argument(info,rest,&arg)))
+		return;
+
+	if( arg.type != ENT_NUMBER ) return;
+	duration = UMAX(5, arg.d.num);
+
+	victim->bitten_type = toxin;
+	victim->bitten = UMAX(500/level, 30);
+	victim->bitten_level = level;
+
+	if (!IS_SET(victim->affected_by2, AFF2_TOXIN)) {
+		AFFECT_DATA af;
+		af.where = TO_AFFECTS;
+		af.group     = AFFGROUP_BIOLOGICAL;
+		af.type  = gsn_toxins;
+		af.level = victim->bitten_level;
+		af.duration = duration;
+		af.location = APPLY_STR;
+		af.modifier = -1 * number_range(1,3);
+		af.bitvector = 0;
+		af.bitvector2 = AFF2_TOXIN;
+		af.slot	= WEAR_NONE;
+		affect_to_char(victim, &af);
+	}
+
+	info->progs->lastreturn = 1;
+}
+
 // AWARD mobile string(type) number(amount)
 // Types: silver, gold, pneuma, deity/dp, practice, train, quest/qp, experience/xp
 //

@@ -27,6 +27,7 @@ const struct script_cmd_type mob_cmd_table[] = {
 	{ "alterobj",			do_mpalterobj,			TRUE,	TRUE	},
 	{ "alterroom",			do_mpalterroom,			TRUE,	TRUE	},
 	{ "appear",				do_mpvis,				FALSE,	TRUE	},
+	{ "applytoxin",			scriptcmd_applytoxin,	FALSE,	TRUE	},
 	{ "asound", 			do_mpasound,			FALSE,	TRUE	},
 	{ "assist",				do_mpassist,			FALSE,	TRUE	},
 	{ "at",					do_mpat,				FALSE,	TRUE	},

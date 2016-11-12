@@ -21,6 +21,7 @@ const struct script_cmd_type obj_cmd_table[] = {
 	{ "altermob",			do_opaltermob,			TRUE,	TRUE	},
 	{ "alterobj",			do_opalterobj,			TRUE,	TRUE	},
 	{ "alterroom",			do_opalterroom,			TRUE,	TRUE	},
+	{ "applytoxin",			scriptcmd_applytoxin,	FALSE,	TRUE	},
 	{ "asound",				do_opasound,			FALSE,	TRUE	},
 	{ "at",					do_opat,				FALSE,	TRUE	},
 	{ "award",				scriptcmd_award,		TRUE,	TRUE	},
