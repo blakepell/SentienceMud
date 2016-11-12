@@ -33,7 +33,7 @@ const struct script_cmd_type obj_cmd_table[] = {
 	{ "cloneroom",			do_opcloneroom,			TRUE,	TRUE	},
 	{ "condition",			do_opcondition,			FALSE,	TRUE	},
 	{ "crier",				do_opcrier,				FALSE,	TRUE	},
-	{ "damage",				do_opdamage,			FALSE,	TRUE	},
+	{ "damage",				scriptcmd_damage,		FALSE,	TRUE	},
 	{ "deduct",				scriptcmd_deduct,		TRUE,	TRUE	},
 	{ "delay",				do_opdelay,				FALSE,	TRUE	},
 	{ "dequeue",			do_opdequeue,			FALSE,	TRUE	},

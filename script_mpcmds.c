@@ -41,7 +41,7 @@ const struct script_cmd_type mob_cmd_table[] = {
 	{ "cloneroom",			do_mpcloneroom,			TRUE,	TRUE	},
 	{ "condition",			do_mpcondition,			FALSE,	TRUE	},
 	{ "crier",				do_mpcrier,				FALSE,	TRUE	},
-	{ "damage",				do_mpdamage,			FALSE,	TRUE	},
+	{ "damage",				scriptcmd_damage,		FALSE,	TRUE	},
 	{ "deduct",				scriptcmd_deduct,		TRUE,	TRUE	},
 	{ "delay",				do_mpdelay,				FALSE,	TRUE	},
 	{ "dequeue",			do_mpdequeue,			FALSE,	TRUE	},

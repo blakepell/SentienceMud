@@ -2407,6 +2407,7 @@ int execute_script(long pvnum, SCRIPT_DATA *script, CHAR_DATA *mob, OBJ_DATA *ob
 		vnum = mob->pIndexData->vnum;
 		block.type = IFC_M;
 		block.info.progs = mob->progs;
+		block.info.location = mob->in_room;
 		block.info.var = &mob->progs->vars;
 		block.info.targ = &mob->progs->target;
 
@@ -2415,6 +2416,7 @@ int execute_script(long pvnum, SCRIPT_DATA *script, CHAR_DATA *mob, OBJ_DATA *ob
 		vnum = obj->pIndexData->vnum;
 		block.type = IFC_O;
 		block.info.progs = obj->progs;
+		block.info.location = obj_room(obj);
 		block.info.var = &obj->progs->vars;
 		block.info.targ = &obj->progs->target;
 	} else if (room) {
@@ -2422,6 +2424,7 @@ int execute_script(long pvnum, SCRIPT_DATA *script, CHAR_DATA *mob, OBJ_DATA *ob
 		vnum = room->vnum;
 		block.type = IFC_R;
 		block.info.progs = room->progs;
+		block.info.location = room;
 		block.info.var = &room->progs->vars;
 		block.info.targ = &room->progs->target;
 	} else if (token) {
@@ -2429,6 +2432,7 @@ int execute_script(long pvnum, SCRIPT_DATA *script, CHAR_DATA *mob, OBJ_DATA *ob
 		vnum = token->pIndexData->vnum;
 		block.type = IFC_T;
 		block.info.progs = token->progs;
+		block.info.location = token_room(token);
 		block.info.var = &token->progs->vars;
 		block.info.targ = &token->progs->target;
 	} else {
@@ -4017,7 +4021,7 @@ int test_number_sight_trigger(int number, MATCH_NUMBER match, int type, int type
 		script_room_remref(room);
 
 	} else
-		bug("test_number_trigger: no program type for trigger %d.", type);
+		bug("test_number_sight_trigger: no program type for trigger %d.", type);
 
 	PRETURN;
 }
@@ -4330,7 +4334,7 @@ int test_vnumname_trigger(char *name, int vnum, int type,
 		script_room_remref(room);
 
 	} else
-		bug("test_number_trigger: no program type for trigger %d.", type);
+		bug("test_vnumname_trigger: no program type for trigger %d.", type);
 
 	PRETURN;
 }
@@ -5730,7 +5734,6 @@ long script_flag_value( const struct flag_type *flag_table, char *argument)
     else
 	return NO_FLAG;
 }
-
 
 CHAR_DATA *script_get_char_room(SCRIPT_VARINFO *info, char *name, bool see_all)
 {

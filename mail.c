@@ -1017,6 +1017,8 @@ void obj_from_mail(OBJ_DATA *obj)
     else
 	obj_prev->next_content = obj->next_content;
 
+    obj->in_mail = NULL;
+
 	--obj->pIndexData->inmail;
 }
 

@@ -409,6 +409,7 @@ struct script_varinfo {
 	CHAR_DATA **targ;
 	TOKEN_DATA *tok;
 	PROG_DATA *progs;
+	ROOM_INDEX_DATA *location;
 	int registers[5];
 	char phrase[MSL];
 	char trigger[MSL];

@@ -33,7 +33,7 @@ const struct script_cmd_type token_cmd_table[] = {
 	{ "cloneroom",			do_tpcloneroom,			TRUE,	TRUE	},
 	{ "condition",			do_tpcondition,			FALSE,	TRUE	},
 	{ "crier",				do_tpcrier,				FALSE,	TRUE	},
-	{ "damage",				do_tpdamage,			FALSE,	TRUE	},
+	{ "damage",				scriptcmd_damage,		FALSE,	TRUE	},
 	{ "deduct",				scriptcmd_deduct,		TRUE,	TRUE	},
 	{ "dequeue",			do_tpdequeue,			FALSE,	TRUE	},
 	{ "destroyroom",		do_tpdestroyroom,		TRUE,	TRUE	},

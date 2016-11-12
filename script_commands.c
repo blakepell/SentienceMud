@@ -14,6 +14,9 @@
 #include "debug.h"
 
 
+//////////////////////////////////////
+// A
+
 // APPLYTOXIN mobile string(toxin) int(level) int(duration)
 SCRIPT_CMD(scriptcmd_applytoxin)
 {
@@ -186,6 +189,146 @@ SCRIPT_CMD(scriptcmd_award)
 	}
 }
 
+//////////////////////////////////////
+// B
+
+//////////////////////////////////////
+// C
+
+//////////////////////////////////////
+// D
+
+// DAMAGE mobile|'all' lower upper 'lethal'|'kill'|string damageclass[ attacker]
+// DAMAGE mobile|'all' 'level'|'dual'|'remort'|'dualremort' mobile|number 'lethal'|'kill'|string damageclass[ attacker]
+SCRIPT_CMD(scriptcmd_damage)
+{
+	char *rest;
+	CHAR_DATA *victim = NULL, *victim_next, *attacker = NULL;
+	int low, high, level, value, dc;
+	bool fAll = FALSE, fKill = FALSE, fLevel = FALSE, fRemort = FALSE, fTwo = FALSE;
+	SCRIPT_PARAM arg;
+
+	if(!(rest = expand_argument(info,argument,&arg))) {
+		bug("MpDamage - Error in parsing from vnum %ld.", VNUM(info->mob));
+		return;
+	}
+
+	switch(arg.type) {
+	case ENT_STRING:
+		if(!str_cmp(arg.d.str,"all")) fAll = TRUE;
+		else victim = script_get_char_room(info, arg.d.str, FALSE);
+		break;
+	case ENT_MOBILE: victim = arg.d.mob; break;
+	default: victim = NULL; break;
+	}
+
+	if (!victim && !fAll)
+		return;
+
+	if (fAll && !info->location)
+		return;
+
+	if(!*rest)
+		return;
+
+	if(!(rest = expand_argument(info,rest,&arg)))
+		return;
+
+	switch(arg.type) {
+	case ENT_NUMBER: low = arg.d.num; break;
+	case ENT_STRING:
+		if(!str_cmp(arg.d.str,"level")) { fLevel = TRUE; break; }
+		if(!str_cmp(arg.d.str,"remort")) { fLevel = fRemort = TRUE; break; }
+		if(!str_cmp(arg.d.str,"dual")) { fLevel = fTwo = TRUE; break; }
+		if(!str_cmp(arg.d.str,"dualremort")) { fLevel = fTwo = fRemort = TRUE; break; }
+		if(is_number(arg.d.str)) { low = atoi(arg.d.str); break; }
+	default:
+		return;
+	}
+
+	if(!*rest)
+		return;
+
+	if(!(rest = expand_argument(info,rest,&arg)))
+		return;
+
+	if(fLevel && !victim)
+		return;
+
+	level = victim ? victim->tot_level : 1;
+
+	switch(arg.type) {
+	case ENT_NUMBER:
+		if(fLevel) level = arg.d.num;
+		else high = arg.d.num;
+		break;
+	case ENT_STRING:
+		if(is_number(arg.d.str)) {
+			if(fLevel) level = atoi(arg.d.str);
+			else high = atoi(arg.d.str);
+		} else
+			return;
+		break;
+	case ENT_MOBILE:
+		if(fLevel) {
+			if(arg.d.mob) level = arg.d.mob->tot_level;
+			else
+				return;
+		} else
+			return;
+		break;
+	default:
+		bug("MpDamage - invalid argument from vnum %ld.", VNUM(info->mob));
+		return;
+	}
+
+	if( *rest ) {
+		if(!(rest = expand_argument(info,rest,&arg)))
+			return;
+
+		if( arg.type != ENT_STRING ) return;
+
+		if (!str_cmp(arg.d.str,"kill") || !str_cmp(arg.d.str,"lethal")) fKill = TRUE;
+	}
+
+	if( *rest ) {
+		if(!(rest = expand_argument(info,rest,&arg)))
+			return;
+
+		if( arg.type != ENT_STRING ) return;
+
+		dc = damage_class_lookup(arg.d.str);
+	} else
+		dc = DAM_NONE;
+
+	if( *rest ) {
+		if(!(rest = expand_argument(info,rest,&arg)))
+			return;
+
+		if( arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+		attacker = arg.d.mob;
+
+	} else
+		attacker = NULL;
+
+
+	if(fLevel) get_level_damage(level,&low,&high,fRemort,fTwo);
+
+	if (fAll) {
+		for(victim = info->mob->in_room->people; victim; victim = victim_next) {
+			victim_next = victim->next_in_room;
+			if (victim != info->mob && (!attacker || victim != attacker)) {
+				value = fLevel ? dice(low,high) : number_range(low,high);
+				damage(attacker?attacker:victim, victim, fKill ? value : UMIN(victim->hit,value), TYPE_UNDEFINED, dc, FALSE);
+			}
+		}
+	} else {
+		value = fLevel ? dice(low,high) : number_range(low,high);
+		damage(attacker?attacker:victim, victim, fKill ? value : UMIN(victim->hit,value), TYPE_UNDEFINED, dc, FALSE);
+	}
+}
+
 
 // DEDUCT mobile string(type) number(amount)
 // Types: silver, gold, pneuma, deity/dp, practice, train, quest/qp
@@ -305,6 +448,16 @@ SCRIPT_CMD(scriptcmd_deduct)
 
 }
 
+//////////////////////////////////////
+// E
+
+//////////////////////////////////////
+// F
+
+//////////////////////////////////////
+// G
+
+
 // GRANTSKILL player name[ int(rating=1)[ bool(permanent=false)[ string(flags)]]]
 // GRANTSKILL player vnum[ int(rating=1)[ bool(permanent=false)[ string(flags)]]]
 SCRIPT_CMD(scriptcmd_grantskill)
@@ -418,6 +571,38 @@ SCRIPT_CMD(scriptcmd_grantskill)
 	info->progs->lastreturn = 1;
 }
 
+//////////////////////////////////////
+// H
+
+//////////////////////////////////////
+// I
+
+//////////////////////////////////////
+// J
+
+//////////////////////////////////////
+// K
+
+//////////////////////////////////////
+// L
+
+//////////////////////////////////////
+// M
+
+//////////////////////////////////////
+// N
+
+//////////////////////////////////////
+// O
+
+//////////////////////////////////////
+// P
+
+//////////////////////////////////////
+// Q
+
+//////////////////////////////////////
+// R
 
 // REVOKESKILL player name
 // REVOKESKILL player vnum
@@ -463,6 +648,25 @@ SCRIPT_CMD(scriptcmd_revokeskill)
 
 	skill_entry_removeentry(&mob->sorted_skills, entry);
 	info->progs->lastreturn = 1;
+}
+
+//////////////////////////////////////
+// S
+
+SCRIPT_CMD(scriptcmd_setalign)
+{
+}
+
+SCRIPT_CMD(scriptcmd_setclass)
+{
+}
+
+SCRIPT_CMD(scriptcmd_setrace)
+{
+}
+
+SCRIPT_CMD(scriptcmd_setsubclass)
+{
 }
 
 // STARTCOMBAT[ $ATTACKER] $VICTIM
@@ -568,4 +772,28 @@ SCRIPT_CMD(scriptcmd_stopcombat)
 	if( mob->fighting == NULL )
 		info->progs->lastreturn = 1;
 }
+
+
+//////////////////////////////////////
+// T
+
+//////////////////////////////////////
+// U
+
+//////////////////////////////////////
+// V
+
+//////////////////////////////////////
+// W
+
+//////////////////////////////////////
+// X
+
+//////////////////////////////////////
+// Y
+
+//////////////////////////////////////
+// Z
+
+
 

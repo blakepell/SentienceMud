@@ -34,7 +34,7 @@ const struct script_cmd_type room_cmd_table[] = {
 	{ "cloneroom",			do_rpcloneroom,			TRUE,	TRUE	},
 	{ "condition",			do_rpcondition,			FALSE,	TRUE	},
 	{ "crier",				do_rpcrier,				FALSE,	TRUE	},
-	{ "damage",				do_rpdamage,			FALSE,	TRUE	},
+	{ "damage",				scriptcmd_damage,		FALSE,	TRUE	},
 	{ "deduct",				scriptcmd_deduct,		TRUE,	TRUE	},
 	{ "delay",				do_rpdelay,				FALSE,	TRUE	},
 	{ "dequeue",			do_rpdequeue,			FALSE,	TRUE	},
