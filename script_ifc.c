@@ -1410,6 +1410,8 @@ DECL_IFC_FUN(ifc_objhere)
 		else if(token) *ret = token_room(token) && obj_room(ARG_OBJ(0)) == token_room(token);
 		else *ret = FALSE;
 	}
+	else
+		*ret = FALSE;
 	return TRUE;
 }
 

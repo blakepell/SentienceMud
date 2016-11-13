@@ -1006,7 +1006,7 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 					be->type = BOOLEXP_OR;
 					code[bool_exp_cline].rest = (char *)be;	// Update the code entry
 					be->left = bool_exp_root;
-					bool_exp_root->parent = be;
+					be->left->parent = be;
 					bool_exp_root = be;
 
 					// Add expression for this line
@@ -1077,6 +1077,9 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 						bool_exp_root = be;
 						code[bool_exp_cline].rest = (char *)be;
 					}
+
+					be->left->parent = be;
+					be->right->parent = be;
 
 					bool_exp->parent = be;
 					bool_exp = be->right;
