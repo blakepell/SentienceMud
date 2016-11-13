@@ -659,7 +659,12 @@ const struct flag_type plr_flags[] =
 
 const struct flag_type plr2_flags[] =
 {
+    {	"autosurvey",		PLR_HOLYAURA,		FALSE	},
+    {	"sacrifice_all",		PLR_SACRIFICE_ALL,		FALSE	},
+    {	"no_wake",		PLR_NO_WAKE,		FALSE	},
     {	"holyaura",		PLR_HOLYAURA,		FALSE	},
+    {	"mobile",		PLR_MOBILE,		FALSE	},
+    {	"favskills",	PLR_FAVSKILLS,	FALSE	},
     {	NULL,			0,	0			}
 };
 
@@ -2706,5 +2711,6 @@ const struct flag_type variable_types[] = {
 const struct flag_type skill_flags[] = {
 	{"practice",		SKILL_PRACTICE,			TRUE},
 	{"improve",			SKILL_IMPROVE,			TRUE},
+	{"favorite",		SKILL_FAVORITE,			FALSE},	// This is set manually
 	{ NULL,				0,			FALSE }
 };

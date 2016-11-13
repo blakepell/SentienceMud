@@ -2876,24 +2876,24 @@ void stop_holdup(CHAR_DATA *ch)
 void stop_fighting(CHAR_DATA *ch, bool fBoth)
 {
 	CHAR_DATA *fch;
-	ITERATOR it;
 
-	iterator_start(&it, loaded_chars);
-	while(( fch = (CHAR_DATA *)iterator_nextdata(&it)))
-	{
-		if (fch == ch || (fBoth && ch->fighting == fch))
-		{
-			if (fch->reverie == -1)
-				fch->reverie = 0;
-			if (fch->fighting != NULL && fch->fighting->reverie == -1)
-				fch->fighting->reverie = 0;
+	if( (fch = ch->fighting) == NULL ) return;
 
-			fch->fighting = NULL;
-			fch->position = IS_NPC(fch) ? fch->default_pos : POS_STANDING;
-			update_pos(fch);
-		}
+	if(fBoth) {
+		if (fch->reverie == -1)
+			fch->reverie = 0;
+
+		fch->fighting = NULL;
+		fch->position = IS_NPC(fch) ? fch->default_pos : POS_STANDING;
+		update_pos(fch);
 	}
-	iterator_stop(&it);
+
+	if (ch->reverie == -1)
+		ch->reverie = 0;
+
+	ch->fighting = NULL;
+	ch->position = IS_NPC(ch) ? ch->default_pos : POS_STANDING;
+	update_pos(ch);
 
 	return;
 }

@@ -363,6 +363,7 @@ typedef struct location_type {
 #define SKILL_SPELL				(A)
 #define SKILL_PRACTICE			(B)
 #define SKILL_IMPROVE			(C)
+#define SKILL_FAVORITE			(D)
 
 #define SKILL_AUTOMATIC			(SKILL_PRACTICE|SKILL_IMPROVE)
 
@@ -2902,6 +2903,8 @@ enum {
 #define PLR_SACRIFICE_ALL	(B)
 #define PLR_NO_WAKE		(C)
 #define PLR_HOLYAURA		(D)
+#define PLR_MOBILE			(E)
+#define PLR_FAVSKILLS		(F)
 
 #define COMM_QUIET              (A)
 #define COMM_NOMUSIC           	(B)

@@ -1953,9 +1953,9 @@ void do_mstat(CHAR_DATA *ch, char *argument)
     	send_to_char(buf, ch);
     }
 
-    sprintf(buf, "{BAct :{x %s\n\r",act_bit_name(1, victim->act));
+    sprintf(buf, "{BAct :{x %s\n\r",act_bit_name((IS_NPC(victim) ? 1 : 3), victim->act));
     send_to_char(buf,ch);
-    sprintf(buf, "{BAct2:{x %s\n\r",act_bit_name(2, victim->act2));
+    sprintf(buf, "{BAct2:{x %s\n\r",act_bit_name((IS_NPC(victim) ? 2 : 4), victim->act2));
     send_to_char(buf,ch);
 
     if (victim->comm)

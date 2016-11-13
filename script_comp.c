@@ -1568,12 +1568,14 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 			script->flags &= ~SCRIPT_DISABLED;
 	}
 
-	// Even empty scripts have "one" code.
-	//	Only BAD scripts have "no" codes
-	code[cline].opcode = OP_END;
-	code[cline].level = 0;
-	code[cline].rest = str_dup("");
-	code[cline].length = 0;
+	if( !cline || (code[cline-1].opcode != OP_END) ) {
+		// Even empty scripts have "one" code.
+		//	Only BAD scripts have "no" codes
+		code[cline].opcode = OP_END;
+		code[cline].level = 0;
+		code[cline].rest = str_dup("");
+		code[cline].length = 0;
+	}
 
 	free_script_code(script->code,script->lines);
 	free_string(script->src);

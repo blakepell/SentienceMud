@@ -963,6 +963,7 @@ void list_skill_entries(CHAR_DATA *ch, char *argument, bool show_skills, bool sh
 	BUFFER *buffer;
 
 	bool found = FALSE;
+	bool favonly = FALSE;
 	char buf[MAX_STRING_LENGTH];
 	char arg[MSL];
 	int i;
@@ -979,16 +980,43 @@ void list_skill_entries(CHAR_DATA *ch, char *argument, bool show_skills, bool sh
 
 	argument = one_argument( argument, arg );
 
+	if( !hide_learned && *argument == '/' && !str_prefix(argument, "/favorite") )
+	{
+		entry = skill_entry_findname(ch->sorted_skills, arg);
+
+		if( entry == NULL ) {
+			send_to_char("Ability not found.\n\r", ch );
+			return;
+		}
+		name = skill_entry_name(entry);
+		rating = skill_entry_rating(ch, entry);
+		if( rating < 0)
+			sprintf(buf, "'%s' cannot be favorited.\n\r", name);
+		else if(IS_SET(entry->flags, SKILL_FAVORITE)) {
+			sprintf(buf, "'%s' removed from favorites.\n\r", name);
+			REMOVE_BIT(entry->flags, SKILL_FAVORITE);
+		} else {
+			sprintf(buf, "'%s' added to favorites.\n\r", name);
+			SET_BIT(entry->flags, SKILL_FAVORITE);
+		}
+
+		send_to_char(buf, ch );
+		return;
+	}
+
 	buffer = new_buf();
 	if( show_spells )
 		add_buf(buffer, "\n\r{B [ {w# {B] [ {wMana{B ]  [ {wName{B ]                       [ {w%{B ]{x\n\r");
 	else
 		add_buf(buffer, "\n\r{B [ {w# {B] [ {wName{B ]                       [ {w%{B ]{x\n\r");
 
+	// Do we only show favorited skills?
+	favonly = (IS_SET(ch->act2, PLR_FAVSKILLS)) && !hide_learned;
+
 	i = 1;
 
 	// Show spells people lost
- 	if (!str_cmp(arg, "negated")) {
+ 	if (!str_cmp(arg, "/negated")) {
 		for(entry = ch->sorted_skills; entry; entry = entry->next) {
 			if( !show_skills && !IS_SET(entry->flags, SKILL_SPELL) ) continue;
 			if( !show_spells && IS_SET(entry->flags, SKILL_SPELL) ) continue;
@@ -1008,7 +1036,10 @@ void list_skill_entries(CHAR_DATA *ch, char *argument, bool show_skills, bool sh
 		}
 	} else {
 		char min_mana[MIL];
+		char eff_name[MIL];
 		for(entry = ch->sorted_skills; entry; entry = entry->next) {
+			if( favonly && !IS_SET(entry->flags, SKILL_FAVORITE) ) continue;
+
 			if( !show_skills && !IS_SET(entry->flags, SKILL_SPELL) ) continue;
 			if( !show_spells && IS_SET(entry->flags, SKILL_SPELL) ) continue;
 
@@ -1026,6 +1057,8 @@ void list_skill_entries(CHAR_DATA *ch, char *argument, bool show_skills, bool sh
 
 				color = ( IS_IMMORTAL(ch) && IS_VALID(entry->token) ) ? 'G' : 'Y';
 
+				sprintf(eff_name, "{%c%s", color, name);
+
 				// Don't have it yet
 				if( show_spells ) {
 					if( mana > 0 )
@@ -1034,39 +1067,46 @@ void list_skill_entries(CHAR_DATA *ch, char *argument, bool show_skills, bool sh
 						strcpy(min_mana, "---");
 
 					if( level < 0 )
-						sprintf(buf, " %3d     %-8s {%c%-26s    {xUnlocks at {W%d{x.\n\r", i, min_mana, color, name, -level);
+						sprintf(buf, " %3d     %-8s %-26s    {xUnlocks at {W%d", i, min_mana, eff_name, -level);
 					else {
 						rating = skill + mod;
 						rating = URANGE(0,rating,100);
 
 						if( rating >= 100 ) {	// MASTER
 							if( mod )
-								sprintf(buf, " %3d     %-8s {%c%-26s    {MMaster {W(%+d%%){x\n\r", i, min_mana, color, name, mod);
+								sprintf(buf, " %3d     %-8s %-26s    {MMaster {W(%+d%%)", i, min_mana, eff_name, mod);
 							else
-								sprintf(buf, " %3d     %-8s {%c%-26s    {MMaster{x\n\r", i, min_mana, color, name);
+								sprintf(buf, " %3d     %-8s %-26s    {MMaster", i, min_mana, eff_name);
 						} else if( mod )
-							sprintf(buf, " %3d     %-8s {%c%-26s    {G%d%% {W(%+d%%){x\n\r", i, min_mana, color, name, rating, mod);
+							sprintf(buf, " %3d     %-8s %-26s    {G%d%% {W(%+d%%)", i, min_mana, eff_name, rating, mod);
 						else
-							sprintf(buf, " %3d     %-8s {%c%-26s    {G%d%%{x\n\r", i, min_mana,  color, name, rating);
+							sprintf(buf, " %3d     %-8s %-26s    {G%d%%", i, min_mana,  eff_name, rating);
 					}
 				} else {
 					if( level < 0 )
-						sprintf(buf, " %3d     {%c%-26s    {xUnlocks at {W%d{x\n\r", i, color, name, -level);
+						sprintf(buf, " %3d     %-26s    {xUnlocks at {W%d", i, eff_name, -level);
 					else {
 						rating = skill + mod;
 						rating = URANGE(0,rating,100);
 
 						if( rating >= 100 ) {	// MASTER
 							if( mod )
-								sprintf(buf, " %3d     {%c%-26s    {MMaster {W(%+d%%){x\n\r", i, color, name, mod);
+								sprintf(buf, " %3d     %-26s    {MMaster {W(%+d%%)", i, eff_name, mod);
 							else
-								sprintf(buf, " %3d     {%c%-26s    {MMaster{x\n\r", i, color, name);
+								sprintf(buf, " %3d     %-26s    {MMaster", i, eff_name);
 						} else if( mod )
-							sprintf(buf, " %3d     {%c%-26s    {G%d%% {W(%+d%%){x\n\r", i, color, name, rating, mod);
+							sprintf(buf, " %3d     %-26s    {G%d%% {W(%+d%%)", i, eff_name, rating, mod);
 						else
-							sprintf(buf, " %3d     {%c%-26s    {G%d%%{x\n\r", i, color, name, rating);
+							sprintf(buf, " %3d     %-26s    {G%d%%", i, eff_name, rating);
 					}
 				}
+
+
+				if(!favonly && IS_SET(entry->flags, SKILL_FAVORITE))
+					strcat(buf, " {W[FAVORITE]");
+
+				strcat(buf, "{x\n\r");
+
 
 				add_buf(buffer,buf);
 				i++;
