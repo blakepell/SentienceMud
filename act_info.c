@@ -3983,8 +3983,10 @@ void do_who_new(CHAR_DATA * ch, char *argument)
 	add_buf(output, "\n\r");
     }
 
-    sprintf(buf2, "\n\rPlayers found: %d\n\r", nMatch);
-    add_buf(output, buf2);
+	if( nMatch != nMatch2 ) {
+		sprintf(buf2, "\n\rPlayers found: %d\n\r", nMatch);
+		add_buf(output, buf2);
+	}
     sprintf(buf2, "Players online: %d\n\r", nMatch2);
     add_buf(output, buf2);
     page_to_char(buf_string(output), ch);
