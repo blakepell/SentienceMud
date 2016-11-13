@@ -95,9 +95,6 @@ enum {
 	DONE	/* done processing the stack */
 };
 
-
-
-
 enum ifcheck_enum {
 	/* A */
 	CHK_ABS=0,CHK_ACT,CHK_ACT2,
@@ -363,13 +360,7 @@ enum ifcheck_param_types {
 enum script_command_enum {
 	OP_END = 0,		/* end/break */
 	OP_IF,			/* if .... */
-	OP_IFNOT,		/* if not ... / if !.... */
-	OP_OR,			/* or .... */
-	OP_NOR,			/* or not ... / or !.... */
-	OP_AND,			/* and .... */
-	OP_NAND,		/* and not ... / if !.... */
 	OP_ELSEIF,		/* elseif .... */
-	OP_ELSEIFNOT,		/* elseif !.... */
 	OP_ELSE,		/* else */
 	OP_ENDIF,		/* endif */
 	OP_COMMAND,		/* ordinary command (MPROGS ONLY) */
@@ -381,7 +372,6 @@ enum script_command_enum {
 	OP_ENDLIST,
 	OP_EXITLIST,
 	OP_WHILE,		/* while .... */
-	OP_WHILENOT,		/* while not ... / if !.... */
 	OP_ENDWHILE,
 	OP_EXITWHILE,
 	/* Add new opcodes here... */
@@ -1148,6 +1138,23 @@ struct ifcheck_data {
 	char *help;			/* Help keywords (for accessing the help file) */
 };
 
+#define BOOLEXP_TRUE	0	// Evaluates the logical value of LEFT == (LEFT)
+#define BOOLEXP_NOT		1	// Evaluates the logical NOT of LEFT == (!LEFT)
+#define BOOLEXP_AND		2	// Evaluates the logical AND of LEFT and RIGHT == (LEFT && RIGHT)
+#define BOOLEXP_OR		3	// Evaluates the logical OR of LEFT and RIGHT == (LEFT || RIGHT)
+//#define BOOLEXP_XOR		4	// Evaluates the logical XOR of LEFT and RIGHT == (LEFT != RIGHT)
+//#define BOOLEXP_IMPLY	5	// Evaluates the logical IMPLICATION of LEFT and RIGHT == (!LEFT || RIGHT)
+
+struct script_boolexp {
+	char type;
+	struct script_boolexp *left;
+	struct script_boolexp *right;
+	struct script_boolexp *parent;
+	short param;
+	short length;
+	char *rest;
+};
+
 struct script_code {
 	unsigned char opcode;
 	unsigned char level;
@@ -1767,11 +1774,6 @@ DECL_IFC_FUN(ifc_roll);
 /* Opcode functions */
 DECL_OPC_FUN(opc_end);
 DECL_OPC_FUN(opc_if);
-DECL_OPC_FUN(opc_ifnot);
-DECL_OPC_FUN(opc_or);
-DECL_OPC_FUN(opc_nor);
-DECL_OPC_FUN(opc_and);
-DECL_OPC_FUN(opc_nand);
 DECL_OPC_FUN(opc_else);
 DECL_OPC_FUN(opc_endif);
 DECL_OPC_FUN(opc_command);
@@ -1783,7 +1785,6 @@ DECL_OPC_FUN(opc_list);
 DECL_OPC_FUN(opc_endlist);
 DECL_OPC_FUN(opc_exitlist);
 DECL_OPC_FUN(opc_while);
-DECL_OPC_FUN(opc_whilenot);
 DECL_OPC_FUN(opc_endwhile);
 DECL_OPC_FUN(opc_exitwhile);
 DECL_OPC_FUN(opc_mob);

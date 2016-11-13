@@ -344,6 +344,7 @@ typedef bool (*IFC_FUNC)(SCRIPT_VARINFO *info, CHAR_DATA *mob,OBJ_DATA *obj,ROOM
 typedef bool (*OPCODE_FUNC)(SCRIPT_CB *block);
 typedef struct entity_field_type ENT_FIELD;
 typedef struct script_var_type VARIABLE, *pVARIABLE, **ppVARIABLE;
+typedef struct script_boolexp BOOLEXP;
 
 typedef struct location_type {
 	unsigned long wuid;
@@ -7702,5 +7703,9 @@ long dice_roll(DICE_DATA *d);
 void dice_copy(DICE_DATA *a, DICE_DATA *b);
 
 TOKEN_DATA *create_token(TOKEN_INDEX_DATA *token_index);
+
+BOOLEXP *new_boolexp();
+void free_boolexp(BOOLEXP *boolexp);
+
 
 #endif /* !def __MERC_H__ */

@@ -3038,8 +3038,14 @@ void free_script_code(SCRIPT_CODE *code, int lines)
 	DBG2ENTRY2(PTR,code,NUM,lines);
 	if(!code) return;
 
-	for(i=0;i<lines;i++)
-		if(code[i].rest) free_string(code[i].rest);
+	for(i=0;i<lines;i++) {
+		if(code[i].rest) {
+			if(code[i].opcode == OP_IF || code[i].opcode == OP_WHILE || code[i].opcode == OP_ELSEIF)
+				free_boolexp((BOOLEXP *)code[i].rest);
+			else
+				free_string(code[i].rest);
+		}
+	}
 
 	free_mem(code,i *sizeof(SCRIPT_CODE));
 }
@@ -3133,3 +3139,40 @@ void free_affliction(AFFLICTION_DATA *aff)
 
 	top_affliction--;
 }
+
+BOOLEXP *boolexp_free = NULL;
+BOOLEXP *new_boolexp()
+{
+	BOOLEXP *boolexp;
+	if(boolexp_free == NULL)
+		boolexp = alloc_perm(sizeof(*boolexp));
+	else {
+		boolexp = boolexp_free;
+		boolexp_free = boolexp_free->left;
+	}
+
+	boolexp->type = BOOLEXP_TRUE;
+	boolexp->left = NULL;
+	boolexp->right = NULL;
+	boolexp->parent = NULL;
+	boolexp->rest = NULL;
+
+	return boolexp;
+}
+
+void free_boolexp(BOOLEXP *boolexp)
+{
+
+	if( boolexp->left )
+		free_boolexp(boolexp->left);
+
+	if( boolexp->right )
+		free_boolexp(boolexp->right);
+
+	if( boolexp->rest )
+		free_string(boolexp->rest);
+
+	boolexp->left = boolexp_free;
+	boolexp_free = boolexp;
+}
+

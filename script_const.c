@@ -12,13 +12,7 @@
 char *opcode_names[OP_LASTCODE] = {
 	"END",
 	"IF",
-	"IF !",
-	"OR",
-	"OR !",
-	"AND",
-	"AND !",
 	"ELSEIF",
-	"ELSEIF !",
 	"ELSE",
 	"ENDIF",
 	"COMMAND",
@@ -30,7 +24,6 @@ char *opcode_names[OP_LASTCODE] = {
 	"ENDLIST",
 	"EXITLIST",
 	"WHILE",
-	"WHILE !",
 	"ENDWHILE",
 	"EXITWHILE",
 	"MOB <command>",
@@ -1185,13 +1178,7 @@ IFCHECK_DATA ifcheck_table[] = {
 OPCODE_FUNC opcode_table[OP_LASTCODE] = {
 	opc_end,
 	opc_if,
-	opc_ifnot,
-	opc_or,
-	opc_nor,
-	opc_and,
-	opc_nand,
 	opc_if,
-	opc_ifnot,
 	opc_else,
 	opc_endif,
 	opc_command,
@@ -1203,7 +1190,6 @@ OPCODE_FUNC opcode_table[OP_LASTCODE] = {
 	opc_endlist,
 	opc_exitlist,
 	opc_while,
-	opc_whilenot,
 	opc_endwhile,
 	opc_exitwhile,
 	opc_mob,
@@ -1236,6 +1222,7 @@ int script_expression_tostack[CH_MAX+1] = { STK_OPEN, STK_NEG, STK_NOT, STK_RAND
 
 // Number of operands needed for operator when performing it
 int script_expression_argstack[STK_MAX+1] = {1,1,2,2,2,2,2,2,0,0,0};
+
 
 const char *male_female  [] = { "neuter",  "male",  "female" };
 const char *he_she  [] = { "it",  "he",  "she" };

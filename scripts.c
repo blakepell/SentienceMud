@@ -382,23 +382,21 @@ char *ifcheck_get_value(SCRIPT_VARINFO *info,IFCHECK_DATA *ifc,char *text,int *r
 	return argument;
 }
 
-int ifcheck_comparison(SCRIPT_CB *block)
+int ifcheck_comparison(SCRIPT_VARINFO *info, short param, char *rest)
 {
 	int lhs, oper, rhs;
 	char *text, *p, buf[MIL], buf2[MSL];
 	bool valid;
-	SCRIPT_CODE *code;
 	IFCHECK_DATA *ifc;
 	SCRIPT_PARAM arg;
 
-	if(!block) return -1;	// Error
+	if(!info) return -1;	// Error
 
-	code = block->cur_line;
-	if(!code || code->param < -1 || code->param >= CHK_MAXIFCHECKS)
+	if(param < -1 || param >= CHK_MAXIFCHECKS)
 		 return -1;
 
-	if(code->param == -1) {
-		text = expand_argument(&block->info,block->cur_line->rest,&arg);
+	if(param == -1) {
+		text = expand_argument(info,rest,&arg);
 		if(!text) return -1;
 
 		if( arg.type == ENT_BOOLEAN )
@@ -410,14 +408,14 @@ int ifcheck_comparison(SCRIPT_CB *block)
 		lhs = arg.d.num;
 
 	} else {
-		ifc = &ifcheck_table[code->param];
+		ifc = &ifcheck_table[param];
 
 		if(wiznet_script) {
-			sprintf(buf2,"Doing ifcheck: %d, '%s'", code->param, ifc->name);
+			sprintf(buf2,"Doing ifcheck: %d, '%s'", param, ifc->name);
 			wiznet(buf2,NULL,NULL,WIZ_SCRIPTS,0,0);
 		}
 
-		text = ifcheck_get_value(&block->info,ifc,block->cur_line->rest,&lhs,&valid);
+		text = ifcheck_get_value(info,ifc,rest,&lhs,&valid);
 
 		if(!valid) return FALSE;
 
@@ -429,7 +427,7 @@ int ifcheck_comparison(SCRIPT_CB *block)
 	oper = get_operator(buf);
 	if (oper < 0) return FALSE;
 
-	p = expand_argument(&block->info,text,&arg);
+	p = expand_argument(info,text,&arg);
 	if(!p || p == text) {
 		return -1;
 	}
@@ -455,6 +453,49 @@ int ifcheck_comparison(SCRIPT_CB *block)
 	case EVAL_MASK:	return (lhs & rhs);
 	default:	return FALSE;
 	}
+}
+
+int boolexp_evaluate(SCRIPT_CB *block, BOOLEXP *be)
+{
+	int ret;
+	if(!block) return -1;	// Error
+
+	switch(be->type) {
+	case BOOLEXP_TRUE:
+		return ifcheck_comparison(&block->info, be->param, be->rest);
+
+	case BOOLEXP_NOT:
+		ret = ifcheck_comparison(&block->info, be->param, be->rest);
+
+		if( ret < 0 ) return -1;
+
+		return ret ? FALSE : TRUE;
+
+	case BOOLEXP_AND:
+		ret = boolexp_evaluate(block, be->left);
+		if( ret < 0 ) return -1;
+
+		if( ret == FALSE ) return FALSE;	// Short circuit FALSE
+
+		ret = boolexp_evaluate(block, be->right);
+		if( ret < 0 ) return -1;
+
+		return ret ? TRUE : FALSE;
+
+	case BOOLEXP_OR:
+		ret = boolexp_evaluate(block, be->left);
+		if( ret < 0 ) return -1;
+
+		if( ret == TRUE ) return TRUE;		// Short circuit TRUE
+
+		ret = boolexp_evaluate(block, be->right);
+		if( ret < 0 ) return -1;
+
+		return ret ? TRUE : FALSE;
+	}
+
+
+	return FALSE;
 }
 
 bool opc_skip_to_label(SCRIPT_CB *block,int op,int id,bool dir)
@@ -517,14 +558,14 @@ bool opc_skip_block(SCRIPT_CB *block,int level,bool endblock)
 		last = block->script->lines;
 
 		line = block->line;
-		if(code[line].opcode == OP_ELSEIF || code[line].opcode == OP_ELSEIFNOT) ++line;
+		if(code[line].opcode == OP_ELSEIF) ++line;
 
 		for(; line < last; line++) {
 //			if(wiznet_script) {
 //				sprintf(buf,"Checking: Line=%d, Opcode=%d(%s), Level=%d", line+1,code[line].opcode,opcode_names[code[line].opcode],code[line].level);
 //				wiznet(buf,NULL,NULL,WIZ_SCRIPTS,0,0);
 //			}
-			if(((!endblock && (code[line].opcode == OP_ELSE || code[line].opcode == OP_ELSEIF || code[line].opcode == OP_ELSEIFNOT)) ||
+			if(((!endblock && (code[line].opcode == OP_ELSE || code[line].opcode == OP_ELSEIF)) ||
 				code[line].opcode == OP_ENDIF) && code[line].level == level) {
 				block->line = line;
 				DBG2EXITVALUE2(TRUE);
@@ -629,30 +670,11 @@ DECL_OPC_FUN(opc_if)
 	if(block->cur_line->opcode == OP_ELSEIF && block->cond[block->cur_line->level])
 		return opc_skip_block(block,block->cur_line->level,TRUE);
 
-	ret = ifcheck_comparison(block);
+	ret = boolexp_evaluate(block, (BOOLEXP *)block->cur_line->rest);
 	if(ret < 0) return FALSE;
 
 	block->state[block->cur_line->level] = OP_IF;
 	block->cond[block->cur_line->level] = ret;
-	opc_next_line(block);
-	return TRUE;
-}
-
-DECL_OPC_FUN(opc_ifnot)
-{
-	int ret;
-
-	if(block->cur_line->level > 0 && !block->cond[block->cur_line->level-1])
-		return opc_skip_block(block,block->cur_line->level-1,FALSE);
-
-	if(block->cur_line->opcode == OP_ELSEIFNOT && block->cond[block->cur_line->level])
-		return opc_skip_block(block,block->cur_line->level,TRUE);
-
-	ret = ifcheck_comparison(block);
-	if(ret < 0) return FALSE;
-
-	block->state[block->cur_line->level] = OP_IF;
-	block->cond[block->cur_line->level] = !ret;
 	opc_next_line(block);
 	return TRUE;
 }
@@ -664,89 +686,11 @@ DECL_OPC_FUN(opc_while)
 	if(block->cur_line->level > 0 && !block->cond[block->cur_line->level-1])
 		return opc_skip_block(block,block->cur_line->level-1,FALSE);
 
-	ret = ifcheck_comparison(block);
+	ret = boolexp_evaluate(block, (BOOLEXP *)block->cur_line->rest);
 	if(ret < 0) return FALSE;
 
 	block->state[block->cur_line->level] = OP_WHILE;
 	block->cond[block->cur_line->level] = ret;
-	opc_next_line(block);
-	return TRUE;
-}
-
-DECL_OPC_FUN(opc_whilenot)
-{
-	int ret;
-
-	if(block->cur_line->level > 0 && !block->cond[block->cur_line->level-1])
-		return opc_skip_block(block,block->cur_line->level-1,FALSE);
-
-	ret = ifcheck_comparison(block);
-	if(ret < 0) return FALSE;
-
-	block->state[block->cur_line->level] = OP_WHILE;
-	block->cond[block->cur_line->level] = !ret;
-	opc_next_line(block);
-	return TRUE;
-}
-
-
-DECL_OPC_FUN(opc_or)
-{
-	int ret;
-
-	if(block->cur_line->level > 0 && !block->cond[block->cur_line->level-1])
-		return opc_skip_block(block,block->cur_line->level-1,FALSE);
-
-	ret = ifcheck_comparison(block);
-	if(ret < 0) return FALSE;
-
-	block->cond[block->cur_line->level] = block->cond[block->cur_line->level] || ret;
-	opc_next_line(block);
-	return TRUE;
-}
-
-DECL_OPC_FUN(opc_nor)
-{
-	int ret;
-
-	if(block->cur_line->level > 0 && !block->cond[block->cur_line->level-1])
-		return opc_skip_block(block,block->cur_line->level-1,FALSE);
-
-	ret = ifcheck_comparison(block);
-	if(ret < 0) return FALSE;
-
-	block->cond[block->cur_line->level] = block->cond[block->cur_line->level] || !ret;
-	opc_next_line(block);
-	return TRUE;
-}
-
-DECL_OPC_FUN(opc_and)
-{
-	int ret;
-
-	if(block->cur_line->level > 0 && !block->cond[block->cur_line->level-1])
-		return opc_skip_block(block,block->cur_line->level-1,FALSE);
-
-	ret = ifcheck_comparison(block);
-	if(ret < 0) return FALSE;
-
-	block->cond[block->cur_line->level] = block->cond[block->cur_line->level] && ret;
-	opc_next_line(block);
-
-	return TRUE;
-}
-
-DECL_OPC_FUN(opc_nand)
-{
-	int ret;
-
-	if(block->cur_line->level > 0 && !block->cond[block->cur_line->level-1])
-		return opc_skip_block(block,block->cur_line->level-1,FALSE);
-
-	ret = ifcheck_comparison(block);
-	if(ret < 0) return FALSE;
-
-	block->cond[block->cur_line->level] = block->cond[block->cur_line->level] && !ret;
 	opc_next_line(block);
 	return TRUE;
 }
