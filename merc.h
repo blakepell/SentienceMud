@@ -363,7 +363,7 @@ typedef struct location_type {
 #define SKILL_SPELL				(A)
 #define SKILL_PRACTICE			(B)
 #define SKILL_IMPROVE			(C)
-#define SKILL_FAVORITE			(D)
+#define SKILL_FAVOURITE			(D)
 
 #define SKILL_AUTOMATIC			(SKILL_PRACTICE|SKILL_IMPROVE)
 

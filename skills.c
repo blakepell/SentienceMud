@@ -980,7 +980,7 @@ void list_skill_entries(CHAR_DATA *ch, char *argument, bool show_skills, bool sh
 
 	argument = one_argument( argument, arg );
 
-	if( !hide_learned && *argument == '/' && !str_prefix(argument, "/favorite") )
+	if( !hide_learned && *argument == '/' && !str_prefix(argument, "/favourite") )
 	{
 		entry = skill_entry_findname(ch->sorted_skills, arg);
 
@@ -991,13 +991,13 @@ void list_skill_entries(CHAR_DATA *ch, char *argument, bool show_skills, bool sh
 		name = skill_entry_name(entry);
 		rating = skill_entry_rating(ch, entry);
 		if( rating < 0)
-			sprintf(buf, "'%s' cannot be favorited.\n\r", name);
-		else if(IS_SET(entry->flags, SKILL_FAVORITE)) {
-			sprintf(buf, "'%s' removed from favorites.\n\r", name);
-			REMOVE_BIT(entry->flags, SKILL_FAVORITE);
+			sprintf(buf, "'%s' cannot be favourited.\n\r", name);
+		else if(IS_SET(entry->flags, SKILL_FAVOURITE)) {
+			sprintf(buf, "'%s' removed from favourites.\n\r", name);
+			REMOVE_BIT(entry->flags, SKILL_FAVOURITE);
 		} else {
-			sprintf(buf, "'%s' added to favorites.\n\r", name);
-			SET_BIT(entry->flags, SKILL_FAVORITE);
+			sprintf(buf, "'%s' added to favourites.\n\r", name);
+			SET_BIT(entry->flags, SKILL_FAVOURITE);
 		}
 
 		send_to_char(buf, ch );
@@ -1010,7 +1010,7 @@ void list_skill_entries(CHAR_DATA *ch, char *argument, bool show_skills, bool sh
 	else
 		add_buf(buffer, "\n\r{B [ {w# {B] [ {wName{B ]                       [ {w%{B ]{x\n\r");
 
-	// Do we only show favorited skills?
+	// Do we only show favourited skills?
 	favonly = (IS_SET(ch->act2, PLR_FAVSKILLS)) && !hide_learned;
 
 	i = 1;
@@ -1038,7 +1038,7 @@ void list_skill_entries(CHAR_DATA *ch, char *argument, bool show_skills, bool sh
 		char min_mana[MIL];
 		char eff_name[MIL];
 		for(entry = ch->sorted_skills; entry; entry = entry->next) {
-			if( favonly && !IS_SET(entry->flags, SKILL_FAVORITE) ) continue;
+			if( favonly && !IS_SET(entry->flags, SKILL_FAVOURITE) ) continue;
 
 			if( !show_skills && !IS_SET(entry->flags, SKILL_SPELL) ) continue;
 			if( !show_spells && IS_SET(entry->flags, SKILL_SPELL) ) continue;
@@ -1102,8 +1102,8 @@ void list_skill_entries(CHAR_DATA *ch, char *argument, bool show_skills, bool sh
 				}
 
 
-				if(!favonly && IS_SET(entry->flags, SKILL_FAVORITE))
-					strcat(buf, " {W[FAVORITE]");
+				if(!favonly && IS_SET(entry->flags, SKILL_FAVOURITE))
+					strcat(buf, " {W[FAVOURITE]");
 
 				strcat(buf, "{x\n\r");
 
