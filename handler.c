@@ -2030,15 +2030,18 @@ void char_to_room(CHAR_DATA *ch, ROOM_INDEX_DATA *pRoomIndex)
         if (af->level == 1)
             return;
 
-	plague.where		= TO_AFFECTS;
-	plague.group		= AFFGROUP_BIOLOGICAL;
+		plague.where		= TO_AFFECTS;
+		plague.group		= AFFGROUP_BIOLOGICAL;
         plague.type 		= gsn_plague;
         plague.level 		= af->level - 1;
         plague.duration 	= number_range(1,2 * plague.level);
         plague.location		= APPLY_STR;
         plague.modifier 	= -5;
         plague.bitvector 	= AFF_PLAGUE;
+        plague.bitvector2	= 0;
         plague.slot			= WEAR_NONE;
+        plague.custom_name = NULL;
+
 
         for (vch = ch->in_room->people; vch != NULL; vch = vch->next_in_room)
         {
