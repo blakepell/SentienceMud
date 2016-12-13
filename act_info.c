@@ -1136,7 +1136,7 @@ void show_char_to_char(CHAR_DATA *list, CHAR_DATA *ch, CHAR_DATA *victim)
 	    &&  !IS_AFFECTED(ch, AFF_DETECT_HIDDEN))
 		continue;
 
-	    if (can_see(victim, rch))
+	    if (can_see(victim, rch) || (IS_IMMORTAL(rch) && can_see_imm(ch,rch)))
 	    {
 		show_char_to_char_0(rch, ch);
 		if (MOUNTED(rch)
@@ -1158,7 +1158,7 @@ void show_char_to_char(CHAR_DATA *list, CHAR_DATA *ch, CHAR_DATA *victim)
 		    && RIDDEN(rch) != ch))
 		continue;
 
-	    if (get_trust(ch) < rch->invis_level)
+	    if (get_trust(ch) < rch->invis_level && !can_see_imm(ch,rch))
 		continue;
 
 	    if (mist && number_percent() < mist->value[1])
@@ -1168,7 +1168,7 @@ void show_char_to_char(CHAR_DATA *list, CHAR_DATA *ch, CHAR_DATA *victim)
 	    &&  !IS_AFFECTED(ch, AFF_DETECT_HIDDEN))
 		continue;
 
-	    if (can_see(ch, rch))
+	    if (can_see(ch, rch) || (IS_IMMORTAL(rch) && can_see_imm(ch,rch)))
 	    {
 		show_char_to_char_0(rch, ch);
 		if (MOUNTED(rch)
