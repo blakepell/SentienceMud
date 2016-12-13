@@ -2013,6 +2013,11 @@ void skill_entry_insert (SKILL_ENTRY **list, int sn, int song, TOKEN_DATA *token
 	entry->source = source;
 	entry->flags = flags;
 
+	if (IS_SET(entry->flags, SKILL_SPELL)) {
+	entry->isspell = true;
+	}
+
+
 	// Link the token to the skill
 	if( IS_VALID(token) )
 		token->skill = entry;
