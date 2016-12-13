@@ -5103,7 +5103,7 @@ void do_buy(CHAR_DATA *ch, char *argument)
 	    ch->reply = keeper;
 	    return;
 	}
-
+/* AO - this is stupid. Buy whatever you want :P 
 	if (obj->level > ch->tot_level
 	&&  !(IS_REMORT(ch) && IS_SET(obj->extra2_flags, ITEM_ALL_REMORT)))
 	{
@@ -5112,7 +5112,7 @@ void do_buy(CHAR_DATA *ch, char *argument)
 	    ch->reply = keeper;
 	    return;
 	}
-
+*/
 	if (ch->carry_number +  number * get_obj_number(obj) > can_carry_n(ch))
 	{
 	    send_to_char("You can't carry that many items.\n\r", ch);
