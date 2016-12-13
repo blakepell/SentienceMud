@@ -61,6 +61,8 @@ extern bool wiznet_script;
 #define ISARG_PLLIST_TOK(x)	ISARG_BLIST(x,ENT_PLLIST_TOK)
 #define ISARG_PLLIST_CHURCH(x)	ISARG_BLIST(x,ENT_PLLIST_CHURCH)
 
+#define ISARG_DICE(x)	((argv[(x)].type == ENT_DICE) && argv[(x)].d.dice)
+
 
 #define ARG_NUM(x)	ARG_TYPE(x,num)
 #define ARG_STR(x)	ARG_TYPE(x,str)
@@ -82,6 +84,7 @@ extern bool wiznet_script;
 #define ARG_AID(x)	ARG_TYPE(x,aid)
 #define ARG_WID(x)	ARG_TYPE(x,wid)
 #define ARG_CHID(x)	ARG_TYPE(x,chid)
+#define ARG_DICE(x) ARG_TYPE(x,dice)
 
 #define SHIFT_MOB()	do { if(ISARG_MOB(0)) { mob = ARG_MOB(0); ++argv; --argc; } } while(0)
 #define SHIFT_OBJ()	do { if(ISARG_OBJ(0)) { obj = ARG_OBJ(0); ++argv; --argc; } } while(0)
@@ -1407,6 +1410,8 @@ DECL_IFC_FUN(ifc_objhere)
 		else if(token) *ret = token_room(token) && obj_room(ARG_OBJ(0)) == token_room(token);
 		else *ret = FALSE;
 	}
+	else
+		*ret = FALSE;
 	return TRUE;
 }
 
@@ -4403,21 +4408,21 @@ DECL_IFC_FUN(ifc_objclones)
 // hitdicebonus MOBILE == NUMBER
 DECL_IFC_FUN(ifc_hitdicebonus)
 {
-	*ret = VALID_NPC(0) ? ARG_MOB(0)->damage[DICE_BONUS] : 0;
+	*ret = VALID_NPC(0) ? ARG_MOB(0)->damage.bonus : 0;
 	return TRUE;
 }
 
 // hitdicenumber MOBILE == NUMBER
 DECL_IFC_FUN(ifc_hitdicenumber)
 {
-	*ret = VALID_NPC(0) ? ARG_MOB(0)->damage[DICE_NUMBER] : 0;
+	*ret = VALID_NPC(0) ? ARG_MOB(0)->damage.number : 0;
 	return TRUE;
 }
 
 // hitdicetype MOBILE == NUMBER
 DECL_IFC_FUN(ifc_hitdicetype)
 {
-	*ret = VALID_NPC(0) ? ARG_MOB(0)->damage[DICE_TYPE] : 0;
+	*ret = VALID_NPC(0) ? ARG_MOB(0)->damage.size : 0;
 	return TRUE;
 }
 
@@ -4428,4 +4433,14 @@ DECL_IFC_FUN(ifc_strprefix)
 	*ret = ISARG_STR(0) && ISARG_STR(1) && !str_prefix(ARG_STR(1), ARG_STR(0));
 	return TRUE;
 }
+
+// roll DICE == NUMBER
+DECL_IFC_FUN(ifc_roll)
+{
+	if(!ISARG_DICE(0)) return FALSE;
+
+	*ret = dice_roll(ARG_DICE(0));
+	return TRUE;
+}
+
 

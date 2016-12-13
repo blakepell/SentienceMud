@@ -986,6 +986,8 @@ void obj_to_mail(OBJ_DATA *obj, MAIL_DATA *mail)
     obj->in_room         = NULL;
     obj->carried_by      = NULL;
     obj->in_mail	 = mail;
+
+    obj->pIndexData->inmail++;
 }
 
 
@@ -1014,6 +1016,10 @@ void obj_from_mail(OBJ_DATA *obj)
 	mail->objects = obj->next_content;
     else
 	obj_prev->next_content = obj->next_content;
+
+    obj->in_mail = NULL;
+
+	--obj->pIndexData->inmail;
 }
 
 

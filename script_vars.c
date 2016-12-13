@@ -412,6 +412,7 @@ bool variables_set_##n (ppVARIABLE list,char *name,t v) \
 } \
 
 
+varset(boolean,BOOLEAN,bool,boolean,boolean)
 varset(integer,INTEGER,int,num,i)
 varset(room,ROOM,ROOM_INDEX_DATA*,r,r)
 varset(mobile,MOBILE,CHAR_DATA*,m,m)
@@ -422,6 +423,28 @@ varset(wilds,WILDS,WILDS_DATA*,wilds,wilds)
 varset(church,CHURCH,CHURCH_DATA*,church,church)
 varset(affect,AFFECT,AFFECT_DATA*,aff,aff)
 varset(variable,VARIABLE,pVARIABLE,v,variable)
+
+bool variables_set_dice (ppVARIABLE list,char *name,DICE_DATA *d)
+{
+	return variables_setsave_dice (list, name, d, TRISTATE);
+}
+
+bool variables_setsave_dice (ppVARIABLE list,char *name,DICE_DATA *d, bool save)
+{
+	pVARIABLE var = variable_create(list,name,FALSE,TRUE);
+
+	if(!var) return FALSE;
+
+	var->type = VAR_DICE;
+	if( save != TRISTATE )
+		var->save = save;
+	var->_.dice.number = d->number;
+	var->_.dice.size = d->size;
+	var->_.dice.bonus = d->bonus;
+	var->_.dice.last_roll = d->last_roll;
+
+	return TRUE;
+}
 
 bool variables_set_door (ppVARIABLE list,char *name, ROOM_INDEX_DATA *room, int door, bool save)
 {
@@ -1295,6 +1318,7 @@ bool variable_copy(ppVARIABLE list,char *oldname,char *newname)
 
 	switch(newv->type) {
 	case VAR_UNKNOWN:		break;
+	case VAR_BOOLEAN:		newv->_.boolean = oldv->_.boolean; break;
 	case VAR_INTEGER:		newv->_.i = oldv->_.i; break;
 	case VAR_STRING:		newv->_.s = str_dup(oldv->_.s); break;
 	case VAR_STRING_S:		newv->_.s = oldv->_.s; break;
@@ -1353,6 +1377,7 @@ bool variable_copyto(ppVARIABLE from,ppVARIABLE to,char *oldname,char *newname, 
 
 	switch(newv->type) {
 	case VAR_UNKNOWN:	break;
+	case VAR_BOOLEAN:	newv->_.boolean = oldv->_.boolean; break;
 	case VAR_INTEGER:	newv->_.i = oldv->_.i; break;
 	case VAR_STRING:	newv->_.s = str_dup(oldv->_.s); break;
 	case VAR_STRING_S:	newv->_.s = oldv->_.s; break;
@@ -1370,6 +1395,7 @@ bool variable_copyto(ppVARIABLE from,ppVARIABLE to,char *oldname,char *newname, 
 	case VAR_WILDS:			newv->_.wilds = oldv->_.wilds; break;
 	case VAR_CHURCH:		newv->_.church = oldv->_.church; break;
 	case VAR_VARIABLE:		newv->_.variable = oldv->_.variable; break;
+	case VAR_DICE:			newv->_.dice = oldv->_.dice; break;
 
 	case VAR_PLLIST_STR:
 	case VAR_PLLIST_CONN:
@@ -1410,6 +1436,7 @@ bool variable_copylist(ppVARIABLE from,ppVARIABLE to,bool index)
 
 		switch(newv->type) {
 		case VAR_UNKNOWN:	break;
+		case VAR_BOOLEAN:		newv->_.boolean = oldv->_.boolean; break;
 		case VAR_INTEGER:	newv->_.i = oldv->_.i; break;
 		case VAR_STRING:	newv->_.s = str_dup(oldv->_.s); break;
 		case VAR_STRING_S:	newv->_.s = oldv->_.s; break;
@@ -1426,6 +1453,7 @@ bool variable_copylist(ppVARIABLE from,ppVARIABLE to,bool index)
 		case VAR_WILDS:			newv->_.wilds = oldv->_.wilds; break;
 		case VAR_CHURCH:		newv->_.church = oldv->_.church; break;
 		case VAR_VARIABLE:		newv->_.variable = oldv->_.variable; break;
+		case VAR_DICE:			newv->_.dice = oldv->_.dice; break;
 
 		case VAR_PLLIST_STR:
 		case VAR_PLLIST_CONN:
@@ -1464,6 +1492,7 @@ pVARIABLE variable_copyvar(pVARIABLE oldv)
 
 	switch(newv->type) {
 	case VAR_UNKNOWN:		break;
+	case VAR_BOOLEAN:		newv->_.boolean = oldv->_.boolean; break;
 	case VAR_INTEGER:		newv->_.i = oldv->_.i; break;
 	case VAR_STRING:		newv->_.s = str_dup(oldv->_.s); break;
 	case VAR_STRING_S:		newv->_.s = oldv->_.s; break;
@@ -1481,6 +1510,7 @@ pVARIABLE variable_copyvar(pVARIABLE oldv)
 	case VAR_WILDS:			newv->_.wilds = oldv->_.wilds; break;
 	case VAR_CHURCH:		newv->_.church = oldv->_.church; break;
 	case VAR_VARIABLE:		newv->_.variable = oldv->_.variable; break;
+	case VAR_DICE:			newv->_.dice = oldv->_.dice; break;
 
 	case VAR_PLLIST_STR:
 	case VAR_PLLIST_CONN:
@@ -2245,6 +2275,9 @@ void variable_fwrite(pVARIABLE var, FILE *fp)
 	switch(var->type) {
 	default:
 		break;
+	case VAR_BOOLEAN:
+		fprintf(fp,"VarBool %s~ %d\n", var->name, var->_.boolean ? 1 : 0);
+		break;
 
 	case VAR_INTEGER:
 		fprintf(fp,"VarInt %s~ %d\n", var->name, var->_.i);
@@ -2476,6 +2509,14 @@ void variable_fwrite(pVARIABLE var, FILE *fp)
 			fprintf(fp,"End\n");
 		}
 		break;
+
+	case VAR_DICE:
+		fprintf(fp,"VarDice %s~ %d %d %d %ld\n", var->name,
+			var->_.dice.number,
+			var->_.dice.size,
+			var->_.dice.bonus,
+			var->_.dice.last_roll);
+		break;
 	}
 }
 
@@ -2674,6 +2715,7 @@ bool variable_fread_skill_list(ppVARIABLE vars, char *name, FILE *fp)
 
 int variable_fread_type(char *str)
 {
+	if( !str_cmp( str, "VarBool" ) ) return VAR_BOOLEAN;
 	if( !str_cmp( str, "VarInt" ) ) return VAR_INTEGER;
 	if( !str_cmp( str, "VarStr" ) ) return VAR_STRING_S;
 	if( !str_cmp( str, "VarRoom" ) ) return VAR_ROOM;
@@ -2699,6 +2741,7 @@ int variable_fread_type(char *str)
 	if( !str_cmp( str, "VarListStr" ) ) return VAR_PLLIST_STR;
 	if( !str_cmp( str, "VarListArea" ) ) return VAR_BLLIST_AREA;
 	if( !str_cmp( str, "VarListWilds" ) ) return VAR_BLLIST_WILDS;
+	if( !str_cmp( str, "VarDice" ) ) return VAR_DICE;
 
 	return VAR_UNKNOWN;
 }
@@ -2711,6 +2754,9 @@ bool variable_fread(ppVARIABLE vars, int type, FILE *fp)
 	name = fread_string(fp);
 
 	switch(type) {
+	case VAR_BOOLEAN:
+		return variables_setsave_boolean(vars, name, (fread_number(fp) != 0), TRUE);
+
 	case VAR_INTEGER:
 		return variables_setsave_integer(vars, name, fread_number(fp), TRUE);
 
@@ -2869,6 +2915,20 @@ bool variable_fread(ppVARIABLE vars, int type, FILE *fp)
 		else
 			return FALSE;
 
+	case VAR_DICE:
+		{
+			DICE_DATA xyz;
+
+			xyz.number = fread_number(fp);
+			xyz.size = fread_number(fp);
+			xyz.bonus = fread_number(fp);
+			xyz.last_roll = fread_number(fp);
+
+			return variables_setsave_dice(vars, name, &xyz, TRUE);
+
+		}
+
+		return FALSE;
 	}
 
 	// Ignore rest

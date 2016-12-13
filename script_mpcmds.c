@@ -18,115 +18,110 @@
  * Command table.
  */
 const struct script_cmd_type mob_cmd_table[] = {
-	{ "addaffect",			do_mpaddaffect,			TRUE	},
-	{ "addaffectname",		do_mpaddaffectname,		TRUE	},
-	{ "addspell",			do_mpaddspell,			TRUE	},
-	{ "alteraffect",		do_mpalteraffect,			TRUE	},
-	{ "alterexit",			do_mpalterexit,			FALSE	},
-	{ "altermob",			do_mpaltermob,			TRUE	},
-	{ "alterobj",			do_mpalterobj,			TRUE	},
-	{ "alterroom",			do_mpalterroom,			TRUE	},
-	{ "appear",				do_mpvis,			FALSE	},
-	{ "asound", 			do_mpasound,			FALSE	},
-	{ "assist",				do_mpassist,			FALSE	},
-	{ "at",					do_mpat,			FALSE	},
-	{ "awardgold",			do_mpawardgold,			TRUE	},
-	{ "awardpneuma",		do_mpawardpneuma,		TRUE	},
-	{ "awardprac",			do_mpawardprac,			TRUE	},
-	{ "awardqp",			do_mpawardqp,			TRUE	},
-	{ "awardxp",			do_mpawardxp,			TRUE	},
-	{ "call",				do_mpcall,			FALSE	},
-	{ "cancel",				do_mpcancel,			FALSE	},
-	{ "cast",				do_mpcast,			FALSE	},
-	{ "chargebank",			do_mpchargebank,		FALSE	},
-	{ "chargemoney",		do_mpchargemoney,		FALSE	},
-	{ "checkpoint",			do_mpcheckpoint,		FALSE	},
-	{ "cloneroom",			do_mpcloneroom,			TRUE	},
-	{ "condition",			do_mpcondition,			FALSE	},
-	{ "crier",				do_mpcrier,			FALSE	},
-	{ "damage",				do_mpdamage,			FALSE	},
-	{ "decdeity",			do_mpdecdeity,			TRUE	},
-	{ "decpneuma",			do_mpdecpneuma,			TRUE	},
-	{ "decprac",			do_mpdecprac,			TRUE	},
-	{ "decquest",			do_mpdecquest,			TRUE	},
-	{ "dectrain",			do_mpdectrain,			TRUE	},
-	{ "delay",				do_mpdelay,			FALSE	},
-	{ "dequeue",			do_mpdequeue,			FALSE	},
-	{ "destroyroom",		do_mpdestroyroom,		TRUE	},
-	{ "disappear",    		do_mpinvis,			FALSE	},
-	{ "echo",				do_mpecho,			FALSE	},
-	{ "echoaround",			do_mpechoaround,		FALSE	},
-	{ "echoat",				do_mpechoat,			FALSE	},
-	{ "echobattlespam",		do_mpechobattlespam,		FALSE	},
-	{ "echochurch",			do_mpechochurch,		FALSE	},
-	{ "echogrouparound",		do_mpechogrouparound,		FALSE	},
-	{ "echogroupat",		do_mpechogroupat,		FALSE	},
-	{ "echoleadaround",		do_mpecholeadaround,		FALSE	},
-	{ "echoleadat",			do_mpecholeadat,		FALSE	},
-	{ "echonotvict",		do_mpechonotvict,		FALSE	},
-	{ "echoroom",			do_mpechoroom,			FALSE	},
-	{ "fixaffects",			do_mpfixaffects,			FALSE	},
-	{ "flee",				do_mpflee,			FALSE	},
-	{ "force",				do_mpforce,			FALSE	},
-	{ "forget",				do_mpforget,			FALSE	},
-	{ "gdamage",			do_mpgdamage,			FALSE	},
-	{ "gecho",				do_mpgecho,			FALSE	},
-	{ "gforce",				do_mpgforce,			FALSE	},
-	{ "goto",				do_mpgoto,			FALSE	},
-	{ "gtransfer",			do_mpgtransfer,			FALSE	},
-	{ "hunt",				do_mphunt,			FALSE	},
-	{ "input",				do_mpinput,			FALSE	},
-	{ "interrupt",			do_mpinterrupt,			FALSE	},
-	{ "junk",				do_mpjunk,			FALSE	},
-	{ "kill",				do_mpkill,			FALSE	},
-	{ "link",				do_mplink,			FALSE	},
-	{ "mload",				do_mpmload,			FALSE	},
-	{ "oload",				do_mpoload,			FALSE	},
-	{ "otransfer",			do_mpotransfer,			FALSE	},
-	{ "peace",				do_mppeace,			FALSE	},
-	{ "persist",			do_mppersist,		FALSE	},
-	{ "prompt",				do_mpprompt,			FALSE	},
-	{ "purge",				do_mppurge,			FALSE	},
-	{ "queue",				do_mpqueue,			FALSE	},
-	{ "raisedead",			do_mpraisedead,			TRUE	},
-	{ "rawkill",			do_mprawkill,			FALSE	},
-	{ "remember",			do_mpremember,			FALSE	},
-	{ "remort",				do_mpremort,			TRUE	},
-	{ "remove",				do_mpremove,			FALSE	},
-	{ "remspell",			do_mpremspell,			TRUE	},
-	{ "resetdice",			do_mpresetdice,			TRUE	},
-	{ "restore",			do_mprestore,		TRUE	},
-	{ "saveplayer",			do_mpsaveplayer,		FALSE	},
-	{ "scriptwait",			do_mpscriptwait,		FALSE	},
-	{ "selfdestruct",		do_mpselfdestruct,		FALSE	},
-	{ "settimer",			do_mpsettimer,			FALSE	},
-	{ "showroom",			do_mpshowroom,			TRUE	},
-	{ "skill",				do_mpskill,						TRUE	},
-	{ "skillgroup",			do_mpskillgroup,			TRUE	},
-	{ "skimprove",			do_mpskimprove,			TRUE	},
-	{ "startcombat",		do_mpstartcombat,		FALSE	},
-	{ "stopcombat",			do_mpstopcombat,		FALSE	},
-	{ "stringmob",			do_mpstringmob,			TRUE	},
-	{ "stringobj",			do_mpstringobj,			TRUE	},
-	{ "stripaffect",		do_mpstripaffect,		TRUE	},
-	{ "stripaffectname",	do_mpstripaffectname,		TRUE	},
-	{ "take",				do_mptake,			FALSE	},
-	{ "teleport", 			do_mpteleport,			FALSE	},
-	{ "transfer",			do_mptransfer,			FALSE	},
-	{ "usecatalyst",		do_mpusecatalyst,		FALSE	},
-	{ "varclear",			do_mpvarclear,			FALSE	},
-	{ "varclearon",			do_mpvarclearon,		FALSE	},
-	{ "varcopy",			do_mpvarcopy,			FALSE	},
-	{ "varsave",			do_mpvarsave,			FALSE	},
-	{ "varsaveon",			do_mpvarsaveon,			FALSE	},
-	{ "varset",				do_mpvarset,			FALSE	},
-	{ "varseton",			do_mpvarseton,			FALSE	},
-	{ "vforce",				do_mpvforce,			FALSE	},
-	{ "wiretransfer",		do_mpwiretransfer,		FALSE	},
-	{ "xcall",				do_mpxcall,			FALSE	},
-	{ "zecho",				do_mpzecho,			FALSE	},
-	{ "zot",				do_mpzot,			TRUE	},
-	{ NULL,				NULL,				FALSE	}
+	{ "addaffect",			do_mpaddaffect,			TRUE,	TRUE	},
+	{ "addaffectname",		do_mpaddaffectname,		TRUE,	TRUE	},
+	{ "addspell",			do_mpaddspell,			TRUE,	TRUE	},
+	{ "alteraffect",		do_mpalteraffect,		TRUE,	TRUE	},
+	{ "alterexit",			do_mpalterexit,			FALSE,	TRUE	},
+	{ "altermob",			do_mpaltermob,			TRUE,	TRUE	},
+	{ "alterobj",			do_mpalterobj,			TRUE,	TRUE	},
+	{ "alterroom",			do_mpalterroom,			TRUE,	TRUE	},
+	{ "appear",				do_mpvis,				FALSE,	TRUE	},
+	{ "applytoxin",			scriptcmd_applytoxin,	FALSE,	TRUE	},
+	{ "asound", 			do_mpasound,			FALSE,	TRUE	},
+	{ "assist",				do_mpassist,			FALSE,	TRUE	},
+	{ "at",					do_mpat,				FALSE,	TRUE	},
+	{ "award",				scriptcmd_award,		TRUE,	TRUE	},
+	{ "call",				do_mpcall,				FALSE,	TRUE	},
+	{ "cancel",				do_mpcancel,			FALSE,	TRUE	},
+	{ "cast",				do_mpcast,				FALSE,	TRUE	},
+	{ "chargebank",			do_mpchargebank,		FALSE,	TRUE	},
+	{ "chargemoney",		do_mpchargemoney,		FALSE,	TRUE	},
+	{ "checkpoint",			do_mpcheckpoint,		FALSE,	TRUE	},
+	{ "cloneroom",			do_mpcloneroom,			TRUE,	TRUE	},
+	{ "condition",			do_mpcondition,			FALSE,	TRUE	},
+	{ "crier",				do_mpcrier,				FALSE,	TRUE	},
+	{ "damage",				scriptcmd_damage,		FALSE,	TRUE	},
+	{ "deduct",				scriptcmd_deduct,		TRUE,	TRUE	},
+	{ "delay",				do_mpdelay,				FALSE,	TRUE	},
+	{ "dequeue",			do_mpdequeue,			FALSE,	TRUE	},
+	{ "destroyroom",		do_mpdestroyroom,		TRUE,	TRUE	},
+	{ "disappear",    		do_mpinvis,				FALSE,	TRUE	},
+	{ "echo",				do_mpecho,				FALSE,	TRUE	},
+	{ "echoaround",			do_mpechoaround,		FALSE,	TRUE	},
+	{ "echoat",				do_mpechoat,			FALSE,	TRUE	},
+	{ "echobattlespam",		do_mpechobattlespam,	FALSE,	TRUE	},
+	{ "echochurch",			do_mpechochurch,		FALSE,	TRUE	},
+	{ "echogrouparound",	do_mpechogrouparound,	FALSE,	TRUE	},
+	{ "echogroupat",		do_mpechogroupat,		FALSE,	TRUE	},
+	{ "echoleadaround",		do_mpecholeadaround,	FALSE,	TRUE	},
+	{ "echoleadat",			do_mpecholeadat,		FALSE,	TRUE	},
+	{ "echonotvict",		do_mpechonotvict,		FALSE,	TRUE	},
+	{ "echoroom",			do_mpechoroom,			FALSE,	TRUE	},
+	{ "fixaffects",			do_mpfixaffects,		FALSE,	TRUE	},
+	{ "flee",				do_mpflee,				FALSE,	TRUE	},
+	{ "force",				do_mpforce,				FALSE,	TRUE	},
+	{ "forget",				do_mpforget,			FALSE,	TRUE	},
+	{ "gdamage",			do_mpgdamage,			FALSE,	TRUE	},
+	{ "gecho",				do_mpgecho,				FALSE,	TRUE	},
+	{ "gforce",				do_mpgforce,			FALSE,	TRUE	},
+	{ "goto",				do_mpgoto,				FALSE,	TRUE	},
+	{ "grantskill",			scriptcmd_grantskill,	FALSE,	TRUE	},
+	{ "group",				do_mpgroup,				FALSE,	TRUE	},
+	{ "gtransfer",			do_mpgtransfer,			FALSE,	TRUE	},
+	{ "hunt",				do_mphunt,				FALSE,	TRUE	},
+	{ "input",				do_mpinput,				FALSE,	TRUE	},
+	{ "interrupt",			do_mpinterrupt,			FALSE,	TRUE	},
+	{ "junk",				do_mpjunk,				FALSE,	TRUE	},
+	{ "kill",				do_mpkill,				FALSE,	TRUE	},
+	{ "link",				do_mplink,				FALSE,	TRUE	},
+	{ "mload",				do_mpmload,				FALSE,	TRUE	},
+	{ "oload",				do_mpoload,				FALSE,	TRUE	},
+	{ "otransfer",			do_mpotransfer,			FALSE,	TRUE	},
+	{ "peace",				do_mppeace,				FALSE,	TRUE	},
+	{ "persist",			do_mppersist,			FALSE,	TRUE	},
+	{ "prompt",				do_mpprompt,			FALSE,	TRUE	},
+	{ "purge",				do_mppurge,				FALSE,	TRUE	},
+	{ "queue",				do_mpqueue,				FALSE,	TRUE	},
+	{ "raisedead",			do_mpraisedead,			TRUE,	TRUE	},
+	{ "rawkill",			do_mprawkill,			FALSE,	TRUE	},
+	{ "remember",			do_mpremember,			FALSE,	TRUE	},
+	{ "remort",				do_mpremort,			TRUE,	TRUE	},
+	{ "remove",				do_mpremove,			FALSE,	TRUE	},
+	{ "remspell",			do_mpremspell,			TRUE,	TRUE	},
+	{ "resetdice",			do_mpresetdice,			TRUE,	TRUE	},
+	{ "restore",			do_mprestore,			TRUE,	TRUE	},
+	{ "revokeskill",		scriptcmd_revokeskill,	FALSE,	TRUE	},
+	{ "saveplayer",			do_mpsaveplayer,		FALSE,	TRUE	},
+	{ "scriptwait",			do_mpscriptwait,		FALSE,	TRUE	},
+	{ "selfdestruct",		do_mpselfdestruct,		FALSE,	FALSE	},
+	{ "settimer",			do_mpsettimer,			FALSE,	TRUE	},
+	{ "showroom",			do_mpshowroom,			TRUE,	TRUE	},
+	{ "skimprove",			do_mpskimprove,			TRUE,	TRUE	},
+	{ "startcombat",		scriptcmd_startcombat,	FALSE,	TRUE	},
+	{ "stopcombat",			scriptcmd_stopcombat,	FALSE,	TRUE	},
+	{ "stringmob",			do_mpstringmob,			TRUE,	TRUE	},
+	{ "stringobj",			do_mpstringobj,			TRUE,	TRUE	},
+	{ "stripaffect",		do_mpstripaffect,		TRUE,	TRUE	},
+	{ "stripaffectname",	do_mpstripaffectname,	TRUE,	TRUE	},
+	{ "take",				do_mptake,				FALSE,	TRUE	},
+	{ "teleport", 			do_mpteleport,			FALSE,	TRUE	},
+	{ "transfer",			do_mptransfer,			FALSE,	TRUE	},
+	{ "ungroup",			do_mpungroup,			FALSE,	TRUE	},
+	{ "usecatalyst",		do_mpusecatalyst,		FALSE,	TRUE	},
+	{ "varclear",			do_mpvarclear,			FALSE,	TRUE	},
+	{ "varclearon",			do_mpvarclearon,		FALSE,	TRUE	},
+	{ "varcopy",			do_mpvarcopy,			FALSE,	TRUE	},
+	{ "varsave",			do_mpvarsave,			FALSE,	TRUE	},
+	{ "varsaveon",			do_mpvarsaveon,			FALSE,	TRUE	},
+	{ "varset",				do_mpvarset,			FALSE,	TRUE	},
+	{ "varseton",			do_mpvarseton,			FALSE,	TRUE	},
+	{ "vforce",				do_mpvforce,			FALSE,	TRUE	},
+	{ "wiretransfer",		do_mpwiretransfer,		FALSE,	TRUE	},
+	{ "xcall",				do_mpxcall,				FALSE,	TRUE	},
+	{ "zecho",				do_mpzecho,				FALSE,	TRUE	},
+	{ "zot",				do_mpzot,				TRUE,	TRUE	},
+	{ NULL,					NULL,					FALSE,	FALSE	}
 };
 
 ///////////////////////////////////////////
@@ -1021,236 +1016,6 @@ SCRIPT_CMD(do_mpat)
 		on = info->mob->on;
 		info->mob->pulled_cart = pulled;
 		return;
-	}
-}
-
-// do_mpawardgold
-SCRIPT_CMD(do_mpawardgold)
-{
-	char buf[MSL], *rest;
-	CHAR_DATA *victim;
-	int amount = 0;
-	SCRIPT_PARAM arg;
-
-	if(!info || !info->mob) return;
-
-	if(!(rest = expand_argument(info,argument,&arg))) {
-		bug("MpAwardGold - Error in parsing from vnum %ld.", VNUM(info->mob));
-		return;
-	}
-
-	switch(arg.type) {
-	case ENT_STRING: victim = get_char_room(info->mob, NULL, arg.d.str); break;
-	case ENT_MOBILE: victim = arg.d.mob; break;
-	default: victim = NULL; break;
-	}
-
-	if (!victim) {
-		bug("MpAwardGold - Null victim from vnum %ld.", VNUM(info->mob));
-		return;
-	}
-
-	if(!expand_argument(info,rest,&arg)) {
-		bug("MpAwardGold - Error in parsing from vnum %ld.", VNUM(info->mob));
-		return;
-	}
-
-	switch(arg.type) {
-	case ENT_STRING: amount = atoi(arg.d.str); break;
-	case ENT_NUMBER: amount = arg.d.num; break;
-	default: amount = 0; break;
-	}
-
-	if(amount < 1) return;
-
-	victim->gold += amount;
-	if(!IS_NPC(victim)) {
-		sprintf(buf, "MpAwardGold logged: %s was awarded %d gold in room %ld by %ld", victim->name, amount, (info->mob->in_room ? info->mob->in_room->vnum : 0), info->mob->pIndexData->vnum);
-		log_string(buf);
-	}
-}
-
-// do_mpawardpneuma
-SCRIPT_CMD(do_mpawardpneuma)
-{
-	char buf[MSL], *rest;
-	CHAR_DATA *victim;
-	int amount = 0;
-	SCRIPT_PARAM arg;
-
-	if(!info || !info->mob) return;
-
-	if(!(rest = expand_argument(info,argument,&arg))) {
-		bug("MpAwardPneuma - Error in parsing from vnum %ld.", VNUM(info->mob));
-		return;
-	}
-
-	switch(arg.type) {
-	case ENT_STRING: victim = get_char_room(info->mob, NULL, arg.d.str); break;
-	case ENT_MOBILE: victim = arg.d.mob; break;
-	default: victim = NULL; break;
-	}
-
-	if (!victim) {
-		bug("MpAwardPneuma - Null victim from vnum %ld.", VNUM(info->mob));
-		return;
-	}
-
-	if(!expand_argument(info,rest,&arg)) {
-		bug("MpAwardPneuma - Error in parsing from vnum %ld.", VNUM(info->mob));
-		return;
-	}
-
-	switch(arg.type) {
-	case ENT_STRING: amount = atoi(arg.d.str); break;
-	case ENT_NUMBER: amount = arg.d.num; break;
-	default: amount = 0; break;
-	}
-
-	if(amount < 1) return;
-
-	victim->pneuma += amount;
-	if(!IS_NPC(victim)) {
-		sprintf(buf, "MpAwardPneuma logged: %s was awarded %d pneuma in room %ld by %ld", victim->name, amount, (info->mob->in_room ? info->mob->in_room->vnum : 0), info->mob->pIndexData->vnum);
-		log_string(buf);
-	}
-}
-
-// do_mpawardprac
-SCRIPT_CMD(do_mpawardprac)
-{
-	char buf[MSL], *rest;
-	CHAR_DATA *victim;
-	int amount = 0;
-	SCRIPT_PARAM arg;
-
-	if(!info || !info->mob) return;
-
-	if(!(rest = expand_argument(info,argument,&arg))) {
-		bug("MpAwardPrac - Error in parsing from vnum %ld.", VNUM(info->mob));
-		return;
-	}
-
-	switch(arg.type) {
-	case ENT_STRING: victim = get_char_room(info->mob, NULL, arg.d.str); break;
-	case ENT_MOBILE: victim = arg.d.mob; break;
-	default: victim = NULL; break;
-	}
-
-	if (!victim) {
-		bug("MpAwardPrac - Null victim from vnum %ld.", VNUM(info->mob));
-		return;
-	}
-
-	if(!expand_argument(info,rest,&arg)) {
-		bug("MpAwardPrac - Error in parsing from vnum %ld.", VNUM(info->mob));
-		return;
-	}
-
-	switch(arg.type) {
-	case ENT_STRING: amount = atoi(arg.d.str); break;
-	case ENT_NUMBER: amount = arg.d.num; break;
-	default: amount = 0; break;
-	}
-
-	if(amount < 1) return;
-
-	victim->practice += amount;
-	if(!IS_NPC(victim)) {
-		sprintf(buf, "MpAwardPrac logged: %s was awarded %d pracs in room %ld by %ld", victim->name, amount, (info->mob->in_room ? info->mob->in_room->vnum : 0), info->mob->pIndexData->vnum);
-		log_string(buf);
-	}
-}
-
-// do_mpawardqp
-SCRIPT_CMD(do_mpawardqp)
-{
-	char buf[MSL], *rest;
-	CHAR_DATA *victim;
-	int amount = 0;
-	SCRIPT_PARAM arg;
-
-	if(!info || !info->mob) return;
-
-	if(!(rest = expand_argument(info,argument,&arg))) {
-		bug("MpAwardQP - Error in parsing from vnum %ld.", VNUM(info->mob));
-		return;
-	}
-
-	switch(arg.type) {
-	case ENT_STRING: victim = get_char_room(info->mob, NULL, arg.d.str); break;
-	case ENT_MOBILE: victim = arg.d.mob; break;
-	default: victim = NULL; break;
-	}
-
-	if (!victim) {
-		bug("MpAwardQP - Null victim from vnum %ld.", VNUM(info->mob));
-		return;
-	}
-
-	if(!expand_argument(info,rest,&arg)) {
-		bug("MpAwardQP - Error in parsing from vnum %ld.", VNUM(info->mob));
-		return;
-	}
-
-	switch(arg.type) {
-	case ENT_STRING: amount = atoi(arg.d.str); break;
-	case ENT_NUMBER: amount = arg.d.num; break;
-	default: amount = 0; break;
-	}
-
-	if(amount < 1) return;
-
-	victim->questpoints += amount;
-	if(!IS_NPC(victim)) {
-		sprintf(buf, "MpAwardQP logged: %s was awarded %d questpoints in room %ld by %ld", victim->name, amount, (info->mob->in_room ? info->mob->in_room->vnum : 0), info->mob->pIndexData->vnum);
-		log_string(buf);
-	}
-}
-
-// do_mpawardxp
-SCRIPT_CMD(do_mpawardxp)
-{
-	char buf[MSL], *rest;
-	CHAR_DATA *victim;
-	int amount = 0;
-	SCRIPT_PARAM arg;
-
-	if(!info || !info->mob) return;
-
-	if(!(rest = expand_argument(info,argument,&arg))) {
-		bug("MpAwardXP - Error in parsing from vnum %ld.", VNUM(info->mob));
-		return;
-	}
-
-	switch(arg.type) {
-	case ENT_STRING: victim = get_char_room(info->mob, NULL, arg.d.str); break;
-	case ENT_MOBILE: victim = arg.d.mob; break;
-	default: victim = NULL; break;
-	}
-
-	if (!victim) {
-		bug("MpAwardXP - Null victim from vnum %ld.", VNUM(info->mob));
-		return;
-	}
-
-	if(!expand_argument(info,rest,&arg)) {
-		bug("MpAwardXP - Error in parsing from vnum %ld.", VNUM(info->mob));
-		return;
-	}
-
-	switch(arg.type) {
-	case ENT_STRING: amount = atoi(arg.d.str); break;
-	case ENT_NUMBER: amount = arg.d.num; break;
-	default: amount = 0; break;
-	}
-
-	if(amount < 1) return;
-
-	gain_exp(victim, amount);
-	if(!IS_NPC(victim)) {
-		sprintf(buf, "MpAwardXP logged: %s was awarded %d xp in room %ld by %ld", victim->name, amount, (info->mob->in_room ? info->mob->in_room->vnum : 0), info->mob->pIndexData->vnum);
-		log_string(buf);
 	}
 }
 
@@ -4496,9 +4261,9 @@ SCRIPT_CMD(do_mpaltermob)
 	else if(!str_cmp(field,"danger"))	{ ptr = IS_NPC(mob)?NULL:(int*)&mob->pcdata->danger_range; allowpc = TRUE; }
 	else if(!str_cmp(field,"daze"))		ptr = (int*)&mob->daze;
 	else if(!str_cmp(field,"death"))	{ ptr = (IS_NPC(mob) || !IS_DEAD(mob))?NULL:(int*)&mob->time_left_death; allowpc = TRUE; }
-	else if(!str_cmp(field,"dicenumber"))	{ ptr = IS_NPC(mob)?&mob->damage[DICE_NUMBER]:NULL; }
-	else if(!str_cmp(field,"dicetype"))	{ ptr = IS_NPC(mob)?&mob->damage[DICE_TYPE]:NULL; }
-	else if(!str_cmp(field,"dicebonus"))	{ ptr = IS_NPC(mob)?&mob->damage[DICE_BONUS]:NULL; }
+	else if(!str_cmp(field,"dicenumber"))	{ ptr = IS_NPC(mob)?&mob->damage.number:NULL; }
+	else if(!str_cmp(field,"dicetype"))	{ ptr = IS_NPC(mob)?&mob->damage.size:NULL; }
+	else if(!str_cmp(field,"dicebonus"))	{ ptr = IS_NPC(mob)?&mob->damage.bonus:NULL; }
 	else if(!str_cmp(field,"drunk"))	{ ptr = IS_NPC(mob)?NULL:(int*)&mob->pcdata->condition[COND_DRUNK]; allowpc = TRUE; }
 //	else if(!str_cmp(field,"exitdir"))	{ ptr = (int*)&mob->exit_dir; allowpc = TRUE; }
 	else if(!str_cmp(field,"exp"))		{ ptr = (int*)&mob->exp; allowpc = TRUE; }
@@ -6815,75 +6580,6 @@ SCRIPT_CMD(do_mpclearrecall)
 }
 
 
-SCRIPT_CMD(do_mpstartcombat)
-{
-	char *rest;
-	CHAR_DATA *attacker = NULL;
-	CHAR_DATA *victim = NULL;
-	SCRIPT_PARAM arg;
-
-	if(!info || !info->mob) return;
-
-	if(!(rest = expand_argument(info,argument,&arg))) {
-		bug("MpStartCombat - Error in parsing from vnum %ld.", VNUM(info->mob));
-		return;
-	}
-
-	switch(arg.type) {
-	case ENT_STRING: victim = get_char_room(info->mob, NULL, arg.d.str); break;
-	case ENT_MOBILE: victim = arg.d.mob; break;
-	default: victim = NULL; break;
-	}
-
-	if (!victim) {
-		bug("MpStartCombat - Null victim from vnum %ld.", VNUM(info->mob));
-		return;
-	}
-
-	if(*rest) {
-		if(!expand_argument(info,rest,&arg)) {
-			bug("MpStartCombat - Error in parsing from vnum %ld.", VNUM(info->mob));
-			return;
-		}
-
-		attacker = victim;
-		switch(arg.type) {
-		case ENT_STRING: victim = get_char_room(info->mob, NULL, arg.d.str); break;
-		case ENT_MOBILE: victim = arg.d.mob; break;
-		default: victim = NULL; break;
-		}
-
-		if (!victim) {
-		bug("MpStartCombat - Null victim from vnum %ld.", VNUM(info->mob));
-		return;
-		}
-	} else if(!info->mob) {
-		bug("MpStartCombat - Null victim from vnum %ld.", VNUM(info->mob));
-		return;
-	} else
-		attacker = info->mob;
-
-
-	// Attacker is fighting already
-	if(attacker->fighting)
-		return;
-
-	// The victim is fighting someone else in a singleplay room
-	if(!IS_NPC(attacker) && victim->fighting != NULL && victim->fighting != attacker && !IS_SET(attacker->in_room->room2_flags, ROOM_MULTIPLAY))
-		return;
-
-	// They are not in the same room
-	if(attacker->in_room != victim->in_room)
-		return;
-
-	// The victim is safe
-	if(is_safe(attacker, victim, FALSE)) return;
-
-	// Set them to fighting!
-	set_fighting(attacker, victim);
-	return;
-}
-
 // HUNT[ <HUNTER>] <PREY>
 SCRIPT_CMD(do_mphunt)
 {
@@ -7043,6 +6739,7 @@ SCRIPT_CMD(do_mppersist)
 	return;
 }
 
+/*
 // mob skill <player> <name> <op> <number>
 // <op> =, +, -
 SCRIPT_CMD(do_mpskill)
@@ -7131,7 +6828,7 @@ SCRIPT_CMD(do_mpskill)
 
 	return;
 }
-
+*/
 
 // mob skillgroup <player> add|remove <group>
 SCRIPT_CMD(do_mpskillgroup)
@@ -7977,15 +7674,77 @@ SCRIPT_CMD(do_mprestore)
 	restore_char(arg.d.mob, NULL, amount);
 }
 
-// STOPCOMBAT $MOBILE[ bool(BOTH)]
-// Silently stops combat.
-// BOTH: causes both sides to stop fighting, defaults to false
-SCRIPT_CMD(do_mpstopcombat)
+// GROUP npc(FOLLOWER)[ mobile(LEADER=self)][ bool(SHOW=true)]
+// Follower will only work on an NPC
+// LASTRETURN:
+// 0 = grouping failed
+// 1 = grouping succeeded
+SCRIPT_CMD(do_mpgroup)
+{
+	char *rest;
+	SCRIPT_PARAM arg;
+	CHAR_DATA *follower, *leader;
+	bool fShow = TRUE;
+
+	if(!info || !info->mob || IS_NULLSTR(argument)) return;
+
+	info->mob->progs->lastreturn = 0;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob || !IS_NPC(arg.d.mob)) return;
+
+	follower = arg.d.mob;
+	leader = info->mob;
+
+	if( *rest ) {
+		if(!(rest = expand_argument(info,rest,&arg)))
+			return;
+
+		if( arg.type == ENT_NUMBER )
+		{
+			fShow = (arg.d.num != 0);
+		}
+		else if( arg.type == ENT_STRING )
+		{
+			fShow = !str_cmp(arg.d.str, "yes") || !str_cmp(arg.d.str, "true") || !str_cmp(arg.d.str, "show");
+		}
+		else if( arg.type == ENT_MOBILE && arg.d.mob )
+		{
+			leader = arg.d.mob;
+
+			if( *rest ) {
+				if(!(rest = expand_argument(info,rest,&arg)))
+					return;
+
+				if( arg.type == ENT_NUMBER )
+				{
+					fShow = (arg.d.num != 0);
+				}
+				else if( arg.type == ENT_STRING )
+				{
+					fShow = !str_cmp(arg.d.str, "yes") || !str_cmp(arg.d.str, "true") || !str_cmp(arg.d.str, "show");
+				}
+				else
+					return;
+			}
+		}
+		else
+			return;
+	}
+
+	if(add_grouped(follower, leader, fShow))
+		info->mob->progs->lastreturn = 1;
+}
+
+// UNGROUP mobile[ bool(ALL=false)]
+SCRIPT_CMD(do_mpungroup)
 {
 	char *rest;
 	SCRIPT_PARAM arg;
 	CHAR_DATA *mob;
-	bool fBoth = FALSE;
+	bool fAll = FALSE;
 
 	if(!info || !info->mob || IS_NULLSTR(argument)) return;
 
@@ -7996,18 +7755,35 @@ SCRIPT_CMD(do_mpstopcombat)
 
 	mob = arg.d.mob;
 
-	if(*rest)
-	{
-		if(!(rest = expand_argument(info,rest,&arg)))
-			return;
-
-		if( arg.type == ENT_NUMBER ) {
-			fBoth = (arg.d.num != 0);
-		} else if( arg.type == ENT_STRING ) {
-			fBoth = (!str_cmp(arg.d.str,"yes") || !str_cmp(arg.d.str,"true"));
+	if( *rest ) {
+		if( arg.type == ENT_NUMBER )
+		{
+			fAll = (arg.d.num != 0);
 		}
+		else if( arg.type == ENT_STRING )
+		{
+			fAll = !str_cmp(arg.d.str, "yes") || !str_cmp(arg.d.str, "true") || !str_cmp(arg.d.str, "all");
+		}
+		else
+			return;
 	}
 
-	stop_fighting(mob, fBoth);
+	if( fAll ) {
+		ITERATOR git;
+		CHAR_DATA *leader = (arg.d.mob->leader != NULL) ? arg.d.mob->leader : arg.d.mob;
+		CHAR_DATA *follower;
+
+		if( leader->num_grouped < 1 )
+			return;
+
+		iterator_start(&git, leader->lgroup);
+		while((follower = (CHAR_DATA *)iterator_nextdata(&git)))
+			stop_grouped(follower);
+		iterator_stop(&git);
+	}
+	else
+	{
+		stop_grouped(arg.d.mob);
+	}
 }
 

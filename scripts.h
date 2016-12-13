@@ -95,9 +95,6 @@ enum {
 	DONE	/* done processing the stack */
 };
 
-
-
-
 enum ifcheck_enum {
 	/* A */
 	CHK_ABS=0,CHK_ACT,CHK_ACT2,
@@ -224,7 +221,7 @@ enum ifcheck_enum {
 	/* R */
 	CHK_RACE,CHK_RAND,CHK_RANDPOINT,
 	CHK_RECKONING,CHK_RECKONINGCHANCE,CHK_REGISTER,
-	CHK_RES,CHK_ROOM,CHK_ROOMFLAG,CHK_ROOMFLAG2,CHK_ROOMVIEWWILDS,
+	CHK_RES,CHK_ROLL,CHK_ROOM,CHK_ROOMFLAG,CHK_ROOMFLAG2,CHK_ROOMVIEWWILDS,
 	CHK_ROOMWEIGHT,CHK_ROOMWILDS,CHK_ROOMX,CHK_ROOMY,CHK_ROOMZ,
 
 	/* S */
@@ -279,6 +276,7 @@ enum ifcheck_enum {
 
 enum variable_enum {
 	VAR_UNKNOWN,
+	VAR_BOOLEAN,
 	VAR_INTEGER,
 	VAR_STRING,
 	VAR_STRING_S,		/* Shared, allocated elsewhere! */
@@ -307,6 +305,7 @@ enum variable_enum {
 	VAR_WILDS_ID,
 	VAR_CHURCH_ID,
 	VAR_VARIABLE,		// Yo dawg, I heard you like variables...
+	VAR_DICE,
 
 	VAR_BLLIST_FIRST,
 	////////////////////////
@@ -361,13 +360,7 @@ enum ifcheck_param_types {
 enum script_command_enum {
 	OP_END = 0,		/* end/break */
 	OP_IF,			/* if .... */
-	OP_IFNOT,		/* if not ... / if !.... */
-	OP_OR,			/* or .... */
-	OP_NOR,			/* or not ... / or !.... */
-	OP_AND,			/* and .... */
-	OP_NAND,		/* and not ... / if !.... */
 	OP_ELSEIF,		/* elseif .... */
-	OP_ELSEIFNOT,		/* elseif !.... */
 	OP_ELSE,		/* else */
 	OP_ENDIF,		/* endif */
 	OP_COMMAND,		/* ordinary command (MPROGS ONLY) */
@@ -379,7 +372,6 @@ enum script_command_enum {
 	OP_ENDLIST,
 	OP_EXITLIST,
 	OP_WHILE,		/* while .... */
-	OP_WHILENOT,		/* while not ... / if !.... */
 	OP_ENDWHILE,
 	OP_EXITWHILE,
 	/* Add new opcodes here... */
@@ -401,6 +393,7 @@ struct entity_field_type {
 enum entity_type_enum {
 	ENT_NONE = 0,
 	ENT_NULL,
+	ENT_BOOLEAN,
 	ENT_NUMBER,
 	ENT_STRING,
 	ENT_MOBILE,
@@ -419,6 +412,12 @@ enum entity_type_enum {
 	ENT_CHURCH,
 	ENT_SONG,
 	ENT_VARIABLE,
+	ENT_GROUP,
+	ENT_DICE,
+	ENT_BITVECTOR,
+
+	ENT_MOBINDEX,
+	ENT_OBJINDEX,
 
 	//////////////////////////////
 	// ALL lists here are designed to be saved
@@ -444,7 +443,6 @@ enum entity_type_enum {
 	ENT_PLLIST_OBJ,
 	ENT_PLLIST_TOK,
 	ENT_PLLIST_CHURCH,
-	ENT_PLLIST_VARIABLE,
 	ENT_PLLIST_MAX,
 	//////////////////////////////
 
@@ -456,6 +454,14 @@ enum entity_type_enum {
 	ENT_OLLIST_TOK,
 	ENT_OLLIST_AFF,
 	ENT_OLLIST_MAX,
+	//////////////////////////////
+
+	//////////////////////////////
+	// Iterator-only list - can only be used in LIST iterations
+	ENT_ILLIST_MIN,
+	ENT_ILLIST_MOB_GROUP,
+	ENT_ILLIST_VARIABLE,
+	ENT_ILLIST_MAX,
 	//////////////////////////////
 
 	ENT_MOBILE_ID,		// Will act as ENT_MOBILE that does not exist, but will allow access to the UID
@@ -520,6 +526,8 @@ enum entity_variable_types_enum {
 	ENTITY_VAR_AFFECT,
 	ENTITY_VAR_CHURCH,
 	ENTITY_VAR_VARIABLE,
+	ENTITY_VAR_DICE,
+	ENTITY_VAR_BOOLEAN,
 
 	ENTITY_VAR_BLLIST_ROOM,
 	ENTITY_VAR_BLLIST_MOB,
@@ -666,6 +674,17 @@ enum entity_mobile_enum {
 	ENTITY_MOB_NEXT,
 	ENTITY_MOB_CHECKPOINT,
 	ENTITY_MOB_VARIABLES,
+	ENTITY_MOB_GROUP,
+	ENTITY_MOB_DAMAGEDICE,
+	ENTITY_MOB_INDEX,
+	ENTITY_MOB_ACT,
+	ENTITY_MOB_ACT2,
+	ENTITY_MOB_AFFECT,
+	ENTITY_MOB_AFFECT2,
+	ENTITY_MOB_OFF,
+	ENTITY_MOB_IMMUNE,
+	ENTITY_MOB_RESIST,
+	ENTITY_MOB_VULN,
 };
 
 enum entity_object_enum {
@@ -687,6 +706,12 @@ enum entity_object_enum {
 	ENTITY_OBJ_NEXT,
 	ENTITY_OBJ_AFFECTS,
 	ENTITY_OBJ_VARIABLES,
+	ENTITY_OBJ_INDEX,
+	ENTITY_OBJ_EXTRA,
+	ENTITY_OBJ_EXTRA2,
+	ENTITY_OBJ_EXTRA3,
+	ENTITY_OBJ_EXTRA4,
+	ENTITY_OBJ_WEAR,
 };
 
 enum entity_room_enum {
@@ -893,6 +918,37 @@ enum entity_variable_enum {
 	ENTITY_VARIABLE_SAVE,
 };
 
+enum entity_group_enum {
+	ENTITY_GROUP_OWNER = ESCAPE_EXTRA,
+	ENTITY_GROUP_LEADER,
+	ENTITY_GROUP_ALLY,			// Random ally in the room (not the owner)
+	ENTITY_GROUP_MEMBER,		// Random group member in the room
+	ENTITY_GROUP_MEMBERS,		// List of all people in the room in your group
+	ENTITY_GROUP_SIZE,
+};
+
+enum entity_dice_enum {
+	ENTITY_DICE_NUMBER = ESCAPE_EXTRA,
+	ENTITY_DICE_SIZE,
+	ENTITY_DICE_BONUS,
+	ENTITY_DICE_ROLL,
+	ENTITY_DICE_LAST,
+};
+
+enum entity_mobindex_enum {
+	ENTITY_MOBINDEX_VNUM = ESCAPE_EXTRA,
+};
+
+enum entity_objindex_enum {
+	ENTITY_OBJINDEX_VNUM = ESCAPE_EXTRA,
+	ENTITY_OBJINDEX_LOADED,
+	ENTITY_OBJINDEX_INROOMS,
+	ENTITY_OBJINDEX_INMAIL,
+	ENTITY_OBJINDEX_CARRIED,
+	ENTITY_OBJINDEX_LOCKERED,
+	ENTITY_OBJINDEX_INCONTAINER,
+};
+
 
 /* Single letter $* codes ($i, $n) */
 #define ESCAPE_UA		0x80
@@ -1010,6 +1066,7 @@ struct script_var_type {
 		WILDS_DATA *wilds;
 		VARIABLE *variable;
 		VARIABLE **variables;
+		bool boolean;
 		int sn;
 		int song;
 		struct {
@@ -1065,6 +1122,7 @@ struct script_var_type {
 			int y;
 			int door;
 		} wdoor;
+		DICE_DATA dice;
 		LLIST *list;	// Used for HOMOGENOUS lists only
 	} _;
 };
@@ -1078,6 +1136,23 @@ struct ifcheck_data {
 	bool numeric;			/* Return type */
 	IFC_FUNC func;			/* Processing function */
 	char *help;			/* Help keywords (for accessing the help file) */
+};
+
+#define BOOLEXP_TRUE	0	// Evaluates the logical value of LEFT == (LEFT)
+#define BOOLEXP_NOT		1	// Evaluates the logical NOT of LEFT == (!LEFT)
+#define BOOLEXP_AND		2	// Evaluates the logical AND of LEFT and RIGHT == (LEFT && RIGHT)
+#define BOOLEXP_OR		3	// Evaluates the logical OR of LEFT and RIGHT == (LEFT || RIGHT)
+//#define BOOLEXP_XOR		4	// Evaluates the logical XOR of LEFT and RIGHT == (LEFT != RIGHT)
+//#define BOOLEXP_IMPLY	5	// Evaluates the logical IMPLICATION of LEFT and RIGHT == (!LEFT || RIGHT)
+
+struct script_boolexp {
+	char type;
+	struct script_boolexp *left;
+	struct script_boolexp *right;
+	struct script_boolexp *parent;
+	short param;
+	short length;
+	char *rest;
 };
 
 struct script_code {
@@ -1142,6 +1217,7 @@ struct script_control_block {
 struct script_parameter {
 	int type;
 	union {
+		bool boolean;
 		int num;
 		char *str;
 		CHAR_DATA *mob;
@@ -1155,6 +1231,11 @@ struct script_parameter {
 		WILDS_DATA *wilds;
 		CHURCH_DATA *church;
 		VARIABLE *variable;
+		CHAR_DATA *group_owner;
+
+		MOB_INDEX_DATA *mobindex;
+		OBJ_INDEX_DATA *objindex;
+
 		int sn;
 		int song;
 		struct {
@@ -1199,6 +1280,11 @@ struct script_parameter {
 			int y;
 			int door;
 		} wdoor;
+		struct {
+			long value;
+			const struct flag_type *table;
+		} bv;
+		DICE_DATA *dice;
 		VARIABLE **variables;
 		LLIST *blist;
 		long aid;
@@ -1214,6 +1300,7 @@ struct script_cmd_type {
 	char *name;
 	void (*func) (SCRIPT_VARINFO *info, char *argument);
 	bool restricted;
+	bool required;		// Indicates whether the argument must exist
 };
 
 struct _entity_type_info {
@@ -1682,15 +1769,11 @@ DECL_IFC_FUN(ifc_hitdicenumber);
 DECL_IFC_FUN(ifc_hitdicetype);
 
 DECL_IFC_FUN(ifc_strprefix);
+DECL_IFC_FUN(ifc_roll);
 
 /* Opcode functions */
 DECL_OPC_FUN(opc_end);
 DECL_OPC_FUN(opc_if);
-DECL_OPC_FUN(opc_ifnot);
-DECL_OPC_FUN(opc_or);
-DECL_OPC_FUN(opc_nor);
-DECL_OPC_FUN(opc_and);
-DECL_OPC_FUN(opc_nand);
 DECL_OPC_FUN(opc_else);
 DECL_OPC_FUN(opc_endif);
 DECL_OPC_FUN(opc_command);
@@ -1702,7 +1785,6 @@ DECL_OPC_FUN(opc_list);
 DECL_OPC_FUN(opc_endlist);
 DECL_OPC_FUN(opc_exitlist);
 DECL_OPC_FUN(opc_while);
-DECL_OPC_FUN(opc_whilenot);
 DECL_OPC_FUN(opc_endwhile);
 DECL_OPC_FUN(opc_exitwhile);
 DECL_OPC_FUN(opc_mob);
@@ -1834,6 +1916,8 @@ bool variables_set_string(ppVARIABLE list,char *name,char *str,bool shared);
 bool variables_set_token(ppVARIABLE list,char *name,TOKEN_DATA *t);
 bool variables_set_wilds (ppVARIABLE list,char *name,WILDS_DATA* wilds);
 bool variables_set_variable (ppVARIABLE list,char *name,pVARIABLE var);
+bool variables_set_dice (ppVARIABLE list,char *name,DICE_DATA *d);
+bool variables_set_boolean (ppVARIABLE list,char *name,bool boolean);
 bool variables_setindex_integer(ppVARIABLE list,char *name,int num, bool saved);
 bool variables_setindex_room(ppVARIABLE list,char *name,long vnum, bool saved);
 bool variables_setindex_string(ppVARIABLE list,char *name,char *str,bool shared, bool saved);
@@ -1851,6 +1935,8 @@ bool variables_setsave_string(ppVARIABLE list,char *name,char *str,bool shared, 
 bool variables_setsave_token(ppVARIABLE list,char *name,TOKEN_DATA *t, bool save);
 bool variables_setsave_wilds (ppVARIABLE list, char *name,WILDS_DATA* wilds, bool save);
 bool variables_setsave_variable (ppVARIABLE list, char *name,pVARIABLE var, bool save);
+bool variables_setsave_dice (ppVARIABLE list, char *name,DICE_DATA *d, bool save);
+bool variables_setsave_boolean (ppVARIABLE list, char *name,bool boolean, bool save);
 int variable_fread_type(char *str);
 pVARIABLE variable_create(ppVARIABLE list,char *name, bool index, bool clear);
 pVARIABLE variable_get(pVARIABLE list,char *name);
@@ -1881,7 +1967,7 @@ void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument);
 void script_end_success(CHAR_DATA *ch);
 void script_end_failure(CHAR_DATA *ch, bool messages);
 void script_end_pulse(CHAR_DATA *ch);
-
+CHAR_DATA *script_get_char_room(SCRIPT_VARINFO *info, char *name, bool see_all);
 
 /* Commands */
 int mpcmd_lookup(char *command);
@@ -2279,6 +2365,27 @@ SCRIPT_CMD(do_opstopcombat);
 SCRIPT_CMD(do_rpstopcombat);
 SCRIPT_CMD(do_tpstopcombat);
 
+SCRIPT_CMD(do_mpgroup);
+SCRIPT_CMD(do_mpungroup);
+SCRIPT_CMD(do_opgroup);
+SCRIPT_CMD(do_opungroup);
+SCRIPT_CMD(do_rpgroup);
+SCRIPT_CMD(do_rpungroup);
+SCRIPT_CMD(do_tpgroup);
+SCRIPT_CMD(do_tpungroup);
+
+
+
+
+
+SCRIPT_CMD(scriptcmd_applytoxin);
+SCRIPT_CMD(scriptcmd_award);
+SCRIPT_CMD(scriptcmd_damage);
+SCRIPT_CMD(scriptcmd_deduct);
+SCRIPT_CMD(scriptcmd_grantskill);
+SCRIPT_CMD(scriptcmd_revokeskill);
+SCRIPT_CMD(scriptcmd_startcombat);
+SCRIPT_CMD(scriptcmd_stopcombat);
 
 #include "tables.h"
 

@@ -438,6 +438,10 @@ SPELL_FUNC(spell_identify)
 		add_buf(buffer,buf);
 	}
 
+	if (obj->old_name) {
+		sprintf(buf, "{MOriginal name: %s{x\n\r", obj->old_name);
+		add_buf(buffer, buf);
+	}
 	if (obj->old_short_descr) {
 		sprintf(buf, "{MOriginal short desc: %s{x\n\r", obj->old_short_descr);
 		add_buf(buffer, buf);

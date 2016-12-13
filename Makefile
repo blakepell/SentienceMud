@@ -97,6 +97,7 @@ C_FILES = \
 	quest.c \
 	save.c \
 	scan.c \
+	script_commands.c \
 	script_comp.c \
 	script_const.c \
 	script_expand.c \
@@ -199,6 +200,7 @@ O_FILES = \
 	$(OBJDIR)/quest.o \
 	$(OBJDIR)/save.o \
 	$(OBJDIR)/scan.o \
+	$(OBJDIR)/script_commands.o \
 	$(OBJDIR)/script_comp.o \
 	$(OBJDIR)/script_const.o \
 	$(OBJDIR)/script_expand.o \

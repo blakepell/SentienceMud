@@ -769,7 +769,7 @@ bool one_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt, bool secondary)
 	// Hit, calc damage.
 	if (IS_NPC(ch)) {
 		if (!wield)
-			dam = dice(ch->damage[DICE_NUMBER],ch->damage[DICE_TYPE]) + ch->damage[DICE_BONUS];
+			dam = dice_roll(&ch->damage);
 		else {
 			dam = dice(wield->value[1], wield->value[2]) * skill/100;
 
@@ -789,7 +789,7 @@ bool one_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt, bool secondary)
 				dam = dam * (200 - percent) / 200;
 			}
 
-			dam += (dice(ch->damage[DICE_NUMBER], ch->damage[DICE_TYPE]) + ch->damage[DICE_BONUS]);
+			dam += dice_roll(&ch->damage);
 		}
 	} else {
 		if (sn != -1) check_improve(ch, sn, TRUE, 6);
@@ -894,7 +894,7 @@ bool one_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt, bool secondary)
 
 	// mobs wielding a weapon get the weapon damage + their damdice/2
 	if (IS_NPC(ch))
-		dam += dice(ch->pIndexData->damage[DICE_NUMBER],ch->pIndexData->damage[DICE_TYPE]) / 2;
+		dam += dice_roll(&ch->pIndexData->damage) / 2;
 
 	// apply armour class
 	dam += victim_ac/10;
@@ -2876,24 +2876,24 @@ void stop_holdup(CHAR_DATA *ch)
 void stop_fighting(CHAR_DATA *ch, bool fBoth)
 {
 	CHAR_DATA *fch;
-	ITERATOR it;
 
-	iterator_start(&it, loaded_chars);
-	while(( fch = (CHAR_DATA *)iterator_nextdata(&it)))
-	{
-		if (fch == ch || (fBoth && ch->fighting == fch))
-		{
-			if (fch->reverie == -1)
-				fch->reverie = 0;
-			if (fch->fighting != NULL && fch->fighting->reverie == -1)
-				fch->fighting->reverie = 0;
+	if( (fch = ch->fighting) == NULL ) return;
 
-			fch->fighting = NULL;
-			fch->position = IS_NPC(fch) ? fch->default_pos : POS_STANDING;
-			update_pos(fch);
-		}
+	if(fBoth) {
+		if (fch->reverie == -1)
+			fch->reverie = 0;
+
+		fch->fighting = NULL;
+		fch->position = IS_NPC(fch) ? fch->default_pos : POS_STANDING;
+		update_pos(fch);
 	}
-	iterator_stop(&it);
+
+	if (ch->reverie == -1)
+		ch->reverie = 0;
+
+	ch->fighting = NULL;
+	ch->position = IS_NPC(ch) ? ch->default_pos : POS_STANDING;
+	update_pos(ch);
 
 	return;
 }
