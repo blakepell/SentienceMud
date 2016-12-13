@@ -588,11 +588,13 @@ void do_train(CHAR_DATA *ch, char *argument)
 
 	argument = one_argument(argument, arg);
 
-	if( arg[0] == '\0') {
+	//Moving this further down to account for anything other than a valid train argument.
+/*	if( arg[0] == '\0') {
 		sprintf(buf, "You have %d training sessions.\n\r", ch->train);
 		send_to_char(buf, ch);
 		return;
-	} else if(!str_cmp(arg, "skill")) {
+	} else*/
+	 if(!str_cmp(arg, "skill")) {
 		for (mob = ch->in_room->people; mob != NULL; mob = mob->next_in_room)
 		{
 			if (IS_NPC(mob) && (mob->pIndexData->vnum == VNUM_QUESTOR_1
@@ -769,6 +771,8 @@ void do_train(CHAR_DATA *ch, char *argument)
 
 	    else
 	    {
+			sprintf(buf, "You have %d training sessions. \n\r", ch->train);
+			send_to_char(buf,ch);
 			strcpy(buf, "You can train:");
 			if (ch->perm_stat[STAT_STR] < get_max_train(ch,STAT_STR))	strcat(buf, " str");
 			if (ch->perm_stat[STAT_INT] < get_max_train(ch,STAT_INT))	strcat(buf, " int");
@@ -793,7 +797,7 @@ void do_train(CHAR_DATA *ch, char *argument)
 	    }
 
 
-		if (!str_cmp("hp",argument))
+		if (!str_cmp(arg, "hp"))
 		{
 			if (cost > ch->train)
 			{
@@ -815,7 +819,7 @@ void do_train(CHAR_DATA *ch, char *argument)
 			return;
 		}
 
-		if (!str_cmp("mana",argument))
+		if (!str_cmp(arg, "mana"))
 		{
 			if (cost > ch->train)
 			{
@@ -838,7 +842,7 @@ void do_train(CHAR_DATA *ch, char *argument)
 			return;
 		}
 
-		if (!str_cmp("move",argument))
+		if (!str_cmp(arg, "move"))
 		{
 			if (cost > ch->train)
 			{
@@ -1246,8 +1250,11 @@ void group_add( CHAR_DATA *ch, const char *name, bool deduct)
 		if (ch->pcdata->learned[sn] <= 0) { /* i.e. not known */
 			ch->pcdata->learned[sn] = 1;
 
+			//This leads to all skills and spells being marked as skills when newly granted. -RHanson 12/12/16
+/*
 			if( skill_entry_findsn( ch->sorted_skills, sn) == NULL)
 				skill_entry_addskill(ch, sn, NULL);
+*/
 
 			if( skill_entry_findsn( ch->sorted_skills, sn) == NULL)
 			{
