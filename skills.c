@@ -1246,8 +1246,11 @@ void group_add( CHAR_DATA *ch, const char *name, bool deduct)
 		if (ch->pcdata->learned[sn] <= 0) { /* i.e. not known */
 			ch->pcdata->learned[sn] = 1;
 
+			//This leads to all skills and spells being marked as skills when newly granted. -RHanson 12/12/16
+/*
 			if( skill_entry_findsn( ch->sorted_skills, sn) == NULL)
 				skill_entry_addskill(ch, sn, NULL);
+*/
 
 			if( skill_entry_findsn( ch->sorted_skills, sn) == NULL)
 			{
