@@ -1604,7 +1604,7 @@ void do_order(CHAR_DATA *ch, char *argument)
 /* MOVED: groups.c */
 void do_ungroup(CHAR_DATA *ch, char *argument)
 {
-	send_to_char("Ungrouping.", ch);
+	send_to_char("Ungrouping.\n\r", ch);
 	die_follower(ch);
 }
 

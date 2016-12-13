@@ -832,6 +832,8 @@ void do_quest(CHAR_DATA *ch, char *argument)
 	    ch->practice += pracreward;
 	} else { /* AO don't nerf it completely */
 		pracreward /= number_range(1,4);
+
+		pracreward = UMIN(1,pracreward);
 	    
 		sprintf(buf, "You gain %d practices!\n\r", pracreward);
 		send_to_char(buf, ch);
@@ -886,7 +888,7 @@ bool generate_quest(CHAR_DATA *ch, CHAR_DATA *questman)
         parts = number_range(8, 15);
 
     /* fun */
-    if (number_percent() < 10)
+    if (number_percent() < 5)
 	    parts = parts * 2;
 
     // create the scroll
