@@ -5997,6 +5997,7 @@ void do_flee(CHAR_DATA *ch, char *argument)
 				if (!(pexit = was_in->exit[door])
 					|| (!pexit->u1.to_room && pexit->wilds.wilds_uid == 0)
 					|| (IS_SET(pexit->exit_info, EX_CLOSED) && !IS_AFFECTED(ch, AFF_PASS_DOOR))
+					|| (IS_NPC(ch) && (IS_SET(pexit->exit_info, EX_VLINK)))
 					|| number_range(0,ch->daze) != 0
 					|| (IS_NPC(ch) && (IS_SET(pexit->u1.to_room->room_flags, ROOM_NO_MOB) || IS_SET(pexit->u1.to_room->room_flags, ROOM_SAFE))))
 					continue;
