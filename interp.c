@@ -575,7 +575,7 @@ bool check_verbs(CHAR_DATA *ch, char *command, char *argument)
 	if( ret_val != PRET_NOSCRIPT ) return TRUE;
 
 	p = one_argument(argument,buf);
-	if(!str_cmp(buf,"here")) {
+//	if(!str_cmp(buf,"here")) {
 		ROOM_INDEX_DATA *room = ch->in_room;
 		ROOM_INDEX_DATA *source;
 		bool isclone;
@@ -640,7 +640,7 @@ bool check_verbs(CHAR_DATA *ch, char *command, char *argument)
 		script_room_remref(room);
 
 		if( ret_val != PRET_NOSCRIPT ) return TRUE;
-	}
+//	}
 
 	// Get mobile...
 	mob = strcmp(buf,"self") ? get_char_room(ch, NULL, buf) : ch;
