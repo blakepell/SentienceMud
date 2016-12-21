@@ -187,7 +187,7 @@ const	struct	cmd_type	cmd_table	[] =
     { "chat",			do_chat,	POS_RESTING,	 0,  LOG_NORMAL, 1, FALSE },
     { "/",				do_chat,	POS_RESTING,	 0,  LOG_NORMAL, 1, FALSE },
     { ",",				do_emote,	POS_RESTING,	 0,  LOG_NEVER,  0, FALSE },
-    { ".",				do_gossip,	POS_SLEEPING,	 0,  LOG_NORMAL, 0, TRUE },
+//    { ".",				do_gossip,	POS_SLEEPING,	 0,  LOG_NORMAL, 0, TRUE },
     { ";",				do_gtell,	POS_DEAD,	 0,  LOG_NEVER,  0, FALSE },
     { "'",				do_say,		POS_RESTING,	 0,  LOG_NEVER,  0, FALSE },
     { "emote",			do_emote,	POS_RESTING,	 0,  LOG_NEVER,  1, FALSE },
@@ -600,7 +600,7 @@ bool check_verbs(CHAR_DATA *ch, char *command, char *argument)
 				script_destructed = FALSE;
 				iterator_start(&pit, token->pIndexData->progs[slot]);
 				while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
-					if (is_trigger_type(prg->trig_type,TRIG_VERB) && !str_prefix(command, prg->trig_phrase)) {
+					if ((is_trigger_type(prg->trig_type,TRIG_VERB) || is_trigger_type(prg->trig_type,TRIG_VERBSELF)) && !str_prefix(command, prg->trig_phrase)) {
 						ret = execute_script(prg->vnum, prg->script, NULL, NULL, NULL, token, ch, NULL, NULL, NULL, NULL,NULL,NULL,p,prg->trig_phrase,0,0,0,0,0);
 						if( ret != PRET_NOSCRIPT) {
 							iterator_stop(&tit);
