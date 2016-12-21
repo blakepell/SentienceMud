@@ -622,6 +622,7 @@ long top_vroom;
 long top_waypoint;
 
 LLIST *loaded_chars;
+LLIST *loaded_players;
 LLIST *loaded_objects;
 LLIST *persist_mobs;
 LLIST *persist_objs;
@@ -1864,18 +1865,16 @@ CHAR_DATA *create_mobile(MOB_INDEX_DATA *pMobIndex, bool persistLoad)
     mob->level		= pMobIndex->level;
     mob->tot_level		= pMobIndex->level;
     mob->hitroll		= pMobIndex->hitroll;
-    mob->damroll		= pMobIndex->damage[DICE_BONUS];
-    mob->max_hit		= dice(pMobIndex->hit[DICE_NUMBER],
-	    pMobIndex->hit[DICE_TYPE])
-	+ pMobIndex->hit[DICE_BONUS];
+    mob->damroll		= pMobIndex->damage.bonus;
+    mob->max_hit		= dice_roll(&pMobIndex->hit);
     mob->hit		= mob->max_hit;
-    mob->max_mana		= dice(pMobIndex->mana[DICE_NUMBER],
-	    pMobIndex->mana[DICE_TYPE])
-	+ pMobIndex->mana[DICE_BONUS];
+    mob->max_mana		= dice_roll(&pMobIndex->mana);
     mob->mana		= mob->max_mana;
     mob->move		= pMobIndex->move;
-    mob->damage[DICE_NUMBER]= pMobIndex->damage[DICE_NUMBER];
-    mob->damage[DICE_TYPE]	= pMobIndex->damage[DICE_TYPE];
+    mob->damage.number  = pMobIndex->damage.number;
+    mob->damage.size	= pMobIndex->damage.size;
+    mob->damage.bonus   = 0;
+    mob->damage.last_roll = -1;
     mob->dam_type		= pMobIndex->dam_type;
     if (mob->dam_type == 0)
     {
@@ -2362,8 +2361,10 @@ CHAR_DATA *clone_mobile(CHAR_DATA *parent)
 		clone->dirty_stat[i] = TRUE;
     }
 
-    for (i = 0; i < 3; i++)
-	clone->damage[i]	= parent->damage[i];
+	clone->damage.number = parent->damage.number;
+	clone->damage.size = parent->damage.size;
+	clone->damage.bonus = parent->damage.bonus;
+	clone->damage.last_roll = -1;
 
     /* now add the affects */
     for (paf = parent->affected; paf != NULL; paf = paf->next)
@@ -2412,6 +2413,7 @@ OBJ_DATA *create_object_noid(OBJ_INDEX_DATA *pObjIndex, int level, bool affects)
 	obj->full_description = str_dup(pObjIndex->full_description);
     else
 	obj->full_description = str_dup(pObjIndex->description);
+    obj->old_name 	= NULL;
     obj->old_short_descr 	= NULL;
     obj->old_description        = NULL;
     obj->loaded_by      = NULL;
@@ -2436,7 +2438,6 @@ OBJ_DATA *create_object_noid(OBJ_INDEX_DATA *pObjIndex, int level, bool affects)
     obj->weight		= pObjIndex->weight;
     obj->cost           = pObjIndex->cost;
     obj->timer		= pObjIndex->timer;
-
 
     /*
      * Mess with object properties.
@@ -3749,6 +3750,39 @@ int str_cmp(const char *astr, const char *bstr)
 	    return ch;
     }
 
+    return 0;
+}
+
+// str_cmp, ignoring color codes
+int str_cmp_nocolour(const char *astr, const char *bstr)
+{
+	char *ncastr, *ncbstr, *nca, *ncb;
+    char ch;
+    if (astr == NULL)
+    {
+	bug("Str_cmp: null astr.", 0);
+	return -1;
+    }
+
+    if (bstr == NULL)
+    {
+	bug("Str_cmp: null bstr.", 0);
+	return 1;
+    }
+
+    nca = ncastr = nocolour(astr);
+    ncb = ncbstr = nocolour(bstr);
+
+    for (; *ncastr || *ncbstr; ncastr++, ncbstr++) {
+		if ((ch = (LOWER(*ncastr) - LOWER(*ncbstr)))) {
+			free_string(nca);
+			free_string(ncb);
+		    return ch;
+		}
+    }
+
+	free_string(nca);
+	free_string(ncb);
     return 0;
 }
 
@@ -5096,6 +5130,7 @@ void persist_save_object(FILE *fp, OBJ_DATA *obj, bool multiple)
 	fprintf(fp, "Fixed %d\n", obj->times_fixed);		// **
 
 	if (obj->owner)			fprintf(fp, "Owner %s~\n", obj->owner);				// **
+	if (obj->old_name)	fprintf(fp, "OldName %s~\n", obj->old_name);		// **
 	if (obj->old_short_descr)	fprintf(fp, "OldShort %s~\n", obj->old_short_descr);		// **
 	if (obj->old_description)	fprintf(fp, "OldDescr %s~\n", obj->old_description);		// **
 	if (obj->old_full_description)	fprintf(fp, "OldFullDescr %s~\n", obj->old_full_description);	// **
@@ -6178,6 +6213,7 @@ OBJ_DATA *persist_load_object(FILE *fp)
 			case 'O':
 				KEY("OldDescr",		obj->old_description,		fread_string(fp));
 				KEY("OldFullDescr",	obj->old_full_description,	fread_string(fp));
+				KEY("OldName",		obj->old_name,				fread_string(fp));
 				KEY("OldShort",		obj->old_short_descr,		fread_string(fp));
 				KEY("Owner",		obj->owner,					fread_string(fp));
 				KEY("OwnerName",	obj->owner_name,			fread_string(fp));

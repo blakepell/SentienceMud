@@ -15,89 +15,94 @@
 
 
 const struct script_cmd_type room_cmd_table[] = {
-	{ "addaffect",			do_rpaddaffect,		TRUE	},
-	{ "addaffectname",		do_rpaddaffectname,	TRUE	},
-	{ "addspell",			do_rpaddspell,			TRUE	},
-	{ "alteraffect",		do_rpalteraffect,			TRUE	},
-	{ "alterexit",			do_rpalterexit,		FALSE	},
-	{ "altermob",			do_rpaltermob,		TRUE	},
-	{ "alterobj",			do_rpalterobj,		TRUE	},
-	{ "alterroom",			do_rpalterroom,		TRUE	},
-	{ "asound",				do_rpasound,		FALSE	},
-	{ "at",					do_rpat,		FALSE	},
-	{ "call",				do_rpcall,		FALSE	},
-	{ "cancel",				do_rpcancel,		FALSE	},
-	{ "chargebank",			do_rpchargebank,	FALSE	},
-	{ "checkpoint",			do_rpcheckpoint,		FALSE	},
-	{ "cloneroom",			do_rpcloneroom,		TRUE	},
-	{ "condition",			do_rpcondition,			FALSE	},
-	{ "crier",				do_rpcrier,			FALSE	},
-	{ "damage",				do_rpdamage,		FALSE	},
-	{ "delay",				do_rpdelay,		FALSE	},
-	{ "dequeue",			do_rpdequeue,		FALSE	},
-	{ "destroyroom",		do_rpdestroyroom,	TRUE	},
-	{ "echo",				do_rpecho,		FALSE	},
-	{ "echoaround",			do_rpechoaround,	FALSE	},
-	{ "echoat",				do_rpechoat,		FALSE	},
-	{ "echobattlespam",		do_rpechobattlespam,	FALSE	},
-	{ "echochurch",			do_rpechochurch,	FALSE	},
-	{ "echogrouparound",	do_rpechogrouparound,	FALSE	},
-	{ "echogroupat",		do_rpechogroupat,	FALSE	},
-	{ "echoleadaround",		do_rpecholeadaround,	FALSE	},
-	{ "echoleadat",			do_rpecholeadat,	FALSE	},
-	{ "echonotvict",		do_rpechonotvict,	FALSE	},
-	{ "echoroom",			do_rpechoroom,		FALSE	},
-	{ "fixaffects",			do_rpfixaffects,			FALSE	},
-	{ "force",				do_rpforce,		FALSE	},
-	{ "forget",				do_rpforget,		FALSE	},
-	{ "gecho",				do_rpgecho,		FALSE	},
-	{ "gforce",				do_rpgforce,		FALSE	},
-	{ "gtransfer",			do_rpgtransfer,		FALSE	},
-	{ "input",				do_rpinput,		FALSE	},
-	{ "interrupt",			do_rpinterrupt,		FALSE	},
-	{ "link",				do_rplink,		FALSE	},
-	{ "mload",				do_rpmload,		FALSE	},
-	{ "oload",				do_rpoload,		FALSE	},
-	{ "otransfer",			do_rpotransfer,		FALSE	},
-	{ "peace",				do_rppeace,		FALSE	},
-	{ "persist",			do_rppersist,		FALSE	},
-	{ "prompt",				do_rpprompt,		FALSE	},
-	{ "purge",				do_rppurge,		FALSE	},
-	{ "queue",				do_rpqueue,		FALSE	},
-	{ "rawkill",			do_rprawkill,		FALSE	},
-	{ "remember",			do_rpremember,		FALSE	},
-	{ "remort",				do_rpremort,			TRUE	},
-	{ "remove",				do_rpremove,		FALSE	},
-	{ "remspell",			do_rpremspell,			TRUE	},
-	{ "resetdice",			do_rpresetdice,		TRUE	},
-	{ "restore",			do_rprestore,		TRUE	},
-	{ "saveplayer",			do_rpsaveplayer,		FALSE	},
-	{ "settimer",			do_rpsettimer,		FALSE	},
-	{ "showroom",			do_rpshowroom,		FALSE	},
-	{ "skill",				do_rpskill,						TRUE	},
-	{ "skillgroup",			do_rpskillgroup,			TRUE	},
-	{ "skimprove",			do_rpskimprove,		TRUE	},
-	{ "startcombat",		do_rpstartcombat,	FALSE	},
-	{ "stopcombat",			do_rpstopcombat,		FALSE	},
-	{ "stringmob",			do_rpstringmob,		TRUE	},
-	{ "stringobj",			do_rpstringobj,		TRUE	},
-	{ "stripaffect",		do_rpstripaffect,	TRUE	},
-	{ "stripaffectname",	do_rpstripaffectname,	TRUE	},
-	{ "transfer",			do_rptransfer,		FALSE	},
-	{ "usecatalyst",		do_rpusecatalyst,	FALSE	},
-	{ "varclear",			do_rpvarclear,		FALSE	},
-	{ "varclearon",			do_rpvarclearon,	FALSE	},
-	{ "varcopy",			do_rpvarcopy,		FALSE	},
-	{ "varsave",			do_rpvarsave,		FALSE	},
-	{ "varsaveon",			do_rpvarsaveon,		FALSE	},
-	{ "varset",				do_rpvarset,		FALSE	},
-	{ "varseton",			do_rpvarseton,		FALSE	},
-	{ "vforce",				do_rpvforce,		FALSE	},
-	{ "wiretransfer",		do_rpwiretransfer,	FALSE	},
-	{ "xcall",				do_rpxcall,		FALSE	},
-	{ "zecho",				do_rpzecho,		FALSE	},
-	{ "zot",				do_rpzot,		TRUE	},
-	{ NULL,					NULL,			FALSE	}
+	{ "addaffect",			do_rpaddaffect,			TRUE,	TRUE	},
+	{ "addaffectname",		do_rpaddaffectname,		TRUE,	TRUE	},
+	{ "addspell",			do_rpaddspell,			TRUE,	TRUE	},
+	{ "alteraffect",		do_rpalteraffect,		TRUE,	TRUE	},
+	{ "alterexit",			do_rpalterexit,			FALSE,	TRUE	},
+	{ "altermob",			do_rpaltermob,			TRUE,	TRUE	},
+	{ "alterobj",			do_rpalterobj,			TRUE,	TRUE	},
+	{ "alterroom",			do_rpalterroom,			TRUE,	TRUE	},
+	{ "applytoxin",			scriptcmd_applytoxin,	FALSE,	TRUE	},
+	{ "asound",				do_rpasound,			FALSE,	TRUE	},
+	{ "at",					do_rpat,				FALSE,	TRUE	},
+	{ "award",				scriptcmd_award,		TRUE,	TRUE	},
+	{ "call",				do_rpcall,				FALSE,	TRUE	},
+	{ "cancel",				do_rpcancel,			FALSE,	TRUE	},
+	{ "chargebank",			do_rpchargebank,		FALSE,	TRUE	},
+	{ "checkpoint",			do_rpcheckpoint,		FALSE,	TRUE	},
+	{ "cloneroom",			do_rpcloneroom,			TRUE,	TRUE	},
+	{ "condition",			do_rpcondition,			FALSE,	TRUE	},
+	{ "crier",				do_rpcrier,				FALSE,	TRUE	},
+	{ "damage",				scriptcmd_damage,		FALSE,	TRUE	},
+	{ "deduct",				scriptcmd_deduct,		TRUE,	TRUE	},
+	{ "delay",				do_rpdelay,				FALSE,	TRUE	},
+	{ "dequeue",			do_rpdequeue,			FALSE,	TRUE	},
+	{ "destroyroom",		do_rpdestroyroom,		TRUE,	TRUE	},
+	{ "echo",				do_rpecho,				FALSE,	TRUE	},
+	{ "echoaround",			do_rpechoaround,		FALSE,	TRUE	},
+	{ "echoat",				do_rpechoat,			FALSE,	TRUE	},
+	{ "echobattlespam",		do_rpechobattlespam,	FALSE,	TRUE	},
+	{ "echochurch",			do_rpechochurch,		FALSE,	TRUE	},
+	{ "echogrouparound",	do_rpechogrouparound,	FALSE,	TRUE	},
+	{ "echogroupat",		do_rpechogroupat,		FALSE,	TRUE	},
+	{ "echoleadaround",		do_rpecholeadaround,	FALSE,	TRUE	},
+	{ "echoleadat",			do_rpecholeadat,		FALSE,	TRUE	},
+	{ "echonotvict",		do_rpechonotvict,		FALSE,	TRUE	},
+	{ "echoroom",			do_rpechoroom,			FALSE,	TRUE	},
+	{ "fixaffects",			do_rpfixaffects,		FALSE,	TRUE	},
+	{ "force",				do_rpforce,				FALSE,	TRUE	},
+	{ "forget",				do_rpforget,			FALSE,	TRUE	},
+	{ "gecho",				do_rpgecho,				FALSE,	TRUE	},
+	{ "gforce",				do_rpgforce,			FALSE,	TRUE	},
+	{ "grantskill",			scriptcmd_grantskill,	FALSE,	TRUE	},
+	{ "group",				do_rpgroup,				FALSE,	TRUE	},
+	{ "gtransfer",			do_rpgtransfer,			FALSE,	TRUE	},
+	{ "input",				do_rpinput,				FALSE,	TRUE	},
+	{ "interrupt",			do_rpinterrupt,			FALSE,	TRUE	},
+	{ "link",				do_rplink,				FALSE,	TRUE	},
+	{ "mload",				do_rpmload,				FALSE,	TRUE	},
+	{ "oload",				do_rpoload,				FALSE,	TRUE	},
+	{ "otransfer",			do_rpotransfer,			FALSE,	TRUE	},
+	{ "peace",				do_rppeace,				FALSE,	TRUE	},
+	{ "persist",			do_rppersist,			FALSE,	TRUE	},
+	{ "prompt",				do_rpprompt,			FALSE,	TRUE	},
+	{ "purge",				do_rppurge,				FALSE,	TRUE	},
+	{ "queue",				do_rpqueue,				FALSE,	TRUE	},
+	{ "rawkill",			do_rprawkill,			FALSE,	TRUE	},
+	{ "remember",			do_rpremember,			FALSE,	TRUE	},
+	{ "remort",				do_rpremort,			TRUE,	TRUE	},
+	{ "remove",				do_rpremove,			FALSE,	TRUE	},
+	{ "remspell",			do_rpremspell,			TRUE,	TRUE	},
+	{ "resetdice",			do_rpresetdice,			TRUE,	TRUE	},
+	{ "restore",			do_rprestore,			TRUE,	TRUE	},
+	{ "revokeskill",		scriptcmd_revokeskill,	FALSE,	TRUE	},
+	{ "saveplayer",			do_rpsaveplayer,		FALSE,	TRUE	},
+	{ "settimer",			do_rpsettimer,			FALSE,	TRUE	},
+	{ "showroom",			do_rpshowroom,			FALSE,	TRUE	},
+	{ "skimprove",			do_rpskimprove,			TRUE,	TRUE	},
+	{ "startcombat",		scriptcmd_startcombat,	FALSE,	TRUE	},
+	{ "stopcombat",			scriptcmd_stopcombat,	FALSE,	TRUE	},
+	{ "stringmob",			do_rpstringmob,			TRUE,	TRUE	},
+	{ "stringobj",			do_rpstringobj,			TRUE,	TRUE	},
+	{ "stripaffect",		do_rpstripaffect,		TRUE,	TRUE	},
+	{ "stripaffectname",	do_rpstripaffectname,	TRUE,	TRUE	},
+	{ "transfer",			do_rptransfer,			FALSE,	TRUE	},
+	{ "ungroup",			do_rpungroup,			FALSE,	TRUE	},
+	{ "usecatalyst",		do_rpusecatalyst,		FALSE,	TRUE	},
+	{ "varclear",			do_rpvarclear,			FALSE,	TRUE	},
+	{ "varclearon",			do_rpvarclearon,		FALSE,	TRUE	},
+	{ "varcopy",			do_rpvarcopy,			FALSE,	TRUE	},
+	{ "varsave",			do_rpvarsave,			FALSE,	TRUE	},
+	{ "varsaveon",			do_rpvarsaveon,			FALSE,	TRUE	},
+	{ "varset",				do_rpvarset,			FALSE,	TRUE	},
+	{ "varseton",			do_rpvarseton,			FALSE,	TRUE	},
+	{ "vforce",				do_rpvforce,			FALSE,	TRUE	},
+	{ "wiretransfer",		do_rpwiretransfer,		FALSE,	TRUE	},
+	{ "xcall",				do_rpxcall,				FALSE,	TRUE	},
+	{ "zecho",				do_rpzecho,				FALSE,	TRUE	},
+	{ "zot",				do_rpzot,				TRUE,	TRUE	},
+	{ NULL,					NULL,					FALSE,	FALSE	}
 };
 
 int rpcmd_lookup(char *command)
@@ -2992,9 +2997,9 @@ SCRIPT_CMD(do_rpaltermob)
 	else if(!str_cmp(field,"danger"))	{ ptr = IS_NPC(mob)?NULL:(int*)&mob->pcdata->danger_range; allowpc = TRUE; }
 	else if(!str_cmp(field,"daze"))		ptr = (int*)&mob->daze;
 	else if(!str_cmp(field,"death"))	{ ptr = (IS_NPC(mob) || !IS_DEAD(mob))?NULL:(int*)&mob->time_left_death; allowpc = TRUE; }
-	else if(!str_cmp(field,"dicenumber"))	{ ptr = IS_NPC(mob)?&mob->damage[DICE_NUMBER]:NULL; }
-	else if(!str_cmp(field,"dicetype"))	{ ptr = IS_NPC(mob)?&mob->damage[DICE_TYPE]:NULL; }
-	else if(!str_cmp(field,"dicebonus"))	{ ptr = IS_NPC(mob)?&mob->damage[DICE_BONUS]:NULL; }
+	else if(!str_cmp(field,"dicenumber"))	{ ptr = IS_NPC(mob)?&mob->damage.number:NULL; }
+	else if(!str_cmp(field,"dicetype"))	{ ptr = IS_NPC(mob)?&mob->damage.size:NULL; }
+	else if(!str_cmp(field,"dicebonus"))	{ ptr = IS_NPC(mob)?&mob->damage.bonus:NULL; }
 	else if(!str_cmp(field,"drunk"))	{ ptr = IS_NPC(mob)?NULL:(int*)&mob->pcdata->condition[COND_DRUNK]; allowpc = TRUE; }
 //	else if(!str_cmp(field,"exitdir"))	{ ptr = (int*)&mob->exit_dir; allowpc = TRUE; }
 	else if(!str_cmp(field,"exp"))		{ ptr = (int*)&mob->exp; allowpc = TRUE; }
@@ -5290,73 +5295,6 @@ SCRIPT_CMD(do_rpclearrecall)
 	victim->recall.id[2] = 0;
 }
 
-SCRIPT_CMD(do_rpstartcombat)
-{
-	char *rest;
-	CHAR_DATA *attacker = NULL;
-	CHAR_DATA *victim = NULL;
-	SCRIPT_PARAM arg;
-
-	if(!info || !info->room) return;
-
-	if(!(rest = expand_argument(info,argument,&arg))) {
-		bug("RpStartCombat - Error in parsing from vnum %ld.", info->room->vnum);
-		return;
-	}
-
-	switch(arg.type) {
-	case ENT_STRING: victim = get_char_room(NULL, info->room, arg.d.str); break;
-	case ENT_MOBILE: victim = arg.d.mob; break;
-	default: victim = NULL; break;
-	}
-
-	if (!victim) {
-		bug("RpStartCombat - Null victim from vnum %ld.", info->room->vnum);
-		return;
-	}
-
-	if(*rest) {
-		if(!expand_argument(info,rest,&arg)) {
-			bug("RpStartCombat - Error in parsing from vnum %ld.", info->room->vnum);
-			return;
-		}
-
-		attacker = victim;
-		switch(arg.type) {
-		case ENT_STRING: victim = get_char_room(NULL, info->room, arg.d.str); break;
-		case ENT_MOBILE: victim = arg.d.mob; break;
-		default: victim = NULL; break;
-		}
-
-		if (!victim) {
-		bug("RpStartCombat - Null victim from vnum %ld.", info->room->vnum);
-		return;
-		}
-	} else {
-		bug("RpStartCombat - Null victim from vnum %ld.", info->room->vnum);
-		return;
-	}
-
-	// Attacker is fighting already
-	if(attacker->fighting)
-		return;
-
-	// The victim is fighting someone else in a singleplay room
-	if(!IS_NPC(attacker) && victim->fighting != attacker && !IS_SET(attacker->in_room->room2_flags, ROOM_MULTIPLAY))
-		return;
-
-	// They are not in the same room
-	if(attacker->in_room != victim->in_room)
-		return;
-
-	// The victim is safe
-	if(is_safe(attacker, victim, FALSE)) return;
-
-	// Set them to fighting!
-	set_fighting(attacker, victim);
-	return;
-}
-
 // HUNT <HUNTER> <PREY>
 SCRIPT_CMD(do_rphunt)
 {
@@ -6277,15 +6215,63 @@ SCRIPT_CMD(do_rprestore)
 	restore_char(arg.d.mob, NULL, amount);
 }
 
-// STOPCOMBAT $MOBILE[ bool(BOTH)]
-// Silently stops combat.
-// BOTH: causes both sides to stop fighting, defaults to false
-SCRIPT_CMD(do_rpstopcombat)
+// GROUP npc(FOLLOWER) mobile(LEADER)[ bool(SHOW=true)]
+// Follower will only work on an NPC
+// LASTRETURN:
+// 0 = grouping failed
+// 1 = grouping succeeded
+SCRIPT_CMD(do_rpgroup)
+{
+	char *rest;
+	SCRIPT_PARAM arg;
+	CHAR_DATA *follower, *leader;
+	bool fShow = TRUE;
+
+	if(!info || !info->room || IS_NULLSTR(argument)) return;
+
+	info->room->progs->lastreturn = 0;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob || !IS_NPC(arg.d.mob)) return;
+
+	follower = arg.d.mob;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+	leader = arg.d.mob;
+
+	if( *rest ) {
+		if(!(rest = expand_argument(info,rest,&arg)))
+			return;
+
+		if( arg.type == ENT_NUMBER )
+		{
+			fShow = (arg.d.num != 0);
+		}
+		else if( arg.type == ENT_STRING )
+		{
+			fShow = !str_cmp(arg.d.str, "yes") || !str_cmp(arg.d.str, "true") || !str_cmp(arg.d.str, "show");
+		}
+		else
+			return;
+	}
+
+	if(add_grouped(follower, leader, fShow))
+		info->room->progs->lastreturn = 1;
+}
+
+// UNGROUP mobile[ bool(ALL=false)]
+SCRIPT_CMD(do_rpungroup)
 {
 	char *rest;
 	SCRIPT_PARAM arg;
 	CHAR_DATA *mob;
-	bool fBoth = FALSE;
+	bool fAll = FALSE;
 
 	if(!info || !info->room || IS_NULLSTR(argument)) return;
 
@@ -6296,18 +6282,35 @@ SCRIPT_CMD(do_rpstopcombat)
 
 	mob = arg.d.mob;
 
-	if(*rest)
-	{
-		if(!(rest = expand_argument(info,rest,&arg)))
-			return;
-
-		if( arg.type == ENT_NUMBER ) {
-			fBoth = (arg.d.num != 0);
-		} else if( arg.type == ENT_STRING ) {
-			fBoth = (!str_cmp(arg.d.str,"yes") || !str_cmp(arg.d.str,"true"));
+	if( *rest ) {
+		if( arg.type == ENT_NUMBER )
+		{
+			fAll = (arg.d.num != 0);
 		}
+		else if( arg.type == ENT_STRING )
+		{
+			fAll = !str_cmp(arg.d.str, "yes") || !str_cmp(arg.d.str, "true") || !str_cmp(arg.d.str, "all");
+		}
+		else
+			return;
 	}
 
-	stop_fighting(mob, fBoth);
+	if( fAll ) {
+		ITERATOR git;
+		CHAR_DATA *leader = (arg.d.mob->leader != NULL) ? arg.d.mob->leader : arg.d.mob;
+		CHAR_DATA *follower;
+
+		if( leader->num_grouped < 1 )
+			return;
+
+		iterator_start(&git, leader->lgroup);
+		while((follower = (CHAR_DATA *)iterator_nextdata(&git)))
+			stop_grouped(follower);
+		iterator_stop(&git);
+	}
+	else
+	{
+		stop_grouped(arg.d.mob);
+	}
 }
 

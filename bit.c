@@ -496,6 +496,8 @@ char *extra3_bit_name( long extra3_flags )
     if ( extra3_flags & ITEM_CAN_DISPEL		) strcat( buf, " can_dispel"		);
     if ( extra3_flags & ITEM_KEEP_EQUIPPED	) strcat( buf, " keep_equipped"		);
     if ( extra3_flags & ITEM_NO_ANIMATE		) strcat( buf, " no_animate"		);
+    if ( extra3_flags & ITEM_RIFT_UPDATE	) strcat( buf, " rift_update"		);
+
     return ( buf[0] != '\0' ) ? buf+1 : "none";
 }
 
@@ -516,66 +518,35 @@ char *act_bit_name( int act_type, long act_flags )
 
     buf[0] = '\0';
 
-    if (act_type==1)
-    {
-        if (IS_SET(act_flags,ACT_IS_NPC))
-        {
-     	    strcat(buf," npc");
-            if (act_flags & ACT_SENTINEL 	) strcat(buf, " sentinel");
-            if (act_flags & ACT_SCAVENGER	) strcat(buf, " scavenger");
-            if (act_flags & ACT_AGGRESSIVE	) strcat(buf, " aggressive");
-            if (act_flags & ACT_STAY_AREA	) strcat(buf, " stay_area");
-	    if (act_flags & ACT_PROTECTED	) strcat(buf, " protected");
-            if (act_flags & ACT_WIMPY	) strcat(buf, " wimpy");
-            if (act_flags & ACT_PET		) strcat(buf, " pet");
-            if (act_flags & ACT_MOUNT	) strcat(buf, " mount");
-            if (act_flags & ACT_TRAIN	) strcat(buf, " train");
-            if (act_flags & ACT_PRACTICE	) strcat(buf, " practice");
-            if (act_flags & ACT_UNDEAD	) strcat(buf, " undead");
-            if (act_flags & ACT_CLERIC	) strcat(buf, " cleric");
-            if (act_flags & ACT_MAGE	) strcat(buf, " mage");
-            if (act_flags & ACT_THIEF	) strcat(buf, " thief");
-            if (act_flags & ACT_WARRIOR	) strcat(buf, " warrior");
-            if (act_flags & ACT_NOPURGE	) strcat(buf, " no_purge");
-            if (act_flags & ACT_IS_HEALER	) strcat(buf, " healer");
-            if (act_flags & ACT_IS_BANKER   ) strcat(buf, " banker");
-            if (act_flags & ACT_IS_RESTRINGER) strcat(buf, " restringer");
-            if (act_flags & ACT_IS_CHANGER  ) strcat(buf, " changer");
-            if (act_flags & ACT_UPDATE_ALWAYS) strcat(buf," update_always");
-            if (act_flags & ACT_QUESTOR) strcat(buf," questor");
-            if (act_flags & ACT_STAY_LOCALE) strcat(buf, " stay_locale");
-        }
-        else
-        {
-            strcat(buf," player");
-            if (act_flags & PLR_PK		) strcat(buf, " pk");
-            if (act_flags & PLR_AUTOEXIT	) strcat(buf, " autoexit");
-            if (act_flags & PLR_AUTOLOOT	) strcat(buf, " autoloot");
-            if (act_flags & PLR_AUTOSAC		) strcat(buf, " autosac");
-            if (act_flags & PLR_AUTOGOLD	) strcat(buf, " autogold");
-            if (act_flags & PLR_AUTOSPLIT	) strcat(buf, " autosplit");
-            if (act_flags & PLR_HOLYLIGHT	) strcat(buf, " holy_light");
-            if (act_flags & PLR_SHOWDAMAGE	) strcat(buf, " show_damage");
-            if (act_flags & PLR_AUTOEQ    	) strcat(buf, " autoeq");
-            if (act_flags & PLR_NOSUMMON	) strcat(buf, " no_summon");
-            if (act_flags & PLR_NOFOLLOW	) strcat(buf, " no_follow");
-            if (act_flags & PLR_FREEZE		) strcat(buf, " frozen");
-            if (act_flags & PLR_COLOUR		) strcat(buf, " colour");
-	    if (act_flags & PLR_PURSUIT		) strcat(buf, " pursuit");
-            if (act_flags & PLR_BUILDING	) strcat(buf, " building");
-
-	    strcat(buf, " player2");
-	    if (act_flags & PLR_AUTOSURVEY	) strcat(buf, " autosurvey");
-	    if (act_flags & PLR_SACRIFICE_ALL	) strcat(buf, " sacrifice_all");
-	    if (act_flags & PLR_NO_WAKE		) strcat(buf, " no_wake");
-            if (act_flags & PLR_HOLYAURA	) strcat(buf, " holy_aura");
-        }
-    }
-    else
-    {
-        if (act_type==2)
-        {
-            if (act_flags & ACT2_CHURCHMASTER) strcat(buf, " churchmaster");
+    switch(act_type) {
+	case 1:		// NPC->act
+		strcat(buf," npc");
+		if (act_flags & ACT_SENTINEL 	) strcat(buf, " sentinel");
+		if (act_flags & ACT_SCAVENGER	) strcat(buf, " scavenger");
+		if (act_flags & ACT_AGGRESSIVE	) strcat(buf, " aggressive");
+		if (act_flags & ACT_STAY_AREA	) strcat(buf, " stay_area");
+		if (act_flags & ACT_PROTECTED	) strcat(buf, " protected");
+		if (act_flags & ACT_WIMPY	) strcat(buf, " wimpy");
+		if (act_flags & ACT_PET		) strcat(buf, " pet");
+		if (act_flags & ACT_MOUNT	) strcat(buf, " mount");
+		if (act_flags & ACT_TRAIN	) strcat(buf, " train");
+		if (act_flags & ACT_PRACTICE	) strcat(buf, " practice");
+		if (act_flags & ACT_UNDEAD	) strcat(buf, " undead");
+		if (act_flags & ACT_CLERIC	) strcat(buf, " cleric");
+		if (act_flags & ACT_MAGE	) strcat(buf, " mage");
+		if (act_flags & ACT_THIEF	) strcat(buf, " thief");
+		if (act_flags & ACT_WARRIOR	) strcat(buf, " warrior");
+		if (act_flags & ACT_NOPURGE	) strcat(buf, " no_purge");
+		if (act_flags & ACT_IS_HEALER	) strcat(buf, " healer");
+		if (act_flags & ACT_IS_BANKER   ) strcat(buf, " banker");
+		if (act_flags & ACT_IS_RESTRINGER) strcat(buf, " restringer");
+		if (act_flags & ACT_IS_CHANGER  ) strcat(buf, " changer");
+		if (act_flags & ACT_UPDATE_ALWAYS) strcat(buf," update_always");
+		if (act_flags & ACT_QUESTOR) strcat(buf," questor");
+		if (act_flags & ACT_STAY_LOCALE) strcat(buf, " stay_locale");
+		break;
+	case 2:		// NPC->act2
+		if (act_flags & ACT2_CHURCHMASTER) strcat(buf, " churchmaster");
 	    if (act_flags & ACT2_NOQUEST ) strcat( buf, " noquest" );
 	    if (act_flags & ACT2_PLANE_TUNNELER ) strcat( buf, " plane_tunneler" );
  	    if (act_flags & ACT2_NO_HUNT ) strcat( buf, " no_hunt" );
@@ -592,8 +563,34 @@ char *act_bit_name( int act_type, long act_flags )
 	    if (act_flags & ACT2_PIRATE ) strcat( buf, " pirate");
 	    if (act_flags & ACT2_SEE_WIZI) strcat( buf, " see_wizi");
 	    if (act_flags & ACT2_SOUL_DEPOSIT) strcat( buf, " soul_deposit");
-        }
-    }
+		break;
+	case 3:		// PC->act
+		strcat(buf," player");
+		if (act_flags & PLR_PK		) strcat(buf, " pk");
+		if (act_flags & PLR_AUTOEXIT	) strcat(buf, " autoexit");
+		if (act_flags & PLR_AUTOLOOT	) strcat(buf, " autoloot");
+		if (act_flags & PLR_AUTOSAC		) strcat(buf, " autosac");
+		if (act_flags & PLR_AUTOGOLD	) strcat(buf, " autogold");
+		if (act_flags & PLR_AUTOSPLIT	) strcat(buf, " autosplit");
+		if (act_flags & PLR_HOLYLIGHT	) strcat(buf, " holy_light");
+		if (act_flags & PLR_SHOWDAMAGE	) strcat(buf, " show_damage");
+		if (act_flags & PLR_AUTOEQ    	) strcat(buf, " autoeq");
+		if (act_flags & PLR_NOSUMMON	) strcat(buf, " no_summon");
+		if (act_flags & PLR_NOFOLLOW	) strcat(buf, " no_follow");
+		if (act_flags & PLR_FREEZE		) strcat(buf, " frozen");
+		if (act_flags & PLR_COLOUR		) strcat(buf, " colour");
+		if (act_flags & PLR_PURSUIT		) strcat(buf, " pursuit");
+		if (act_flags & PLR_BUILDING	) strcat(buf, " building");
+		break;
+	case 4:		// PC->act2
+		if (act_flags & PLR_AUTOSURVEY	) strcat(buf, " autosurvey");
+		if (act_flags & PLR_SACRIFICE_ALL	) strcat(buf, " sacrifice_all");
+		if (act_flags & PLR_NO_WAKE		) strcat(buf, " no_wake");
+		if (act_flags & PLR_HOLYAURA	) strcat(buf, " holy_aura");
+		if (act_flags & PLR_MOBILE		) strcat(buf, " mobile");
+		if (act_flags & PLR_FAVSKILLS		) strcat(buf, " favskills");
+		break;
+	}
     return ( buf[0] != '\0' ) ? buf+1 : "none";
 }
 
@@ -763,6 +760,7 @@ char *wear_bit_name(int wear_flags)
     if (wear_flags & ITEM_WEAR_EYES	) strcat(buf, " eyes");
     if (wear_flags & ITEM_WEAR_EAR	) strcat(buf, " ear");
     if (wear_flags & ITEM_WEAR_ANKLE	) strcat(buf, " ankle");
+    if (wear_flags & ITEM_WEAR_TABARD	) strcat(buf, " tabard");
     return ( buf[0] != '\0' ) ? buf+1 : "none";
 }
 

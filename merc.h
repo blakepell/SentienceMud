@@ -305,6 +305,8 @@ typedef struct olc_point_boost_data OLC_POINT_BOOST;
 typedef struct olc_point_usage_data OLC_POINT_USAGE;
 typedef struct olc_point_area_data OLC_POINT_AREA;
 
+typedef struct dice_data DICE_DATA;
+
 
 /* VIZZWILDS */
 typedef struct    wilds_vlink      WILDS_VLINK;
@@ -342,6 +344,7 @@ typedef bool (*IFC_FUNC)(SCRIPT_VARINFO *info, CHAR_DATA *mob,OBJ_DATA *obj,ROOM
 typedef bool (*OPCODE_FUNC)(SCRIPT_CB *block);
 typedef struct entity_field_type ENT_FIELD;
 typedef struct script_var_type VARIABLE, *pVARIABLE, **ppVARIABLE;
+typedef struct script_boolexp BOOLEXP;
 
 typedef struct location_type {
 	unsigned long wuid;
@@ -352,9 +355,24 @@ typedef struct location_type {
 	 if wuid==0 and id[0] != 0 and id[1:2] == 0, static room */
 } LOCATION;
 
+#define SKILLSRC_NORMAL			0	// Gained through normal acquisition (Impossible for tokens)
+#define SKILLSRC_SCRIPT			1	// Gained via script - can be given/revoked by GRANTSKILL/REVOKESKILL
+#define SKILLSRC_SCRIPT_PERM	2	// Similar to SCRIPT but cannot be revoked once set.
+#define SKILLSRC_AFFECT			3	// Gained from an affect - can be given by an affect that gives such a thing
+
+#define SKILL_SPELL				(A)
+#define SKILL_PRACTICE			(B)
+#define SKILL_IMPROVE			(C)
+#define SKILL_FAVOURITE			(D)
+
+#define SKILL_AUTOMATIC			(SKILL_PRACTICE|SKILL_IMPROVE)
+
 typedef struct skill_entry_type {
 	struct skill_entry_type *next;
-	bool scripted;		// Whether it's given by a script
+	char source;		// Source of the skill
+	long flags;
+	bool practice;		// Can this be practiced/trained?
+	bool improve;		// Can this improve through use?
 	bool isspell;		// Whether this is a spell;
 	sh_int sn;			// Skill Number
 	sh_int song;		// Song Number
@@ -392,6 +410,8 @@ struct script_varinfo {
 	CHAR_DATA *rch;
 	CHAR_DATA **targ;
 	TOKEN_DATA *tok;
+	PROG_DATA *progs;
+	ROOM_INDEX_DATA *location;
 	int registers[5];
 	char phrase[MSL];
 	char trigger[MSL];
@@ -544,6 +564,12 @@ struct list_link_skill_data {
 	unsigned long tid[2];
 };
 
+struct dice_data {
+	int number;
+	int size;
+	int bonus;
+	long last_roll;
+};
 
 #define OLC_PNT_MOBILE		'M'
 #define OLC_PNT_OBJECT		'O'
@@ -2261,37 +2287,39 @@ struct affliction_type {
 #define ITEM_CAN_DISPEL		(E)	// Allows the 'dispel room' spell to target it.
 #define ITEM_KEEP_EQUIPPED	(F)	// Item will not be unequipped on death.
 #define ITEM_NO_ANIMATE		(G)	// Similar to ITEM_NO_RESURRECT, but designed for animate dead, instead
+#define ITEM_RIFT_UPDATE	(H)	// Allows the item to update in the rift.
 
 /*
  * Wear flags.
  */
-#define ITEM_TAKE		(A)
-#define ITEM_WEAR_FINGER	(B)
-#define ITEM_WEAR_NECK		(C)
-#define ITEM_WEAR_BODY		(D)
-#define ITEM_WEAR_HEAD		(E)
-#define ITEM_WEAR_LEGS		(F)
-#define ITEM_WEAR_FEET		(G)
-#define ITEM_WEAR_HANDS		(H)
-#define ITEM_WEAR_ARMS		(I)
-#define ITEM_WEAR_SHIELD	(J)
-#define ITEM_WEAR_ABOUT		(K)
-#define ITEM_WEAR_WAIST		(L)
-#define ITEM_WEAR_WRIST		(M)
-#define ITEM_WIELD		(N)
-#define ITEM_HOLD		(O)
-#define ITEM_NO_SAC		(P)
-#define ITEM_WEAR_FLOAT		(Q)
+#define ITEM_TAKE				(A)
+#define ITEM_WEAR_FINGER		(B)
+#define ITEM_WEAR_NECK			(C)
+#define ITEM_WEAR_BODY			(D)
+#define ITEM_WEAR_HEAD			(E)
+#define ITEM_WEAR_LEGS			(F)
+#define ITEM_WEAR_FEET			(G)
+#define ITEM_WEAR_HANDS			(H)
+#define ITEM_WEAR_ARMS			(I)
+#define ITEM_WEAR_SHIELD		(J)
+#define ITEM_WEAR_ABOUT			(K)
+#define ITEM_WEAR_WAIST			(L)
+#define ITEM_WEAR_WRIST			(M)
+#define ITEM_WIELD				(N)
+#define ITEM_HOLD				(O)
+#define ITEM_NO_SAC				(P)
+#define ITEM_WEAR_FLOAT			(Q)
 #define ITEM_WEAR_RING_FINGER   (R)
-#define ITEM_WEAR_BACK		(S)
-#define ITEM_WEAR_SHOULDER	(T)
-#define ITEM_WEAR_FACE		(U)
-#define ITEM_WEAR_EYES		(V)
-#define ITEM_WEAR_EAR		(W)
-#define ITEM_WEAR_ANKLE		(X)
-#define ITEM_CONCEALS		(Y)
+#define ITEM_WEAR_BACK			(S)
+#define ITEM_WEAR_SHOULDER		(T)
+#define ITEM_WEAR_FACE			(U)
+#define ITEM_WEAR_EYES			(V)
+#define ITEM_WEAR_EAR			(W)
+#define ITEM_WEAR_ANKLE			(X)
+#define ITEM_CONCEALS			(Y)
+#define ITEM_WEAR_TABARD		(Z)
 
-#define ITEM_NONWEAR		(ITEM_TAKE|ITEM_NO_SAC|ITEM_CONCEALS)
+#define ITEM_NONWEAR			(ITEM_TAKE|ITEM_NO_SAC|ITEM_CONCEALS)
 
 
 /* trade items */
@@ -2816,7 +2844,8 @@ enum {
 #define WEAR_TATTOO_SHOULDER_L	47
 #define WEAR_TATTOO_SHOULDER_R	48
 #define WEAR_TATTOO_BACK	49
-#define MAX_WEAR		50
+#define WEAR_TABARD			50
+#define MAX_WEAR		51
 
 /*
  * Conditions.
@@ -2874,6 +2903,8 @@ enum {
 #define PLR_SACRIFICE_ALL	(B)
 #define PLR_NO_WAKE		(C)
 #define PLR_HOLYAURA		(D)
+#define PLR_MOBILE			(E)
+#define PLR_FAVSKILLS		(F)
 
 #define COMM_QUIET              (A)
 #define COMM_NOMUSIC           	(B)
@@ -3065,9 +3096,9 @@ struct	mob_index_data
     sh_int		alignment;
     sh_int		level;
     sh_int		hitroll;
-    int 		hit[3];
-    int 		mana[3];
-    int 		damage[3];
+    DICE_DATA	hit;
+    DICE_DATA	mana;
+    DICE_DATA	damage;
     sh_int		ac[4];
     sh_int 		dam_type;
     long		off_flags;
@@ -3290,6 +3321,8 @@ struct token_data
 	long		value[MAX_TOKEN_VALUES];
 
 	EXTRA_DESCR_DATA	*ed;
+
+	SKILL_ENTRY *skill;		// Is the token used in a skill entry?
 };
 
 
@@ -3632,7 +3665,7 @@ struct	char_data
 
     /* for mobs */
     long		off_flags;
-    int			damage[3];
+    DICE_DATA	damage;
     int			dam_type;
     int			start_pos;
     int			default_pos;
@@ -3772,6 +3805,8 @@ struct	char_data
     LLIST *		lquests;	// Eventually, we will have a quest log of sorts
     LLIST *		lclonerooms;
     LLIST *		laffected;
+
+    LLIST *		lgroup;
 
     int			deathsight_vision;
     int			cast_successful;	// Flag set when the casting is started indicating whether the result is successful
@@ -4026,6 +4061,12 @@ struct	obj_index_data
 	int alpha;		/* Transparency of object [0,1000] (0.0% to 100.0%) */
 	int heat;		/* How much heat is in it [0,100000] */
 	int moisture;		/* How much moisture is in it [0,1000] */
+
+	long inrooms;
+	long inmail;
+	long carried;
+	long lockered;
+	long incontainer;
 };
 
 
@@ -4081,6 +4122,7 @@ struct	obj_data
     char *		short_descr;
     char *		description;
     char *		full_description;
+    char *		old_name;
     char *		old_short_descr;
     char *		old_description;
     char *		old_full_description;
@@ -6525,7 +6567,8 @@ long     number_mm       args( ( void ) );
 long	dice		args( ( int number, int size ) );
 int	interpolate	args( ( int level, int value_00, int value_32 ) );
 void	smash_tilde	args( ( char *str ) );
-int	str_cmp		args( ( const char *astr, const char *bstr ) );
+int	str_cmp				args( ( const char *astr, const char *bstr ) );
+int str_cmp_nocolour	args( ( const char *astr, const char *bstr ) );
 bool	str_prefix	args( ( const char *astr, const char *bstr ) );
 bool	str_infix	args( ( const char *astr, const char *bstr ) );
 bool	str_suffix	args( ( const char *astr, const char *bstr ) );
@@ -6904,7 +6947,8 @@ OD *	get_obj_vnum_carry	args( ( CHAR_DATA *ch, long vnum, CHAR_DATA *viewer ) );
 OD *	get_obj_locker	args( ( CHAR_DATA *ch, char *argument ) );
 OD *	get_obj_wear	args( ( CHAR_DATA *ch, char *argument, bool character ));
 OD *	get_obj_wear_number	args( ( CHAR_DATA *ch, char *argument, int *nth, bool character ));
-OD *	get_obj_inv		args( (CHAR_DATA *ch, char *argument, bool worn));
+OD *	get_obj_inv			args( (CHAR_DATA *ch, char *argument, bool worn));
+OD *	get_obj_inv_only	args( (CHAR_DATA *ch, char *argument, bool worn));
 OD *	get_obj_here	args( ( CHAR_DATA *ch, ROOM_INDEX_DATA *room, char *argument ) );
 OD *	get_obj_here_number	args( ( CHAR_DATA *ch, ROOM_INDEX_DATA *room, char *argument, int *nth ) );
 OD *	get_obj_world	args( ( CHAR_DATA *ch, char *argument ) );
@@ -6989,6 +7033,7 @@ bool can_clear_exit(ROOM_INDEX_DATA *room);
 TOKEN_DATA *give_token(TOKEN_INDEX_DATA *token_index, CHAR_DATA *ch, OBJ_DATA *obj, ROOM_INDEX_DATA *room);
 void token_from_char(TOKEN_DATA *token);
 void token_to_char(TOKEN_DATA *token, CHAR_DATA *ch);
+void token_to_char_ex(TOKEN_DATA *token, CHAR_DATA *ch, char source, long flags);
 TOKEN_DATA *get_token_list(LLIST *tokens, long vnum, int count);
 TOKEN_DATA *get_token_char(CHAR_DATA *ch, long vnum, int count);
 void token_from_obj(TOKEN_DATA *token);
@@ -7147,8 +7192,9 @@ void read_permanent_objs ( );
 void save_char_obj	args( ( CHAR_DATA *ch ) );
 void write_permanent_objs ( );
 void fwrite_token(TOKEN_DATA *token, FILE *fp);
+void fwrite_skills(CHAR_DATA *ch, FILE *fp);
 TOKEN_DATA *fread_token(FILE *fp);
-
+void fread_skill(FILE *fp, CHAR_DATA *ch);
 
 
 /* skills.c */
@@ -7504,6 +7550,7 @@ extern LLIST *persist_mobs;
 extern LLIST *persist_objs;
 extern LLIST *persist_rooms;
 extern TOKEN_DATA *global_tokens;
+extern LLIST *loaded_players;
 extern LLIST *loaded_chars;
 extern LLIST *loaded_objects;
 
@@ -7585,9 +7632,12 @@ SKILL_ENTRY *skill_entry_findname( SKILL_ENTRY *list, char *str );
 SKILL_ENTRY *skill_entry_findsong( SKILL_ENTRY *list, int song );
 SKILL_ENTRY *skill_entry_findsn( SKILL_ENTRY *list, int sn );
 SKILL_ENTRY *skill_entry_findtoken( SKILL_ENTRY *list, TOKEN_DATA *token );
-void skill_entry_addskill (CHAR_DATA *ch, int sn, TOKEN_DATA *token);
-void skill_entry_addspell (CHAR_DATA *ch, int sn, TOKEN_DATA *token);
-void skill_entry_addsong (CHAR_DATA *ch, int song, TOKEN_DATA *token);
+SKILL_ENTRY *skill_entry_findtokenindex( SKILL_ENTRY *list, TOKEN_INDEX_DATA *token_index );
+void skill_entry_addskill (CHAR_DATA *ch, int sn, TOKEN_DATA *token, char source, long flags);
+void skill_entry_addspell (CHAR_DATA *ch, int sn, TOKEN_DATA *token, char source, long flags);
+void skill_entry_addsong (CHAR_DATA *ch, int song, TOKEN_DATA *token, char source);
+void skill_entry_remove (SKILL_ENTRY **list, int sn, int song, TOKEN_DATA *token, bool isspell);
+void skill_entry_removeentry (SKILL_ENTRY **list, SKILL_ENTRY *entry);
 void skill_entry_removeskill (CHAR_DATA *ch, int sn, TOKEN_DATA *token);
 void skill_entry_removespell (CHAR_DATA *ch, int sn, TOKEN_DATA *token);
 void skill_entry_removesong (CHAR_DATA *ch, int song, TOKEN_DATA *token);
@@ -7651,5 +7701,14 @@ void restore_char(CHAR_DATA *ch, CHAR_DATA *whom, int percent);
 typedef bool (*pVISIT_ROOM_LINE_FUNC)(ROOM_INDEX_DATA *room, CHAR_DATA *ch, int depth, int door, void *data );
 typedef void (*pVISIT_ROOM_END_FUNC)(ROOM_INDEX_DATA *room, CHAR_DATA *ch, int depth, int door, void *data, bool canceled );
 void visit_room_direction(CHAR_DATA *ch, ROOM_INDEX_DATA *start_room, int max_depth, int door, void *data, pVISIT_ROOM_LINE_FUNC func, pVISIT_ROOM_END_FUNC end_func);
+
+long dice_roll(DICE_DATA *d);
+void dice_copy(DICE_DATA *a, DICE_DATA *b);
+
+TOKEN_DATA *create_token(TOKEN_INDEX_DATA *token_index);
+
+BOOLEXP *new_boolexp();
+void free_boolexp(BOOLEXP *boolexp);
+
 
 #endif /* !def __MERC_H__ */

@@ -23,16 +23,16 @@
 static BUFFER *compile_err_buffer = NULL;
 static int compile_current_line = 0;
 
+
 void compile_error(char *msg)
 {
 	char buf[MSL];
 	if(compile_err_buffer) {
 		add_buf(compile_err_buffer,msg);
 		add_buf(compile_err_buffer,"\n\r");
-	} else {
-		sprintf(buf, "SCRIPT ERROR: %s", msg);
-		bug(buf,0);
 	}
+	sprintf(buf, "SCRIPT ERROR: %s", msg);
+	bug(buf,0);
 }
 
 void compile_error_show(char *msg)
@@ -393,6 +393,17 @@ char *compile_entity(char *str,int type, char **store)
 			*p++ = ENTITY_VAR_STR;
 			next_ent = ENT_STRING;
 
+		} else if(ent == ENT_BITVECTOR) {
+			if(suffix[0]) {
+				sprintf(buf,"Line %d: type suffix is only allowed for variable fields.", compile_current_line);
+				compile_error_show(buf);
+				return NULL;
+			}
+			if(!compile_variable(field,&p,type,FALSE,TRUE))
+				return NULL;
+			*p++ = ENTITY_VAR_BOOLEAN;
+			next_ent = ENT_BOOLEAN;
+
 		// Is this a variable call?
 		} else if(suffix[0]) {
 			if(script_entity_allow_vars(ent)) {
@@ -465,7 +476,8 @@ char *compile_entity(char *str,int type, char **store)
 			case ENT_PLLIST_OBJ:	ent = ENT_OBJECT; break;
 			case ENT_PLLIST_TOK:	ent = ENT_TOKEN; break;
 			case ENT_PLLIST_CHURCH:	ent = ENT_CHURCH; break;
-			case ENT_PLLIST_VARIABLE:	ent = ENT_VARIABLE; break;
+
+			case ENT_ILLIST_VARIABLE:	ent = ENT_VARIABLE; break;
 
 			default:
 				sprintf(buf,"Line %d: Invalid $() primary '%s'.", compile_current_line, field);
@@ -639,14 +651,15 @@ char *compile_string(char *str, int type, int *length, bool doquotes)
 
 bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 {
+	BOOLEXP *bool_exp = NULL, *bool_exp_root = NULL;
 	char labels[MAX_NAMED_LABELS][MIL];
 	SCRIPT_CODE *code;
 	char *src, *start, *line, eol;
 	char buf[MIL], rbuf[MSL];
-	bool comment, neg, doquotes, valid, linevalid, disable, inspect;
+	bool comment, neg, doquotes, valid, linevalid, disable, inspect, processrest, incline;
 	int state[MAX_NESTED_LEVEL];
 	int loops[MAX_NESTED_LOOPS];
-	int i, x, y, level, loop, rline, lines, length, errors,named_labels;
+	int i, x, y, level, loop, rline, cline, lines, length, errors,named_labels, bool_exp_cline;
 	char *type_name;
 
 
@@ -680,6 +693,9 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 	//	is issued by a non-IMP.
 	script->flags &= ~SCRIPT_INSPECT;
 
+	bool_exp = NULL;
+	bool_exp_cline = -1;
+
 	// Count the lines
 	i = 0;
 	src = source;
@@ -712,6 +728,8 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 	for(i=0;i<MAX_NESTED_LOOPS;i++) loops[i] = -1;
 	for(i=0;i<MAX_NAMED_LABELS;i++) labels[i][0] = 0;
 	i = 0;
+	cline = 0;
+	line = 0;
 	rline = 0;
 	level = 0;
 	loop = 0;
@@ -743,15 +761,19 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 
 			doquotes = TRUE;
 			linevalid = TRUE;
+			processrest = TRUE;
+			incline = TRUE;
 
 			do {
+
+
 				if(!str_cmp(buf,"end") || !str_cmp(buf,"break")) {
-					code[i].opcode = OP_END;
-					code[i].level = level;
+					code[cline].opcode = OP_END;
+					code[cline].level = level;
 					state[level] = IN_BLOCK;
 				} else if(!str_cmp(buf,"gotoline")) {
-					code[i].opcode = OP_GOTOLINE;
-					code[i].level = level;
+					code[cline].opcode = OP_GOTOLINE;
+					code[cline].level = level;
 					state[level] = IN_BLOCK;
 					if(inspect) {
 						sprintf(rbuf,"Line %d: {RWARNING:{x Use of 'gotoline' requires inspection by an IMP.", rline);
@@ -766,7 +788,8 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 						break;
 					}
 					neg = FALSE;
-					code[i].level = level;
+					code[cline].level = level;
+					code[cline].opcode = OP_IF;
 
 					state[level++] = BEGIN_BLOCK;
 					if (level >= MAX_NESTED_LEVEL) {
@@ -786,15 +809,36 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 						++line;
 					}
 
-					line = one_argument(line,buf);
-					code[i].opcode = neg ? OP_IFNOT : OP_IF;
-					code[i].param = ifcheck_lookup(buf,type);
-					if(code[i].param < 0) {
-						sprintf(rbuf,"Line %d: Invalid ifcheck '%s'.", rline, buf);
+					bool_exp_root = bool_exp = new_boolexp();
+					bool_exp->type = neg ? BOOLEXP_NOT : BOOLEXP_TRUE;
+					bool_exp_cline = cline;
+
+					if(*line == '$') {
+						bool_exp->param = -1;
+
+					} else {
+						line = one_argument(line,buf);
+						code[cline].param = ifcheck_lookup(buf,type);
+						bool_exp->param = ifcheck_lookup(buf,type);
+						if(bool_exp->param < 0) {
+							sprintf(rbuf,"Line %d: Invalid ifcheck '%s'.", rline, buf);
+							compile_error_show(rbuf);
+							linevalid = FALSE;
+							break;
+						}
+					}
+
+					processrest = FALSE;
+					bool_exp->rest = compile_string(line,type,&length,doquotes);
+					if(!bool_exp->rest) {
+						sprintf(rbuf,"Line %d: Error parsing string.", rline);
 						compile_error_show(rbuf);
 						linevalid = FALSE;
 						break;
-					}
+					} else
+						bool_exp->length = (short)length;
+
+					code[cline].rest = (char *)bool_exp;
 
 					state[level] = END_BLOCK;
 				} else if(!str_cmp(buf,"elseif")) {
@@ -806,7 +850,8 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 					}
 
 					neg = FALSE;
-					code[i].level = level-1;
+					code[cline].level = level-1;
+					code[cline].opcode = OP_ELSEIF;
 
 					if(!str_prefix("not ",line)) {
 						neg = !neg;
@@ -818,15 +863,36 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 						++line;
 					}
 
-					line = one_argument(line,buf);
-					code[i].opcode = neg ? OP_ELSEIFNOT : OP_ELSEIF;
-					code[i].param = ifcheck_lookup(buf,type);
-					if(code[i].param < 0) {
-						sprintf(rbuf,"Line %d: Invalid ifcheck '%s'.", rline, buf);
+					bool_exp_root = bool_exp = new_boolexp();
+					bool_exp->type = neg ? BOOLEXP_NOT : BOOLEXP_TRUE;
+					bool_exp_cline = cline;
+
+					if(*line == '$') {
+						bool_exp->param = -1;
+
+					} else {
+						line = one_argument(line,buf);
+						code[cline].param = ifcheck_lookup(buf,type);
+						bool_exp->param = ifcheck_lookup(buf,type);
+						if(bool_exp->param < 0) {
+							sprintf(rbuf,"Line %d: Invalid ifcheck '%s'.", rline, buf);
+							compile_error_show(rbuf);
+							linevalid = FALSE;
+							break;
+						}
+					}
+
+					processrest = FALSE;
+					bool_exp->rest = compile_string(line,type,&length,doquotes);
+					if(!bool_exp->rest) {
+						sprintf(rbuf,"Line %d: Error parsing string.", rline);
 						compile_error_show(rbuf);
 						linevalid = FALSE;
 						break;
-					}
+					} else
+						bool_exp->length = (short)length;
+
+					code[cline].rest = (char *)bool_exp;
 
 					state[level] = END_BLOCK;
 				} else if(!str_cmp(buf,"while")) {
@@ -837,7 +903,8 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 						break;
 					}
 					neg = FALSE;
-					code[i].level = level;
+					code[cline].level = level;
+					code[cline].opcode = OP_WHILE;
 
 					state[level++] = IN_WHILE;
 					if (level >= MAX_NESTED_LEVEL) {
@@ -871,7 +938,7 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 						break;
 					}
 					loops[loop++] = named_labels;
-					code[i].label = named_labels;
+					code[cline].label = named_labels;
 					strcpy(labels[named_labels++],buf);
 
 					if(!str_prefix("not ",line)) {
@@ -884,17 +951,39 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 						++line;
 					}
 
-					line = one_argument(line,buf);
-					code[i].opcode = neg ? OP_WHILENOT : OP_WHILE;
-					code[i].param = ifcheck_lookup(buf,type);
-					if(code[i].param < 0) {
-						sprintf(rbuf,"Line %d: Invalid ifcheck '%s'.", rline, buf);
+					bool_exp_root = bool_exp = new_boolexp();
+					bool_exp->type = neg ? BOOLEXP_NOT : BOOLEXP_TRUE;
+					bool_exp_cline = cline;
+
+					if(*line == '$') {
+						bool_exp->param = -1;
+
+					} else {
+						line = one_argument(line,buf);
+						bool_exp->param = ifcheck_lookup(buf,type);
+						if(bool_exp->param < 0) {
+							sprintf(rbuf,"Line %d: Invalid ifcheck '%s'.", rline, buf);
+							compile_error_show(rbuf);
+							linevalid = FALSE;
+							break;
+						}
+					}
+
+					processrest = FALSE;
+					bool_exp->rest = compile_string(line,type,&length,doquotes);
+					if(!bool_exp->rest) {
+						sprintf(rbuf,"Line %d: Error parsing string.", rline);
 						compile_error_show(rbuf);
 						linevalid = FALSE;
 						break;
-					}
+					} else
+						bool_exp->length = (short)length;
+
+					code[cline].rest = (char *)bool_exp;
 
 				} else if(!str_cmp(buf,"or")) {
+					BOOLEXP *be;
+
 					if (!level || (state[level-1] != BEGIN_BLOCK && state[level-1] != IN_WHILE)) {
 						sprintf(rbuf,"Line %d: 'or' used without 'if' or 'while'.", rline);
 						compile_error_show(rbuf);
@@ -913,18 +1002,48 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 						++line;
 					}
 
-					line = one_argument(line,buf);
+					be = new_boolexp();
+					be->type = BOOLEXP_OR;
+					code[bool_exp_cline].rest = (char *)be;	// Update the code entry
+					be->left = bool_exp_root;
+					be->left->parent = be;
+					bool_exp_root = be;
 
-					code[i].level = level-1;
-					code[i].opcode = neg ? OP_NOR : OP_OR;
-					code[i].param = ifcheck_lookup(buf,type);
-					if(code[i].param < 0) {
-						sprintf(rbuf,"Line %d: Invalid ifcheck '%s'.", rline, buf);
+					// Add expression for this line
+					bool_exp = be->right = new_boolexp();
+					bool_exp->parent = be;
+					bool_exp->type = neg ? BOOLEXP_NOT : BOOLEXP_TRUE;
+
+					code[cline].level = level-1;
+
+					if(*line == '$') {
+						bool_exp->param = -1;
+					} else {
+						line = one_argument(line,buf);
+						bool_exp->param = ifcheck_lookup(buf,type);
+						if(bool_exp->param < 0) {
+							sprintf(rbuf,"Line %d: Invalid ifcheck '%s'.", rline, buf);
+							compile_error_show(rbuf);
+							linevalid = FALSE;
+							break;
+						}
+					}
+
+
+					processrest = FALSE;
+					incline = FALSE;
+					bool_exp->rest = compile_string(line,type,&length,doquotes);
+					if(!bool_exp->rest) {
+						sprintf(rbuf,"Line %d: Error parsing string.", rline);
 						compile_error_show(rbuf);
 						linevalid = FALSE;
 						break;
-					}
+					} else
+						bool_exp->length = (short)length;
+
 				} else if(!str_cmp(buf,"and")) {
+					BOOLEXP *be;
+
 					if (!level || (state[level-1] != BEGIN_BLOCK && state[level-1] != IN_WHILE)) {
 						sprintf(rbuf,"Line %d: 'and' used without 'if' or 'while'.", rline);
 						compile_error_show(rbuf);
@@ -943,17 +1062,54 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 						++line;
 					}
 
-					line = one_argument(line,buf);
+					code[cline].level = level-1;
 
-					code[i].level = level-1;
-					code[i].opcode = neg ? OP_NAND : OP_AND;
-					code[i].param = ifcheck_lookup(buf,type);
-					if(code[i].param < 0) {
-						sprintf(rbuf,"Line %d: Invalid ifcheck '%s'.", rline, buf);
+
+					be = new_boolexp();
+					be->type = BOOLEXP_AND;
+					be->left = bool_exp;
+					be->right = new_boolexp();
+
+					if( bool_exp->parent ) {
+						bool_exp->parent->right = be;
+					} else {
+						// This is the root node too
+						bool_exp_root = be;
+						code[bool_exp_cline].rest = (char *)be;
+					}
+
+					be->left->parent = be;
+					be->right->parent = be;
+
+					bool_exp->parent = be;
+					bool_exp = be->right;
+					bool_exp->type = neg ? BOOLEXP_NOT : BOOLEXP_TRUE;
+
+
+					if(*line == '$') {
+						bool_exp->param = -1;
+					} else {
+						line = one_argument(line,buf);
+						bool_exp->param = ifcheck_lookup(buf,type);
+						if(bool_exp->param < 0) {
+							sprintf(rbuf,"Line %d: Invalid ifcheck '%s'.", rline, buf);
+							compile_error_show(rbuf);
+							linevalid = FALSE;
+							break;
+						}
+					}
+
+					processrest = FALSE;
+					incline = FALSE;
+					bool_exp->rest = compile_string(line,type,&length,doquotes);
+					if(!bool_exp->rest) {
+						sprintf(rbuf,"Line %d: Error parsing string.", rline);
 						compile_error_show(rbuf);
 						linevalid = FALSE;
 						break;
-					}
+					} else
+						bool_exp->length = (short)length;
+
 				} else if(!str_cmp(buf,"else")) {
 					if (!level || state[level-1] != BEGIN_BLOCK) {
 						sprintf(rbuf,"Line %d: Unmatched 'else'.", rline);
@@ -962,8 +1118,8 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 						break;
 					}
 					state[level] = IN_BLOCK;
-					code[i].level = level-1;
-					code[i].opcode = OP_ELSE;
+					code[cline].level = level-1;
+					code[cline].opcode = OP_ELSE;
 				} else if(!str_cmp(buf,"endif")) {
 					if (!level || state[level-1] != BEGIN_BLOCK) {
 						sprintf(rbuf,"Line %d: Unmatched 'endif'.", rline);
@@ -971,13 +1127,13 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 						linevalid = FALSE;
 						break;
 					}
-					code[i].level = level-1;
-					code[i].opcode = OP_ENDIF;
+					code[cline].level = level-1;
+					code[cline].opcode = OP_ENDIF;
 					state[level] = IN_BLOCK;
 					state[--level] = END_BLOCK;
 				} else if(!str_cmp(buf,"for")) {
-					code[i].opcode = OP_FOR;
-					code[i].level = level;
+					code[cline].opcode = OP_FOR;
+					code[cline].level = level;
 
 					state[level++] = IN_FOR;
 					if (level >= MAX_NESTED_LEVEL) {
@@ -1011,7 +1167,7 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 						break;
 					}
 					loops[loop++] = named_labels;
-					code[i].label = named_labels;
+					code[cline].label = named_labels;
 					strcpy(labels[named_labels++],buf);
 				} else if(!str_cmp(buf,"endfor")) {
 					if (!level || state[level-1] != IN_FOR) {
@@ -1041,9 +1197,9 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 					}
 
 					loops[--loop] = -1;
-					code[i].level = level-1;
-					code[i].opcode = OP_ENDFOR;
-					code[i].label = x;
+					code[cline].level = level-1;
+					code[cline].opcode = OP_ENDFOR;
+					code[cline].label = x;
 					state[level] = IN_BLOCK;
 					state[--level] = IN_BLOCK;
 				} else if(!str_cmp(buf,"exitfor")) {
@@ -1076,13 +1232,13 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 						break;
 					}
 
-					code[i].level = level;
-					code[i].opcode = OP_EXITFOR;
-					code[i].label = x;
+					code[cline].level = level;
+					code[cline].opcode = OP_EXITFOR;
+					code[cline].label = x;
 					state[level] = IN_BLOCK;
 				} else if(!str_cmp(buf,"list")) {
-					code[i].opcode = OP_LIST;
-					code[i].level = level;
+					code[cline].opcode = OP_LIST;
+					code[cline].level = level;
 
 					state[level++] = IN_LIST;
 					if (level >= MAX_NESTED_LEVEL) {
@@ -1116,7 +1272,7 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 						break;
 					}
 					loops[loop++] = named_labels;
-					code[i].label = named_labels;
+					code[cline].label = named_labels;
 					strcpy(labels[named_labels++],buf);
 				} else if(!str_cmp(buf,"endlist")) {
 					if (!level || state[level-1] != IN_LIST) {
@@ -1146,9 +1302,9 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 					}
 
 					loops[--loop] = -1;
-					code[i].level = level-1;
-					code[i].opcode = OP_ENDLIST;
-					code[i].label = x;
+					code[cline].level = level-1;
+					code[cline].opcode = OP_ENDLIST;
+					code[cline].label = x;
 					state[level] = IN_BLOCK;
 					state[--level] = IN_BLOCK;
 				} else if(!str_cmp(buf,"exitlist")) {
@@ -1181,9 +1337,9 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 						break;
 					}
 
-					code[i].level = level;
-					code[i].opcode = OP_EXITLIST;
-					code[i].label = x;
+					code[cline].level = level;
+					code[cline].opcode = OP_EXITLIST;
+					code[cline].label = x;
 					state[level] = IN_BLOCK;
 				} else if(!str_cmp(buf,"endwhile")) {
 					if (!level || state[level-1] != IN_WHILE) {
@@ -1213,9 +1369,9 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 					}
 
 					loops[--loop] = -1;
-					code[i].level = level-1;
-					code[i].opcode = OP_ENDWHILE;
-					code[i].label = x;
+					code[cline].level = level-1;
+					code[cline].opcode = OP_ENDWHILE;
+					code[cline].label = x;
 					state[level] = IN_BLOCK;
 					state[--level] = IN_BLOCK;
 				} else if(!str_cmp(buf,"exitwhile")) {
@@ -1248,9 +1404,9 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 						break;
 					}
 
-					code[i].level = level;
-					code[i].opcode = OP_EXITWHILE;
-					code[i].label = x;
+					code[cline].level = level;
+					code[cline].opcode = OP_EXITWHILE;
+					code[cline].label = x;
 					state[level] = IN_BLOCK;
 				} else if(!str_cmp(buf,"mob")) {
 					if(type != IFC_M) {
@@ -1262,16 +1418,16 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 
 					line = one_argument(line,buf);
 					state[level] = IN_BLOCK;
-					code[i].opcode = OP_MOB;
-					code[i].level = level;
-					code[i].param = mpcmd_lookup(buf);
-					if(code[i].param < 0) {
+					code[cline].opcode = OP_MOB;
+					code[cline].level = level;
+					code[cline].param = mpcmd_lookup(buf);
+					if(code[cline].param < 0) {
 						sprintf(rbuf,"Line %d: Invalid mob command '%s'.", rline, buf);
 						compile_error_show(rbuf);
 						linevalid = FALSE;
 						break;
-					} else if(inspect && mob_cmd_table[code[i].param].restricted) {
-						sprintf(rbuf,"Line %d: {RWARNING:{x Use of 'mob %s' requires inspection by an IMP.", rline, mob_cmd_table[code[i].param].name);
+					} else if(inspect && mob_cmd_table[code[cline].param].restricted) {
+						sprintf(rbuf,"Line %d: {RWARNING:{x Use of 'mob %s' requires inspection by an IMP.", rline, mob_cmd_table[code[cline].param].name);
 						compile_error_show(rbuf);
 						disable = TRUE;
 					}
@@ -1286,16 +1442,16 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 
 					line = one_argument(line,buf);
 					state[level] = IN_BLOCK;
-					code[i].opcode = OP_OBJ;
-					code[i].level = level;
-					code[i].param = opcmd_lookup(buf);
-					if(code[i].param < 0) {
+					code[cline].opcode = OP_OBJ;
+					code[cline].level = level;
+					code[cline].param = opcmd_lookup(buf);
+					if(code[cline].param < 0) {
 						sprintf(rbuf,"Line %d: Invalid obj command '%s'.", rline, buf);
 						compile_error_show(rbuf);
 						linevalid = FALSE;
 						break;
-					} else if(inspect && obj_cmd_table[code[i].param].restricted) {
-						sprintf(rbuf,"Line %d: {RWARNING:{x Use of 'obj %s' requires inspection by an IMP.", rline, obj_cmd_table[code[i].param].name);
+					} else if(inspect && obj_cmd_table[code[cline].param].restricted) {
+						sprintf(rbuf,"Line %d: {RWARNING:{x Use of 'obj %s' requires inspection by an IMP.", rline, obj_cmd_table[code[cline].param].name);
 						compile_error_show(rbuf);
 						disable = TRUE;
 					}
@@ -1310,16 +1466,16 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 
 					line = one_argument(line,buf);
 					state[level] = IN_BLOCK;
-					code[i].opcode = OP_ROOM;
-					code[i].level = level;
-					code[i].param = rpcmd_lookup(buf);
-					if(code[i].param < 0) {
+					code[cline].opcode = OP_ROOM;
+					code[cline].level = level;
+					code[cline].param = rpcmd_lookup(buf);
+					if(code[cline].param < 0) {
 						sprintf(rbuf,"Line %d: Invalid room command '%s'.", rline, buf);
 						compile_error_show(rbuf);
 						linevalid = FALSE;
 						break;
-					} else if(inspect && room_cmd_table[code[i].param].restricted) {
-						sprintf(rbuf,"Line %d: {RWARNING:{x Use of 'room %s' requires inspection by an IMP.", rline, room_cmd_table[code[i].param].name);
+					} else if(inspect && room_cmd_table[code[cline].param].restricted) {
+						sprintf(rbuf,"Line %d: {RWARNING:{x Use of 'room %s' requires inspection by an IMP.", rline, room_cmd_table[code[cline].param].name);
 						compile_error_show(rbuf);
 						disable = TRUE;
 					}
@@ -1327,21 +1483,21 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 				} else if(!str_cmp(buf,"token")) {
 					line = one_argument(line,buf);
 					state[level] = IN_BLOCK;
-					code[i].opcode = (type == IFC_T) ? OP_TOKEN : OP_TOKENOTHER;
-					code[i].level = level;
-					code[i].param = tpcmd_lookup(buf,(type == IFC_T));
-					if(code[i].param < 0) {
+					code[cline].opcode = (type == IFC_T) ? OP_TOKEN : OP_TOKENOTHER;
+					code[cline].level = level;
+					code[cline].param = tpcmd_lookup(buf,(type == IFC_T));
+					if(code[cline].param < 0) {
 						sprintf(rbuf,"Line %d: Invalid token command '%s'.", rline, buf);
 						compile_error_show(rbuf);
 						linevalid = FALSE;
 						break;
 					} else if(inspect) {
-						if((type == IFC_T) && token_cmd_table[code[i].param].restricted) {
-							sprintf(rbuf,"Line %d: {RWARNING:{x Use of 'token %s' requires inspection by an IMP.", rline, token_cmd_table[code[i].param].name);
+						if((type == IFC_T) && token_cmd_table[code[cline].param].restricted) {
+							sprintf(rbuf,"Line %d: {RWARNING:{x Use of 'token %s' requires inspection by an IMP.", rline, token_cmd_table[code[cline].param].name);
 							compile_error_show(rbuf);
 							disable = TRUE;
-						} else if((type != IFC_T) && tokenother_cmd_table[code[i].param].restricted) {
-							sprintf(rbuf,"Line %d: {RWARNING:{x Use of 'token %s' requires inspection by an IMP.", rline, tokenother_cmd_table[code[i].param].name);
+						} else if((type != IFC_T) && tokenother_cmd_table[code[cline].param].restricted) {
+							sprintf(rbuf,"Line %d: {RWARNING:{x Use of 'token %s' requires inspection by an IMP.", rline, tokenother_cmd_table[code[cline].param].name);
 							compile_error_show(rbuf);
 							disable = TRUE;
 						}
@@ -1349,8 +1505,8 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 					doquotes = FALSE;
 				} else if(type == IFC_M) {
 					state[level] = IN_BLOCK;
-					code[i].opcode = OP_COMMAND;
-					code[i].level = level;
+					code[cline].opcode = OP_COMMAND;
+					code[cline].level = level;
 					line = start;
 					doquotes = FALSE;
 				} else {
@@ -1361,23 +1517,25 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 				}
 			} while(0);
 
-			if(linevalid) {
-				code[i].rest = compile_string(line,type,&length,doquotes);
-				if(!code[i].rest) {
+			if(linevalid && processrest) {
+				code[cline].rest = compile_string(line,type,&length,doquotes);
+				if(!code[cline].rest) {
 					sprintf(rbuf,"Line %d: Error parsing string.", rline);
 					compile_error_show(rbuf);
 					linevalid = FALSE;
 				} else
-					code[i].length = (short)length;
+					code[cline].length = (short)length;
 			}
 
 			if(!linevalid) {
-				code[i].rest = NULL;
-				code[i].length = 0;
+				code[cline].rest = NULL;
+				code[cline].length = 0;
 				valid = FALSE;
 				++errors;
 			}
 
+			if(incline)
+				++cline;
 			++i;
 		}
 		*src = eol;
@@ -1413,12 +1571,14 @@ bool compile_script(BUFFER *err_buf,SCRIPT_DATA *script, char *source, int type)
 			script->flags &= ~SCRIPT_DISABLED;
 	}
 
-	// Even empty scripts have "one" code.
-	//	Only BAD scripts have "no" codes
-	code[lines].opcode = OP_END;
-	code[lines].level = 0;
-	code[lines].rest = str_dup("");
-	code[lines].length = 0;
+	if( !cline || (code[cline-1].opcode != OP_END) ) {
+		// Even empty scripts have "one" code.
+		//	Only BAD scripts have "no" codes
+		code[cline].opcode = OP_END;
+		code[cline].level = 0;
+		code[cline].rest = str_dup("");
+		code[cline].length = 0;
+	}
 
 	free_script_code(script->code,script->lines);
 	free_string(script->src);

@@ -2030,15 +2030,18 @@ void char_to_room(CHAR_DATA *ch, ROOM_INDEX_DATA *pRoomIndex)
         if (af->level == 1)
             return;
 
-	plague.where		= TO_AFFECTS;
-	plague.group		= AFFGROUP_BIOLOGICAL;
+		plague.where		= TO_AFFECTS;
+		plague.group		= AFFGROUP_BIOLOGICAL;
         plague.type 		= gsn_plague;
         plague.level 		= af->level - 1;
         plague.duration 	= number_range(1,2 * plague.level);
         plague.location		= APPLY_STR;
         plague.modifier 	= -5;
         plague.bitvector 	= AFF_PLAGUE;
+        plague.bitvector2	= 0;
         plague.slot			= WEAR_NONE;
+        plague.custom_name = NULL;
+
 
         for (vch = ch->in_room->people; vch != NULL; vch = vch->next_in_room)
         {
@@ -2068,6 +2071,8 @@ void obj_to_locker(OBJ_DATA *obj, CHAR_DATA *ch)
     obj->in_room         = NULL;
     obj->in_obj          = NULL;
     obj->locker	 	 = TRUE;
+
+    obj->pIndexData->lockered++;
 
     list_addlink(ch->llocker, obj);
 
@@ -2125,6 +2130,8 @@ void obj_to_char(OBJ_DATA *obj, CHAR_DATA *ch)
 
     if (!IS_NPC(ch))
         check_quest_retrieve_obj(ch, obj);
+
+    obj->pIndexData->carried++;
 
     if (objRepop == TRUE)
     {
@@ -2189,6 +2196,8 @@ void obj_from_locker(OBJ_DATA *obj)
             bug("locker get: obj not in list.", 0);
     }
 
+    --obj->pIndexData->lockered;
+
     obj->in_room         = NULL;
     obj->carried_by      = NULL;
     obj->next_content    = NULL;
@@ -2233,6 +2242,8 @@ void obj_from_char(OBJ_DATA *obj)
 	if (prev == NULL && !obj->locker)
 	    bug("Obj_from_char: obj not in list.", 0);
     }
+
+    --obj->pIndexData->carried;
 
     obj->carried_by	 = NULL;
     obj->next_content	 = NULL;
@@ -2569,6 +2580,8 @@ void obj_from_room(OBJ_DATA *obj)
             destroy_wilds_vroom(obj->in_room);
     }
 
+    --obj->pIndexData->inrooms;
+
     obj->in_wilds     = NULL;
     obj->in_room      = NULL;
     obj->next_content = NULL;
@@ -2593,6 +2606,8 @@ void obj_to_room(OBJ_DATA *obj, ROOM_INDEX_DATA *pRoomIndex)
 
     if (pRoomIndex == NULL)
 	bug("obj_to_room: ERROR IN_ROOM WAS NULL", 0);
+
+    obj->pIndexData->inrooms++;
 
     if (objRepop == TRUE)
     {
@@ -2642,6 +2657,9 @@ void obj_to_vroom(OBJ_DATA *obj, WILDS_DATA *pWilds, int x, int y)
     obj->y                      = y;
     pWilds->loaded_objs++;
 
+    obj->pIndexData->inrooms++;
+
+
     if (objRepop == TRUE)
     {
 	p_percent_trigger(NULL, obj, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRIG_REPOP, NULL);
@@ -2669,6 +2687,9 @@ void obj_to_obj(OBJ_DATA *obj, OBJ_DATA *obj_to)
 
 	if(obj->clone_rooms || obj->nest_clones > 0)
 		obj_set_nest_clones(obj_to,true);
+
+    obj->pIndexData->incontainer++;
+
 }
 
 
@@ -2709,6 +2730,8 @@ void obj_from_obj(OBJ_DATA *obj)
 	    return;
 	}
     }
+
+    --obj->pIndexData->incontainer;
 
     obj->in_room      = NULL;
     obj->next_content = NULL;
@@ -3054,6 +3077,7 @@ void extract_char(CHAR_DATA *ch, bool fPull)
     }
     iterator_stop(&it);
     list_remlink(loaded_chars, ch);
+    list_remlink(loaded_players, ch);
 
 
     if (ch->desc != NULL)
@@ -3597,6 +3621,42 @@ OBJ_DATA *get_obj_inv(CHAR_DATA *ch, char *argument, bool worn)
     return obj;
 }
 
+OBJ_DATA *get_obj_inv_only(CHAR_DATA *ch, char *argument, bool worn)
+{
+    OBJ_DATA *obj;
+    char arg[MAX_INPUT_LENGTH];
+    int number;
+    int count;
+
+    if (!ch)
+    {
+		bug("get_obj_inv received NULL ch",0);
+		return NULL;
+	}
+
+    number = number_argument(argument, arg);
+    count = 0;
+
+	if (worn)
+	{
+		if ((obj = get_obj_wear_number(ch, arg, &number, TRUE)) != NULL)
+			return obj;
+
+		if ((obj = get_obj_carry_number(ch, arg, &number, ch)) != NULL)
+			return obj;
+	}
+	else
+	{
+		if ((obj = get_obj_carry_number(ch, arg, &number, ch)) != NULL)
+			return obj;
+
+		if ((obj = get_obj_wear_number(ch, arg, &number, TRUE)) != NULL)
+			return obj;
+	}
+
+    return NULL;
+}
+
 
 /*
  * Find an obj in the world.
@@ -3907,6 +3967,35 @@ bool has_light(CHAR_DATA *ch)
 	}
 
 	return FALSE;
+}
+
+bool can_see_imm(CHAR_DATA *ch, CHAR_DATA *victim)
+{
+	STRING_DATA *string;
+
+	if (victim == NULL || ch == NULL)
+		return FALSE;
+
+	/* allow imms to be vis to some people */
+	if (!IS_NPC(victim))
+	{
+		for (string = victim->pcdata->vis_to_people; string != NULL; string = string->next)
+		{
+			if (!str_cmp(ch->name, string->string))
+				return TRUE;
+		}
+	}
+
+	if (ch->tot_level < victim->invis_level)
+		return FALSE;
+
+	if (!IS_IMMORTAL(ch) && IS_NPC(victim) && IS_SET(victim->act2, ACT2_WIZI_MOB) && !IS_SET(ch->act2, ACT2_SEE_WIZI))
+		return FALSE;
+
+	if (get_trust(ch) < victim->incog_level && ch->in_room != victim->in_room)
+		return FALSE;
+
+	return TRUE;
 }
 
 /*
@@ -6282,16 +6371,10 @@ bool can_clear_exit(ROOM_INDEX_DATA *room)
     return TRUE;
 }
 
-
-/* set up a token and give it to a char */
-TOKEN_DATA *give_token(TOKEN_INDEX_DATA *token_index, CHAR_DATA *ch, OBJ_DATA *obj, ROOM_INDEX_DATA *room)
+TOKEN_DATA *create_token(TOKEN_INDEX_DATA *token_index)
 {
 	TOKEN_DATA *token;
 	int i;
-
-	if(!ch && !obj && !room) return NULL;
-
-	if( (ch && obj) || (ch && room) || (obj && room) ) return NULL;
 
 	token = new_token();
 	token->pIndexData = token_index;
@@ -6313,6 +6396,21 @@ TOKEN_DATA *give_token(TOKEN_INDEX_DATA *token_index, CHAR_DATA *ch, OBJ_DATA *o
 
 	for (i = 0; i < MAX_TOKEN_VALUES; i++)
 		token->value[i] = token_index->value[i];
+
+	return token;
+}
+
+
+/* set up a token and give it to a char */
+TOKEN_DATA *give_token(TOKEN_INDEX_DATA *token_index, CHAR_DATA *ch, OBJ_DATA *obj, ROOM_INDEX_DATA *room)
+{
+	TOKEN_DATA *token;
+
+	if(!ch && !obj && !room) return NULL;
+
+	if( (ch && obj) || (ch && room) || (obj && room) ) return NULL;
+
+	token = create_token(token_index);
 
 	if(ch)
 		token_to_char(token, ch);
@@ -6368,9 +6466,8 @@ void token_from_char(TOKEN_DATA *token)
 	token->player = NULL;
 }
 
-
 /* transfers a token to a char */
-void token_to_char(TOKEN_DATA *token, CHAR_DATA *ch)
+void token_to_char_ex(TOKEN_DATA *token, CHAR_DATA *ch, char source, long flags)
 {
 	char buf[MSL];
 
@@ -6388,14 +6485,19 @@ void token_to_char(TOKEN_DATA *token, CHAR_DATA *ch)
 	list_addlink(ch->ltokens, token);
 
 	// Do sorted lists
-	if(token->type == TOKEN_SKILL) skill_entry_addskill(token->player, 0, token);
-	else if(token->type == TOKEN_SPELL) skill_entry_addspell(token->player, 0, token);
-	else if(token->type == TOKEN_SONG) skill_entry_addsong(token->player,-1,token);
+	if(token->type == TOKEN_SKILL) skill_entry_addskill(token->player, 0, token, source, flags);
+	else if(token->type == TOKEN_SPELL) skill_entry_addspell(token->player, 0, token, source, flags);
+	else if(token->type == TOKEN_SONG) skill_entry_addsong(token->player,-1,token, source);
 
 	sprintf(buf, "token_to_char: gave token %s(%ld) to char %s(%ld)",
 		token->name, token->pIndexData->vnum,
 		HANDLE(ch), IS_NPC(ch) ? ch->pIndexData->vnum : 0);
 	log_string(buf);
+}
+
+void token_to_char(TOKEN_DATA *token, CHAR_DATA *ch)
+{
+	token_to_char_ex(token, ch, SKILLSRC_SCRIPT, SKILL_AUTOMATIC);
 }
 
 TOKEN_DATA *get_token_list(LLIST *tokens, long vnum, int count)
@@ -7626,7 +7728,7 @@ LLIST *list_copy(LLIST *src)
 					data = (*cpy->copier)(data);
 
 				if( !data || !list_appendlink(cpy, data) ) {
-					if( data && cpy->deleter )
+					if( data && cpy->copier && cpy->deleter )
 						(*cpy->deleter)(data);
 
 					valid = FALSE;
@@ -8352,3 +8454,20 @@ void visit_room_direction(CHAR_DATA *ch, ROOM_INDEX_DATA *start_room, int max_de
 		(*end_func)(last_room, ch, depth, door, data);
 */
 }
+
+
+long dice_roll(DICE_DATA *d)
+{
+	d->last_roll = dice(d->number, d->size) + d->bonus;
+
+	return d->last_roll;
+}
+
+void dice_copy(DICE_DATA *a, DICE_DATA *b)
+{
+	b->number = a->number;
+	b->size = a->size;
+	b->bonus = a->bonus;
+	b->last_roll = -1;
+}
+

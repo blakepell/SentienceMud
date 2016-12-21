@@ -13,95 +13,100 @@
 extern bool wiznet_script;
 
 const struct script_cmd_type obj_cmd_table[] = {
-	{ "addaffect",			do_opaddaffect,		TRUE	},
-	{ "addaffectname",		do_opaddaffectname,	TRUE	},
-	{ "addspell",			do_opaddspell,			TRUE	},
-	{ "alteraffect",		do_opalteraffect,			TRUE	},
-	{ "alterexit",			do_opalterexit,		FALSE	},
-	{ "altermob",			do_opaltermob,		TRUE	},
-	{ "alterobj",			do_opalterobj,		TRUE	},
-	{ "alterroom",			do_opalterroom,			TRUE	},
-	{ "asound",				do_opasound,		FALSE	},
-	{ "at",					do_opat,		FALSE	},
-	{ "call",				do_opcall,		FALSE	},
-	{ "cancel",				do_opcancel,		FALSE	},
-	{ "cast",       		do_opcast,		FALSE	},
-	{ "chargebank",			do_opchargebank,		FALSE	},
-	{ "checkpoint",			do_opcheckpoint,		FALSE	},
-	{ "cloneroom",			do_opcloneroom,		TRUE	},
-	{ "condition",			do_opcondition,			FALSE	},
-	{ "crier",				do_opcrier,			FALSE	},
-	{ "damage",				do_opdamage,		FALSE	},
-	{ "delay",				do_opdelay,		FALSE	},
-	{ "dequeue",			do_opdequeue,		FALSE	},
-	{ "destroyroom",		do_opdestroyroom,	TRUE	},
-	{ "echo",				do_opecho,		FALSE	},
-	{ "echoaround",			do_opechoaround,	FALSE	},
-	{ "echoat",				do_opechoat,		FALSE	},
-	{ "echobattlespam",		do_opechobattlespam,	FALSE	},
-	{ "echochurch",			do_opechochurch,	FALSE	},
-	{ "echogrouparound",	do_opechogrouparound,	FALSE	},
-	{ "echogroupat",		do_opechogroupat,	FALSE	},
-	{ "echoleadaround",		do_opecholeadaround,	FALSE	},
-	{ "echoleadat",			do_opecholeadat,	FALSE	},
-	{ "echonotvict",		do_opechonotvict,	FALSE	},
-	{ "echoroom",			do_opechoroom,		FALSE	},
-	{ "fixaffects",			do_opfixaffects,			FALSE	},
-	{ "force",				do_opforce,		FALSE	},
-	{ "forget",				do_opforget,		FALSE	},
-	{ "gdamage",			do_opgdamage,		FALSE	},
-	{ "gecho",       		do_opgecho,		FALSE	},
-	{ "gforce",				do_opgforce,		FALSE	},
-	{ "goto",				do_opgoto,		FALSE	},
-	{ "gtransfer",			do_opgtransfer,		FALSE	},
-	{ "input",				do_opinput,		FALSE	},
-	{ "interrupt",			do_opinterrupt,		FALSE	},
-	{ "junk",				do_opjunk,		FALSE	},
-	{ "link",				do_oplink,		FALSE	},
-	{ "mload",				do_opmload,		FALSE	},
-	{ "oload",				do_opoload,		FALSE	},
-	{ "otransfer",			do_opotransfer,		FALSE	},
-	{ "peace",				do_oppeace,		FALSE	},
-	{ "persist",			do_oppersist,		FALSE	},
-	{ "prompt",				do_opprompt,		FALSE	},
-	{ "purge",				do_oppurge,		FALSE	},
-	{ "queue",				do_opqueue,		FALSE	},
-	{ "rawkill",			do_oprawkill,		FALSE	},
-	{ "remember",			do_opremember,		FALSE	},
-	{ "remort",				do_opremort,			TRUE	},
-	{ "remove",				do_opremove,		FALSE	},
-	{ "remspell",			do_opremspell,			TRUE	},
-	{ "resetdice",			do_opresetdice,		TRUE	},
-	{ "restore",			do_oprestore,		TRUE	},
-	{ "saveplayer",			do_opsaveplayer,		FALSE	},
-	{ "selfdestruct",		do_opselfdestruct,	FALSE	},
-	{ "settimer",			do_opsettimer,		FALSE	},
-	{ "scriptwait",			do_opscriptwait,		FALSE	},
-	{ "showroom",			do_opshowroom,		TRUE	},
-	{ "skill",				do_opskill,						TRUE	},
-	{ "skillgroup",			do_opskillgroup,			TRUE	},
-	{ "skimprove",			do_opskimprove,		TRUE	},
-	{ "startcombat",		do_opstartcombat,	FALSE	},
-	{ "stopcombat",			do_opstopcombat,		FALSE	},
-	{ "stringmob",			do_opstringmob,		TRUE	},
-	{ "stringobj",			do_opstringobj,		TRUE	},
-	{ "stripaffect",		do_opstripaffect,	TRUE	},
-	{ "stripaffectname",	do_opstripaffectname,	TRUE	},
-	{ "transfer",			do_optransfer,		FALSE	},
-	{ "usecatalyst",		do_opusecatalyst,	FALSE	},
-	{ "varclear",			do_opvarclear,		FALSE	},
-	{ "varclearon",			do_opvarclearon,	FALSE	},
-	{ "varcopy",			do_opvarcopy,		FALSE	},
-	{ "varsave",			do_opvarsave,		FALSE	},
-	{ "varsaveon",			do_opvarsaveon,		FALSE	},
-	{ "varset",				do_opvarset,		FALSE	},
-	{ "varseton",			do_opvarseton,		FALSE	},
-	{ "vforce",				do_opvforce,		FALSE	},
-	{ "wiretransfer",		do_opwiretransfer,	FALSE	},
-	{ "xcall",				do_opxcall,		FALSE	},
-	{ "zecho",				do_opzecho,		FALSE	},
-	{ "zot",				do_opzot,		TRUE	},
-	{ NULL,				NULL,			FALSE	}
+	{ "addaffect",			do_opaddaffect,			TRUE,	TRUE	},
+	{ "addaffectname",		do_opaddaffectname,		TRUE,	TRUE	},
+	{ "addspell",			do_opaddspell,			TRUE,	TRUE	},
+	{ "alteraffect",		do_opalteraffect,		TRUE,	TRUE	},
+	{ "alterexit",			do_opalterexit,			FALSE,	TRUE	},
+	{ "altermob",			do_opaltermob,			TRUE,	TRUE	},
+	{ "alterobj",			do_opalterobj,			TRUE,	TRUE	},
+	{ "alterroom",			do_opalterroom,			TRUE,	TRUE	},
+	{ "applytoxin",			scriptcmd_applytoxin,	FALSE,	TRUE	},
+	{ "asound",				do_opasound,			FALSE,	TRUE	},
+	{ "at",					do_opat,				FALSE,	TRUE	},
+	{ "award",				scriptcmd_award,		TRUE,	TRUE	},
+	{ "call",				do_opcall,				FALSE,	TRUE	},
+	{ "cancel",				do_opcancel,			FALSE,	TRUE	},
+	{ "cast",       		do_opcast,				FALSE,	TRUE	},
+	{ "chargebank",			do_opchargebank,		FALSE,	TRUE	},
+	{ "checkpoint",			do_opcheckpoint,		FALSE,	TRUE	},
+	{ "cloneroom",			do_opcloneroom,			TRUE,	TRUE	},
+	{ "condition",			do_opcondition,			FALSE,	TRUE	},
+	{ "crier",				do_opcrier,				FALSE,	TRUE	},
+	{ "damage",				scriptcmd_damage,		FALSE,	TRUE	},
+	{ "deduct",				scriptcmd_deduct,		TRUE,	TRUE	},
+	{ "delay",				do_opdelay,				FALSE,	TRUE	},
+	{ "dequeue",			do_opdequeue,			FALSE,	TRUE	},
+	{ "destroyroom",		do_opdestroyroom,		TRUE,	TRUE	},
+	{ "echo",				do_opecho,				FALSE,	TRUE	},
+	{ "echoaround",			do_opechoaround,		FALSE,	TRUE	},
+	{ "echoat",				do_opechoat,			FALSE,	TRUE	},
+	{ "echobattlespam",		do_opechobattlespam,	FALSE,	TRUE	},
+	{ "echochurch",			do_opechochurch,		FALSE,	TRUE	},
+	{ "echogrouparound",	do_opechogrouparound,	FALSE,	TRUE	},
+	{ "echogroupat",		do_opechogroupat,		FALSE,	TRUE	},
+	{ "echoleadaround",		do_opecholeadaround,	FALSE,	TRUE	},
+	{ "echoleadat",			do_opecholeadat,		FALSE,	TRUE	},
+	{ "echonotvict",		do_opechonotvict,		FALSE,	TRUE	},
+	{ "echoroom",			do_opechoroom,			FALSE,	TRUE	},
+	{ "fixaffects",			do_opfixaffects,		FALSE,	TRUE	},
+	{ "force",				do_opforce,				FALSE,	TRUE	},
+	{ "forget",				do_opforget,			FALSE,	TRUE	},
+	{ "gdamage",			do_opgdamage,			FALSE,	TRUE	},
+	{ "gecho",       		do_opgecho,				FALSE,	TRUE	},
+	{ "gforce",				do_opgforce,			FALSE,	TRUE	},
+	{ "goto",				do_opgoto,				FALSE,	TRUE	},
+	{ "grantskill",			scriptcmd_grantskill,	FALSE,	TRUE	},
+	{ "group",				do_opgroup,				FALSE,	TRUE	},
+	{ "gtransfer",			do_opgtransfer,			FALSE,	TRUE	},
+	{ "input",				do_opinput,				FALSE,	TRUE	},
+	{ "interrupt",			do_opinterrupt,			FALSE,	TRUE	},
+	{ "junk",				do_opjunk,				FALSE,	TRUE	},
+	{ "link",				do_oplink,				FALSE,	TRUE	},
+	{ "mload",				do_opmload,				FALSE,	TRUE	},
+	{ "oload",				do_opoload,				FALSE,	TRUE	},
+	{ "otransfer",			do_opotransfer,			FALSE,	TRUE	},
+	{ "peace",				do_oppeace,				FALSE,	TRUE	},
+	{ "persist",			do_oppersist,			FALSE,	TRUE	},
+	{ "prompt",				do_opprompt,			FALSE,	TRUE	},
+	{ "purge",				do_oppurge,				FALSE,	TRUE	},
+	{ "queue",				do_opqueue,				FALSE,	TRUE	},
+	{ "rawkill",			do_oprawkill,			FALSE,	TRUE	},
+	{ "remember",			do_opremember,			FALSE,	TRUE	},
+	{ "remort",				do_opremort,			TRUE,	TRUE	},
+	{ "remove",				do_opremove,			FALSE,	TRUE	},
+	{ "remspell",			do_opremspell,			TRUE,	TRUE	},
+	{ "resetdice",			do_opresetdice,			TRUE,	TRUE	},
+	{ "restore",			do_oprestore,			TRUE,	TRUE	},
+	{ "revokeskill",		scriptcmd_revokeskill,	FALSE,	TRUE	},
+	{ "saveplayer",			do_opsaveplayer,		FALSE,	TRUE	},
+	{ "scriptwait",			do_opscriptwait,		FALSE,	TRUE	},
+	{ "selfdestruct",		do_opselfdestruct,		FALSE,	TRUE	},
+	{ "settimer",			do_opsettimer,			FALSE,	TRUE	},
+	{ "showroom",			do_opshowroom,			TRUE,	TRUE	},
+	{ "skimprove",			do_opskimprove,			TRUE,	TRUE	},
+	{ "startcombat",		scriptcmd_startcombat,	FALSE,	TRUE	},
+	{ "stopcombat",			scriptcmd_stopcombat,	FALSE,	TRUE	},
+	{ "stringmob",			do_opstringmob,			TRUE,	TRUE	},
+	{ "stringobj",			do_opstringobj,			TRUE,	TRUE	},
+	{ "stripaffect",		do_opstripaffect,		TRUE,	TRUE	},
+	{ "stripaffectname",	do_opstripaffectname,	TRUE,	TRUE	},
+	{ "transfer",			do_optransfer,			FALSE,	TRUE	},
+	{ "ungroup",			do_opungroup,			FALSE,	TRUE	},
+	{ "usecatalyst",		do_opusecatalyst,		FALSE,	TRUE	},
+	{ "varclear",			do_opvarclear,			FALSE,	TRUE	},
+	{ "varclearon",			do_opvarclearon,		FALSE,	TRUE	},
+	{ "varcopy",			do_opvarcopy,			FALSE,	TRUE	},
+	{ "varsave",			do_opvarsave,			FALSE,	TRUE	},
+	{ "varsaveon",			do_opvarsaveon,			FALSE,	TRUE	},
+	{ "varset",				do_opvarset,			FALSE,	TRUE	},
+	{ "varseton",			do_opvarseton,			FALSE,	TRUE	},
+	{ "vforce",				do_opvforce,			FALSE,	TRUE	},
+	{ "wiretransfer",		do_opwiretransfer,		FALSE,	TRUE	},
+	{ "xcall",				do_opxcall,				FALSE,	TRUE	},
+	{ "zecho",				do_opzecho,				FALSE,	TRUE	},
+	{ "zot",				do_opzot,				TRUE,	TRUE	},
+	{ NULL,					NULL,					FALSE,	FALSE	}
 };
 
 int opcmd_lookup(char *command)
@@ -3339,9 +3344,9 @@ SCRIPT_CMD(do_opaltermob)
 	else if(!str_cmp(field,"danger"))	{ ptr = IS_NPC(mob)?NULL:(int*)&mob->pcdata->danger_range; allowpc = TRUE; }
 	else if(!str_cmp(field,"daze"))		ptr = (int*)&mob->daze;
 	else if(!str_cmp(field,"death"))	{ ptr = (IS_NPC(mob) || !IS_DEAD(mob))?NULL:(int*)&mob->time_left_death; allowpc = TRUE; }
-	else if(!str_cmp(field,"dicenumber"))	{ ptr = IS_NPC(mob)?&mob->damage[DICE_NUMBER]:NULL; }
-	else if(!str_cmp(field,"dicetype"))	{ ptr = IS_NPC(mob)?&mob->damage[DICE_TYPE]:NULL; }
-	else if(!str_cmp(field,"dicebonus"))	{ ptr = IS_NPC(mob)?&mob->damage[DICE_BONUS]:NULL; }
+	else if(!str_cmp(field,"dicenumber"))	{ ptr = IS_NPC(mob)?&mob->damage.number:NULL; }
+	else if(!str_cmp(field,"dicetype"))	{ ptr = IS_NPC(mob)?&mob->damage.size:NULL; }
+	else if(!str_cmp(field,"dicebonus"))	{ ptr = IS_NPC(mob)?&mob->damage.bonus:NULL; }
 	else if(!str_cmp(field,"drunk"))	{ ptr = IS_NPC(mob)?NULL:(int*)&mob->pcdata->condition[COND_DRUNK]; allowpc = TRUE; }
 //	else if(!str_cmp(field,"exitdir"))	{ ptr = (int*)&mob->exit_dir; allowpc = TRUE; }
 	else if(!str_cmp(field,"exp"))		{ ptr = (int*)&mob->exp; allowpc = TRUE; }
@@ -5638,74 +5643,6 @@ SCRIPT_CMD(do_opclearrecall)
 	victim->recall.id[2] = 0;
 }
 
-SCRIPT_CMD(do_opstartcombat)
-{
-	char *rest;
-	CHAR_DATA *attacker = NULL;
-	CHAR_DATA *victim = NULL;
-	SCRIPT_PARAM arg;
-
-	if(!info || !info->obj) return;
-
-	if(!(rest = expand_argument(info,argument,&arg))) {
-		bug("TpStartCombat - Error in parsing from vnum %ld.", VNUM(info->obj));
-		return;
-	}
-
-	switch(arg.type) {
-	case ENT_STRING: victim = get_char_room(NULL, obj_room(info->obj), arg.d.str); break;
-	case ENT_MOBILE: victim = arg.d.mob; break;
-	default: victim = NULL; break;
-	}
-
-	if (!victim) {
-		bug("OpStartCombat - Null victim from vnum %ld.", VNUM(info->obj));
-		return;
-	}
-
-	if(*rest) {
-		if(!expand_argument(info,rest,&arg)) {
-			bug("OpStartCombat - Error in parsing from vnum %ld.", VNUM(info->obj));
-			return;
-		}
-
-		attacker = victim;
-		switch(arg.type) {
-		case ENT_STRING: victim = get_char_room(NULL, obj_room(info->obj), arg.d.str); break;
-		case ENT_MOBILE: victim = arg.d.mob; break;
-		default: victim = NULL; break;
-		}
-
-		if (!victim) {
-		bug("OpStartCombat - Null victim from vnum %ld.", VNUM(info->obj));
-		return;
-		}
-	} else {
-		bug("OpStartCombat - Null victim from vnum %ld.", VNUM(info->obj));
-		return;
-	}
-
-
-	// Attacker is fighting already
-	if(attacker->fighting)
-		return;
-
-	// The victim is fighting someone else in a singleplay room
-	if(!IS_NPC(attacker) && victim->fighting != attacker && !IS_SET(attacker->in_room->room2_flags, ROOM_MULTIPLAY))
-		return;
-
-	// They are not in the same room
-	if(attacker->in_room != victim->in_room)
-		return;
-
-	// The victim is safe
-	if(is_safe(attacker, victim, FALSE)) return;
-
-	// Set them to fighting!
-	set_fighting(attacker, victim);
-	return;
-}
-
 // HUNT <HUNTER> <PREY>
 SCRIPT_CMD(do_ophunt)
 {
@@ -6777,15 +6714,64 @@ SCRIPT_CMD(do_oprestore)
 	restore_char(arg.d.mob, NULL, amount);
 }
 
-// STOPCOMBAT $MOBILE[ bool(BOTH)]
-// Silently stops combat.
-// BOTH: causes both sides to stop fighting, defaults to false
-SCRIPT_CMD(do_opstopcombat)
+
+// GROUP npc(FOLLOWER) mobile(LEADER)[ bool(SHOW=true)]
+// Follower will only work on an NPC
+// LASTRETURN:
+// 0 = grouping failed
+// 1 = grouping succeeded
+SCRIPT_CMD(do_opgroup)
+{
+	char *rest;
+	SCRIPT_PARAM arg;
+	CHAR_DATA *follower, *leader;
+	bool fShow = TRUE;
+
+	if(!info || !info->obj || IS_NULLSTR(argument)) return;
+
+	info->obj->progs->lastreturn = 0;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob || !IS_NPC(arg.d.mob)) return;
+
+	follower = arg.d.mob;
+
+	if(!(rest = expand_argument(info,argument,&arg)))
+		return;
+
+	if(arg.type != ENT_MOBILE || !arg.d.mob) return;
+
+	leader = arg.d.mob;
+
+	if( *rest ) {
+		if(!(rest = expand_argument(info,rest,&arg)))
+			return;
+
+		if( arg.type == ENT_NUMBER )
+		{
+			fShow = (arg.d.num != 0);
+		}
+		else if( arg.type == ENT_STRING )
+		{
+			fShow = !str_cmp(arg.d.str, "yes") || !str_cmp(arg.d.str, "true") || !str_cmp(arg.d.str, "show");
+		}
+		else
+			return;
+	}
+
+	if(add_grouped(follower, leader, fShow))
+		info->obj->progs->lastreturn = 1;
+}
+
+// UNGROUP mobile[ bool(ALL=false)]
+SCRIPT_CMD(do_opungroup)
 {
 	char *rest;
 	SCRIPT_PARAM arg;
 	CHAR_DATA *mob;
-	bool fBoth = FALSE;
+	bool fAll = FALSE;
 
 	if(!info || !info->obj || IS_NULLSTR(argument)) return;
 
@@ -6796,18 +6782,34 @@ SCRIPT_CMD(do_opstopcombat)
 
 	mob = arg.d.mob;
 
-	if(*rest)
-	{
-		if(!(rest = expand_argument(info,rest,&arg)))
-			return;
-
-		if( arg.type == ENT_NUMBER ) {
-			fBoth = (arg.d.num != 0);
-		} else if( arg.type == ENT_STRING ) {
-			fBoth = (!str_cmp(arg.d.str,"yes") || !str_cmp(arg.d.str,"true"));
+	if( *rest ) {
+		if( arg.type == ENT_NUMBER )
+		{
+			fAll = (arg.d.num != 0);
 		}
+		else if( arg.type == ENT_STRING )
+		{
+			fAll = !str_cmp(arg.d.str, "yes") || !str_cmp(arg.d.str, "true") || !str_cmp(arg.d.str, "all");
+		}
+		else
+			return;
 	}
 
-	stop_fighting(mob, fBoth);
-}
+	if( fAll ) {
+		ITERATOR git;
+		CHAR_DATA *leader = (arg.d.mob->leader != NULL) ? arg.d.mob->leader : arg.d.mob;
+		CHAR_DATA *follower;
 
+		if( leader->num_grouped < 1 )
+			return;
+
+		iterator_start(&git, leader->lgroup);
+		while((follower = (CHAR_DATA *)iterator_nextdata(&git)))
+			stop_grouped(follower);
+		iterator_stop(&git);
+	}
+	else
+	{
+		stop_grouped(arg.d.mob);
+	}
+}

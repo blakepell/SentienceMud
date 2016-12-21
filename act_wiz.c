@@ -1036,13 +1036,13 @@ void do_goto(CHAR_DATA *ch, char *argument)
 
     for (rch = ch->in_room->people; rch != NULL; rch = rch->next_in_room)
     {
-	if (get_trust(rch) >= ch->invis_level)
-	{
+//	if (get_trust(rch) >= ch->invis_level)
+//	{
 	    if (ch->pcdata != NULL && ch->pcdata->immortal != NULL &&  ch->pcdata->immortal->bamfout[0] != '\0')
 		act("$t",ch,rch, NULL, NULL, NULL,ch->pcdata->immortal->bamfout, NULL,TO_VICT);
 	    else
 		act("$n leaves in a swirling mist.",ch,rch, NULL, NULL, NULL, NULL, NULL,TO_VICT);
-	}
+//	}
     }
 
     char_from_room(ch);
@@ -1063,7 +1063,7 @@ void do_goto(CHAR_DATA *ch, char *argument)
 
     for (rch = ch->in_room->people; rch != NULL; rch = rch->next_in_room)
     {
-        if (ch != rch && get_trust(rch) >= ch->invis_level)
+        if (ch != rch /*&& get_trust(rch) >= ch->invis_level*/)
         {
             if (ch->pcdata != NULL && ch->pcdata->immortal != NULL && ch->pcdata->immortal->bamfin[0] != '\0')
                 act("$t",ch,rch, NULL, NULL, NULL,ch->pcdata->immortal->bamfin, NULL,TO_VICT);
@@ -1903,9 +1903,14 @@ void do_mstat(CHAR_DATA *ch, char *argument)
 
     if (IS_NPC(victim))
     {
-	sprintf(buf, "{BDamage:{x %dd%d  {BMessage:{x  %s\n\r",
-	    victim->damage[DICE_NUMBER],victim->damage[DICE_TYPE],
-	    attack_table[victim->dam_type].noun);
+		if( victim->damage.bonus > 0 )
+			sprintf(buf, "{BDamage:{x %dd%d+%d  {BMessage:{x  %s\n\r",
+			    victim->damage.number,victim->damage.size,victim->damage.bonus,
+			    attack_table[victim->dam_type].noun);
+		else
+			sprintf(buf, "{BDamage:{x %dd%d  {BMessage:{x  %s\n\r",
+			    victim->damage.number,victim->damage.size,
+			    attack_table[victim->dam_type].noun);
 	send_to_char(buf,ch);
     }
 
@@ -1948,9 +1953,9 @@ void do_mstat(CHAR_DATA *ch, char *argument)
     	send_to_char(buf, ch);
     }
 
-    sprintf(buf, "{BAct :{x %s\n\r",act_bit_name(1, victim->act));
+    sprintf(buf, "{BAct :{x %s\n\r",act_bit_name((IS_NPC(victim) ? 1 : 3), victim->act));
     send_to_char(buf,ch);
-    sprintf(buf, "{BAct2:{x %s\n\r",act_bit_name(2, victim->act2));
+    sprintf(buf, "{BAct2:{x %s\n\r",act_bit_name((IS_NPC(victim) ? 2 : 4), victim->act2));
     send_to_char(buf,ch);
 
     if (victim->comm)
@@ -4265,15 +4270,40 @@ void do_sset(CHAR_DATA *ch, char *argument)
 
     if (fAll)
     {
-	for (sn = 0; sn < MAX_SKILL; sn++)
-	{
-	    if (skill_table[sn].name != NULL
-            &&   str_cmp(skill_table[sn].name, "none"))
-		victim->pcdata->learned[sn]	= value;
-	}
+		for (sn = 0; sn < MAX_SKILL; sn++)
+		{
+			if (skill_table[sn].name != NULL && str_cmp(skill_table[sn].name, "none")) {
+				if( value == 0 ) {
+					if( skill_table[sn].spell_fun == spell_null )
+						skill_entry_removeskill(victim,sn, NULL);
+					else
+						skill_entry_removespell(victim,sn, NULL);
+				} else if( skill_entry_findsn( ch->sorted_skills, sn) == NULL) {
+					if( skill_table[sn].spell_fun == spell_null ) {
+						skill_entry_addskill(ch, sn, NULL, SKILLSRC_NORMAL, SKILL_AUTOMATIC);
+					} else {
+						skill_entry_addspell(ch, sn, NULL, SKILLSRC_NORMAL, SKILL_AUTOMATIC);
+					}
+				}
+			}
+			victim->pcdata->learned[sn]	= value;
+		}
     }
-    else
-	victim->pcdata->learned[sn] = value;
+    else {
+		if( value == 0 ) {
+			if( skill_table[sn].spell_fun == spell_null )
+				skill_entry_removeskill(victim,sn, NULL);
+			else
+				skill_entry_removespell(victim,sn, NULL);
+		} else if( skill_entry_findsn( ch->sorted_skills, sn) == NULL) {
+			if( skill_table[sn].spell_fun == spell_null ) {
+				skill_entry_addskill(ch, sn, NULL, SKILLSRC_NORMAL, SKILL_AUTOMATIC);
+			} else {
+				skill_entry_addspell(ch, sn, NULL, SKILLSRC_NORMAL, SKILL_AUTOMATIC);
+			}
+		}
+		victim->pcdata->learned[sn] = value;
+	}
 
     if (!fAll)
 	sprintf(buf, "Set %s's %s skill to %d%%\n\r", victim->name, skill_table[sn].name, value);

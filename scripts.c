@@ -382,42 +382,52 @@ char *ifcheck_get_value(SCRIPT_VARINFO *info,IFCHECK_DATA *ifc,char *text,int *r
 	return argument;
 }
 
-int ifcheck_comparison(SCRIPT_CB *block)
+int ifcheck_comparison(SCRIPT_VARINFO *info, short param, char *rest)
 {
 	int lhs, oper, rhs;
 	char *text, *p, buf[MIL], buf2[MSL];
 	bool valid;
-	SCRIPT_CODE *code;
 	IFCHECK_DATA *ifc;
 	SCRIPT_PARAM arg;
 
-	if(!block) return -1;	// Error
+	if(!info) return -1;	// Error
 
-	code = block->cur_line;
-	if(!code || code->param < 0 || code->param >= CHK_MAXIFCHECKS)
+	if(param < -1 || param >= CHK_MAXIFCHECKS)
 		 return -1;
 
-	ifc = &ifcheck_table[code->param];
+	if(param == -1) {
+		text = expand_argument(info,rest,&arg);
+		if(!text) return -1;
 
-	if(wiznet_script) {
-		sprintf(buf2,"Doing ifcheck: %d, '%s'", code->param, ifc->name);
-		wiznet(buf2,NULL,NULL,WIZ_SCRIPTS,0,0);
+		if( arg.type == ENT_BOOLEAN )
+			return arg.d.boolean ? 1 : 0;
+
+		if( arg.type != ENT_NUMBER )
+			return -1;
+
+		lhs = arg.d.num;
+
+	} else {
+		ifc = &ifcheck_table[param];
+
+		if(wiznet_script) {
+			sprintf(buf2,"Doing ifcheck: %d, '%s'", param, ifc->name);
+			wiznet(buf2,NULL,NULL,WIZ_SCRIPTS,0,0);
+		}
+
+		text = ifcheck_get_value(info,ifc,rest,&lhs,&valid);
+
+		if(!valid) return FALSE;
+
+		if(!ifc->numeric) return (lhs > 0);
 	}
-
-	text = ifcheck_get_value(&block->info,ifc,block->cur_line->rest,&lhs,&valid);
-
-	if(!text) return -1;
-
-	if(!valid) return FALSE;
-
-	if(!ifc->numeric) return (lhs > 0);
 
 	text = one_argument(text, buf);
 
 	oper = get_operator(buf);
 	if (oper < 0) return FALSE;
 
-	p = expand_argument(&block->info,text,&arg);
+	p = expand_argument(info,text,&arg);
 	if(!p || p == text) {
 		return -1;
 	}
@@ -443,6 +453,49 @@ int ifcheck_comparison(SCRIPT_CB *block)
 	case EVAL_MASK:	return (lhs & rhs);
 	default:	return FALSE;
 	}
+}
+
+int boolexp_evaluate(SCRIPT_CB *block, BOOLEXP *be)
+{
+	int ret;
+	if(!block) return -1;	// Error
+
+	switch(be->type) {
+	case BOOLEXP_TRUE:
+		return ifcheck_comparison(&block->info, be->param, be->rest);
+
+	case BOOLEXP_NOT:
+		ret = ifcheck_comparison(&block->info, be->param, be->rest);
+
+		if( ret < 0 ) return -1;
+
+		return ret ? FALSE : TRUE;
+
+	case BOOLEXP_AND:
+		ret = boolexp_evaluate(block, be->left);
+		if( ret < 0 ) return -1;
+
+		if( ret == FALSE ) return FALSE;	// Short circuit FALSE
+
+		ret = boolexp_evaluate(block, be->right);
+		if( ret < 0 ) return -1;
+
+		return ret ? TRUE : FALSE;
+
+	case BOOLEXP_OR:
+		ret = boolexp_evaluate(block, be->left);
+		if( ret < 0 ) return -1;
+
+		if( ret == TRUE ) return TRUE;		// Short circuit TRUE
+
+		ret = boolexp_evaluate(block, be->right);
+		if( ret < 0 ) return -1;
+
+		return ret ? TRUE : FALSE;
+	}
+
+
+	return FALSE;
 }
 
 bool opc_skip_to_label(SCRIPT_CB *block,int op,int id,bool dir)
@@ -505,14 +558,14 @@ bool opc_skip_block(SCRIPT_CB *block,int level,bool endblock)
 		last = block->script->lines;
 
 		line = block->line;
-		if(code[line].opcode == OP_ELSEIF || code[line].opcode == OP_ELSEIFNOT) ++line;
+		if(code[line].opcode == OP_ELSEIF) ++line;
 
 		for(; line < last; line++) {
 //			if(wiznet_script) {
 //				sprintf(buf,"Checking: Line=%d, Opcode=%d(%s), Level=%d", line+1,code[line].opcode,opcode_names[code[line].opcode],code[line].level);
 //				wiznet(buf,NULL,NULL,WIZ_SCRIPTS,0,0);
 //			}
-			if(((!endblock && (code[line].opcode == OP_ELSE || code[line].opcode == OP_ELSEIF || code[line].opcode == OP_ELSEIFNOT)) ||
+			if(((!endblock && (code[line].opcode == OP_ELSE || code[line].opcode == OP_ELSEIF)) ||
 				code[line].opcode == OP_ENDIF) && code[line].level == level) {
 				block->line = line;
 				DBG2EXITVALUE2(TRUE);
@@ -563,7 +616,7 @@ void script_loop_cleanup(SCRIPT_CB *block, int level)
 			case ENT_PLLIST_ROOM:
 			case ENT_PLLIST_TOK:
 			case ENT_PLLIST_CHURCH:
-			case ENT_PLLIST_VARIABLE:
+			case ENT_ILLIST_VARIABLE:
 				iterator_stop(&block->loops[i].d.l.list.it);
 				break;
 			}
@@ -617,30 +670,11 @@ DECL_OPC_FUN(opc_if)
 	if(block->cur_line->opcode == OP_ELSEIF && block->cond[block->cur_line->level])
 		return opc_skip_block(block,block->cur_line->level,TRUE);
 
-	ret = ifcheck_comparison(block);
+	ret = boolexp_evaluate(block, (BOOLEXP *)block->cur_line->rest);
 	if(ret < 0) return FALSE;
 
 	block->state[block->cur_line->level] = OP_IF;
 	block->cond[block->cur_line->level] = ret;
-	opc_next_line(block);
-	return TRUE;
-}
-
-DECL_OPC_FUN(opc_ifnot)
-{
-	int ret;
-
-	if(block->cur_line->level > 0 && !block->cond[block->cur_line->level-1])
-		return opc_skip_block(block,block->cur_line->level-1,FALSE);
-
-	if(block->cur_line->opcode == OP_ELSEIFNOT && block->cond[block->cur_line->level])
-		return opc_skip_block(block,block->cur_line->level,TRUE);
-
-	ret = ifcheck_comparison(block);
-	if(ret < 0) return FALSE;
-
-	block->state[block->cur_line->level] = OP_IF;
-	block->cond[block->cur_line->level] = !ret;
 	opc_next_line(block);
 	return TRUE;
 }
@@ -652,89 +686,11 @@ DECL_OPC_FUN(opc_while)
 	if(block->cur_line->level > 0 && !block->cond[block->cur_line->level-1])
 		return opc_skip_block(block,block->cur_line->level-1,FALSE);
 
-	ret = ifcheck_comparison(block);
+	ret = boolexp_evaluate(block, (BOOLEXP *)block->cur_line->rest);
 	if(ret < 0) return FALSE;
 
 	block->state[block->cur_line->level] = OP_WHILE;
 	block->cond[block->cur_line->level] = ret;
-	opc_next_line(block);
-	return TRUE;
-}
-
-DECL_OPC_FUN(opc_whilenot)
-{
-	int ret;
-
-	if(block->cur_line->level > 0 && !block->cond[block->cur_line->level-1])
-		return opc_skip_block(block,block->cur_line->level-1,FALSE);
-
-	ret = ifcheck_comparison(block);
-	if(ret < 0) return FALSE;
-
-	block->state[block->cur_line->level] = OP_WHILE;
-	block->cond[block->cur_line->level] = !ret;
-	opc_next_line(block);
-	return TRUE;
-}
-
-
-DECL_OPC_FUN(opc_or)
-{
-	int ret;
-
-	if(block->cur_line->level > 0 && !block->cond[block->cur_line->level-1])
-		return opc_skip_block(block,block->cur_line->level-1,FALSE);
-
-	ret = ifcheck_comparison(block);
-	if(ret < 0) return FALSE;
-
-	block->cond[block->cur_line->level] = block->cond[block->cur_line->level] || ret;
-	opc_next_line(block);
-	return TRUE;
-}
-
-DECL_OPC_FUN(opc_nor)
-{
-	int ret;
-
-	if(block->cur_line->level > 0 && !block->cond[block->cur_line->level-1])
-		return opc_skip_block(block,block->cur_line->level-1,FALSE);
-
-	ret = ifcheck_comparison(block);
-	if(ret < 0) return FALSE;
-
-	block->cond[block->cur_line->level] = block->cond[block->cur_line->level] || !ret;
-	opc_next_line(block);
-	return TRUE;
-}
-
-DECL_OPC_FUN(opc_and)
-{
-	int ret;
-
-	if(block->cur_line->level > 0 && !block->cond[block->cur_line->level-1])
-		return opc_skip_block(block,block->cur_line->level-1,FALSE);
-
-	ret = ifcheck_comparison(block);
-	if(ret < 0) return FALSE;
-
-	block->cond[block->cur_line->level] = block->cond[block->cur_line->level] && ret;
-	opc_next_line(block);
-
-	return TRUE;
-}
-
-DECL_OPC_FUN(opc_nand)
-{
-	int ret;
-
-	if(block->cur_line->level > 0 && !block->cond[block->cur_line->level-1])
-		return opc_skip_block(block,block->cur_line->level-1,FALSE);
-
-	ret = ifcheck_comparison(block);
-	if(ret < 0) return FALSE;
-
-	block->cond[block->cur_line->level] = block->cond[block->cur_line->level] && !ret;
 	opc_next_line(block);
 	return TRUE;
 }
@@ -941,6 +897,7 @@ DECL_OPC_FUN(opc_list)
 	int lp, i;
 	char *str1,*str2, *str;
 	char buf[MSL];
+	LLIST *list;
 	LLIST_UID_DATA *uid;
 	LLIST_ROOM_DATA *lrd;
 	LLIST_EXIT_DATA *led;
@@ -1550,12 +1507,51 @@ DECL_OPC_FUN(opc_list)
 			variables_set_church(block->info.var,block->loops[lp].var_name,church);
 			break;
 
-		case ENT_PLLIST_VARIABLE:
-			log_stringf("opc_list: list type ENT_PLLIST_VARIABLE");
+		case ENT_ILLIST_MOB_GROUP:
+			log_stringf("opc_list: list type ENT_ILLIST_MOB_GROUP");
+			if(!arg.d.group_owner || !arg.d.group_owner->in_room)
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+
+			ch = arg.d.group_owner->leader ? arg.d.group_owner->leader : arg.d.group_owner;
+
+			list = list_copy(ch->lgroup);
+			if( !list )
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+
+			if( !list_addlink(list, ch) ) {
+				list_destroy(list);
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+			}
+
+			block->loops[lp].d.l.type = ENT_ILLIST_MOB_GROUP;
+			block->loops[lp].d.l.list.lp = list;
+			iterator_start(&block->loops[lp].d.l.list.it,block->loops[lp].d.l.list.lp);
+			block->loops[lp].d.l.owner = NULL;
+
+			ch = (CHAR_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+
+			if(ch) {
+				if(!IS_NPC(ch))
+					log_stringf("opc_list: player(%s,%ld,%ld)", ch->name, ch->id[0], ch->id[1]);
+				else
+					log_stringf("opc_list: mobile(%ld,%ld,%ld)", ch->pIndexData->vnum, ch->id[0], ch->id[1]);
+			} else
+				log_stringf("opc_list: mobile(<END>)");
+
+			if( !ch ) {
+				iterator_stop(&block->loops[lp].d.l.list.it);
+				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
+			}
+
+			// Set the variable
+			variables_set_mobile(block->info.var,block->loops[lp].var_name,ch);
+
+		case ENT_ILLIST_VARIABLE:
+			log_stringf("opc_list: list type ENT_ILLIST_VARIABLE");
 			if(!arg.d.variables || !*arg.d.variables)
 				return opc_skip_to_label(block,OP_ENDLIST,block->cur_line->label,TRUE);
 
-			block->loops[lp].d.l.type = ENT_PLLIST_VARIABLE;
+			block->loops[lp].d.l.type = ENT_ILLIST_VARIABLE;
 			block->loops[lp].d.l.list.lp = variable_copy_tolist(arg.d.variables);
 			iterator_start(&block->loops[lp].d.l.list.it,block->loops[lp].d.l.list.lp);
 			block->loops[lp].d.l.owner = NULL;
@@ -1572,6 +1568,7 @@ DECL_OPC_FUN(opc_list)
 			// Set the variable
 			variables_set_variable(block->info.var,block->loops[lp].var_name,variable);
 			break;
+
 		default:
 			log_stringf("opc_list: list_type INVALID");
 			block->ret_val = PRET_BADSYNTAX;
@@ -2030,8 +2027,8 @@ DECL_OPC_FUN(opc_list)
 			}
 
 			break;
-		case ENT_PLLIST_VARIABLE:
-			log_stringf("opc_list: list type ENT_PLLIST_VARIABLE");
+		case ENT_ILLIST_VARIABLE:
+			log_stringf("opc_list: list type ENT_ILLIST_VARIABLE");
 			variable = (VARIABLE *)iterator_nextdata(&block->loops[lp].d.l.list.it);
 			log_stringf("opc_list: variable(%s)", variable ? variable->name : "<END>");
 
@@ -2045,6 +2042,29 @@ DECL_OPC_FUN(opc_list)
 			}
 
 			break;
+
+		case ENT_ILLIST_MOB_GROUP:
+			log_stringf("opc_list: list type ENT_ILLIST_MOB_GROUP");
+			ch = (CHAR_DATA *)iterator_nextdata(&block->loops[lp].d.l.list.it);
+			if(ch) {
+				if(!IS_NPC(ch))
+					log_stringf("opc_list: player(%s,%ld,%ld)", ch->name, ch->id[0], ch->id[1]);
+				else
+					log_stringf("opc_list: mobile(%ld,%ld,%ld)", ch->pIndexData->vnum, ch->id[0], ch->id[1]);
+			} else
+				log_stringf("opc_list: mobile(<END>)");
+
+			// Set the variable
+			variables_set_mobile(block->info.var,block->loops[lp].var_name,ch);
+
+			if( !ch ) {
+				iterator_stop(&block->loops[lp].d.l.list.it);
+				skip = TRUE;
+				break;
+			}
+
+			break;
+
 		}
 
 		if(skip) {
@@ -2113,9 +2133,11 @@ DECL_OPC_FUN(opc_mob)
 		char buf[MIL];
 		sprintf(buf, "Attempted execution of a restricted mob command '%s' with nulled security.",mob_cmd_table[block->cur_line->param].name);
 		bug(buf, 0);
-	} else {
-		(*mob_cmd_table[block->cur_line->param].func) (&block->info,block->cur_line->rest);
-		tail_chain();
+	} else if(IS_VALID(block->info.mob)) {
+		if( !mob_cmd_table[block->cur_line->param].required || !IS_NULLSTR(block->cur_line->rest) ) {
+			(*mob_cmd_table[block->cur_line->param].func) (&block->info,block->cur_line->rest);
+			tail_chain();
+		}
 	}
 
 
@@ -2140,9 +2162,11 @@ DECL_OPC_FUN(opc_obj)
 		char buf[MIL];
 		sprintf(buf, "Attempted execution of a restricted obj command '%s' with nulled security.",obj_cmd_table[block->cur_line->param].name);
 		bug(buf, 0);
-	} else {
-		(*obj_cmd_table[block->cur_line->param].func) (&block->info,block->cur_line->rest);
-		tail_chain();
+	} else if(IS_VALID(block->info.obj)) {
+		if( !obj_cmd_table[block->cur_line->param].required || !IS_NULLSTR(block->cur_line->rest) ) {
+			(*obj_cmd_table[block->cur_line->param].func) (&block->info,block->cur_line->rest);
+			tail_chain();
+		}
 	}
 	opc_next_line(block);
 	return TRUE;
@@ -2165,9 +2189,11 @@ DECL_OPC_FUN(opc_room)
 		char buf[MIL];
 		sprintf(buf, "Attempted execution of a restricted room command '%s' with nulled security.",room_cmd_table[block->cur_line->param].name);
 		bug(buf, 0);
-	} else {
-		(*room_cmd_table[block->cur_line->param].func) (&block->info,block->cur_line->rest);
-		tail_chain();
+	} else if(block->info.room) {
+		if( !room_cmd_table[block->cur_line->param].required || !IS_NULLSTR(block->cur_line->rest) ) {
+			(*room_cmd_table[block->cur_line->param].func) (&block->info,block->cur_line->rest);
+			tail_chain();
+		}
 	}
 	opc_next_line(block);
 	return TRUE;
@@ -2190,10 +2216,13 @@ DECL_OPC_FUN(opc_token)
 		char buf[MIL];
 		sprintf(buf, "Attempted execution of a restricted token command '%s' with nulled security.",token_cmd_table[block->cur_line->param].name);
 		bug(buf, 0);
-	} else {
-		(*token_cmd_table[block->cur_line->param].func) (&block->info,block->cur_line->rest);
-		tail_chain();
+	} else if(IS_VALID(block->info.token)) {
+		if( !token_cmd_table[block->cur_line->param].required || !IS_NULLSTR(block->cur_line->rest) ) {
+			(*token_cmd_table[block->cur_line->param].func) (&block->info,block->cur_line->rest);
+			tail_chain();
+		}
 	}
+
 	opc_next_line(block);
 	return TRUE;
 }
@@ -2216,8 +2245,10 @@ DECL_OPC_FUN(opc_tokenother)
 		sprintf(buf, "Attempted execution of a restricted tokenother command '%s' with nulled security.",tokenother_cmd_table[block->cur_line->param].name);
 		bug(buf, 0);
 	} else {
-		(*tokenother_cmd_table[block->cur_line->param].func) (&block->info,block->cur_line->rest);
-		tail_chain();
+		if( !tokenother_cmd_table[block->cur_line->param].required || !IS_NULLSTR(block->cur_line->rest) ) {
+			(*tokenother_cmd_table[block->cur_line->param].func) (&block->info,block->cur_line->rest);
+			tail_chain();
+		}
 	}
 	opc_next_line(block);
 	return TRUE;
@@ -2319,6 +2350,8 @@ int execute_script(long pvnum, SCRIPT_DATA *script, CHAR_DATA *mob, OBJ_DATA *ob
 		mob->progs->lastreturn = PRET_EXECUTED;
 		vnum = mob->pIndexData->vnum;
 		block.type = IFC_M;
+		block.info.progs = mob->progs;
+		block.info.location = mob->in_room;
 		block.info.var = &mob->progs->vars;
 		block.info.targ = &mob->progs->target;
 
@@ -2326,18 +2359,24 @@ int execute_script(long pvnum, SCRIPT_DATA *script, CHAR_DATA *mob, OBJ_DATA *ob
 		obj->progs->lastreturn = PRET_EXECUTED;
 		vnum = obj->pIndexData->vnum;
 		block.type = IFC_O;
+		block.info.progs = obj->progs;
+		block.info.location = obj_room(obj);
 		block.info.var = &obj->progs->vars;
 		block.info.targ = &obj->progs->target;
 	} else if (room) {
 		room->progs->lastreturn = PRET_EXECUTED;
 		vnum = room->vnum;
 		block.type = IFC_R;
+		block.info.progs = room->progs;
+		block.info.location = room;
 		block.info.var = &room->progs->vars;
 		block.info.targ = &room->progs->target;
 	} else if (token) {
 		token->progs->lastreturn = PRET_EXECUTED;
 		vnum = token->pIndexData->vnum;
 		block.type = IFC_T;
+		block.info.progs = token->progs;
+		block.info.location = token_room(token);
 		block.info.var = &token->progs->vars;
 		block.info.targ = &token->progs->target;
 	} else {
@@ -3926,7 +3965,7 @@ int test_number_sight_trigger(int number, MATCH_NUMBER match, int type, int type
 		script_room_remref(room);
 
 	} else
-		bug("test_number_trigger: no program type for trigger %d.", type);
+		bug("test_number_sight_trigger: no program type for trigger %d.", type);
 
 	PRETURN;
 }
@@ -4239,7 +4278,7 @@ int test_vnumname_trigger(char *name, int vnum, int type,
 		script_room_remref(room);
 
 	} else
-		bug("test_number_trigger: no program type for trigger %d.", type);
+		bug("test_vnumname_trigger: no program type for trigger %d.", type);
 
 	PRETURN;
 }
@@ -4703,10 +4742,30 @@ void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument)
 	if(!(rest = expand_argument(info,argument,&arg)))
 		return;
 
+	// Saves a boolean
+	// Format: BOOL <boolean>
+	// Format: BOOL <number>
+	// Format: BOOL <numerical string>
+	if(!str_cmp(buf,"bool")) {
+		switch(arg.type) {
+		case ENT_BOOLEAN: variables_set_boolean(vars,name,arg.d.boolean); break;
+		case ENT_NUMBER: variables_set_boolean(vars,name,(arg.d.num != 0)); break;
+		case ENT_STRING:
+			if(is_number(arg.d.str))
+				variables_set_boolean(vars,name,(atoi(arg.d.str) != 0));
+			else if(!str_cmp(arg.d.str, "true") || !str_cmp(arg.d.str, "yes") || !str_cmp(arg.d.str, "on"))
+				variables_set_boolean(vars,name,TRUE);
+			else if(!str_cmp(arg.d.str, "false") || !str_cmp(arg.d.str, "no") || !str_cmp(arg.d.str, "off"))
+				variables_set_boolean(vars,name,FALSE);
+
+			break;
+
+		}
+
 	// Saves a number
 	// Format: INTEGER <number>
 	// Format: INTEGER <numerical string>
-	if(!str_cmp(buf,"integer") || !str_cmp(buf,"number")) {
+	} else if(!str_cmp(buf,"integer") || !str_cmp(buf,"number")) {
 		switch(arg.type) {
 		case ENT_NUMBER: variables_set_integer(vars,name,arg.d.num); break;
 		case ENT_STRING:
@@ -5235,6 +5294,13 @@ void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument)
 		if(tokens) token = token_find_match(info,tokens, rest);
 		variables_set_token(vars,name,token);
 
+	// Format: DICE <DICE>
+	} else if(!str_cmp(buf,"DICE")) {
+		switch(arg.type) {
+		case ENT_DICE:   if(arg.d.dice) variables_set_dice(vars,name,arg.d.dice);
+		default: return;
+		}
+
 	// VARIABLE MOBILE NAME
 	// VARIABLE OBJECT NAME
 	// VARIABLE ROOM NAME
@@ -5381,6 +5447,24 @@ void script_varseton(SCRIPT_VARINFO *info, ppVARIABLE vars, char *argument)
 			variables_set_exit(vars,name,NULL);
 		else
 			variables_set_exit(vars,name,start_room->exit[dir]);
+
+	// AREA uid
+	// AREA name
+	// AREA room
+	// AREA area
+	} else if(!str_cmp(buf,"area")) {
+		AREA_DATA *area;
+
+		switch(arg.type) {
+		case ENT_NUMBER:	area = get_area_from_uid(arg.d.num); break;
+		case ENT_STRING:	area = find_area(arg.d.str); break;
+		case ENT_ROOM:		area = arg.d.room ? arg.d.room->area : NULL; break;
+		case ENT_AREA:		area = arg.d.area; break;
+		default:			area = NULL; break;
+		}
+
+		if( area )
+			variables_set_area(vars,name,area);
 
 	} else
 		return;
@@ -5611,4 +5695,21 @@ long script_flag_value( const struct flag_type *flag_table, char *argument)
 	return marked;
     else
 	return NO_FLAG;
+}
+
+CHAR_DATA *script_get_char_room(SCRIPT_VARINFO *info, char *name, bool see_all)
+{
+	if( !info ) return NULL;
+
+	if( info->mob ) {
+		if( see_all )	// If see_all, bypass ALL vision checks
+			return get_char_room(NULL, info->mob->in_room, name);
+		else
+			return get_char_room(info->mob, NULL, name);
+	}
+	if( info->obj ) return get_char_room(NULL, obj_room(info->obj), name);
+	if( info->room ) return get_char_room(NULL, info->room, name);
+	if( info->token ) return get_char_room(NULL, token_room(info->token), name);
+
+	return NULL;
 }

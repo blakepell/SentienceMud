@@ -50,6 +50,7 @@
 #include "wilds.h"
 #include "scripts.h"
 
+bool can_see_imm(CHAR_DATA *ch, CHAR_DATA *victim);
 
 /* MOVED: equip.c */
 char *const where_name[] = {
@@ -103,6 +104,7 @@ char *const where_name[] = {
     "{c<left shoulder>       {x",
     "{c<right shoulder>      {x",
     "{c<back>                {x",
+    "{Y<tabard>              {x",
 
 };
 
@@ -143,8 +145,8 @@ int wear_params[MAX_WEAR][7] = {
 	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE }, // Arm Tattoo
 	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE }, // Leg Tattoo
 	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE }, // Leg Tattoo
-	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE }, // Loged in Head
-	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE }, // Loged in Body
+	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE }, // Lodged in Head
+	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE }, // Lodged in Body
 	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE }, // Lodged in Arm
 	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE }, // Lodged in Arm
 	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE }, // Lodged in Leg
@@ -152,13 +154,14 @@ int wear_params[MAX_WEAR][7] = {
 	{ TRUE,		FALSE,		FALSE,		TRUE,		FALSE,		TRUE,		FALSE }, // Entangled
 	{ FALSE,	FALSE,		TRUE,		FALSE,		FALSE,		TRUE,		TRUE },  // Concealed
 	{ TRUE,		FALSE,		TRUE,		TRUE,		FALSE,		FALSE,		TRUE },  // Floating
-        { TRUE,         FALSE,          FALSE,          FALSE,          TRUE,           FALSE,          FALSE }, // Arm Tattoo
-        { TRUE,         FALSE,          FALSE,          FALSE,          TRUE,           FALSE,          FALSE }, // Arm Tattoo
-        { TRUE,         FALSE,          FALSE,          FALSE,          TRUE,           FALSE,          FALSE }, // Leg Tattoo
-        { TRUE,         FALSE,          FALSE,          FALSE,          TRUE,           FALSE,          FALSE }, // Leg Tattoo
-        { TRUE,         FALSE,          FALSE,          FALSE,          TRUE,           FALSE,          FALSE }, // Shoulder Tattoo
-        { TRUE,         FALSE,          FALSE,          FALSE,          TRUE,           FALSE,          FALSE }, // Shoulder Tattoo
-        { TRUE,         FALSE,          FALSE,          FALSE,          TRUE,           FALSE,          FALSE }  // BACK Tattoo
+	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE }, // Arm Tattoo
+	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE }, // Arm Tattoo
+	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE }, // Leg Tattoo
+	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE }, // Leg Tattoo
+	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE }, // Shoulder Tattoo
+	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE }, // Shoulder Tattoo
+	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE }, // BACK Tattoo
+	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Tabard
 
 
 };
@@ -208,13 +211,14 @@ int wear_concealed[] = {
 	WEAR_NONE,
 	WEAR_NONE,
 	WEAR_NONE,
-        WEAR_ARMS,
-        WEAR_ARMS,
-        WEAR_LEGS,
-        WEAR_LEGS,
-        WEAR_NONE,
-        WEAR_NONE,
-        WEAR_NONE,
+	WEAR_ARMS,
+	WEAR_ARMS,
+	WEAR_LEGS,
+	WEAR_LEGS,
+	WEAR_NONE,
+	WEAR_NONE,
+	WEAR_NONE,
+	WEAR_NONE,
 
 };
 
@@ -257,6 +261,7 @@ int wear_view_order[] = {
 	WEAR_ANKLE_R,
 	WEAR_FEET,
 	WEAR_ABOUT,
+	WEAR_TABARD,
 	WEAR_WAIST,
 	WEAR_SHIELD,
 	WEAR_WIELD,
@@ -1066,11 +1071,11 @@ void show_char_to_char_1(CHAR_DATA * victim, CHAR_DATA * ch)
 			    vuln_bit_name(victim->vuln_flags));
 	    send_to_char(buf, ch);
 
-	    avg = (victim->damage[DICE_NUMBER] * victim->damage[DICE_TYPE])
-		    + (victim->damage[DICE_NUMBER]);
+	    avg = (victim->damage.number * victim->damage.size)
+		    + (victim->damage.number);
 	    avg /= 2;
 
-	    avg += victim->damage[DICE_BONUS];
+	    avg += victim->damage.bonus;
 
 	    sprintf(buf, "{MHealth:{x %s%.0f%%{x {MAverage Damage:{x %ld\n\r",
 			    victim->hit < victim->max_hit / 2 ? "{R" :
@@ -1131,7 +1136,7 @@ void show_char_to_char(CHAR_DATA *list, CHAR_DATA *ch, CHAR_DATA *victim)
 	    &&  !IS_AFFECTED(ch, AFF_DETECT_HIDDEN))
 		continue;
 
-	    if (can_see(victim, rch))
+	    if (can_see(victim, rch) || (IS_IMMORTAL(rch) && can_see_imm(ch,rch)))
 	    {
 		show_char_to_char_0(rch, ch);
 		if (MOUNTED(rch)
@@ -1153,7 +1158,7 @@ void show_char_to_char(CHAR_DATA *list, CHAR_DATA *ch, CHAR_DATA *victim)
 		    && RIDDEN(rch) != ch))
 		continue;
 
-	    if (get_trust(ch) < rch->invis_level)
+	    if (get_trust(ch) < rch->invis_level && !can_see_imm(ch,rch))
 		continue;
 
 	    if (mist && number_percent() < mist->value[1])
@@ -1163,7 +1168,7 @@ void show_char_to_char(CHAR_DATA *list, CHAR_DATA *ch, CHAR_DATA *victim)
 	    &&  !IS_AFFECTED(ch, AFF_DETECT_HIDDEN))
 		continue;
 
-	    if (can_see(ch, rch))
+	    if (can_see(ch, rch) || (IS_IMMORTAL(rch) && can_see_imm(ch,rch)))
 	    {
 		show_char_to_char_0(rch, ch);
 		if (MOUNTED(rch)
@@ -3870,11 +3875,10 @@ void do_who_new(CHAR_DATA * ch, char *argument)
 
 	if (wch)
 	{
-	    if (wch->invis_level >= 150
-	    &&  !can_see(ch, wch))
-		continue;
+	    if (IS_IMMORTAL(wch) && !can_see_imm(ch, wch))
+			continue;
 	    else
-		nMatch2++;
+			nMatch2++;
 	}
     }
 
@@ -3882,13 +3886,16 @@ void do_who_new(CHAR_DATA * ch, char *argument)
     output = new_buf();
     for (d = descriptor_list; d != NULL; d = d->next)
     {
-	if (d->connected != CON_PLAYING || !can_see(ch, d->character))
-	    continue;
+		wch = (d->original != NULL) ? d->original : d->character;
 
-	wch = (d->original != NULL) ? d->original : d->character;
+		if (d->connected != CON_PLAYING || (IS_IMMORTAL(wch) && !can_see_imm(ch, wch))) {
+		    continue;
+		}
 
-	if (!can_see(ch, wch))
-	    continue;
+
+//	if (!can_see(ch, wch)) {
+//	    continue;
+//	}
 
 	if ((iLevelLower != 0
 	     &&  wch->tot_level >= iLevelLower && wch->tot_level <= iLevelUpper)
@@ -3976,8 +3983,10 @@ void do_who_new(CHAR_DATA * ch, char *argument)
 	add_buf(output, "\n\r");
     }
 
-    sprintf(buf2, "\n\rPlayers found: %d\n\r", nMatch);
-    add_buf(output, buf2);
+	if( nMatch != nMatch2 ) {
+		sprintf(buf2, "\n\rPlayers found: %d\n\r", nMatch);
+		add_buf(output, buf2);
+	}
     sprintf(buf2, "Players online: %d\n\r", nMatch2);
     add_buf(output, buf2);
     page_to_char(buf_string(output), ch);

@@ -2240,6 +2240,7 @@ void char_to_vroom (CHAR_DATA *ch, WILDS_DATA *pWilds, int x, int y)
 
 		plague.slot	= WEAR_NONE;
         plague.where = TO_AFFECTS;
+		plague.custom_name = NULL;
         plague.group = af->group;
         plague.type = gsn_plague;
         plague.level = af->level - 1;
@@ -2247,6 +2248,7 @@ void char_to_vroom (CHAR_DATA *ch, WILDS_DATA *pWilds, int x, int y)
         plague.location = APPLY_STR;
         plague.modifier = -5;
         plague.bitvector = AFF_PLAGUE;
+        plague.bitvector2	= 0;
 
         for (vch = ch->in_room->people; vch != NULL; vch = vch->next_in_room)
         {

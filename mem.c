@@ -129,9 +129,11 @@ SKILL_ENTRY *new_skill_entry()
 		skill_entry_free = skill_entry_free->next;
 	}
 
-	entry->scripted = FALSE;
+	entry->source = SKILLSRC_NORMAL;
 	entry->isspell = FALSE;
 	entry->song = -1;
+	entry->practice = TRUE;
+	entry->improve = TRUE;
 
 	return entry;
 }
@@ -418,6 +420,9 @@ void free_obj(OBJ_DATA *obj)
     free_string( obj->owner     );
     free_string( obj->material );
 
+    if ( obj->old_name != NULL )
+	free_string( obj->old_name );
+
     if ( obj->old_short_descr != NULL )
 	free_string( obj->old_short_descr );
 
@@ -581,6 +586,7 @@ CHAR_DATA *new_char( void )
     ch->lworn			= list_create(FALSE);
     ch->ltokens			= list_create(FALSE);
     ch->lclonerooms		= list_create(FALSE);
+    ch->lgroup			= list_create(FALSE);
 
     ch->deathsight_vision = 0;
     ch->in_damage_function = FALSE;
@@ -672,6 +678,7 @@ void free_char( CHAR_DATA *ch )
     list_destroy(ch->lworn);
     list_destroy(ch->ltokens);
     list_destroy(ch->lclonerooms);
+    list_destroy(ch->lgroup);
 
 	if( !IS_NPC(ch))
 	{
@@ -1743,15 +1750,15 @@ MOB_INDEX_DATA *new_mob_index( void )
     pMob->ac[AC_BASH]	=   0;
     pMob->ac[AC_SLASH]	=   0;
     pMob->ac[AC_EXOTIC]	=   0;
-    pMob->hit[DICE_NUMBER]	=   0;
-    pMob->hit[DICE_TYPE]	=   0;
-    pMob->hit[DICE_BONUS]	=   0;
-    pMob->mana[DICE_NUMBER]	=   0;
-    pMob->mana[DICE_TYPE]	=   0;
-    pMob->mana[DICE_BONUS]	=   0;
-    pMob->damage[DICE_NUMBER]	=   0;
-    pMob->damage[DICE_TYPE]	=   0;
-    pMob->damage[DICE_BONUS]	=   0;
+    pMob->hit.number	=   0;
+    pMob->hit.size	=   0;
+    pMob->hit.bonus	=   0;
+    pMob->mana.number	=   0;
+    pMob->mana.size	=   0;
+    pMob->mana.bonus	=   0;
+    pMob->damage.number	=   0;
+    pMob->damage.size	=   0;
+    pMob->damage.bonus	=   0;
     pMob->start_pos             =   POS_STANDING;
     pMob->default_pos           =   POS_STANDING;
     pMob->wealth                =   0;
@@ -3031,8 +3038,14 @@ void free_script_code(SCRIPT_CODE *code, int lines)
 	DBG2ENTRY2(PTR,code,NUM,lines);
 	if(!code) return;
 
-	for(i=0;i<lines;i++)
-		if(code[i].rest) free_string(code[i].rest);
+	for(i=0;i<lines;i++) {
+		if(code[i].rest) {
+			if(code[i].opcode == OP_IF || code[i].opcode == OP_WHILE || code[i].opcode == OP_ELSEIF)
+				free_boolexp((BOOLEXP *)code[i].rest);
+			else
+				free_string(code[i].rest);
+		}
+	}
 
 	free_mem(code,i *sizeof(SCRIPT_CODE));
 }
@@ -3126,3 +3139,40 @@ void free_affliction(AFFLICTION_DATA *aff)
 
 	top_affliction--;
 }
+
+BOOLEXP *boolexp_free = NULL;
+BOOLEXP *new_boolexp()
+{
+	BOOLEXP *boolexp;
+	if(boolexp_free == NULL)
+		boolexp = alloc_perm(sizeof(*boolexp));
+	else {
+		boolexp = boolexp_free;
+		boolexp_free = boolexp_free->left;
+	}
+
+	boolexp->type = BOOLEXP_TRUE;
+	boolexp->left = NULL;
+	boolexp->right = NULL;
+	boolexp->parent = NULL;
+	boolexp->rest = NULL;
+
+	return boolexp;
+}
+
+void free_boolexp(BOOLEXP *boolexp)
+{
+
+	if( boolexp->left )
+		free_boolexp(boolexp->left);
+
+	if( boolexp->right )
+		free_boolexp(boolexp->right);
+
+	if( boolexp->rest )
+		free_string(boolexp->rest);
+
+	boolexp->left = boolexp_free;
+	boolexp_free = boolexp;
+}
+

@@ -6400,21 +6400,21 @@ MEDIT(medit_show)
 	add_buf(buffer, buf);
 
 	sprintf(buf, "Hit dice:     {C[{x%2dd%-3d+%4d{C]{x ",
-		pMob->hit[DICE_NUMBER],
-		pMob->hit[DICE_TYPE],
-		pMob->hit[DICE_BONUS]);
+		pMob->hit.number,
+		pMob->hit.size,
+		pMob->hit.bonus);
 	add_buf(buffer, buf);
 
 	sprintf(buf, "Damage dice:  {C[{x%2dd%-3d+%4d{C]{x ",
-		pMob->damage[DICE_NUMBER],
-		pMob->damage[DICE_TYPE],
-		pMob->damage[DICE_BONUS]);
+		pMob->damage.number,
+		pMob->damage.size,
+		pMob->damage.bonus);
 	add_buf(buffer, buf);
 
 	sprintf(buf, "Mana dice:    {C[{x%2dd%-3d+%4d{C]{x\n\r",
-		pMob->mana[DICE_NUMBER],
-		pMob->mana[DICE_TYPE],
-		pMob->mana[DICE_BONUS]);
+		pMob->mana.number,
+		pMob->mana.size,
+		pMob->mana.bonus);
 	add_buf(buffer, buf);
 
 	sprintf(buf, "Affected by:  {C[{x%s{C]{x\n\r",
@@ -7844,9 +7844,9 @@ MEDIT(medit_hitdice)
 	return FALSE;
     }
 
-    pMob->hit[DICE_NUMBER] = atoi(num  );
-    pMob->hit[DICE_TYPE]   = atoi(type );
-    pMob->hit[DICE_BONUS]  = atoi(bonus);
+    pMob->hit.number = atoi(num  );
+    pMob->hit.size   = atoi(type );
+    pMob->hit.bonus  = atoi(bonus);
 
     send_to_char("Hitdice set.\n\r", ch);
     return TRUE;
@@ -7896,9 +7896,9 @@ MEDIT(medit_manadice)
 	return FALSE;
     }
 
-    pMob->mana[DICE_NUMBER] = atoi(num  );
-    pMob->mana[DICE_TYPE]   = atoi(type );
-    pMob->mana[DICE_BONUS]  = atoi(bonus);
+    pMob->mana.number = atoi(num  );
+    pMob->mana.size   = atoi(type );
+    pMob->mana.bonus  = atoi(bonus);
 
     send_to_char("Manadice set.\n\r", ch);
     return TRUE;
@@ -7948,9 +7948,9 @@ MEDIT(medit_damdice)
 	return FALSE;
     }
 
-    pMob->damage[DICE_NUMBER] = atoi(num  );
-    pMob->damage[DICE_TYPE]   = atoi(type );
-    pMob->damage[DICE_BONUS]  = atoi(bonus);
+    pMob->damage.number = atoi(num  );
+    pMob->damage.size   = atoi(type );
+    pMob->damage.bonus  = atoi(bonus);
 
     send_to_char("Damdice set.\n\r", ch);
     return TRUE;

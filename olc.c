@@ -2654,15 +2654,15 @@ void do_mcopy(CHAR_DATA *ch, char *argument)
     new_mob->alignment    = old_mob->alignment;
     new_mob->level        = old_mob->level;
     new_mob->hitroll      = old_mob->hitroll;
-    new_mob->hit[0]       = old_mob->hit[0];
-    new_mob->hit[1]       = old_mob->hit[1];
-    new_mob->hit[2]       = old_mob->hit[2];
-    new_mob->mana[0]      = old_mob->mana[0];
-    new_mob->mana[1]      = old_mob->mana[1];
-    new_mob->mana[2]      = old_mob->mana[2];
-    new_mob->damage[0]    = old_mob->damage[0];
-    new_mob->damage[1]    = old_mob->damage[1];
-    new_mob->damage[2]    = old_mob->damage[2];
+    new_mob->hit.number       = old_mob->hit.number;
+    new_mob->hit.size       = old_mob->hit.size;
+    new_mob->hit.bonus       = old_mob->hit.bonus;
+    new_mob->mana.number      = old_mob->mana.number;
+    new_mob->mana.size      = old_mob->mana.size;
+    new_mob->mana.bonus      = old_mob->mana.bonus;
+    new_mob->damage.number    = old_mob->damage.number;
+    new_mob->damage.size    = old_mob->damage.size;
+    new_mob->damage.bonus    = old_mob->damage.bonus;
     new_mob->ac[0]        = old_mob->ac[0];
     new_mob->ac[1]        = old_mob->ac[1];
     new_mob->ac[2]        = old_mob->ac[2];
@@ -3436,9 +3436,9 @@ void set_mob_hitdice(MOB_INDEX_DATA *pMob)
     hitBonus = ((hp_per_level) * (pMob->level / 2));
     hitNumDice = pMob->level * 0.8;
     hitDiceType = hp_per_level;
-    pMob->hit[DICE_NUMBER] = UMAX(1,hitNumDice);
-    pMob->hit[DICE_TYPE]   = UMAX(1, hitDiceType);
-    pMob->hit[DICE_BONUS]  = UMAX(1, hitBonus);
+    pMob->hit.number = UMAX(1,hitNumDice);
+    pMob->hit.size   = UMAX(1, hitDiceType);
+    pMob->hit.bonus  = UMAX(1, hitBonus);
 }
 
 
@@ -3453,9 +3453,9 @@ void set_mob_damdice(MOB_INDEX_DATA *pMobIndex)
     num = UMAX(1, num);
     type = UMAX(8, type);
 
-    pMobIndex->damage[DICE_NUMBER] = num;
-    pMobIndex->damage[DICE_TYPE] = type;
-    pMobIndex->damage[DICE_BONUS] = pMobIndex->level;
+    pMobIndex->damage.number = num;
+    pMobIndex->damage.size = type;
+    pMobIndex->damage.bonus = pMobIndex->level;
 }
 
 
@@ -3470,9 +3470,9 @@ void set_mob_manadice(MOB_INDEX_DATA *pMobIndex)
     num = UMAX(1, num);
     type = UMAX(8, type);
 
-    pMobIndex->mana[DICE_NUMBER] = num;
-    pMobIndex->mana[DICE_TYPE] = type;
-    pMobIndex->mana[DICE_BONUS] = pMobIndex->level/2;
+    pMobIndex->mana.number = num;
+    pMobIndex->mana.size = type;
+    pMobIndex->mana.bonus = pMobIndex->level/2;
 }
 
 void set_mob_movedice(MOB_INDEX_DATA *pMobIndex)
