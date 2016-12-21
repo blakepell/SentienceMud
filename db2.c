@@ -560,7 +560,7 @@ char *nocolour( const char *string )
         while (string[i] == '`')
         {
                 if (string[i+1] == '[')
-                        i+= 6;
+                        i+= 7;
                 else
                         i+= 2;
         }
@@ -579,13 +579,13 @@ char *short_to_name( const char *short_desc )
 {
     char name[MSL];
     char arg[MIL];
-    char temp_desc[MSL];
+    char *temp_desc;
     int i;
     int n;
 
     name[0] = '\0';
 
-    /* remove colours, special characters etc */
+    /* remove colours, special characters etc 
     n = 0;
     for ( i = 0; short_desc[i] != '\0'; i++ )
     {
@@ -594,7 +594,7 @@ char *short_to_name( const char *short_desc )
 	    i += 2;
 	}
 
-	/*
+	
 	if ( short_desc[i] == '!'
 	||   short_desc[i] == '@'
 	||   short_desc[i] == '#'
@@ -615,7 +615,7 @@ char *short_to_name( const char *short_desc )
 	{
 	    i += 2;
 	}
-	*/
+	
 
 	temp_desc[n] = short_desc[i];
 
@@ -624,7 +624,8 @@ char *short_to_name( const char *short_desc )
 
 
     temp_desc[n] = '\0';
-
+*/
+    temp_desc = nocolour(short_desc);
     i = 0;
     while( temp_desc[i] != '\0' )
     {
