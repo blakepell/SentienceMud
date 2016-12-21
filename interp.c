@@ -625,7 +625,7 @@ bool check_verbs(CHAR_DATA *ch, char *command, char *argument)
 			while((prg = (PROG_LIST *)iterator_nextdata(&pit)) && !script_destructed) {
 				if (is_trigger_type(prg->trig_type,TRIG_VERB) && !str_prefix(command, prg->trig_phrase)) {
 					ret = execute_script(prg->vnum, prg->script, NULL, NULL, room, NULL, ch, NULL, NULL, NULL, NULL,NULL,NULL,p,prg->trig_phrase,0,0,0,0,0);
-				} else if (is_trigger_type(prg->trig_type,TRIG_VERB) && !str_prefix(command,prg->trig_phrase)) {
+				} else if (is_trigger_type(prg->trig_type,TRIG_VERBSELF) && !str_prefix(command,prg->trig_phrase)) {
 					ret = execute_script(prg->vnum, prg->script, NULL, NULL, room, NULL, ch, NULL, NULL, NULL, NULL, NULL, NULL,argument,prg->trig_phrase,0,0,0,0,0);
 				}
 					if( ret != PRET_NOSCRIPT) {
