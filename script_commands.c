@@ -209,7 +209,7 @@ SCRIPT_CMD(scriptcmd_damage)
 	SCRIPT_PARAM arg;
 
 	if(!(rest = expand_argument(info,argument,&arg))) {
-		bug("MpDamage - Error in parsing from vnum %ld.", VNUM(info->mob));
+		//bug("MpDamage - Error in parsing from vnum %ld.", VNUM(info->mob));
 		return;
 	}
 
@@ -278,7 +278,7 @@ SCRIPT_CMD(scriptcmd_damage)
 			return;
 		break;
 	default:
-		bug("MpDamage - invalid argument from vnum %ld.", VNUM(info->mob));
+//		bug("MpDamage - invalid argument from vnum %ld.", VNUM(info->mob));
 		return;
 	}
 
@@ -316,7 +316,7 @@ SCRIPT_CMD(scriptcmd_damage)
 	if(fLevel) get_level_damage(level,&low,&high,fRemort,fTwo);
 
 	if (fAll) {
-		for(victim = info->mob->in_room->people; victim; victim = victim_next) {
+		for(victim = info->location->people; victim; victim = victim_next) {
 			victim_next = victim->next_in_room;
 			if (victim != info->mob && (!attacker || victim != attacker)) {
 				value = fLevel ? dice(low,high) : number_range(low,high);
