@@ -4982,6 +4982,7 @@ SCRIPT_CMD(do_tpalterroom)
 	char buf[MSL+2],field[MIL],*rest;
 	int value, min_sec = MIN_SCRIPT_SECURITY;
 	ROOM_INDEX_DATA *room;
+	WILDS_DATA *wilds;
 	SCRIPT_PARAM arg;
 	int *ptr = NULL;
 	sh_int *sptr = NULL;
@@ -5027,6 +5028,28 @@ SCRIPT_CMD(do_tpalterroom)
 	}
 
 	if(!field[0]) return;
+
+        if(!str_cmp(field,"mapid")) {
+                if(!(rest = expand_argument(info,rest,&arg))) {
+                        bug("MPAlterRoom - Error in parsing.",0);
+                        return;
+                }
+                switch(arg.type) {
+                case ENT_STRING:
+                        if(!str_cmp(arg.d.str,"none"))
+                                { room->viewwilds = NULL; }
+                        break;
+                case ENT_NUMBER:
+                        wilds = get_wilds_from_uid(NULL,arg.d.num);
+			if(!wilds){
+				bug("Not a valid wilds uid",0);
+				return;
+			}
+			room->viewwilds=wilds;
+                        break;
+                default: return;
+                }
+        }
 
 	// Setting the environment of a clone room
 	if(!str_cmp(field,"environment") || !str_cmp(field,"environ") ||
@@ -5100,6 +5123,8 @@ SCRIPT_CMD(do_tpalterroom)
 	else if(!str_cmp(field,"heal"))		{ ptr = (int*)&room->heal_rate; min_sec = 9; }
 	else if(!str_cmp(field,"mana"))		{ ptr = (int*)&room->mana_rate; min_sec = 9; }
 	else if(!str_cmp(field,"move"))		{ ptr = (int*)&room->move_rate; min_sec = 1; }
+        else if(!str_cmp(field,"mapx"))         { ptr = (int*)&room->x; min_sec = 5; }
+        else if(!str_cmp(field,"mapy"))         { ptr = (int*)&room->y; min_sec = 5; }
 
 	if(!ptr && !sptr) return;
 
