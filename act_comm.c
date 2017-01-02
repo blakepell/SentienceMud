@@ -847,7 +847,7 @@ void do_tell(CHAR_DATA *ch, char *argument)
 		return;
 	}
 
-	if ((victim = get_char_world(ch, arg)) == NULL || (IS_NPC(victim) && victim->in_room != ch->in_room))
+	if ((victim = get_char_world(NULL, arg)) == NULL || (IS_NPC(victim) && victim->in_room != ch->in_room))
 	{
 		send_to_char("They aren't here.\n\r", ch);
 		return;
@@ -855,6 +855,12 @@ void do_tell(CHAR_DATA *ch, char *argument)
 
 	if (IS_SWITCHED(victim))
 	{
+		send_to_char("They aren't here.\n\r", ch);
+		return;
+	}
+
+	/* AO 010217 respect wizi only */
+	if (IS_IMMORTAL(victim) && victim->invis_level > ch->tot_level) {
 		send_to_char("They aren't here.\n\r", ch);
 		return;
 	}
@@ -979,7 +985,7 @@ void do_reply(CHAR_DATA *ch, char *argument)
 	CHAR_DATA *victim;
 	char buf[MAX_STRING_LENGTH];
 
-	if ((victim = ch->reply) == NULL || !can_see(ch, victim)) {
+	if ((victim = ch->reply) == NULL /*|| !can_see(ch, victim)*/) {
 		send_to_char("They aren't here.\n\r", ch);
 		return;
 	}

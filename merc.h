@@ -724,7 +724,7 @@ struct olc_point_area_data {
 #define LEVEL_NEWBIE		10
 #define MAX_TREASURES           1
 #define MAX_IMMORTAL_GROUPS     6
-#define MAX_ALIAS	        40
+#define MAX_ALIAS	        8 
 #define MAX_BUILDER_IDLE_MINUTES 30
 #define MAX_CHAT_ROOMS		100
 #define MAX_CHURCH_TREASURE     100

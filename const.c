@@ -2478,6 +2478,7 @@ const struct  material_type material_table [] =
     { "mithril", 	10, 10 	},
     { "papyrus", 	4, 4 	},
     { "plant",		1, 1	},
+    { "unknown",	1, 1	},
     { NULL,  		0,  0  	},
 };
 

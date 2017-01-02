@@ -715,7 +715,7 @@ void do_quest(CHAR_DATA *ch, char *argument)
         }
 
 	act("$n informs $N $e has completed $s quest.", ch, mob, NULL, NULL, NULL, NULL, NULL, TO_ROOM);
-        act ("You inform $N you have completed $s quest.", ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
+        act ("You inform $N you have completed your quest.", ch, mob, NULL, NULL, NULL, NULL, NULL, TO_CHAR);
 
         found = FALSE;
 	incomplete = FALSE;
