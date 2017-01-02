@@ -2127,7 +2127,8 @@ SCRIPT_CMD(do_rptransfer)
 		return;
 	}
 
-	if (!victim->in_room) return;
+	// Crashes on transfer all as victim isn't set at this point.
+	//if (!victim->in_room) return;
 
 	argument = rp_getlocation(info, rest, &dest);
 

@@ -2748,7 +2748,8 @@ SCRIPT_CMD(do_tptransfer)
 		return;
 	}
 
-	if (!victim->in_room) return;
+	// Crashing on transfer all as this is not set on 'all' transfers.
+	//if (!victim->in_room) return;
 
 	argument = tp_getlocation(info, rest, &dest);
 
