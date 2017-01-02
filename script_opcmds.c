@@ -2421,7 +2421,8 @@ SCRIPT_CMD(do_optransfer)
 		return;
 	}
 
-	if (!victim->in_room) return;
+	// This was crashing on transfer all scripts, as victim is null.
+	//if (!victim->in_room) return;
 
 	argument = op_getlocation(info, rest, &dest);
 

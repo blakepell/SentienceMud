@@ -3366,7 +3366,8 @@ SCRIPT_CMD(do_mptransfer)
 		return;
 	}
 
-	if (!victim->in_room) return;
+	// This was crashing for any transfer all scripts as victim is not set on all.
+	//if (!victim) return;
 
 	argument = mp_getlocation(info, rest, &dest);
 
