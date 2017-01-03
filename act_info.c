@@ -1800,7 +1800,7 @@ void show_room(CHAR_DATA *ch, ROOM_INDEX_DATA *room, bool remote, bool silent, b
 		show_map_to_char_wyx(room->wilds, room->x, room->y, ch, room->x, room->y, vp_x, vp_y, FALSE);
 	}
 
-	if(!IS_NPC(ch) && !IS_SET(room->room2_flags, ROOM_VIRTUAL_ROOM) &&
+	if(!IS_NPC(ch) /*&& !IS_SET(room->room2_flags, ROOM_VIRTUAL_ROOM)*/ &&
 		IS_SET(room->room_flags, ROOM_VIEWWILDS) &&
 		room->viewwilds &&
 		(!automatic || !IS_SET(ch->comm, COMM_BRIEF))) {
