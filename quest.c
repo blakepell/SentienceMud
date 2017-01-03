@@ -676,7 +676,13 @@ void do_quest(CHAR_DATA *ch, char *argument)
 
         if (IS_QUESTING(ch))
         {
-            ch->countdown = number_range(30,59);
+	    QUEST_PART_DATA *qp;
+	    int i = 0;
+
+            for (qp = ch->quest->parts; qp != NULL; qp = qp->next)
+		i++;
+
+	    ch->countdown = i * number_range(10,20);
 
             sprintf(buf, "You have %d minutes to complete this quest.",
 			    ch->countdown);
@@ -833,7 +839,7 @@ void do_quest(CHAR_DATA *ch, char *argument)
 	} else { /* AO don't nerf it completely */
 		pracreward /= number_range(1,4);
 
-		pracreward = UMIN(1,pracreward);
+		pracreward = UMAX(1,pracreward);
 	    
 		sprintf(buf, "You gain %d practices!\n\r", pracreward);
 		send_to_char(buf, ch);

@@ -750,7 +750,8 @@ bool one_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt, bool secondary)
 	while ((diceroll = number_bits(5)) >= 20);
 
 	// Miss.
-	if (!diceroll && (ch->tot_level > LEVEL_NEWBIE || number_percent() > 33)) {
+	// AO 010217 50% chance of missing when blind.
+	if ((!diceroll || (IS_AFFECTED(ch, AFF_BLIND) && number_percent() < 50)) && (ch->tot_level > LEVEL_NEWBIE || number_percent() > 33)) {
 		victim->set_death_type = DEATHTYPE_ALIVE;
 
 		dam_message(ch, victim, -1, dt, FALSE);	// Show misses, skip all the damage BS as it's irrelevant here
