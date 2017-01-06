@@ -1645,9 +1645,6 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
 		    ch->quest = (QUEST_DATA *)new_quest();
 
 		part = (QUEST_PART_DATA *)new_quest_part();
-		part->mob = -1;
-		part->mob_rescue = -1;
-		part->obj = -1;
 		part->obj_sac = fread_number(fp);
 
 		part->next = ch->quest->parts;
@@ -1663,10 +1660,7 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
 		    ch->quest = (QUEST_DATA *)new_quest();
 
 		part = (QUEST_PART_DATA *)new_quest_part();
-		part->obj = -1;
-		part->obj_sac = -1;
 		part->mob_rescue = fread_number(fp);
-		part->mob = -1;
 
 		part->next = ch->quest->parts;
 		ch->quest->parts = part;
@@ -1681,9 +1675,6 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
 		    ch->quest = (QUEST_DATA *)new_quest();
 
 		part = (QUEST_PART_DATA *)new_quest_part();
-		part->obj = -1;
-		part->obj_sac = -1;
-		part->mob_rescue = -1;
 		part->mob = fread_number(fp);
 
 		part->next = ch->quest->parts;
@@ -1699,10 +1690,6 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
 		    ch->quest = (QUEST_DATA *)new_quest();
 
 		part = (QUEST_PART_DATA *)new_quest_part();
-		part->obj = -1;
-		part->obj_sac = -1;
-		part->mob_rescue = -1;
-		part->mob = -1;
 		part->room = fread_number(fp);
 
 		part->next = ch->quest->parts;
@@ -4254,8 +4241,12 @@ void fwrite_quest_part(FILE *fp, QUEST_PART_DATA *part)
 
     fprintf(fp, "#QUESTPART\n");
 
-    if (part->obj != -1)
-	fprintf(fp, "OPart %ld\n", part->obj);
+    if (part->pObj != NULL && !part->complete) { // Special case. Objects will be extracted on quit, re-loaded on login.
+	if (part->pObj->in_room == NULL) 
+	    bug("fwrite_quest_part: trying to save a quest pickup obj with null in_room", 0);
+	else
+	    fprintf(fp, "OPart %ld %ld\n", part->pObj->pIndexData->vnum, part->pObj->in_room->vnum);
+    }
     else if (part->mob != -1)
 	fprintf(fp, "MPart %ld\n", part->mob);
     else if (part->obj_sac != -1)
@@ -4308,10 +4299,27 @@ QUEST_PART_DATA *fread_quest_part(FILE *fp)
 			    break;
 			}
 
-		    case 'Q':
+			
+		    case 'O':
+			/* Special Case - Make an Obj */
 			if (!str_cmp(word, "OPart")) {
+			    ROOM_INDEX_DATA *room;
+			    OBJ_DATA *obj;
+			    OBJ_INDEX_DATA *obj_i;
+			    int room_vnum;
+
 			    i = fread_number(fp);
 			    part->obj = i;
+
+			    obj_i = get_obj_index(part->obj);
+
+			    room_vnum = fread_number(fp);
+			    room = get_room_index(room_vnum);
+
+			    obj = create_object(obj_i, 1, TRUE);
+			    obj_to_room(obj, room);
+			    part->pObj = obj;
+
 			    fMatch = TRUE;
 			    break;
 			}
@@ -4323,6 +4331,7 @@ QUEST_PART_DATA *fread_quest_part(FILE *fp)
 			    break;
 			}
 
+		    case 'Q':
 			if (!str_cmp(word, "QRoom")) {
 			    i = fread_number(fp);
 			    part->room = i;

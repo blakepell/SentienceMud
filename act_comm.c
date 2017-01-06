@@ -1227,6 +1227,7 @@ void do_quit(CHAR_DATA *ch, char *argument)
 	}
 	}
 
+
 	send_to_char(
 	"Alas, all good things must come to an end.\n\r", ch);
 	send_to_char(
@@ -1294,6 +1295,16 @@ void do_quit(CHAR_DATA *ch, char *argument)
 	else
 	extract_char(mount, TRUE);
 	}
+	}
+	
+	/* kill quest obj's linked to char, to be restored upon boot-up */ 
+	if (ch->quest != NULL) {
+	    QUEST_PART_DATA *part;
+
+	    for (part = ch->quest->parts; part != NULL; part = part->next) {
+		if (part->pObj != NULL) 
+		    extract_obj(part->pObj);
+	    }
 	}
 
 	id[0] = ch->id[0];

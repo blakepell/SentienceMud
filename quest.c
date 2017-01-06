@@ -155,14 +155,14 @@ void do_quest(CHAR_DATA *ch, char *argument)
 	    if (part->complete)
 	    {
 	    	sprintf(buf,
-	    	"{YYou have completed part %d of your quest!\n\r",
+	    	"You have completed task {Y%d{x of your quest!\n\r",
 	    	i);
 		send_to_char(buf, ch);
 	    }
 	    else
 	    {
 	        sprintf(buf,
-	        "{YPart %d of your quest is not complete.{x\n\r",
+	        "Task {Y%d{x of your quest is not complete.\n\r",
 	        i);
 		totally_complete = FALSE;
 		send_to_char(buf, ch);
@@ -923,7 +923,7 @@ bool generate_quest(CHAR_DATA *ch, CHAR_DATA *questman)
 	part->next = ch->quest->parts;
 	ch->quest->parts = part;
 
-        if (generate_quest_part(ch, questman, i, scroll, part))
+        if (generate_quest_part(ch, questman, part))
 	    continue;
 	else 
 	{
@@ -935,7 +935,7 @@ bool generate_quest(CHAR_DATA *ch, CHAR_DATA *questman)
     /* Moving all quest-scroll generation shit into here. AO 010517  */
     for (i = 1, part = ch->quest->parts; part != NULL; part = part->next, i++) 
     {
-	sprintf(buf, "{W  |  {WTask {Y%d{x: ", i);
+	sprintf(buf, "{W  |  {xTask {Y%d{x: ", i);
 	strcat(buf2, buf);
 
 	if (part->pObj != NULL)
@@ -991,26 +991,19 @@ bool generate_quest(CHAR_DATA *ch, CHAR_DATA *questman)
 
 
 /* Set up a quest part. */
-bool generate_quest_part(CHAR_DATA *ch, CHAR_DATA *questman, int partnum, OBJ_DATA *scroll, QUEST_PART_DATA *part)
+bool generate_quest_part(CHAR_DATA *ch, CHAR_DATA *questman, QUEST_PART_DATA *part)
 {
     OBJ_DATA *item;
     CHAR_DATA *victim;
     ROOM_INDEX_DATA *rand_room;
     int rand;
 
-    if (ch == NULL || questman == NULL || scroll == NULL || part == NULL)
+    if (ch == NULL)
     {
-	bug("generate_quest_part: NULL", 0);
+	bug("generate_quest_part: ch NULL", 0);
 	return FALSE;
     }
     
-    part->pObj = NULL;
-    part->mob = -1;
-    part->mob_rescue = -1;
-    part->obj = -1;
-    part->obj_sac = -1;
-    part->room = -1;
-
     switch (number_range(1, 4))
     { /* AO 010417 In R&D :)
 	case 0:
@@ -1040,15 +1033,17 @@ bool generate_quest_part(CHAR_DATA *ch, CHAR_DATA *questman, int partnum, OBJ_DA
 	case 1:
 	    rand = number_range(0,5);
 
-	    item = create_object(get_obj_index(quest_item_token_table[rand]),
-			    0, FALSE);
+	    item = create_object(get_obj_index(quest_item_token_table[rand]), 0, FALSE);
 	    item->owner = ch->name;
 	    part->pObj = item;
 
-	    if (questman->pIndexData->vnum == VNUM_QUESTOR_1)
-		rand_room = get_random_room(ch, FIRST_CONTINENT);
-	    else
-		rand_room = get_random_room(ch, SECOND_CONTINENT);
+	    rand_room = NULL;
+	    while (rand_room == NULL) {
+		if (questman->pIndexData->vnum == VNUM_QUESTOR_1)
+		    rand_room = get_random_room(ch, FIRST_CONTINENT);
+		else
+		    rand_room = get_random_room(ch, SECOND_CONTINENT);
+	    }
 
 	    obj_to_room(item, rand_room);
 

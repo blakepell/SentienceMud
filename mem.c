@@ -1945,6 +1945,7 @@ QUEST_PART_DATA *new_quest_part( void )
     pPart->mob = -1;
     pPart->obj_sac = -1;
     pPart->mob_rescue = -1;
+    pPart->room = -1;
     pPart->complete = FALSE;
 
     top_quest_part++;
