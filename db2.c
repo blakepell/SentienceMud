@@ -282,6 +282,7 @@ OBJ_DATA *get_random_obj( CHAR_DATA *ch, int continent )
 {
     OBJ_INDEX_DATA *oIndex;
     OBJ_DATA *obj = NULL;
+    ROOM_INDEX_DATA *room;
     AREA_DATA *area;
     int tries;
 
@@ -298,7 +299,8 @@ OBJ_DATA *get_random_obj( CHAR_DATA *ch, int continent )
 
 	if ( oIndex == NULL )
 	    continue;
-	else
+/* AO 010417 Not having many hits, so let's make one.
+ * else
 	    obj = get_obj_type( get_obj_index(oIndex->vnum) );
 
  	if ( obj == NULL
@@ -319,29 +321,34 @@ OBJ_DATA *get_random_obj( CHAR_DATA *ch, int continent )
 	    || IS_SET( obj->carried_by->in_room->room_flags, ROOM_SAFE))
   	        continue;
 	}
-	else if ( obj != NULL
- 	&& IS_SET( obj->wear_flags, ITEM_TAKE )
-	&& !IS_SET( obj->wear_flags, ITEM_NO_SAC )
-	&& !IS_SET( obj->extra2_flags, ITEM_NOQUEST )
-        && !IS_SET( obj->extra_flags, ITEM_MELT_DROP )
-	&& obj->item_type != ITEM_MONEY
-	&& obj->old_short_descr == NULL
-	&& obj->old_description == NULL
-	&& obj->level < ch->tot_level + 10 &&
-	(!str_cmp(obj->in_room->area->name, "Cult of Shadows") 	||
-	 !str_cmp(obj->in_room->area->name, "Goblin Fort") 	||
-	 !str_cmp(obj->in_room->area->name, "The Maze") 	||
-	 !str_cmp(obj->in_room->area->name, "Dungeon Mystica") 	||
-	 !str_cmp(obj->in_room->area->name, "Kalandor") 	||
-	 !str_cmp(obj->in_room->area->name, "Reza") 		||
-	 !str_cmp(obj->in_room->area->name, "Wyvern's Keep")	||
-	 !str_cmp(obj->in_room->area->name, "Olaria") 		||
-	 !str_cmp(obj->in_room->area->name, "Aethilforge") 	||
-	 !str_cmp(obj->in_room->area->name, "Arena") 		||
-	 !str_cmp(obj->in_room->area->name, "Plith") 		||
-	 !str_cmp(obj->in_room->area->name, "Bone Mountain")))
+	else */if ( oIndex != NULL
+ 	&& IS_SET( oIndex->wear_flags, ITEM_TAKE )
+	&& !IS_SET( oIndex->wear_flags, ITEM_NO_SAC )
+	&& !IS_SET( oIndex->extra2_flags, ITEM_NOQUEST )
+        && !IS_SET( oIndex->extra_flags, ITEM_MELT_DROP )
+	&& oIndex->item_type != ITEM_MONEY &&
+	//&& oIndex->level < ch->tot_level + 10 &&
+	(!str_cmp(oIndex->area->name, "Cult of Shadows") 	||
+	 !str_cmp(oIndex->area->name, "Goblin Fort") 	||
+	 !str_cmp(oIndex->area->name, "The Maze") 	||
+	 !str_cmp(oIndex->area->name, "Dungeon Mystica") 	||
+	 !str_cmp(oIndex->area->name, "Kalandor") 	||
+	 !str_cmp(oIndex->area->name, "Reza") 		||
+	 !str_cmp(oIndex->area->name, "Wyvern's Keep")	||
+	 !str_cmp(oIndex->area->name, "Olaria") 		||
+	 !str_cmp(oIndex->area->name, "Aethilforge") 	||
+	 !str_cmp(oIndex->area->name, "Arena") 		||
+	 !str_cmp(oIndex->area->name, "Plith") 		||
+	 !str_cmp(oIndex->area->name, "Bone Mountain")))
 		break;
     }
+
+    room = get_random_room(ch, continent);
+    if (room != NULL) {
+	obj = create_object(oIndex, oIndex->level, TRUE);
+	obj_to_room(obj, room);
+    } else 
+	obj = NULL;
 
     return obj;
 }

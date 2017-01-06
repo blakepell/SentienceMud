@@ -879,7 +879,7 @@ void cast_end(CHAR_DATA *ch)
 				CHAR_DATA *dam_vict;
 
 				act("{R$p shatters explosively!{x", ch, NULL, NULL, trap, NULL, NULL, NULL, TO_ALL);
-				if (!IS_SET(ch->in_room->room_flags, ROOM_SAFE) && ch->in_room->area != !IN_CHAT(ch)) {
+				if (!IS_SET(ch->in_room->room_flags, ROOM_SAFE) && !IN_CHAT(ch)) {
 					for (dam_vict = ch->in_room->people; dam_vict; dam_vict = dam_vict->next_in_room) {
 						if (is_pk(dam_vict)) {
 							act("{RYou are struck by $p's shards!", dam_vict, NULL, NULL, trap, NULL, NULL, NULL, TO_CHAR);

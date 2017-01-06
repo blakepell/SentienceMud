@@ -2056,6 +2056,9 @@ void char_to_room(CHAR_DATA *ch, ROOM_INDEX_DATA *pRoomIndex)
         }
     }
 
+    if (ch->quest != NULL) 
+	check_quest_travel_room(ch, pRoomIndex);
+
     return;
 }
 

@@ -478,30 +478,14 @@ void fwrite_char(CHAR_DATA *ch, FILE *fp)
     else if (ch->countdown != 0)
         fprintf(fp, "QuestNext %d\n",  10             );
 
-    if (IS_QUESTING(ch))
-    {
-	QUEST_PART_DATA *part;
-
+    if (IS_QUESTING(ch)) { 
 	fprintf(fp, "QuestGiver %ld\n", ch->quest->questgiver);
 
-        for (part = ch->quest->parts; part != NULL; part = part->next)
-	{
-	    if (part->obj != -1)
-	        fprintf(fp, "QOPart %ld\n", part->obj);
-	    else if (part->mob != -1)
-	        fprintf(fp, "QMPart %ld\n", part->mob);
-	    else if (part->obj_sac != -1)
-		fprintf(fp, "QOSPart %ld\n", part->obj_sac);
-	    else if (part->mob_rescue != -1)
-		fprintf(fp, "QMRPart %ld\n", part->mob_rescue);
-
-	    if (part->complete)
-		fprintf(fp, "QComplete\n");
-	}
-
-	if (ch->countdown > 0)
-		fprintf(fp, "QCountDown %d\n", ch->countdown);
+	fwrite_quest_part(fp, ch->quest->parts);
     }
+
+    if (ch->countdown > 0)
+	    fprintf(fp, "QCountDown %d\n", ch->countdown);
 
     fprintf(fp, "DeathCount %d\n",	ch->deaths			);
     fprintf(fp, "ArenaCount %d\n",	ch->arena_deaths			);
@@ -911,6 +895,23 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
 	    fMatch = TRUE;
 	    fread_to_eol(fp);
 	    break;
+
+	case '#':
+	    if (!str_cmp(word, "#QUESTPART")) {
+		QUEST_PART_DATA *part;
+
+		if (ch->quest == NULL) {
+		    bug("had ch with a quest part but no quest", 0);
+		    fread_to_eol(fp);
+		    break;
+		}
+		
+		part = fread_quest_part(fp);
+
+		part->next = ch->quest->parts;
+		ch->quest->parts = part;
+		break;
+	    }	
 
 	case 'A':
 	    KEY("Act",		ch->act,		fread_flag(fp));
@@ -1690,6 +1691,26 @@ void fread_char(CHAR_DATA *ch, FILE *fp)
 		fMatch = TRUE;
 		break;
 	    }
+	    
+	    if (!str_cmp(word, "QRoom"))
+	    {
+	 	QUEST_PART_DATA *part;
+		if (ch->quest == NULL)
+		    ch->quest = (QUEST_DATA *)new_quest();
+
+		part = (QUEST_PART_DATA *)new_quest_part();
+		part->obj = -1;
+		part->obj_sac = -1;
+		part->mob_rescue = -1;
+		part->mob = -1;
+		part->room = fread_number(fp);
+
+		part->next = ch->quest->parts;
+		ch->quest->parts = part;
+		fMatch = TRUE;
+		break;
+	    }
+
 
 	    if (!str_cmp(word, "QComplete"))
 	    {
@@ -2047,7 +2068,7 @@ void fwrite_obj_new(CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest)
 {
     EXTRA_DESCR_DATA *ed;
     AFFECT_DATA *paf;
-    char buf[MSL];
+    //char buf[MSL];
 
     /*
      * Slick recursion to write lists backwards,
@@ -4224,3 +4245,105 @@ void fread_skill(FILE *fp, CHAR_DATA *ch)
 
 }
 
+/* write a quest to disk */
+void fwrite_quest_part(FILE *fp, QUEST_PART_DATA *part) 
+{
+    /* Recursion to make sure we don't have list flipping */
+    if (part->next != NULL)
+	fwrite_quest_part(fp, part->next);
+
+    fprintf(fp, "#QUESTPART\n");
+
+    if (part->obj != -1)
+	fprintf(fp, "OPart %ld\n", part->obj);
+    else if (part->mob != -1)
+	fprintf(fp, "MPart %ld\n", part->mob);
+    else if (part->obj_sac != -1)
+	fprintf(fp, "OSPart %ld\n", part->obj_sac);
+    else if (part->mob_rescue != -1)
+	fprintf(fp, "MRPart %ld\n", part->mob_rescue);
+    else if (part->room != -1)
+	fprintf(fp, "QRoom %ld\n", part->room);
+
+    if (part->complete)
+	fprintf(fp, "QComplete\n");
+
+    fprintf(fp, "End\n");
+}
+
+QUEST_PART_DATA *fread_quest_part(FILE *fp)
+{
+    QUEST_PART_DATA *part;
+    char buf[MSL];
+    char *word;
+    bool fMatch;
+    int i;
+
+    part = new_quest_part();
+    
+    for (; ;)
+    {
+		word   = feof(fp) ? "End" : fread_word(fp);
+		fMatch = FALSE;
+
+		if (!str_cmp(word, "End")) {
+			fMatch = TRUE;
+			return part;
+		}
+
+		switch (UPPER(word[0]))
+		{
+		    case 'M':
+			if (!str_cmp(word, "MPart")) {
+			    i = fread_number(fp);
+			    part->mob = i;
+			    fMatch = TRUE;
+			    break;
+			}
+			
+			if (!str_cmp(word, "MRPart")) {
+			    i = fread_number(fp);
+			    part->mob_rescue = i;
+			    fMatch = TRUE;
+			    break;
+			}
+
+		    case 'Q':
+			if (!str_cmp(word, "OPart")) {
+			    i = fread_number(fp);
+			    part->obj = i;
+			    fMatch = TRUE;
+			    break;
+			}
+
+			if (!str_cmp(word, "OSPart")) {
+			    i = fread_number(fp);
+			    part->obj_sac = i;
+			    fMatch = TRUE;
+			    break;
+			}
+
+			if (!str_cmp(word, "QRoom")) {
+			    i = fread_number(fp);
+			    part->room = i;
+			    fMatch = TRUE;
+			    break;
+			}
+
+			if (!str_cmp(word, "QComplete")) {
+			    part->complete = TRUE;
+			    fMatch = TRUE;
+			    fread_to_eol(fp);
+			    break;
+			}
+
+			break;
+		}
+
+	    if (!fMatch) {
+		    sprintf(buf, "read_quest_part: no match for word %s", word);
+		    bug(buf, 0);
+		    fread_to_eol(fp);
+	    }
+    }
+}

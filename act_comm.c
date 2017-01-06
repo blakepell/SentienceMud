@@ -384,9 +384,19 @@ void do_gossip(CHAR_DATA *ch, char *argument)
 		if (strlen(argument) == 1 &&
 			(argument[0] == 'r' || argument[0] == 'h' ||
 				argument[0] == 's' || argument[0] == 'f' ||
-				argument[0] == 'c')) {
+				argument[0] == 'c' ||
+		                argument[0] == '/'))
+		{
 			send_to_char("Are you sure that's all you want to say?\n\r", ch);
 			return;
+		}
+
+		if (strlen(argument) == 2 &&
+			(!str_cmp(argument, "ld")
+			|| !str_cmp(argument, "li")
+		       || !str_cmp(argument, "lr"))) {
+		    send_to_char("Are you sure that's all you want to say?\n\r", ch);
+		    return;
 		}
 
 		REMOVE_BIT(ch->comm,COMM_NOGOSSIP);
@@ -1160,13 +1170,13 @@ void do_quit(CHAR_DATA *ch, char *argument)
 		free_mail(ch->mail);
 		ch->mail = NULL;
 		}
-
+/* WHY???? AO 010417
 		if (ch->quest != NULL)
 		{
 		send_to_char("You can't quit, you're still on a quest!\n\r", ch);
 		return;
 		}
-
+*/
 		if(argument) {
 			p_percent_trigger( ch, NULL, NULL, NULL, ch, NULL, NULL,NULL, NULL, TRIG_QUIT, NULL);
 			// This requested input, pause and wait for input before quiting)

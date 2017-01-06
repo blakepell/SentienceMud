@@ -149,26 +149,24 @@ void do_quest(CHAR_DATA *ch, char *argument)
 	if (!found)
 	totally_complete = TRUE;
 
-	i = 0;
-	for (part = ch->quest->parts; part != NULL; part = part->next)
+	i = 1;
+	for (part = ch->quest->parts; part != NULL; part = part->next, i++)
 	{
 	    if (part->complete)
 	    {
 	    	sprintf(buf,
 	    	"{YYou have completed part %d of your quest!\n\r",
-	    	total_parts-i);
+	    	i);
 		send_to_char(buf, ch);
 	    }
 	    else
 	    {
 	        sprintf(buf,
 	        "{YPart %d of your quest is not complete.{x\n\r",
-	        total_parts-i);
+	        i);
 		totally_complete = FALSE;
 		send_to_char(buf, ch);
 	    }
-
-	    i++;
 	}
 
 	if (totally_complete)
@@ -639,7 +637,7 @@ void do_quest(CHAR_DATA *ch, char *argument)
 	    return;
 	}
 
-	if (ch->nextquest > 0 && !IS_IMMORTAL(ch))
+	if (ch->nextquest > 0 && !IS_IMMORTAL(ch) && port != PORT_RAE)
         {
             sprintf(buf,
 	    "You're very brave, %s, but let someone else have a chance.",
@@ -858,7 +856,9 @@ void do_quest(CHAR_DATA *ch, char *argument)
   send_to_char("You receive 1 military quest point!\n\r", ch);
   award_ship_quest_points(ch->in_room->area->place_flags, ch, 1);
 */
+
     ch->nextquest = 10;
+
     ch->countdown = 0;	// @@@NIB Not doing this was causing nextquest to come up
     			//	10 minutes if nextquest had expired
     free_quest(ch->quest);
@@ -878,7 +878,10 @@ void do_quest(CHAR_DATA *ch, char *argument)
  */
 bool generate_quest(CHAR_DATA *ch, CHAR_DATA *questman)
 {
+    char buf[MAX_STRING_LENGTH];
     char buf2[MAX_STRING_LENGTH*8];
+    MOB_INDEX_DATA *mob;
+    CHAR_DATA *victim;
     QUEST_PART_DATA *part;
     OBJ_DATA *scroll;
     int parts;
@@ -901,15 +904,18 @@ bool generate_quest(CHAR_DATA *ch, CHAR_DATA *questman)
     scroll = create_object(get_obj_index(OBJ_VNUM_QUEST_SCROLL), 0, TRUE);
     free_string(scroll->full_description);
 
-    sprintf(buf2, "Noble %s,\n\r\n\r"
-	    "This is an official quest scroll given to you by %s.\n\r"
-	    "Upon this scroll is my seal, and my approval to go to any\n\r"
-	    "measures in order to complete the set of tasks I have listed.\n\r"
-	    "Return to me once you have completed these tasks, and you\n\r"
-	    "shall be justly rewarded.\n\r\n\r",
+    sprintf(buf2, 
+	    "{W  .-.--------------------------------------------------------------------------------------.-.\n\r"
+	    "((o))                                                                                         )\n\r"
+	    "{W \\U/_________________________________________________________________________________________/\n\r"
+	    "{W  |\n\r"
+	    "{W  |  {xNoble %s,\n\r{x  |\n\r"
+	    "{W  |  {xThis is an official quest scroll given to you by %s.\n\r"
+	    "{W  |  {xUpon this scroll is my seal, and my approval to go to any\n\r"
+	    "{W  |  {xmeasures in order to complete the set of tasks I have listed.\n\r"
+	    "{W  |  {xReturn to me once you have completed these tasks, and you\n\r"
+	    "{W  |  {xshall be justly rewarded.\n\r  |  \n\r",
 	    ch->name, questman->short_descr);
-
-    scroll->full_description = str_dup(buf2);
 
     for (i = 0; i < parts; i++)
     {
@@ -919,9 +925,63 @@ bool generate_quest(CHAR_DATA *ch, CHAR_DATA *questman)
 
         if (generate_quest_part(ch, questman, i, scroll, part))
 	    continue;
-	else
+	else 
+	{
+	    free_obj(scroll); // no memory leak now
 	    return FALSE;
+	}
     }
+
+    /* Moving all quest-scroll generation shit into here. AO 010517  */
+    for (i = 1, part = ch->quest->parts; part != NULL; part = part->next, i++) 
+    {
+	sprintf(buf, "{W  |  {WTask {Y%d{x: ", i);
+	strcat(buf2, buf);
+
+	if (part->pObj != NULL)
+	    sprintf(buf, "Retrieve {Y%s{x from {Y%s{x in {Y%s{x.\n\r",
+		    part->pObj->short_descr, part->pObj->in_room->name, part->pObj->in_room->area->name);
+
+	if (part->mob_rescue != -1) {
+	    mob = get_mob_index(part->mob_rescue);
+
+	    victim = get_char_world_index(NULL, mob);
+
+	    sprintf(buf, "Rescue {Y%s{x from {Y%s{x in {Y%s{x.\n\r",
+		    victim->short_descr,
+		    victim->in_room->name,
+		    victim->in_room->area->name);
+	}
+
+	if (part->mob != -1) {
+	    mob = get_mob_index(part->mob);
+
+	    victim = get_char_world_index(NULL, mob); 
+
+	    sprintf(buf, "Slay {Y%s{x.  %s was last seen in {Y%s{x.\n\r",
+		    victim->short_descr,
+		    victim->sex == SEX_MALE ? "He" :
+		    victim->sex == SEX_FEMALE ? "She" : "It",
+		    victim->in_room->area->name);
+	}
+
+	if (part->room != -1) {
+	    ROOM_INDEX_DATA *room = get_room_index(part->room);
+
+	    sprintf(buf, "Travel to {Y%s{x in {Y%s{x.\n\r", room->name, room->area->name);
+	}
+
+	    strcat(buf2, buf);
+    }
+
+    sprintf(buf, "{W  |__________________________________________________________________________________________\n\r"
+	    "{W /A\\                                                                                         \\\n\r"
+	    "((o))                                                                                         )\n\r"
+	    "{W  '-'----------------------------------------------------------------------------------------'\n\r");
+    strcat(buf2, buf);
+
+
+    scroll->full_description = str_dup(buf2);
 
     act("$N gives $p to $n.", ch, questman, NULL, scroll, NULL, NULL, NULL, TO_ROOM);
     act("$N gives you $p.",   ch, questman, NULL, scroll, NULL, NULL, NULL, TO_CHAR);
@@ -933,9 +993,6 @@ bool generate_quest(CHAR_DATA *ch, CHAR_DATA *questman)
 /* Set up a quest part. */
 bool generate_quest_part(CHAR_DATA *ch, CHAR_DATA *questman, int partnum, OBJ_DATA *scroll, QUEST_PART_DATA *part)
 {
-    char buf[MSL];
-    char buf2[MSL];
-    char tmp[MSL];
     OBJ_DATA *item;
     CHAR_DATA *victim;
     ROOM_INDEX_DATA *rand_room;
@@ -946,12 +1003,18 @@ bool generate_quest_part(CHAR_DATA *ch, CHAR_DATA *questman, int partnum, OBJ_DA
 	bug("generate_quest_part: NULL", 0);
 	return FALSE;
     }
+    
+    part->pObj = NULL;
+    part->mob = -1;
+    part->mob_rescue = -1;
+    part->obj = -1;
+    part->obj_sac = -1;
+    part->room = -1;
 
-    switch (number_range(0, 3))
-    {
+    switch (number_range(1, 4))
+    { /* AO 010417 In R&D :)
 	case 0:
 
-	    /*
 	    if (questman->pIndexData->vnum == VNUM_QUESTOR_1)
 	    {
 		item = get_random_obj(ch, FIRST_CONTINENT);
@@ -972,7 +1035,9 @@ bool generate_quest_part(CHAR_DATA *ch, CHAR_DATA *questman, int partnum, OBJ_DA
 	    sprintf(buf, "{YTask %d:{x Retrieve {C%s{x from {C%s{x in {R%s{x.\n\r", partnum+1,
 		    item->short_descr, item->in_room->name, item->in_room->area->name);
 	    strcat(buf2, buf);
-	    */
+	    break;
+*/
+	case 1:
 	    rand = number_range(0,5);
 
 	    item = create_object(get_obj_index(quest_item_token_table[rand]),
@@ -981,54 +1046,27 @@ bool generate_quest_part(CHAR_DATA *ch, CHAR_DATA *questman, int partnum, OBJ_DA
 	    part->pObj = item;
 
 	    if (questman->pIndexData->vnum == VNUM_QUESTOR_1)
-	    {
 		rand_room = get_random_room(ch, FIRST_CONTINENT);
-	    }
 	    else
-	    {
 		rand_room = get_random_room(ch, SECOND_CONTINENT);
-	    }
 
 	    obj_to_room(item, rand_room);
 
-	    part->mob = -1;
-	    part->mob_rescue = -1;
 	    part->obj = item->pIndexData->vnum;
-	    part->obj_sac = -1;
-
-	    sprintf(buf, "{YTask %d:{x Retrieve {C%s{x from {C%s{x in {R%s{x.\n\r", partnum+1,
-		    item->short_descr, item->in_room->name, item->in_room->area->name);
-	    strcat(buf2, buf);
 	    break;
 
-	case 1:
+	case 2:
 	    if (questman->pIndexData->vnum == VNUM_QUESTOR_1)
-	    {
 		victim = get_random_mob(ch, FIRST_CONTINENT);
-	    }
 	    else
-	    {
 		victim = get_random_mob(ch, SECOND_CONTINENT);
-	    }
 
 	    if (victim == NULL)
-	    {
 		return FALSE;
-	    }
 
-	    part->obj = -1;
-	    part->obj_sac = -1;
-	    part->mob = -1;
 	    part->mob_rescue = victim->pIndexData->vnum;
-
-	    sprintf(buf, "{YTask %d:{x Rescue %s from %s in {R%s{x.\n\r",
-		    partnum+1,
-		    victim->short_descr,
-		    victim->in_room->name,
-		    victim->in_room->area->name);
-	    strcat(buf2, buf);
 	    break;
-
+/* AO 010417 WHY is this here twice?
 	case 2:
 	    if (questman->pIndexData->vnum == VNUM_QUESTOR_1)
 	    {
@@ -1056,40 +1094,29 @@ bool generate_quest_part(CHAR_DATA *ch, CHAR_DATA *questman, int partnum, OBJ_DA
 		    victim->in_room->area->name);
 	    strcat(buf2, buf);
 	    break;
-
+*/
 	case 3:
 		if (questman->pIndexData->vnum == VNUM_QUESTOR_1)
-		{
 		    victim = get_random_mob(ch, FIRST_CONTINENT);
-		}
 		else
-		{
 		    victim = get_random_mob(ch, SECOND_CONTINENT);
-		}
 
 		if (victim == NULL)
-		{
 		    return FALSE;
-		}
 
-		part->obj = -1;
-		part->obj_sac = -1;
-		part->mob_rescue = -1;
 		part->mob = victim->pIndexData->vnum;
-
-		sprintf(buf, "{YTask %d:{x Slay %s.  %s was last seen in {R%s{x.\n\r",
-			partnum+1, victim->short_descr,
-			victim->sex == SEX_MALE ? "He" :
-			victim->sex == SEX_FEMALE ? "She" : "It",
-			victim->in_room->area->name);
-		strcat(buf2, buf);
 		break;
-    }
 
-    sprintf(tmp, "%s", scroll->full_description);
-    strcat(tmp, buf);
-    free_string(scroll->full_description);
-    scroll->full_description = str_dup(tmp);
+	case 4:
+	    if (questman->pIndexData->vnum == VNUM_QUESTOR_1)
+		rand_room = get_random_room(ch, FIRST_CONTINENT);
+	    else
+		rand_room = get_random_room(ch, SECOND_CONTINENT);
+
+	    part->room = rand_room->vnum;
+	    /* AO 010417 Will implement a "Travel to <place> and do <shit>, but this is a start */
+	    break;
+    }
 
     return TRUE;
 }
@@ -1184,6 +1211,10 @@ void check_quest_rescue_mob(CHAR_DATA *ch)
     {
         i++;
 
+	// already did it
+	if (part->complete == TRUE)
+	    continue;
+
 	found = FALSE;
 	mob = ch->in_room->people;
 	while (mob != NULL)
@@ -1213,8 +1244,7 @@ void check_quest_rescue_mob(CHAR_DATA *ch)
 
         if (found && !part->complete)
 	{
-	    sprintf(buf, "{YYou have completed task %d of your quest!{x\n\r",
-	        total_parts - i);
+	    sprintf(buf, "{YYou have completed task %d of your quest!{x\n\r", i);
 	    send_to_char(buf, ch);
 
 	    part->complete = TRUE;
@@ -1250,6 +1280,11 @@ void check_quest_retrieve_obj(CHAR_DATA *ch, OBJ_DATA *obj)
 	for (part = ch->quest->parts; part != NULL; part = part->next)
 	{
   	    i++;
+	    
+	    // already did it
+	    if (part->complete == TRUE)
+		continue;
+	    
 	    if (part->pObj == obj)
 	    {
 	        char buf[MAX_STRING_LENGTH];
@@ -1258,8 +1293,7 @@ void check_quest_retrieve_obj(CHAR_DATA *ch, OBJ_DATA *obj)
 		part->pObj = obj;
 
 		sprintf(buf,
-		"{YYou have completed task %d of your quest!{x\n\r",
-		    total_parts - i);
+		"{YYou have completed task %d of your quest!{x\n\r", i);
 		send_to_char(buf, ch);
 	    }
 	}
@@ -1289,14 +1323,17 @@ void check_quest_slay_mob(CHAR_DATA *ch, CHAR_DATA *mob)
     {
         i++;
 
+	// already did it
+	if (part->complete == TRUE)
+	    continue;
+
         if (part->mob == mob->pIndexData->vnum
         && !part->complete)
 	{
 	    char buf[MAX_STRING_LENGTH];
 
 	    sprintf(buf,
-	        "{YYou have completed task %d of your quest!{x\n\r",
-                total_parts - i);
+	        "{YYou have completed task %d of your quest!{x\n\r", i);
 
 	    send_to_char(buf, ch);
 
@@ -1305,6 +1342,56 @@ void check_quest_slay_mob(CHAR_DATA *ch, CHAR_DATA *mob)
     }
 }
 
+void check_quest_travel_room(CHAR_DATA *ch, ROOM_INDEX_DATA *room)
+{
+    QUEST_PART_DATA *part;
+    ROOM_INDEX_DATA *target_room;
+    int i;
+    int total_parts;
+
+    if (ch->quest == NULL)
+        return;
+
+    if (IS_NPC(ch))
+    {
+         bug("check_quest_travel_room: NPC", 0);
+	 return;
+    }
+
+    if (room == NULL)
+    {
+	bug("check_quest_travel_room: checking a null room",0);
+	return;
+    }
+
+    total_parts = count_quest_parts(ch);
+
+    i = 0;
+    for (part = ch->quest->parts; part != NULL; part = part->next)
+    {
+        i++;
+	
+	// already did it
+	if (part->complete == TRUE)
+	    continue;
+
+	target_room = get_room_index(part->room);
+
+	/* Not going by room vnum to prevent multiple rooms with the same name */
+	if (target_room != NULL
+	&& !str_cmp(target_room->name, room->name)) 
+	{
+	    char buf[MAX_STRING_LENGTH];
+
+	    sprintf(buf,
+	        "{YYou have completed task %d of your quest!{x\n\r", i);
+
+	    send_to_char(buf, ch);
+
+	    part->complete = TRUE;
+	}
+    }
+}
 
 int count_quest_parts(CHAR_DATA *ch)
 {

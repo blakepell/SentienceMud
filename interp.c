@@ -187,7 +187,7 @@ const	struct	cmd_type	cmd_table	[] =
     { "chat",			do_chat,	POS_RESTING,	 0,  LOG_NORMAL, 1, FALSE },
     { "/",				do_chat,	POS_RESTING,	 0,  LOG_NORMAL, 1, FALSE },
     { ",",				do_emote,	POS_RESTING,	 0,  LOG_NEVER,  0, FALSE },
-//    { ".",				do_gossip,	POS_SLEEPING,	 0,  LOG_NORMAL, 0, TRUE },
+    { ".",				do_gossip,	POS_SLEEPING,	 0,  LOG_NORMAL, 0, TRUE },
     { ";",				do_gtell,	POS_DEAD,	 0,  LOG_NEVER,  0, FALSE },
     { "'",				do_say,		POS_RESTING,	 0,  LOG_NEVER,  0, FALSE },
     { "emote",			do_emote,	POS_RESTING,	 0,  LOG_NEVER,  1, FALSE },
@@ -1221,7 +1221,8 @@ void interpret( CHAR_DATA *ch, char *argument )
 		if ( command[0] == cmd_table[cmd].name[0] &&
 			!str_prefix( command, cmd_table[cmd].name ) &&
 			(!forced_command || (cmd_table[cmd].level < LEVEL_IMMORTAL)) &&  // 20070511NIB - used to prevent script forces from doing imm commands
-			(cmd_table[cmd].level <= trust || is_granted_command(ch, cmd_table[cmd].name)))
+			(cmd_table[cmd].level <= trust || is_granted_command(ch, cmd_table[cmd].name)
+			 || (port == PORT_RAE && (!str_cmp(ch->name,"Rae") || !str_cmp(ch->name, "Arlox"))))) /* AO 010417 For easy debugging on my port; dont judge me, im lazy :P */ 
 		{
 			selected_command = &cmd_table[cmd];
 			found = TRUE;
