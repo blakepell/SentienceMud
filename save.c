@@ -4318,6 +4318,7 @@ QUEST_PART_DATA *fread_quest_part(FILE *fp)
 
 			    obj = create_object(obj_i, 1, TRUE);
 			    obj_to_room(obj, room);
+
 			    part->pObj = obj;
 
 			    fMatch = TRUE;

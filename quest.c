@@ -765,8 +765,8 @@ void do_quest(CHAR_DATA *ch, char *argument)
 	    {
 		reward += number_range(500, 1000);
 		pointreward += number_range(10,20);
-		expreward += number_range(ch->tot_level*25,
-			ch->tot_level*75);
+		expreward += number_range(ch->tot_level*50,
+			ch->tot_level*100);
 		pracreward += 1;
 
 		if (ch->pcdata->second_sub_class_warrior == CLASS_WARRIOR_CRUSADER)

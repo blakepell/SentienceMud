@@ -381,23 +381,28 @@ void do_gossip(CHAR_DATA *ch, char *argument)
 		TOGGLE_BIT(ch->comm,COMM_NOGOSSIP);
 	} else if(can_speak_channels(ch)) {
 
+	        /* prevent 1-letter string editor commands with no argument */
 		if (strlen(argument) == 1 &&
-			(argument[0] == 'r' || argument[0] == 'h' ||
-				argument[0] == 's' || argument[0] == 'f' ||
-				argument[0] == 'c' ||
-		                argument[0] == '/'))
+		       (argument[0] == 'h' ||
+			argument[0] == 's' || 
+			argument[0] == 'f' ||
+			argument[0] == 'c'))// ||
+		       // argument[0] == '/'))
 		{
 			send_to_char("Are you sure that's all you want to say?\n\r", ch);
 			return;
 		}
 
-		if (strlen(argument) == 2 &&
-			(!str_cmp(argument, "ld")
-			|| !str_cmp(argument, "li")
-		       || !str_cmp(argument, "lr"))) {
-		    send_to_char("Are you sure that's all you want to say?\n\r", ch);
+		if (!str_prefix("r ", argument)) {
+		    send_to_char("You're not in the string editor!\n\r", ch);
 		    return;
 		}
+
+		if (!str_prefix("ld ", argument) || !str_prefix("lr ", argument) || !str_prefix("li ", argument) || !str_prefix("/ ", argument)) {
+		    send_to_char("You're not in the string editor.\n\r", ch);
+		    return;
+		}
+		
 
 		REMOVE_BIT(ch->comm,COMM_NOGOSSIP);
 
