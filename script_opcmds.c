@@ -82,6 +82,7 @@ const struct script_cmd_type obj_cmd_table[] = {
 	{ "saveplayer",			do_opsaveplayer,		FALSE,	TRUE	},
 	{ "scriptwait",			do_opscriptwait,		FALSE,	TRUE	},
 	{ "selfdestruct",		do_opselfdestruct,		FALSE,	TRUE	},
+	{ "setrecall",			do_opsetrecall,			FALSE,	TRUE	},
 	{ "settimer",			do_opsettimer,			FALSE,	TRUE	},
 	{ "showroom",			do_opshowroom,			TRUE,	TRUE	},
 	{ "skimprove",			do_opskimprove,			TRUE,	TRUE	},
