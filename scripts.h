@@ -2373,8 +2373,10 @@ SCRIPT_CMD(do_rpgroup);
 SCRIPT_CMD(do_rpungroup);
 SCRIPT_CMD(do_tpgroup);
 SCRIPT_CMD(do_tpungroup);
-
-
+SCRIPT_CMD(do_tpsetrecall);
+SCRIPT_CMD(do_mpsetrecall);
+SCRIPT_CMD(do_opsetrecall);
+SCRIPT_CMD(do_rpsetrecall);
 
 
 

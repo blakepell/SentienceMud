@@ -3584,7 +3584,7 @@ OBJ_DATA *raw_kill(CHAR_DATA *victim, bool has_head, bool messages, int corpse_t
 		recall = victim->recall;
 		location_clear(&victim->recall);
 	}
-
+	
 	// Just in case...
 	if (!(recall_room = location_to_room(&recall)))
 	{
@@ -3595,7 +3595,7 @@ OBJ_DATA *raw_kill(CHAR_DATA *victim, bool has_head, bool messages, int corpse_t
 
 		recall_room = get_room_index(ROOM_VNUM_TEMPLE);
 	}
-
+	location_from_room(&victim->recall,recall_room);
 	stop_fighting(victim, TRUE);
 	stop_casting(victim, FALSE);
 	script_end_failure(victim, FALSE);

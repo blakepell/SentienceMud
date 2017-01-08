@@ -82,6 +82,7 @@ const struct script_cmd_type token_cmd_table[] = {
 	{ "revokeskill",		scriptcmd_revokeskill,	FALSE,	TRUE	},
 	{ "saveplayer",			do_tpsaveplayer,		FALSE,	TRUE	},
 	{ "scriptwait",			do_tpscriptwait,		TRUE,	TRUE	},
+	{ "setrecall",			do_tpsetrecall,			FALSE,	TRUE	},
 	{ "settimer",			do_tpsettimer,			FALSE,	TRUE	},
 	{ "showroom",			do_tpshowroom,			TRUE,	TRUE	},
 	{ "skimprove",			do_tpskimprove,			TRUE,	TRUE	},
