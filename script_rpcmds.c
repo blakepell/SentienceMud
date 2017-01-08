@@ -78,6 +78,7 @@ const struct script_cmd_type room_cmd_table[] = {
 	{ "restore",			do_rprestore,			TRUE,	TRUE	},
 	{ "revokeskill",		scriptcmd_revokeskill,	FALSE,	TRUE	},
 	{ "saveplayer",			do_rpsaveplayer,		FALSE,	TRUE	},
+	{ "setrecall",			do_rpsetrecall,			FALSE,	TRUE	},
 	{ "settimer",			do_rpsettimer,			FALSE,	TRUE	},
 	{ "showroom",			do_rpshowroom,			FALSE,	TRUE	},
 	{ "skimprove",			do_rpskimprove,			TRUE,	TRUE	},
@@ -2127,7 +2128,8 @@ SCRIPT_CMD(do_rptransfer)
 		return;
 	}
 
-	if (!victim->in_room) return;
+	// Crashes on transfer all as victim isn't set at this point.
+	//if (!victim->in_room) return;
 
 	argument = rp_getlocation(info, rest, &dest);
 
@@ -4501,6 +4503,7 @@ SCRIPT_CMD(do_rpalterroom)
 	char buf[MSL+2],field[MIL],*rest;
 	int value, min_sec = MIN_SCRIPT_SECURITY;
 	ROOM_INDEX_DATA *room;
+	WILDS_DATA *wilds;
 	SCRIPT_PARAM arg;
 	int *ptr = NULL;
 	sh_int *sptr = NULL;
@@ -4539,6 +4542,28 @@ SCRIPT_CMD(do_rpalterroom)
 	}
 
 	field[0] = 0;
+
+        if(!str_cmp(field,"mapid")) {
+                if(!(rest = expand_argument(info,rest,&arg))) {
+                        bug("MPAlterRoom - Error in parsing.",0);
+                        return;
+                }
+                switch(arg.type) {
+                case ENT_STRING:
+                        if(!str_cmp(arg.d.str,"none"))
+                                { room->viewwilds = NULL; }
+                        break;
+                case ENT_NUMBER:
+                        wilds = get_wilds_from_uid(NULL,arg.d.num);
+                        if(!wilds){
+                                bug("Not a valid wilds uid",0);
+                                return;
+                        }
+                        room->viewwilds=wilds;
+                        break;
+                default: return;
+                }
+        }
 
 	switch(arg.type) {
 	case ENT_STRING: strncpy(field,arg.d.str,MIL-1); break;
@@ -4619,7 +4644,8 @@ SCRIPT_CMD(do_rpalterroom)
 	else if(!str_cmp(field,"heal"))		{ ptr = (int*)&room->heal_rate; min_sec = 9; }
 	else if(!str_cmp(field,"mana"))		{ ptr = (int*)&room->mana_rate; min_sec = 9; }
 	else if(!str_cmp(field,"move"))		{ ptr = (int*)&room->move_rate; min_sec = 1; }
-
+	else if(!str_cmp(field,"mapx"))		{ ptr = (int*)&room->x; min_sec = 5;}
+	else if(!str_cmp(field,"mapy"))		{ ptr = (int*)&room->y; min_sec = 5;}
 	if(!ptr && !sptr) return;
 
 	if(script_security < min_sec) {

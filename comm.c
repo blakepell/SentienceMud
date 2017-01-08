@@ -1476,6 +1476,29 @@ bool process_output(DESCRIPTOR_DATA *d, bool fPrompt)
             else
                 percent = -1;
 
+	    if (percent >= 100)
+		    sprintf(wound, "is in excellent condition.");
+	    else if (percent >= 90)
+		    sprintf(wound, "has a few scratches.");
+	    else if (percent >= 80)
+		    sprintf(wound, "has a few scratches and bruises.");
+	    else if (percent >= 70)
+		    sprintf(wound, "has some small wounds.");
+	    else if (percent >= 60)
+		    sprintf(wound, "has some small wounds and bruises.");
+	    else if (percent >= 50)
+		    sprintf(wound, "has some nasty wounds and scratches.");
+	    else if (percent >= 40)
+		    sprintf(wound, "looks pretty hurt.");
+	    else if (percent >= 30)
+		    sprintf(wound, "looks very hurt.");
+	    else if (percent >= 20)
+		    sprintf(wound, "is in awful condition.");
+	    else if (percent >= 10)
+		    sprintf(wound, "is barely clinging to life.");
+	    else
+		    sprintf(wound, "is on the verge of death.");
+      /* 
             if (percent >= 100)
                 sprintf(wound,"is in excellent condition.");
             else if (percent >= 90)
@@ -1492,7 +1515,7 @@ bool process_output(DESCRIPTOR_DATA *d, bool fPrompt)
                 sprintf(wound,"is in awful condition.");
             else
                 sprintf(wound,"is bleeding to death.");
-
+*/
  	    if (IS_SET(ch->comm, COMM_SHOW_FORM_STATE))
 		show_form_state(ch);
 

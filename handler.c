@@ -2056,6 +2056,9 @@ void char_to_room(CHAR_DATA *ch, ROOM_INDEX_DATA *pRoomIndex)
         }
     }
 
+    if (ch->quest != NULL) 
+	check_quest_travel_room(ch, pRoomIndex);
+
     return;
 }
 
@@ -4509,7 +4512,7 @@ void resurrect_pc(CHAR_DATA *ch)
 	pRoom = get_room_index(ROOM_VNUM_ALTAR);
 
     char_to_room(ch,pRoom);
-
+    location_clear(&ch->recall);
     // remove and reset affects
     while (ch->affected)
 	affect_remove(ch, ch->affected);

@@ -379,7 +379,7 @@ SPELL_FUNC(spell_holy_word)
 		if ((IS_GOOD(ch) && IS_GOOD(vch)) ||
 			(IS_EVIL(ch) && IS_EVIL(vch)) ||
 			(IS_NEUTRAL(ch) && IS_NEUTRAL(vch))) {
-			send_to_char("You feel full of more powerful.\n\r",vch);
+			send_to_char("You feel full of holy power!\n\r",vch);
 			spell_frenzy(frenzy_num,level,ch,(void *) vch,TARGET_CHAR, WEAR_NONE);
 			spell_bless(bless_num,level,ch,(void *) vch,TARGET_CHAR, WEAR_NONE);
 		} else if ((IS_GOOD(ch) && IS_EVIL(vch)) || (IS_EVIL(ch) && IS_GOOD(vch))) {

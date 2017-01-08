@@ -750,7 +750,8 @@ bool one_hit(CHAR_DATA *ch, CHAR_DATA *victim, int dt, bool secondary)
 	while ((diceroll = number_bits(5)) >= 20);
 
 	// Miss.
-	if (!diceroll && (ch->tot_level > LEVEL_NEWBIE || number_percent() > 33)) {
+	// AO 010217 50% chance of missing when blind.
+	if ((!diceroll || (IS_AFFECTED(ch, AFF_BLIND) && number_percent() < 50)) && (ch->tot_level > LEVEL_NEWBIE || number_percent() > 33)) {
 		victim->set_death_type = DEATHTYPE_ALIVE;
 
 		dam_message(ch, victim, -1, dt, FALSE);	// Show misses, skip all the damage BS as it's irrelevant here
@@ -3583,7 +3584,7 @@ OBJ_DATA *raw_kill(CHAR_DATA *victim, bool has_head, bool messages, int corpse_t
 		recall = victim->recall;
 		location_clear(&victim->recall);
 	}
-
+	
 	// Just in case...
 	if (!(recall_room = location_to_room(&recall)))
 	{
@@ -3594,7 +3595,7 @@ OBJ_DATA *raw_kill(CHAR_DATA *victim, bool has_head, bool messages, int corpse_t
 
 		recall_room = get_room_index(ROOM_VNUM_TEMPLE);
 	}
-
+	location_from_room(&victim->recall,recall_room);
 	stop_fighting(victim, TRUE);
 	stop_casting(victim, FALSE);
 	script_end_failure(victim, FALSE);
@@ -4819,7 +4820,7 @@ void do_bash(CHAR_DATA *ch, char *argument)
 		act("$n slams into you...", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_VICT);
 		act("$n slams into $N...", ch, victim, NULL, NULL, NULL, NULL, NULL, TO_NOTVICT);
 
-		dam = (10 + get_skill(ch, gsn_bash))*4*log10(ch->tot_level);
+		dam = (ch->tot_level + get_skill(ch, gsn_bash))*7*log10(ch->tot_level);
 		if (ch->size > victim->size) dam *= (ch->size - victim->size);
 		if (ch->size < victim->size) dam /= (victim->size - ch->size);
 
@@ -6308,7 +6309,7 @@ void do_kick(CHAR_DATA *ch, char *argument)
 	if (skill > number_percent()) {
 		int dam = 0;
 
-		dam += 5*number_range(ch->tot_level, ch->tot_level + 10);
+		dam += 15 *number_range(ch->tot_level/2, ch->tot_level);
 
 		if (get_skill(ch,gsn_martial_arts) > 0) {
 			dam += (int) dam * (get_skill(ch,gsn_martial_arts) / 100);

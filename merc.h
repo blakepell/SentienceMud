@@ -724,7 +724,7 @@ struct olc_point_area_data {
 #define LEVEL_NEWBIE		10
 #define MAX_TREASURES           1
 #define MAX_IMMORTAL_GROUPS     6
-#define MAX_ALIAS	        40
+#define MAX_ALIAS	        80 
 #define MAX_BUILDER_IDLE_MINUTES 30
 #define MAX_CHAT_ROOMS		100
 #define MAX_CHURCH_TREASURE     100
@@ -758,7 +758,7 @@ struct olc_point_area_data {
 #define MINS_PER_DEATH		8
 #define PORT_NORMAL	        9000
 #define PORT_TEST		9999
-#define PORT_SYN		3666
+#define PORT_RAE	        7777	
 #define PORT_ALPHA		7680
 #define PULSE_AREA		(60 * PULSE_PER_SECOND)
 #define PULSE_AUCTION           (20 * PULSE_PER_SECOND)
@@ -3189,6 +3189,7 @@ struct quest_part_data
 
     long 		obj;
     long		mob;
+    long		room;
     long		obj_sac;
     long		mob_rescue;
     bool		complete;
@@ -6819,7 +6820,7 @@ char *get_affect_cname(char *name);
 /* quest.c */
 bool generate_quest( CHAR_DATA *ch, CHAR_DATA *questman );
 void quest_update(void);
-bool generate_quest_part( CHAR_DATA *ch, CHAR_DATA *questman, int partnum, OBJ_DATA *scroll, QUEST_PART_DATA *part );
+bool generate_quest_part( CHAR_DATA *ch, CHAR_DATA *questman, QUEST_PART_DATA *part );
 bool is_quest_item( OBJ_DATA *obj );
 bool is_quest_token( OBJ_DATA *obj );
 int count_quest_parts( CHAR_DATA *ch );
@@ -6828,6 +6829,7 @@ void check_quest_rescue_mob( CHAR_DATA *ch );
 void check_quest_retrieve_obj( CHAR_DATA *ch, OBJ_DATA *obj );
 void check_quest_slay_mob( CHAR_DATA *ch, CHAR_DATA *mob );
 void check_quest_totally_complete( CHAR_DATA *ch );
+void check_quest_travel_room(CHAR_DATA *ch, ROOM_INDEX_DATA *room);
 
 /* handler.c */
 int get_coord_distance( int x1, int y1, int x2, int y2 );
@@ -7195,6 +7197,9 @@ void fwrite_token(TOKEN_DATA *token, FILE *fp);
 void fwrite_skills(CHAR_DATA *ch, FILE *fp);
 TOKEN_DATA *fread_token(FILE *fp);
 void fread_skill(FILE *fp, CHAR_DATA *ch);
+void fwrite_quest_part(FILE *fp, QUEST_PART_DATA *part);
+QUEST_PART_DATA *fread_quest_part(FILE *fp);
+
 
 
 /* skills.c */

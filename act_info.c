@@ -1024,18 +1024,24 @@ void show_char_to_char_1(CHAR_DATA * victim, CHAR_DATA * ch)
 	strcat(buf, " is in excellent condition.\n\r");
     else if (percent >= 90)
 	strcat(buf, " has a few scratches.\n\r");
-    else if (percent >= 75)
+    else if (percent >= 80)
+	    strcat(buf, " has a few scratches and bruises.\n\r");
+    else if (percent >= 70)
+	strcat(buf, " has some small wounds.\n\r");
+    else if (percent >= 60)
 	strcat(buf, " has some small wounds and bruises.\n\r");
     else if (percent >= 50)
-	strcat(buf, " has quite a few wounds.\n\r");
-    else if (percent >= 30)
-	strcat(buf, " has some big nasty wounds and scratches.\n\r");
-    else if (percent >= 15)
+	strcat(buf, " has some nasty wounds and scratches.\n\r");
+    else if (percent >= 40)
 	strcat(buf, " looks pretty hurt.\n\r");
-    else if (percent >= 0)
+    else if (percent >= 30)
+	    strcat(buf, " looks very hurt.\n\r");
+    else if (percent >= 20)
 	strcat(buf, " is in awful condition.\n\r");
+    else if (percent >= 10)
+	    strcat(buf, " is barely clinging to life.\n\r");
     else
-	strcat(buf, " is bleeding to death.\n\r");
+	strcat(buf, " is on the verge of death.\n\r");
     strcat(buf, "{x");
 
     buf[0] = UPPER(buf[0]);
@@ -1794,7 +1800,7 @@ void show_room(CHAR_DATA *ch, ROOM_INDEX_DATA *room, bool remote, bool silent, b
 		show_map_to_char_wyx(room->wilds, room->x, room->y, ch, room->x, room->y, vp_x, vp_y, FALSE);
 	}
 
-	if(!IS_NPC(ch) && !IS_SET(room->room2_flags, ROOM_VIRTUAL_ROOM) &&
+	if(!IS_NPC(ch) /*&& !IS_SET(room->room2_flags, ROOM_VIRTUAL_ROOM)*/ &&
 		IS_SET(room->room_flags, ROOM_VIEWWILDS) &&
 		room->viewwilds &&
 		(!automatic || !IS_SET(ch->comm, COMM_BRIEF))) {

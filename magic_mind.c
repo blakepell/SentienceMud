@@ -40,7 +40,7 @@ SPELL_FUNC(spell_calm)
 		send_to_char("A wave of calm passes over you.\n\r",vch);
 
 		if (vch->fighting || vch->position == POS_FIGHTING)
-			stop_fighting(vch,FALSE);
+			stop_fighting(vch,TRUE);
 
 		af.slot	= WEAR_NONE;
 		af.where = TO_AFFECTS;

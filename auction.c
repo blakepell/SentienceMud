@@ -139,11 +139,12 @@ void do_auction( CHAR_DATA *ch, char * argument )
 	}
 
 	spell_identify( 0, ch->tot_level, ch, (void *) auction_info.item, TARGET_OBJ, WEAR_NONE );
+        /* AO 010217 LAME
 	if ( ch->tot_level < obj->level - 25 && !IS_REMORT(ch))
 	{
 	    send_to_char("{RWARNING: You will not be able to save this item.{x\n\r",
 	        ch );
-	}
+	} */
 	return;
     }
 

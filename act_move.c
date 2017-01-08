@@ -838,8 +838,9 @@ bool can_move_room(CHAR_DATA *ch, int door, ROOM_INDEX_DATA *room)
 		(!IS_AFFECTED(ch, AFF_PASS_DOOR) || IS_SET(pexit->exit_info,EX_NOPASS))) {
 		if (IS_AFFECTED(ch, AFF_PASS_DOOR))
 			act("Something blocks you from passing through $T.", ch, NULL, NULL, NULL, NULL, NULL, exit, TO_CHAR);
-		else
+		else {
 			act("$T is closed.", ch, NULL, NULL, NULL, NULL, NULL, exit, TO_CHAR);
+		}
 
 		return FALSE;
 	}

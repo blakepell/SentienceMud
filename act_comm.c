@@ -381,13 +381,28 @@ void do_gossip(CHAR_DATA *ch, char *argument)
 		TOGGLE_BIT(ch->comm,COMM_NOGOSSIP);
 	} else if(can_speak_channels(ch)) {
 
+	        /* prevent 1-letter string editor commands with no argument */
 		if (strlen(argument) == 1 &&
-			(argument[0] == 'r' || argument[0] == 'h' ||
-				argument[0] == 's' || argument[0] == 'f' ||
-				argument[0] == 'c')) {
+		       (argument[0] == 'h' ||
+			argument[0] == 's' || 
+			argument[0] == 'f' ||
+			argument[0] == 'c'))// ||
+		       // argument[0] == '/'))
+		{
 			send_to_char("Are you sure that's all you want to say?\n\r", ch);
 			return;
 		}
+
+		if (!str_prefix("r ", argument)) {
+		    send_to_char("You're not in the string editor!\n\r", ch);
+		    return;
+		}
+
+		if (!str_prefix("ld ", argument) || !str_prefix("lr ", argument) || !str_prefix("li ", argument) || !str_prefix("/ ", argument)) {
+		    send_to_char("You're not in the string editor.\n\r", ch);
+		    return;
+		}
+		
 
 		REMOVE_BIT(ch->comm,COMM_NOGOSSIP);
 
@@ -847,7 +862,7 @@ void do_tell(CHAR_DATA *ch, char *argument)
 		return;
 	}
 
-	if ((victim = get_char_world(ch, arg)) == NULL || (IS_NPC(victim) && victim->in_room != ch->in_room))
+	if ((victim = get_char_world(NULL, arg)) == NULL || (IS_NPC(victim) && victim->in_room != ch->in_room))
 	{
 		send_to_char("They aren't here.\n\r", ch);
 		return;
@@ -855,6 +870,12 @@ void do_tell(CHAR_DATA *ch, char *argument)
 
 	if (IS_SWITCHED(victim))
 	{
+		send_to_char("They aren't here.\n\r", ch);
+		return;
+	}
+
+	/* AO 010217 respect wizi only */
+	if (IS_IMMORTAL(victim) && victim->invis_level > ch->tot_level) {
 		send_to_char("They aren't here.\n\r", ch);
 		return;
 	}
@@ -979,7 +1000,7 @@ void do_reply(CHAR_DATA *ch, char *argument)
 	CHAR_DATA *victim;
 	char buf[MAX_STRING_LENGTH];
 
-	if ((victim = ch->reply) == NULL || !can_see(ch, victim)) {
+	if ((victim = ch->reply) == NULL /*|| !can_see(ch, victim)*/) {
 		send_to_char("They aren't here.\n\r", ch);
 		return;
 	}
@@ -1154,13 +1175,13 @@ void do_quit(CHAR_DATA *ch, char *argument)
 		free_mail(ch->mail);
 		ch->mail = NULL;
 		}
-
+/* WHY???? AO 010417
 		if (ch->quest != NULL)
 		{
 		send_to_char("You can't quit, you're still on a quest!\n\r", ch);
 		return;
 		}
-
+*/
 		if(argument) {
 			p_percent_trigger( ch, NULL, NULL, NULL, ch, NULL, NULL,NULL, NULL, TRIG_QUIT, NULL);
 			// This requested input, pause and wait for input before quiting)
@@ -1210,6 +1231,7 @@ void do_quit(CHAR_DATA *ch, char *argument)
 	free_token(token);
 	}
 	}
+
 
 	send_to_char(
 	"Alas, all good things must come to an end.\n\r", ch);
@@ -1278,6 +1300,16 @@ void do_quit(CHAR_DATA *ch, char *argument)
 	else
 	extract_char(mount, TRUE);
 	}
+	}
+	
+	/* kill quest obj's linked to char, to be restored upon boot-up */ 
+	if (ch->quest != NULL) {
+	    QUEST_PART_DATA *part;
+
+	    for (part = ch->quest->parts; part != NULL; part = part->next) {
+		if (part->pObj != NULL) 
+		    extract_obj(part->pObj);
+	    }
 	}
 
 	id[0] = ch->id[0];
