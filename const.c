@@ -4702,7 +4702,7 @@ const struct group_type group_table [MAX_GROUP] =
     {
     	"ninja skills", { 4, 4, 8, 8 },
     	{ "throw", "bomb", "evasion", "cloak of guile", "deathbarbs",
-	  "sword and dagger style", "dual wield", NULL },
+	  "sword and dagger style", "dual wield", "slit throat", NULL },
     },
 
     /* Sage - master of knowledge in all forms */
