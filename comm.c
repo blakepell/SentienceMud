@@ -323,7 +323,8 @@ bool	write_to_descriptor_2	args((int desc, char *txt, int length));
  * Other local functions (OS-independent).
  */
 bool	check_parse_name	args((char *name));
-CHAR_DATA *find_existing_player	args((char *name));
+//Temporarily disabling due to reconnect crash
+//CHAR_DATA *find_existing_player	args((char *name));
 bool	check_reconnect		args((DESCRIPTOR_DATA *d, char *name, bool fConn));
 bool	check_playing		args((DESCRIPTOR_DATA *d, char *name));
 int	main			args((int argc, char **argv));
@@ -562,11 +563,14 @@ int main(int argc, char **argv)
 		perror("Could not create 'loaded_chars'");
 		exit(1);
 	}
+// Temporarily disabling for reconnect crash.
+/*
 	loaded_players = list_create(FALSE);
 	if(!loaded_players) {
 		perror("Could not create 'loaded_players'");
 		exit(1);
 	}
+*/
 	loaded_objects = list_create(FALSE);
 	if(!loaded_objects) {
 		perror("Could not create 'loaded_objects'");
@@ -655,7 +659,8 @@ int main(int argc, char **argv)
 	list_destroy(conn_immortals);
 	list_destroy(conn_online);
 	list_destroy(loaded_chars);
-	list_destroy(loaded_players);
+	// Temporarily disabling for reconnect crash.
+	//list_destroy(loaded_players);
 	list_destroy(loaded_objects);
 	list_destroy(persist_mobs);
 	list_destroy(persist_objs);
@@ -2141,14 +2146,16 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 			return;
 		}
 
+		// Temporarily disabling for reconnect crash.
 		// Check if the player is already playing
+		/*
 		if ((ch = find_existing_player(argument)) != NULL)
 		{
 			fOld = TRUE;
 			d->character = ch;
 		}
 		else
-		{
+		{*/
 			fOld = load_char_obj(d, argument);
 
 			ch = d->character;
@@ -2169,6 +2176,11 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 				return;
 			}
 
+			// Adding back in for reconnect crash
+			if (check_reconnect(d, argument, FALSE))
+				fOld = TRUE;
+			else
+			{
 			if (wizlock && !IS_IMMORTAL(ch))
 			{
 				write_to_buffer(d, "The game is wizlocked.\n\r", 0);
@@ -2933,7 +2945,8 @@ void nanny(DESCRIPTOR_DATA *d, char *argument)
 		}
 
 		list_appendlink(loaded_chars, ch);
-		list_appendlink(loaded_players, ch);
+		// Temprarily disabled for reconnect crash
+		//list_appendlink(loaded_players, ch);
 		d->connected	= CON_PLAYING;
 
 		if (ch->pcdata->old_pwd != NULL)
@@ -3220,7 +3233,8 @@ bool check_parse_name(char *name)
 
     return TRUE;
 }
-
+// Temporarily disabling for reconnect crash
+/*
 CHAR_DATA *find_existing_player(char *name)
 {
     CHAR_DATA *ch;
@@ -3240,7 +3254,7 @@ CHAR_DATA *find_existing_player(char *name)
 
     return NULL;
 }
-
+*/
 
 /*
  * Look for link-dead player to reconnect.
@@ -3249,8 +3263,9 @@ bool check_reconnect(DESCRIPTOR_DATA *d, char *name, bool fConn)
 {
     CHAR_DATA *ch;
     ITERATOR cit;
-
-    iterator_start(&cit, loaded_players);
+    // Reverting for reconnect crash
+    //iterator_start(&cit, loaded_players);
+    iterator_start(&cit, loaded_chars);
     while(( ch = (CHAR_DATA *)iterator_nextdata(&cit)))
     {
 		if (!IS_NPC(ch) &&
@@ -3271,6 +3286,8 @@ bool check_reconnect(DESCRIPTOR_DATA *d, char *name, bool fConn)
 					extract_char(pet,TRUE);
                 }
 
+				// Temporarily adding this back for reconnect crash
+				free_char(d->character);
 				d->character = ch;
 				ch->desc	 = d;
 				ch->timer	 = 0;

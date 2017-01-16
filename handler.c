@@ -3080,7 +3080,8 @@ void extract_char(CHAR_DATA *ch, bool fPull)
     }
     iterator_stop(&it);
     list_remlink(loaded_chars, ch);
-    list_remlink(loaded_players, ch);
+    // Temporarily disabled for reconnect crash.
+    //list_remlink(loaded_players, ch);
 
 
     if (ch->desc != NULL)
