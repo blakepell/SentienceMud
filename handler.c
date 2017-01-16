@@ -2324,8 +2324,21 @@ void equip_char(CHAR_DATA *ch, OBJ_DATA *obj, int iWear)
 	return;
     }
 
+    // This is generally already handled in wear_obj, but just to be safe, doing the all_remort check here as well.
+    /*
     if (!IS_IMMORTAL(ch) && ch->tot_level < obj->level)
 	return;
+    */
+
+    if (!IS_IMMORTAL(ch) && !IS_NPC(ch)) {
+        /* If the object is not a mortal object
+        -or- is higher object level and the item is not flagged all_remort or the char is not remort */
+        if ((obj->level > LEVEL_HERO) ||
+        ((ch->tot_level < obj->level) && !(IS_SET(obj->extra2_flags, ITEM_ALL_REMORT) && IS_REMORT(ch)))) {
+            return;
+        }
+    }
+
 
     if ((IS_OBJ_STAT(obj, ITEM_ANTI_EVIL)    && IS_EVIL(ch)   )
     ||   (IS_OBJ_STAT(obj, ITEM_ANTI_GOOD)    && IS_GOOD(ch)   )
