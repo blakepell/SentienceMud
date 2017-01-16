@@ -622,7 +622,8 @@ long top_vroom;
 long top_waypoint;
 
 LLIST *loaded_chars;
-LLIST *loaded_players;
+// Temporarily disabled for reconnect crash.
+//LLIST *loaded_players;
 LLIST *loaded_objects;
 LLIST *persist_mobs;
 LLIST *persist_objs;
