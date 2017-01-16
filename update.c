@@ -1911,7 +1911,7 @@ void char_update(void)
 		// Find someone to SLAUGHTER
 		for (player = ch->in_room->people; player != NULL; player = player->next_in_room)
 		{
-		    if (player->fighting == NULL && !is_safe(ch, player,FALSE))
+		    if (player->fighting == NULL && !is_safe(ch, player,FALSE) || player->alignment >= 150 || is_same_group(player,ch))
 			break;
 		}
 
