@@ -637,7 +637,7 @@ const 	struct	race_type	race_table	[] =
 		RES_FIRE|RES_BASH|RES_CHARM,
 		VULN_COLD,
 		FORM_EDIBLE | FORM_SENTIENT | FORM_DRAGON,
-		PART_HEAD | PART_LEGS | PART_HEART | PART_BRAINS | PART_GUTS | PART_HANDS | PART_FEET | PART_FINGERS | PART_EAR | PART_EYE | PART_WINGS | PART_TAIL | PART_CLAWS | PART_FANGS | PART_SCALES
+		PART_HEAD | PART_ARMS | PART_LEGS | PART_HEART | PART_BRAINS | PART_GUTS | PART_HANDS | PART_FEET | PART_FINGERS | PART_EAR | PART_EYE | PART_WINGS | PART_TAIL | PART_CLAWS | PART_FANGS | PART_SCALES
 	}, {
 		"slayer",
 		TRUE,
@@ -818,7 +818,7 @@ const 	struct	race_type	race_table	[] =
 		0,
 		VULN_FIRE|VULN_PIERCE,
 		FORM_EDIBLE | FORM_SENTIENT | FORM_BIPED | FORM_MAMMAL,
-		PART_HEAD | PART_ARMS | PART_LEGS | PART_HEART | PART_BRAINS | PART_GUTS | PART_HANDS | PART_FEET | PART_FINGERS | PART_EAR | PART_EYE | PART_FANGS
+		PART_HEAD | PART_ARMS | PART_LEGS | PART_HEART | PART_BRAINS | PART_GUTS | PART_HANDS | PART_FEET | PART_FINGERS | PART_EAR | PART_EYE | PART_FANGS | PART_TAIL
 	}, {
 		"dragon",
 		TRUE,
@@ -4702,7 +4702,7 @@ const struct group_type group_table [MAX_GROUP] =
     {
     	"ninja skills", { 4, 4, 8, 8 },
     	{ "throw", "bomb", "evasion", "cloak of guile", "deathbarbs",
-	  "sword and dagger style", "dual wield", NULL },
+	  "sword and dagger style", "dual wield", "slit throat", NULL },
     },
 
     /* Sage - master of knowledge in all forms */

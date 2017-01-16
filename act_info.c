@@ -161,7 +161,7 @@ int wear_params[MAX_WEAR][7] = {
 	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE }, // Shoulder Tattoo
 	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE }, // Shoulder Tattoo
 	{ TRUE,		FALSE,		FALSE,		FALSE,		TRUE,		FALSE,		FALSE }, // BACK Tattoo
-	{ TRUE,		TRUE,		TRUE,		FALSE,		TRUE,		TRUE,		FALSE }, // Tabard
+	{ FALSE,		FALSE,		FALSE,		FALSE,		FALSE,		FALSE,		FALSE }, // Tabard
 
 
 };
